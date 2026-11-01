@@ -89,13 +89,13 @@ def extract_color_from_avatar(avatar: str, fallback: str = "#ef4444") -> str:
     return fallback
 
 
-def in_bounds(r: int, c: int) -> bool:
-    return 0 <= r <= 8 and 0 <= c <= 8
+def in_bounds(r: int, c: int, board_size: int = 9) -> bool:
+    return 0 <= r < board_size and 0 <= c < board_size
 
 
-def is_passage_blocked(r1: int, c1: int, r2: int, c2: int, walls_set: Set[Tuple[int, int, str]]) -> bool:
+def is_passage_blocked(r1: int, c1: int, r2: int, c2: int, walls_set: Set[Tuple[int, int, str]], board_size: int = 9) -> bool:
     """Check if movement between adjacent cells (r1, c1) and (r2, c2) is blocked by any wall."""
-    if not in_bounds(r2, c2):
+    if not in_bounds(r2, c2, board_size):
         return True
     if r2 == r1 - 1 and c2 == c1:  # North
         return (r1 - 1, c1 - 1, "H") in walls_set or (r1 - 1, c1, "H") in walls_set
@@ -108,7 +108,7 @@ def is_passage_blocked(r1: int, c1: int, r2: int, c2: int, walls_set: Set[Tuple[
     return True
 
 
-def get_valid_pawn_moves(curr_pos: Tuple[int, int], all_players_pos: List[Tuple[int, int]], walls_set: Set[Tuple[int, int, str]]) -> List[Tuple[int, int]]:
+def get_valid_pawn_moves(curr_pos: Tuple[int, int], all_players_pos: List[Tuple[int, int]], walls_set: Set[Tuple[int, int, str]], board_size: int = 9) -> List[Tuple[int, int]]:
     """Calculate all legal destination squares for a pawn under Quoridor tournament jump rules."""
     r, c = curr_pos
     moves: List[Tuple[int, int]] = []
@@ -117,7 +117,7 @@ def get_valid_pawn_moves(curr_pos: Tuple[int, int], all_players_pos: List[Tuple[
 
     for dr, dc in directions:
         nr, nc = r + dr, c + dc
-        if not in_bounds(nr, nc) or is_passage_blocked(r, c, nr, nc, walls_set):
+        if not in_bounds(nr, nc, board_size) or is_passage_blocked(r, c, nr, nc, walls_set, board_size):
             continue
 
         if (nr, nc) not in occupied:
@@ -125,7 +125,7 @@ def get_valid_pawn_moves(curr_pos: Tuple[int, int], all_players_pos: List[Tuple[
         else:
             # Adjacent square is occupied by an opponent -> check jumps
             br, bc = nr + dr, nc + dc
-            can_straight_jump = in_bounds(br, bc) and not is_passage_blocked(nr, nc, br, bc, walls_set) and (br, bc) not in occupied
+            can_straight_jump = in_bounds(br, bc, board_size) and not is_passage_blocked(nr, nc, br, bc, walls_set, board_size) and (br, bc) not in occupied
             if can_straight_jump:
                 moves.append((br, bc))
             else:
@@ -134,8 +134,8 @@ def get_valid_pawn_moves(curr_pos: Tuple[int, int], all_players_pos: List[Tuple[
                 for pdr, pdc in perp_dirs:
                     dr_diag, dc_diag = nr + pdr, nc + pdc
                     if (
-                        in_bounds(dr_diag, dc_diag)
-                        and not is_passage_blocked(nr, nc, dr_diag, dc_diag, walls_set)
+                        in_bounds(dr_diag, dc_diag, board_size)
+                        and not is_passage_blocked(nr, nc, dr_diag, dc_diag, walls_set, board_size)
                         and (dr_diag, dc_diag) not in occupied
                     ):
                         moves.append((dr_diag, dc_diag))
@@ -143,7 +143,7 @@ def get_valid_pawn_moves(curr_pos: Tuple[int, int], all_players_pos: List[Tuple[
     return sorted(list(set(moves)))
 
 
-def has_path_to_goal(start_pos: Tuple[int, int], goal_fn, walls_set: Set[Tuple[int, int, str]]) -> bool:
+def has_path_to_goal(start_pos: Tuple[int, int], goal_fn, walls_set: Set[Tuple[int, int, str]], board_size: int = 9) -> bool:
     """BFS check to ensure there is at least one open path from start_pos to any goal cell."""
     queue = deque([start_pos])
     visited = {start_pos}
@@ -155,15 +155,15 @@ def has_path_to_goal(start_pos: Tuple[int, int], goal_fn, walls_set: Set[Tuple[i
 
         for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             nr, nc = cr + dr, cc + dc
-            if in_bounds(nr, nc) and (nr, nc) not in visited:
-                if not is_passage_blocked(cr, cc, nr, nc, walls_set):
+            if in_bounds(nr, nc, board_size) and (nr, nc) not in visited:
+                if not is_passage_blocked(cr, cc, nr, nc, walls_set, board_size):
                     visited.add((nr, nc))
                     queue.append((nr, nc))
 
     return False
 
 
-def get_shortest_path_distance(start_pos: Tuple[int, int], goal_fn, walls_set: Set[Tuple[int, int, str]]) -> int:
+def get_shortest_path_distance(start_pos: Tuple[int, int], goal_fn, walls_set: Set[Tuple[int, int, str]], board_size: int = 9) -> int:
     """BFS shortest path distance from start_pos to goal cell, or 999 if unreachable."""
     queue = deque([(start_pos[0], start_pos[1], 0)])
     visited = {start_pos}
@@ -175,18 +175,19 @@ def get_shortest_path_distance(start_pos: Tuple[int, int], goal_fn, walls_set: S
 
         for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             nr, nc = cr + dr, cc + dc
-            if in_bounds(nr, nc) and (nr, nc) not in visited:
-                if not is_passage_blocked(cr, cc, nr, nc, walls_set):
+            if in_bounds(nr, nc, board_size) and (nr, nc) not in visited:
+                if not is_passage_blocked(cr, cc, nr, nc, walls_set, board_size):
                     visited.add((nr, nc))
                     queue.append((nr, nc, dist + 1))
 
     return 999
 
 
-def validate_wall_placement(r: int, c: int, orientation: str, walls: List[Dict[str, Any]], active_players: List[Dict[str, Any]]) -> Tuple[bool, str]:
+def validate_wall_placement(r: int, c: int, orientation: str, walls: List[Dict[str, Any]], active_players: List[Dict[str, Any]], board_size: int = 9) -> Tuple[bool, str]:
     """Check whether placing a 2-unit wall at (r, c) with given orientation is legal."""
-    if not (0 <= r <= 7 and 0 <= c <= 7):
-        return False, "Vegg må plasseres innenfor brettet (rad 0-7, kolonne 0-7)."
+    max_slot = board_size - 2
+    if not (0 <= r <= max_slot and 0 <= c <= max_slot):
+        return False, f"Vegg må plasseres innenfor brettet (rad 0-{max_slot}, kolonne 0-{max_slot})."
 
     if orientation not in ("H", "V"):
         return False, "Ugyldig orientering (må være 'H' eller 'V')."
@@ -209,10 +210,16 @@ def validate_wall_placement(r: int, c: int, orientation: str, walls: List[Dict[s
     prospective_walls_set.add((r, c, orientation))
 
     # Pathfinding check: EVERY active player must retain a reachable path to their goal
+    is_multi = len(active_players) > 2
+    mid = board_size // 2
     for idx, p in enumerate(active_players):
         pos = tuple(p["pos"])
-        goal_fn = PLAYER_CONFIGS[idx]["goalFn"]
-        if not has_path_to_goal(pos, goal_fn, prospective_walls_set):
+        if is_multi:
+            goal_fn = lambda r_val, c_val, m=mid: r_val == m and c_val == m
+        else:
+            goal_fn = (lambda r_val, c_val: r_val == 0) if idx == 0 else (lambda r_val, c_val, b=board_size: r_val == (b - 1))
+
+        if not has_path_to_goal(pos, goal_fn, prospective_walls_set, board_size):
             return False, f"Ugyldig vegg: Stenger alle veier til målet for {p['name']}!"
 
     return True, "Gyldig vegg."
@@ -299,6 +306,16 @@ class KorridorerRoom:
             self.bump()
             return True, f"{name} ble lagt til!", bot_player
 
+    def get_board_size(self) -> int:
+        return 11 if len(self.players) > 2 else 9
+
+    def get_goal_fn(self, slot: int):
+        board_size = self.get_board_size()
+        if len(self.players) > 2:
+            mid = board_size // 2
+            return lambda r, c: r == mid and c == mid
+        return (lambda r, c: r == 0) if slot == 0 else (lambda r, c: r == (board_size - 1))
+
     def step_bot_if_needed(self) -> None:
         if self.status != "active":
             return
@@ -308,18 +325,19 @@ class KorridorerRoom:
         if not current_player.get("isBot"):
             return
 
+        board_size = self.get_board_size()
         all_pos = [tuple(p["pos"]) for p in self.players]
         curr_pos = tuple(current_player["pos"])
         walls_set = self.get_walls_set()
-        valid_moves = get_valid_pawn_moves(curr_pos, all_pos, walls_set)
+        valid_moves = get_valid_pawn_moves(curr_pos, all_pos, walls_set, board_size)
         if not valid_moves:
             return
 
-        bot_goal = PLAYER_CONFIGS[self.current_turn]["goalFn"]
+        bot_goal = self.get_goal_fn(self.current_turn)
         best_move = valid_moves[0]
         best_dist = 999
         for mr, mc in valid_moves:
-            d = get_shortest_path_distance((mr, mc), bot_goal, walls_set)
+            d = get_shortest_path_distance((mr, mc), bot_goal, walls_set, board_size)
             if d < best_dist:
                 best_dist = d
                 best_move = (mr, mc)
@@ -332,14 +350,22 @@ class KorridorerRoom:
             if len(self.players) < 2:
                 self.add_bot()
 
+            board_size = self.get_board_size()
+            is_multi = len(self.players) > 2
+            mid = board_size // 2
+            max_coord = board_size - 1
+
+            starts_multi = [(max_coord, mid), (0, mid), (mid, 0), (mid, max_coord)]
+            starts_2p = [(8, 4), (0, 4)]
+
             # Position each player at their starting slot
             for idx, p in enumerate(self.players):
                 cfg = PLAYER_CONFIGS[idx]
                 p["color"] = p.get("color") or extract_color_from_avatar(p.get("avatar"), cfg["color"])
                 p["colorName"] = p.get("colorName") or cfg["colorName"]
-                p["pos"] = list(cfg["start"])
+                p["pos"] = list(starts_multi[idx] if is_multi else starts_2p[idx])
                 p["walls"] = 999
-                p["goalDesc"] = cfg["goalDesc"]
+                p["goalDesc"] = f"Nå sentrum (rute {mid}, {mid})" if is_multi else cfg["goalDesc"]
 
             self.walls.clear()
             self.current_turn = 0
@@ -360,11 +386,12 @@ class KorridorerRoom:
             if current_player["id"] != player_id:
                 return False, "Det er ikke din tur."
 
+            board_size = self.get_board_size()
             all_pos = [tuple(p["pos"]) for p in self.players]
             curr_pos = tuple(current_player["pos"])
             walls_set = self.get_walls_set()
 
-            valid_moves = get_valid_pawn_moves(curr_pos, all_pos, walls_set)
+            valid_moves = get_valid_pawn_moves(curr_pos, all_pos, walls_set, board_size)
             if (target_r, target_c) not in valid_moves:
                 return False, f"Ugyldig trekk til ({target_r}, {target_c})."
 
@@ -373,7 +400,7 @@ class KorridorerRoom:
             current_player["lastSeen"] = time.time()
 
             # Check win condition
-            goal_fn = PLAYER_CONFIGS[self.current_turn]["goalFn"]
+            goal_fn = self.get_goal_fn(self.current_turn)
             if goal_fn(target_r, target_c):
                 self.status = "finished"
                 self.winner = {
@@ -401,7 +428,8 @@ class KorridorerRoom:
             if current_player["id"] != player_id:
                 return False, "Det er ikke din tur."
 
-            ok, msg = validate_wall_placement(r, c, orientation, self.walls, self.players)
+            board_size = self.get_board_size()
+            ok, msg = validate_wall_placement(r, c, orientation, self.walls, self.players, board_size)
             if not ok:
                 return False, msg
 
@@ -458,6 +486,10 @@ class KorridorerRoom:
 
     def get_public_state(self, player_id: Optional[str] = None) -> Dict[str, Any]:
         with self.lock:
+            board_size = self.get_board_size()
+            is_multi = len(self.players) > 2
+            mid = board_size // 2
+
             my_role = "spectator"
             my_index: Optional[int] = None
             is_my_turn = False
@@ -479,7 +511,7 @@ class KorridorerRoom:
                 all_pos = [tuple(p["pos"]) for p in self.players]
                 curr_pos = tuple(self.players[my_index]["pos"])
                 walls_set = self.get_walls_set()
-                my_valid_moves = [list(m) for m in get_valid_pawn_moves(curr_pos, all_pos, walls_set)]
+                my_valid_moves = [list(m) for m in get_valid_pawn_moves(curr_pos, all_pos, walls_set, board_size)]
 
             return {
                 "ok": True,
@@ -487,6 +519,9 @@ class KorridorerRoom:
                 "status": self.status,
                 "version": self.version,
                 "maxPlayers": self.max_players,
+                "boardSize": board_size,
+                "isCenterGoal": is_multi,
+                "centerGoal": [mid, mid] if is_multi else None,
                 "currentTurn": self.current_turn,
                 "players": [
                     {

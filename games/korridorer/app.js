@@ -90,6 +90,34 @@
     },
   ];
 
+  function getBoardSize() {
+    return state.players && state.players.length > 2 ? 11 : 9;
+  }
+
+  function getPlayerStartPos(idx, numPlayers) {
+    if (numPlayers > 2) {
+      // 11x11 board: center is (5, 5), max index is 10
+      const starts = [
+        [10, 5], // P1: South
+        [0, 5],  // P2: North
+        [5, 0],  // P3: West
+        [5, 10], // P4: East
+      ];
+      return starts[idx] || [10, 5];
+    }
+    // 9x9 board for 2 players
+    return idx === 0 ? [8, 4] : [0, 4];
+  }
+
+  function getPlayerGoalFn(idx) {
+    const isMulti = state.players && state.players.length > 2;
+    if (isMulti) {
+      const mid = 5; // center of 11x11
+      return (r, c) => r === mid && c === mid;
+    }
+    return idx === 0 ? (r, c) => r === 0 : (r, c) => r === 8;
+  }
+
   // --- Web Audio Synthesizer ---
   const soundEngine = {
     ctx: null,
@@ -243,7 +271,8 @@
 
   // --- Quoridor Core Rules & Logic Engine ---
   function inBounds(r, c) {
-    return r >= 0 && r <= 8 && c >= 0 && c <= 8;
+    const sz = getBoardSize();
+    return r >= 0 && r < sz && c >= 0 && c < sz;
   }
 
   function isPassageBlocked(r1, c1, r2, c2, wallsSet) {
@@ -385,8 +414,10 @@
   }
 
   function validateWallPlacement(r, c, orientation, wallsList, activePlayers) {
-    if (r < 0 || r > 7 || c < 0 || c > 7) {
-      return { ok: false, error: "Vegg må være innenfor brettets 8x8 kryss." };
+    const sz = getBoardSize();
+    const maxSlot = sz - 2;
+    if (r < 0 || r > maxSlot || c < 0 || c > maxSlot) {
+      return { ok: false, error: `Vegg må være innenfor brettets ${maxSlot + 1}x${maxSlot + 1} kryss.` };
     }
 
     // Check collisions with existing walls
@@ -411,7 +442,7 @@
     // BFS path check for ALL players
     for (let i = 0; i < activePlayers.length; i++) {
       const p = activePlayers[i];
-      const goalFn = PLAYER_DEFAULTS[i].goalFn;
+      const goalFn = getPlayerGoalFn(i);
       if (!hasPathToGoal(p.pos, goalFn, candidateSet)) {
         return { ok: false, error: `Blokkerer alle veier til målet for ${p.name}!` };
       }
@@ -810,15 +841,33 @@
     }
   }
 
-  // Render static 9x9 board cells and 8x8 wall groove intersection points
-  function renderBoardBaseGrid() {
+  let currentGridSize = 0;
+
+  function ensureBoardGridSize() {
+    const desiredSize = getBoardSize();
+    if (currentGridSize !== desiredSize) {
+      renderBoardBaseGrid(desiredSize);
+      currentGridSize = desiredSize;
+    }
+  }
+
+  // Render static board cells and border slots based on board size (9x9 for 2p, 11x11 for >2p)
+  function renderBoardBaseGrid(size) {
     if (!el.boardCells || !el.boardGroovesLayer) return;
+    const sz = size || getBoardSize();
+    currentGridSize = sz;
+
+    if (el.boardWrapper) {
+      el.boardWrapper.style.setProperty("--board-size", sz);
+      el.boardWrapper.style.setProperty("--board-gap", sz > 9 ? "6px" : "8px");
+    }
+
     el.boardCells.innerHTML = "";
     el.boardGroovesLayer.innerHTML = "";
 
-    // 81 cells (9 rows x 9 columns)
-    for (let r = 0; r < 9; r++) {
-      for (let c = 0; c < 9; c++) {
+    // Cells: sz rows x sz columns
+    for (let r = 0; r < sz; r++) {
+      for (let c = 0; c < sz; c++) {
         const cell = document.createElement("div");
         cell.className = "board-cell";
         cell.dataset.r = r;
@@ -830,17 +879,17 @@
       }
     }
 
-    // 64 Horizontal border slots (r: 0-7, c: 0-7)
-    for (let r = 0; r < 8; r++) {
-      for (let c = 0; c < 8; c++) {
+    // Horizontal border slots (r: 0 to sz-2, c: 0 to sz-2)
+    for (let r = 0; r < sz - 1; r++) {
+      for (let c = 0; c < sz - 1; c++) {
         const slotH = document.createElement("div");
         slotH.className = "border-slot border-slot-h";
         slotH.dataset.r = r;
         slotH.dataset.c = c;
         slotH.dataset.orientation = "H";
-        slotH.style.top = `${((r + 1) / 9) * 100}%`;
-        slotH.style.left = `${(c / 9) * 100}%`;
-        slotH.style.width = `${(2 / 9) * 100}%`;
+        slotH.style.top = `${((r + 1) / sz) * 100}%`;
+        slotH.style.left = `${(c / sz) * 100}%`;
+        slotH.style.width = `${(2 / sz) * 100}%`;
 
         slotH.addEventListener("mouseenter", () => onBorderHover(r, c, "H"));
         slotH.addEventListener("mouseleave", () => onBorderLeave(r, c, "H"));
@@ -849,17 +898,17 @@
       }
     }
 
-    // 64 Vertical border slots (r: 0-7, c: 0-7)
-    for (let r = 0; r < 8; r++) {
-      for (let c = 0; c < 8; c++) {
+    // Vertical border slots (r: 0 to sz-2, c: 0 to sz-2)
+    for (let r = 0; r < sz - 1; r++) {
+      for (let c = 0; c < sz - 1; c++) {
         const slotV = document.createElement("div");
         slotV.className = "border-slot border-slot-v";
         slotV.dataset.r = r;
         slotV.dataset.c = c;
         slotV.dataset.orientation = "V";
-        slotV.style.left = `${((c + 1) / 9) * 100}%`;
-        slotV.style.top = `${(r / 9) * 100}%`;
-        slotV.style.height = `${(2 / 9) * 100}%`;
+        slotV.style.left = `${((c + 1) / sz) * 100}%`;
+        slotV.style.top = `${(r / sz) * 100}%`;
+        slotV.style.height = `${(2 / sz) * 100}%`;
 
         slotV.addEventListener("mouseenter", () => onBorderHover(r, c, "V"));
         slotV.addEventListener("mouseleave", () => onBorderLeave(r, c, "V"));
@@ -1347,6 +1396,7 @@
     state.winner = data.winner;
     state.role = data.myRole || "spectator";
     state.playerIndex = typeof data.myIndex === "number" ? data.myIndex : 0;
+    if (data.boardSize) state.boardSize = data.boardSize;
 
     // Chat messages check
     if (Array.isArray(data.chatMessages) && data.chatMessages.length > state.chatMessages.length) {
@@ -1438,19 +1488,19 @@
     state.walls = [];
     state.turnCount = 0;
 
+    const count = localPlayersCount;
     state.players = [];
-    for (let i = 0; i < localPlayersCount; i++) {
+    for (let i = 0; i < count; i++) {
       const cfg = PLAYER_DEFAULTS[i];
-      const pData = localConfig[i];
+      const pData = localConfig[i] || {};
       state.players.push({
         id: `local_p${i}`,
         name: pData.name || cfg.defaultName,
         avatar: pData.avatar || cfg.defaultAvatar,
         color: extractCharacterColor(pData.avatar, cfg.color),
         colorName: cfg.colorName,
-        pos: [...cfg.start],
+        pos: getPlayerStartPos(i, count),
         walls: 999,
-        goalDesc: cfg.goalDesc,
         isHost: i === 0,
       });
     }
@@ -1488,9 +1538,8 @@
         avatar: selectedBotAvatar,
         color: extractCharacterColor(selectedBotAvatar, PLAYER_DEFAULTS[0].color),
         colorName: PLAYER_DEFAULTS[0].colorName,
-        pos: [...PLAYER_DEFAULTS[0].start],
+        pos: getPlayerStartPos(0, count),
         walls: 999,
-        goalDesc: PLAYER_DEFAULTS[0].goalDesc,
         isHost: true,
       },
     ];
@@ -1511,9 +1560,8 @@
         avatar: botAvatars[i - 1],
         color: extractCharacterColor(botAvatars[i - 1], cfg.color),
         colorName: cfg.colorName,
-        pos: [...cfg.start],
+        pos: getPlayerStartPos(i, count),
         walls: 999,
-        goalDesc: cfg.goalDesc,
         isHost: false,
         isBot: true,
       });
@@ -1546,10 +1594,12 @@
   }
 
   function executeBotMove(botPlayer) {
+    const sz = getBoardSize();
+    const maxSlot = sz - 2;
     const wallsSet = new Set(state.walls.map(w => `${w.r},${w.c},${w.orientation}`));
     const allPos = state.players.map(p => p.pos);
     const validMoves = getValidPawnMoves(botPlayer.pos, allPos, wallsSet);
-    const botGoalFn = PLAYER_DEFAULTS[state.currentTurn].goalFn;
+    const botGoalFn = getPlayerGoalFn(state.currentTurn);
 
     // Check if bot can win immediately with pawn move
     for (const [mr, mc] of validMoves) {
@@ -1561,7 +1611,7 @@
 
     // Evaluate Human's distance vs Bot's distance
     const humanPlayer = state.players[0];
-    const humanGoalFn = PLAYER_DEFAULTS[0].goalFn;
+    const humanGoalFn = getPlayerGoalFn(0);
     const humanDist = getShortestPathDistance(humanPlayer.pos, humanGoalFn, wallsSet);
     const botDist = getShortestPathDistance(botPlayer.pos, botGoalFn, wallsSet);
 
@@ -1582,7 +1632,7 @@
       ];
 
       for (const [cwr, cwc, cori] of candidateIntersections) {
-        if (cwr >= 0 && cwr <= 7 && cwc >= 0 && cwc <= 7) {
+        if (cwr >= 0 && cwr <= maxSlot && cwc >= 0 && cwc <= maxSlot) {
           const val = validateWallPlacement(cwr, cwc, cori, state.walls, state.players);
           if (val.ok) {
             // Check if placing this wall actually increases human distance
@@ -1648,8 +1698,9 @@
   function showGhostWallTooltip(msg, r, c, orientation = "H", isStaged = false) {
     if (!el.ghostWallTooltip) return;
     el.ghostWallTooltip.textContent = msg;
-    const topPct = orientation === "H" ? ((r + 1) / 9) * 100 : (r / 9) * 100 + (1 / 9) * 100;
-    const leftPct = orientation === "H" ? (c / 9) * 100 + (1 / 9) * 100 : ((c + 1) / 9) * 100;
+    const sz = getBoardSize();
+    const topPct = orientation === "H" ? ((r + 1) / sz) * 100 : (r / sz) * 100 + (1 / sz) * 100;
+    const leftPct = orientation === "H" ? (c / sz) * 100 + (1 / sz) * 100 : ((c + 1) / sz) * 100;
     el.ghostWallTooltip.style.top = `${topPct}%`;
     el.ghostWallTooltip.style.left = `${leftPct}%`;
 
@@ -1687,7 +1738,7 @@
 
     const val = validateWallPlacement(r, c, orientation, state.walls, state.players);
     if (!val.ok) {
-      showGhostWallTooltip(val.error || "Ugyldig veggplassering", r, c, true);
+      showGhostWallTooltip(val.error || "Ugyldig veggplassering", r, c, orientation, true);
       if (el.btnFloatConfirm) {
         el.btnFloatConfirm.disabled = true;
       }
@@ -1699,8 +1750,9 @@
     }
 
     if (el.floatingWallToolbar) {
-      const topPct = ((r + 1) / 9) * 100;
-      const leftPct = ((c + 1) / 9) * 100;
+      const sz = getBoardSize();
+      const topPct = ((r + 1) / sz) * 100;
+      const leftPct = ((c + 1) / sz) * 100;
       el.floatingWallToolbar.style.top = `${topPct}%`;
       el.floatingWallToolbar.style.left = `${leftPct}%`;
 
@@ -1719,7 +1771,7 @@
     const val = validateWallPlacement(r, c, orientation, state.walls, state.players);
     if (!val.ok) {
       soundEngine.playInvalid();
-      showGhostWallTooltip(val.error || "Ugyldig vegg", r, c, true);
+      showGhostWallTooltip(val.error || "Ugyldig vegg", r, c, orientation, true);
       return;
     }
     commitWallPlacement(r, c, orientation);
@@ -1901,7 +1953,7 @@
     state.turnCount++;
 
     // Check victory
-    const goalFn = PLAYER_DEFAULTS[state.currentTurn].goalFn;
+    const goalFn = getPlayerGoalFn(state.currentTurn);
     if (goalFn(r, c)) {
       state.gameActive = false;
       state.winner = curPlayer;
@@ -1969,6 +2021,7 @@
 
   // --- RENDERING ARENA & BOARD ---
   function renderGameBoard() {
+    ensureBoardGridSize();
     renderTopStatusBar();
     renderPlayersSideCards();
     renderBoardWalls();
@@ -2063,26 +2116,25 @@
 
   function renderBoardWalls() {
     el.boardWallsLayer.innerHTML = "";
+    const sz = getBoardSize();
 
     // Placed walls
     state.walls.forEach(w => {
       const wall = document.createElement("div");
       wall.className = `placed-wall wall-${w.orientation.toLowerCase()}`;
 
-      // Calculate position and dimension
-      // In 9x9 board with 8px gaps:
-      // cell size: calc((100% - 64px) / 9)
+      // Calculate position and dimension based on board size
       const r = w.r;
       const c = w.c;
 
       if (w.orientation === "H") {
-        wall.style.top = `${((r + 1) / 9) * 100}%`;
-        wall.style.left = `${(c / 9) * 100}%`;
-        wall.style.width = `${(2 / 9) * 100}%`;
+        wall.style.top = `${((r + 1) / sz) * 100}%`;
+        wall.style.left = `${(c / sz) * 100}%`;
+        wall.style.width = `${(2 / sz) * 100}%`;
       } else {
-        wall.style.left = `${((c + 1) / 9) * 100}%`;
-        wall.style.top = `${(r / 9) * 100}%`;
-        wall.style.height = `${(2 / 9) * 100}%`;
+        wall.style.left = `${((c + 1) / sz) * 100}%`;
+        wall.style.top = `${(r / sz) * 100}%`;
+        wall.style.height = `${(2 / sz) * 100}%`;
       }
 
       // Wall color matches the placing player's character color
@@ -2141,16 +2193,48 @@
 
   function renderEndzones() {
     if (!state.players || state.players.length === 0) return;
+    const sz = getBoardSize();
+    const isMulti = state.players.length > 2;
 
-    // Determine the local player index:
+    if (isMulti) {
+      // 3 or 4 players: Center square (mid, mid) is the common goal!
+      if (el.goalNorth) el.goalNorth.style.display = "none";
+      if (el.goalSouth) el.goalSouth.style.display = "none";
+      if (el.goalEast) el.goalEast.style.display = "none";
+      if (el.goalWest) el.goalWest.style.display = "none";
+
+      const mid = Math.floor(sz / 2);
+
+      document.querySelectorAll(".board-cell").forEach(cell => {
+        const r = parseInt(cell.dataset.r, 10);
+        const c = parseInt(cell.dataset.c, 10);
+
+        cell.classList.remove("my-endzone-cell", "opponent-endzone-cell");
+        cell.style.removeProperty("--endzone-color");
+
+        if (r === mid && c === mid) {
+          cell.classList.add("common-goal-cell");
+          if (!cell.querySelector(".common-goal-indicator")) {
+            const ind = document.createElement("div");
+            ind.className = "common-goal-indicator";
+            ind.title = "Felles målrute";
+            ind.innerHTML = `<svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
+            cell.appendChild(ind);
+          }
+        } else {
+          cell.classList.remove("common-goal-cell");
+          const ind = cell.querySelector(".common-goal-indicator");
+          if (ind) ind.remove();
+        }
+      });
+      return;
+    }
+
+    // 2-player mode: Standard 9x9 opposite edge endzones
     const myIdx = (state.mode === "online" ? state.playerIndex : (state.mode === "bot" ? 0 : state.currentTurn));
-
     const p1 = state.players[0];
     const p2 = state.players[1];
-    const p3 = state.players[2];
-    const p4 = state.players[3];
 
-    // North Goal: Row 0 is Player 1's goal (reaches from bottom to top)
     if (el.goalNorth && p1) {
       el.goalNorth.style.display = "block";
       el.goalNorth.style.setProperty("--goal-color", p1.color);
@@ -2158,7 +2242,6 @@
       el.goalNorth.innerHTML = "";
     }
 
-    // South Goal: Row 8 is Player 2's goal (reaches from top to bottom)
     if (el.goalSouth && p2) {
       el.goalSouth.style.display = "block";
       el.goalSouth.style.setProperty("--goal-color", p2.color);
@@ -2166,43 +2249,21 @@
       el.goalSouth.innerHTML = "";
     }
 
-    // East Goal: Col 8 is Player 3's goal (in 3+ player games)
-    if (el.goalEast) {
-      if (state.players.length >= 3 && p3) {
-        el.goalEast.style.display = "block";
-        el.goalEast.style.setProperty("--goal-color", p3.color);
-        el.goalEast.style.background = `linear-gradient(180deg, transparent 5%, ${p3.color} 50%, transparent 95%)`;
-        el.goalEast.innerHTML = "";
-      } else {
-        el.goalEast.style.display = "none";
-      }
-    }
+    if (el.goalEast) el.goalEast.style.display = "none";
+    if (el.goalWest) el.goalWest.style.display = "none";
 
-    // West Goal: Col 0 is Player 4's goal (in 4 player games)
-    if (el.goalWest) {
-      if (state.players.length >= 4 && p4) {
-        el.goalWest.style.display = "block";
-        el.goalWest.style.setProperty("--goal-color", p4.color);
-        el.goalWest.style.background = `linear-gradient(180deg, transparent 5%, ${p4.color} 50%, transparent 95%)`;
-        el.goalWest.innerHTML = "";
-      } else {
-        el.goalWest.style.display = "none";
-      }
-    }
-
-    // Reflect player's color directly in the 9x9 board endzone cells
     document.querySelectorAll(".board-cell").forEach(cell => {
       const r = parseInt(cell.dataset.r, 10);
       const c = parseInt(cell.dataset.c, 10);
 
-      cell.classList.remove("my-endzone-cell", "opponent-endzone-cell");
+      cell.classList.remove("common-goal-cell", "my-endzone-cell", "opponent-endzone-cell");
       cell.style.removeProperty("--endzone-color");
+      const ind = cell.querySelector(".common-goal-indicator");
+      if (ind) ind.remove();
 
       let goalIdx = -1;
       if (r === 0) goalIdx = 0;
-      else if (r === 8) goalIdx = 1;
-      else if (c === 8 && state.players.length >= 3) goalIdx = 2;
-      else if (c === 0 && state.players.length >= 4) goalIdx = 3;
+      else if (r === sz - 1) goalIdx = 1;
 
       if (goalIdx !== -1 && state.players[goalIdx]) {
         const gp = state.players[goalIdx];
@@ -2233,14 +2294,15 @@
       ghost.style.border = `1px solid #ffffff`;
     }
 
+    const sz = getBoardSize();
     if (orientation === "H") {
-      ghost.style.top = `${((r + 1) / 9) * 100}%`;
-      ghost.style.left = `${(c / 9) * 100}%`;
-      ghost.style.width = `${(2 / 9) * 100}%`;
+      ghost.style.top = `${((r + 1) / sz) * 100}%`;
+      ghost.style.left = `${(c / sz) * 100}%`;
+      ghost.style.width = `${(2 / sz) * 100}%`;
     } else {
-      ghost.style.left = `${((c + 1) / 9) * 100}%`;
-      ghost.style.top = `${(r / 9) * 100}%`;
-      ghost.style.height = `${(2 / 9) * 100}%`;
+      ghost.style.left = `${((c + 1) / sz) * 100}%`;
+      ghost.style.top = `${(r / sz) * 100}%`;
+      ghost.style.height = `${(2 / sz) * 100}%`;
     }
 
     el.boardWallsLayer.appendChild(ghost);
@@ -2297,7 +2359,11 @@
     soundEngine.playVictory();
     el.victoryWinnerImg.src = getMonImg(winner.avatar);
     el.victoryTitle.textContent = `${winner.name} Vinner!`;
-    el.victoryDesc.textContent = `Gratulerer! ${winner.name} manøvrerte monsteret sitt i mål over brettet!`;
+    if (state.players && state.players.length > 2) {
+      el.victoryDesc.textContent = `Gratulerer! ${winner.name} nådde fellesmålet i midten først og vant partiet!`;
+    } else {
+      el.victoryDesc.textContent = `Gratulerer! ${winner.name} manøvrerte monsteret sitt i mål over brettet!`;
+    }
 
     el.statTurnCount.textContent = state.turnCount;
     el.statWallsPlaced.textContent = state.walls.length;
