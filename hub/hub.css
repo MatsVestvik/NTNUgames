@@ -391,11 +391,17 @@ body {
   border-radius: 6px;
 }
 
-/* Games Grid */
+/* Games Grid - Standard 2-column layout matching Daily Games size */
 .games-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .games-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .game-card {
@@ -407,6 +413,7 @@ body {
   padding: 1.75rem;
   display: flex;
   flex-direction: column;
+  min-height: 240px;
   text-decoration: none;
   color: inherit;
   box-shadow: var(--card-shadow);
