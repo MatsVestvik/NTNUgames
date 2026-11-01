@@ -41,10 +41,13 @@
 
       <div class="header-right">
         <button type="button" class="icon-btn" id="btnAudioToggle" title="Skru av/på lydeffekter" aria-label="Lyd">
-          <span id="audioIcon">🔊</span>
+          <span id="audioIcon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
+          </span>
         </button>
         <button type="button" class="icon-btn" id="btnRulesModal" title="Spilleregler &amp; Tips" aria-label="Hjelp">
-          <span>❓</span> Regler
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          <span>Regler</span>
         </button>
         <button type="button" class="btn-leave-room hidden" id="btnLeaveRoomHeader">
           Forlat rom
@@ -72,13 +75,16 @@
           <!-- Mode Navigation Tabs -->
           <div class="lobby-tabs" role="tablist">
             <button type="button" class="lobby-tab-btn active" id="tabOnline" role="tab" aria-selected="true">
-              🌐 Nettspill
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+              <span>Nettspill</span>
             </button>
             <button type="button" class="lobby-tab-btn" id="tabLocal" role="tab" aria-selected="false">
-              🛋️ Samme skjerm
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+              <span>Samme skjerm</span>
             </button>
             <button type="button" class="lobby-tab-btn" id="tabBot" role="tab" aria-selected="false">
-              🤖 Mot Bot
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="9" y="9" width="2" height="2"></rect><rect x="13" y="9" width="2" height="2"></rect><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+              <span>Mot Bot</span>
             </button>
           </div>
 
@@ -89,7 +95,7 @@
               <div class="online-profile-card">
                 <div class="opc-header">
                   <div class="opc-title-group">
-                    <span class="opc-badge">👤 Spillerprofil</span>
+                    <span class="opc-badge">Spillerprofil</span>
                     <h3 class="opc-title">Ditt navn & din figur</h3>
                   </div>
                   <span class="opc-hint">Figuren representerer deg på brettet i alle kamper</span>
@@ -101,7 +107,9 @@
                     <div class="avatar-input-combo">
                       <div class="avatar-circle-preview clickable" id="btnPreviewAvatarClick" title="Klikk for å tilpasse figuren din">
                         <img src="" id="onlineAvatarPreview" alt="Valgt figur" />
-                        <span class="avatar-edit-badge">✏️</span>
+                        <span class="avatar-edit-badge" aria-hidden="true">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                        </span>
                       </div>
                       <input type="text" id="createPlayerName" class="text-input" maxlength="18"
                         placeholder="Skriv inn navn..." value="Spiller 1" required />
@@ -115,10 +123,12 @@
                     <div class="character-preview-widget" id="charPreviewWidget">
                       <div class="cpw-actions">
                         <button type="button" class="btn-customize-char" id="btnOpenCharCreator">
-                          🎨 Tilpass din figur
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.992 6.648 17.5 2 12 2z"></path></svg>
+                          <span>Tilpass din figur</span>
                         </button>
                         <button type="button" class="btn-random-char" id="btnQuickRandomChar" title="Generer en ny tilfeldig figur">
-                          🎲 Tilfeldig
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"></circle><circle cx="15.5" cy="15.5" r="1.5" fill="currentColor"></circle><circle cx="15.5" cy="8.5" r="1.5" fill="currentColor"></circle><circle cx="8.5" cy="15.5" r="1.5" fill="currentColor"></circle><circle cx="12" cy="12" r="1.5" fill="currentColor"></circle></svg>
+                          <span>Tilfeldig</span>
                         </button>
                       </div>
                       <div class="cpw-palette-row">
@@ -137,7 +147,7 @@
                 <div class="action-box card-theme-amber">
                   <div class="action-box-header">
                     <div class="box-badge-row">
-                      <span class="action-card-badge badge-amber">👑 Romvert</span>
+                      <span class="action-card-badge badge-amber">Romvert</span>
                     </div>
                     <h3 class="box-title">Opprett nytt parti</h3>
                     <p class="box-desc">Start et parti og inviter venner med 4-bokstavskode eller direktelenke.</p>
@@ -155,7 +165,7 @@
                   </div>
 
                   <button type="button" class="primary-btn pulse-glow" id="btnSubmitCreate">
-                    ✨ Opprett rom
+                    Opprett rom
                   </button>
                 </div>
 
@@ -163,7 +173,7 @@
                 <div class="action-box card-theme-cyan">
                   <div class="action-box-header">
                     <div class="box-badge-row">
-                      <span class="action-card-badge badge-cyan">🚀 Bli med</span>
+                      <span class="action-card-badge badge-cyan">Bli med</span>
                     </div>
                     <h3 class="box-title">Bli med med kode</h3>
                     <p class="box-desc">Skriv inn koden du har fått fra romverten eller Party Lounge.</p>
@@ -179,7 +189,7 @@
                   </div>
 
                   <button type="button" class="secondary-btn btn-cyan-accent" id="btnSubmitJoin">
-                    🚀 Koble til parti
+                    Koble til parti
                   </button>
                 </div>
               </div>
@@ -209,7 +219,7 @@
               </div>
 
               <button type="button" class="primary-btn pulse-glow" id="btnStartLocal">
-                🎮 Start lokalt parti
+                Start lokalt parti
               </button>
             </div>
           </div>
@@ -232,14 +242,18 @@
                 <div class="bot-char-select-card">
                   <div class="avatar-circle-preview clickable" id="btnPreviewAvatarBotClick" title="Klikk for å tilpasse figuren din">
                     <img src="" id="botAvatarPreview" alt="Din figur" />
-                    <span class="avatar-edit-badge">✏️</span>
+                    <span class="avatar-edit-badge" aria-hidden="true">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                    </span>
                   </div>
                   <div class="cpw-actions">
                     <button type="button" class="btn-customize-char" id="btnOpenCharCreatorBot">
-                      🎨 Tilpass figur
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.992 6.648 17.5 2 12 2z"></path></svg>
+                      <span>Tilpass figur</span>
                     </button>
                     <button type="button" class="btn-random-char" id="btnRandomCharBot" title="Generer ny tilfeldig figur">
-                      🎲 Tilfeldig
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"></circle><circle cx="15.5" cy="15.5" r="1.5" fill="currentColor"></circle><circle cx="15.5" cy="8.5" r="1.5" fill="currentColor"></circle><circle cx="8.5" cy="15.5" r="1.5" fill="currentColor"></circle><circle cx="12" cy="12" r="1.5" fill="currentColor"></circle></svg>
+                      <span>Tilfeldig</span>
                     </button>
                   </div>
                 </div>
@@ -263,7 +277,7 @@
               </div>
 
               <button type="button" class="primary-btn pulse-glow" id="btnStartBot">
-                ⚔️ Start soloduel
+                Start soloduel
               </button>
             </div>
           </div>
@@ -282,7 +296,8 @@
             </div>
             <div class="waiting-actions">
               <button type="button" class="share-btn" id="btnCopyInviteLink">
-                🔗 Kopier lenke
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                <span>Kopier lenke</span>
               </button>
             </div>
           </div>
@@ -300,10 +315,10 @@
           <div class="waiting-footer">
             <div class="waiting-footer-actions">
               <button type="button" class="secondary-btn btn-add-bot" id="btnAddBotOnline">
-                🤖 + Legg til bot
+                + Legg til bot
               </button>
               <button type="button" class="primary-btn start-game-btn pulse-glow" id="btnHostStartOnline">
-                🎮 Start spill nå
+                Start spill nå
               </button>
             </div>
             <p class="hint-text" id="dispHostHint">
@@ -326,21 +341,8 @@
               </div>
               <div class="turn-text-group">
                 <span class="turn-label" id="turnLabel">DIN TUR!</span>
-                <span class="turn-sub" id="turnSub">Klikk en rute for å flytte, eller velg en vegg.</span>
+                <span class="turn-sub" id="turnSub">Klikk en rute for å flytte brikken, eller klikk en kantlinje for å bygge en vegg.</span>
               </div>
-            </div>
-
-            <!-- Quick Mode Indicator / Switcher -->
-            <div class="mode-toggles">
-              <button type="button" class="mode-btn active" id="btnModePawn" title="Flytt brikken din">
-                ♟️ Flytt brikke
-              </button>
-              <button type="button" class="mode-btn" id="btnModeWall" title="Plasser en sperrevegg">
-                🧱 Bygg vegg (<span id="btnWallsCount">10</span>)
-              </button>
-              <button type="button" class="icon-sub-btn" id="btnRotateWall" title="Roter vegg (Tast: R / Mellomrom)">
-                🔄 <span id="labelOrientation">Horisontal</span>
-              </button>
             </div>
           </div>
 
@@ -354,18 +356,10 @@
             <!-- The Quoridor Board Wrapper -->
             <div class="board-outer-container">
               <!-- Edge Goal Indicators for P1, P2, P3, P4 -->
-              <div class="goal-indicator goal-north" id="goalNorth" title="Mållinje for Spiller 1 (Rød)">
-                <span>MÅLLINJE RAD 0</span>
-              </div>
-              <div class="goal-indicator goal-south" id="goalSouth" title="Mållinje for Spiller 2 (Cyan)">
-                <span>MÅLLINJE RAD 8</span>
-              </div>
-              <div class="goal-indicator goal-west" id="goalWest" title="Mållinje for Spiller 4 (Lilla)">
-                <span>MÅLLINJE KOL 0</span>
-              </div>
-              <div class="goal-indicator goal-east" id="goalEast" title="Mållinje for Spiller 3 (Grønn)">
-                <span>MÅLLINJE KOL 8</span>
-              </div>
+              <div class="goal-indicator goal-north" id="goalNorth"></div>
+              <div class="goal-indicator goal-south" id="goalSouth"></div>
+              <div class="goal-indicator goal-west" id="goalWest"></div>
+              <div class="goal-indicator goal-east" id="goalEast"></div>
 
               <!-- Interactive 9x9 Board Grid -->
               <div class="board-grid-wrapper" id="boardWrapper">
@@ -376,20 +370,7 @@
                   <!-- Placed and preview walls rendered here -->
                 </div>
                 <div class="board-grooves-layer" id="boardGroovesLayer">
-                  <!-- 8x8 intersection slots for hover & touch wall placement -->
-                </div>
-
-                <!-- Floating On-Board Wall Confirmation & Rotation Toolbar -->
-                <div class="floating-wall-toolbar hidden" id="floatingWallToolbar">
-                  <button type="button" class="fwt-btn fwt-rotate" id="btnFloatRotate" title="Roter 90° (Tast: R / Mellomrom / Høyreklikk)">
-                    <span class="fwt-icon">🔄</span> Roter
-                  </button>
-                  <button type="button" class="fwt-btn fwt-confirm" id="btnFloatConfirm" title="Plasser vegg her (Tast: Enter)">
-                    <span class="fwt-icon">✓</span> Plasser
-                  </button>
-                  <button type="button" class="fwt-btn fwt-cancel" id="btnFloatCancel" title="Avbryt (Tast: Esc)">
-                    ✕
-                  </button>
+                  <!-- Interactive border slots along cell borders for intuitive hover and click wall placement -->
                 </div>
 
                 <!-- Floating Wall Error/Warning Tooltip -->
@@ -403,55 +384,16 @@
             </div>
           </div>
 
-          <!-- Modern Ergonomic Action Command Dock -->
-          <div class="game-action-dock" id="gameActionDock">
-            <div class="dock-mode-group">
-              <button type="button" class="dock-btn active" id="btnDockPawn" title="Flytt monsteret ditt til en ledig rute (Tast: V / Piltaster)">
-                <span class="dock-btn-icon">♟️</span>
-                <div class="dock-btn-text">
-                  <span class="dock-btn-title">Flytt brikke</span>
-                  <span class="dock-btn-sub">Klikk en rute eller bruk piltaster</span>
-                </div>
-              </button>
-              <button type="button" class="dock-btn" id="btnDockWall" title="Bygg en 2-ruters sperrevegg på brettet (Tast: V)">
-                <span class="dock-btn-icon">🧱</span>
-                <div class="dock-btn-text">
-                  <span class="dock-btn-title">Bygg vegg</span>
-                  <span class="dock-btn-sub"><strong id="dockWallsLeft">10</strong> vegger igjen</span>
-                </div>
-              </button>
-            </div>
-
-            <div class="dock-wall-options" id="dockWallOptions">
-              <button type="button" class="dock-rotate-btn" id="btnDockRotate" title="Roter vegg mellom horisontal og vertikal (Tast: R / Mellomrom / Høyreklikk)">
-                <span class="rotate-icon">🔄</span>
-                <div class="rotate-info">
-                  <span class="rotate-title" id="dockRotateTitle">Retning: Horisontal</span>
-                  <span class="rotate-hint">Tast: <strong>R</strong> • Høyreklikk • Rullehjul</span>
-                </div>
-                <span class="rotate-preview-badge" id="dockRotateBadge">↔</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Game Bottom Controls & Chat/Reactions Bar -->
+          <!-- Game Bottom Controls -->
           <div class="game-bottom-bar">
-            <div class="reactions-bar">
-              <span class="reactions-title">Reaksjon:</span>
-              <button type="button" class="reaction-chip" data-emoji="🔥">🔥</button>
-              <button type="button" class="reaction-chip" data-emoji="😂">😂</button>
-              <button type="button" class="reaction-chip" data-emoji="🧱">🧱</button>
-              <button type="button" class="reaction-chip" data-emoji="⚡">⚡</button>
-              <button type="button" class="reaction-chip" data-emoji="😱">😱</button>
-              <button type="button" class="reaction-chip" data-emoji="👏">👏</button>
-            </div>
-
             <div class="game-control-buttons">
               <button type="button" class="btn-subtle" id="btnRestartGame">
-                🔄 Omstart
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                <span>Nytt spill</span>
               </button>
               <button type="button" class="btn-subtle" id="btnBackToLobby">
-                🚪 Til lobby
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                <span>Til lobby</span>
               </button>
             </div>
           </div>
@@ -470,11 +412,13 @@
       <div class="modal-card">
         <div class="modal-header">
           <h3 id="rulesTitle">Slik spiller du Korridorer</h3>
-          <button type="button" class="modal-close-btn" id="btnCloseRules" aria-label="Lukk">✕</button>
+          <button type="button" class="modal-close-btn" id="btnCloseRules" aria-label="Lukk">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
         </div>
         <div class="modal-body rules-content">
           <div class="rule-block">
-            <div class="rule-icon">🎯</div>
+            <div class="rule-step-badge">01</div>
             <div>
               <h4>Målet med spillet</h4>
               <p>Førstemann som fører monsteret sitt til en hvilken som helst rute på motsatt side av brettet vinner!
@@ -483,17 +427,16 @@
           </div>
 
           <div class="rule-block">
-            <div class="rule-icon">♟️</div>
+            <div class="rule-step-badge">02</div>
             <div>
               <h4>Hver tur har du ett valg:</h4>
               <p><strong>1. Flytt monsteret:</strong> Flytt ett steg ortogonalt (opp, ned, venstre eller høyre).</p>
-              <p><strong>2. Bygg en vegg:</strong> Plasser en 2-ruters vegg for å bremse eller lede motstanderne inn i
-                en blindvei!</p>
+              <p><strong>2. Bygg en vegg:</strong> Plasser en 2-ruters vegg på kantlinjene mellom rutene for å lede motstanderne inn i en blindvei! (Ubegrenset antall vegger).</p>
             </div>
           </div>
 
           <div class="rule-block">
-            <div class="rule-icon">🦘</div>
+            <div class="rule-step-badge">03</div>
             <div>
               <h4>Hoppe over motstandere</h4>
               <p>Hvis du står rett foran et annet monster uten vegg mellom dere, kan du <strong>hoppe rett over</strong>
@@ -503,7 +446,7 @@
           </div>
 
           <div class="rule-block">
-            <div class="rule-icon">🚫</div>
+            <div class="rule-step-badge">04</div>
             <div>
               <h4>Den gylne regelen for vegger</h4>
               <p>Det er <strong>strengt forbudt</strong> å mure en motspiller helt inne. Det må alltid finnes minst én
@@ -512,7 +455,7 @@
           </div>
 
           <div class="rule-block">
-            <div class="rule-icon">⌨️</div>
+            <div class="rule-step-badge">05</div>
             <div>
               <h4>Hurtigtaster</h4>
               <p>Trykk <strong>R</strong> eller <strong>Mellomrom</strong> for å rotere veggen. Trykk
@@ -554,13 +497,15 @@
 
         <div class="victory-actions">
           <button type="button" class="primary-btn pulse-glow" id="btnVictoryRematch">
-            🔄 Spill omkamp
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+            <span>Spill omkamp</span>
           </button>
           <button type="button" class="secondary-btn" id="btnVictoryLounge">
             ‹ Tilbake til Lounge
           </button>
           <button type="button" class="secondary-btn" id="btnVictoryLobby">
-            🚪 Hovedmeny
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            <span>Hovedmeny</span>
           </button>
         </div>
       </div>
@@ -572,7 +517,7 @@
   <!-- Character Creator & Compositor -->
   <script src="/character/character-creator.js"></script>
   <!-- Main Game App Script -->
-  <script src="/korridorer/app.js?v=1.1"></script>
+  <script src="/korridorer/app.js?v=1.2"></script>
 </body>
 
 </html>

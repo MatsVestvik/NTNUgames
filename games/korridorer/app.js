@@ -435,7 +435,8 @@
     // UI state
     actionState: "pawn", // 'pawn' or 'wall'
     wallOrientation: "H", // 'H' or 'V'
-    hoveredIntersection: null, // [r, c]
+    hoveredBorder: null, // { r, c, orientation }
+    hoveredIntersection: null, // [r, c] legacy compatibility
     stagedWall: null, // null or { r, c, orientation }
 
     // Active Match State
@@ -745,10 +746,11 @@
         <span class="local-p-badge" style="background:${cfg.color};">P${i + 1}</span>
         <button type="button" class="local-p-avatar-btn" id="btnLocalAvatarP${i}" title="Tilpass figur for Spiller ${i + 1}">
           <img src="${getMonImg(pData.avatar)}" class="local-p-avatar-img" id="imgLocalAvatarP${i}" alt="Figur" />
-          <span class="btn-customize-mini-badge">🎨</span>
         </button>
         <input type="text" class="local-p-input" id="inputLocalNameP${i}" maxlength="18" value="${pData.name}" placeholder="${cfg.defaultName}" />
-        <button type="button" class="btn-local-random" id="btnLocalRandomP${i}" title="Tilfeldig figur">🎲</button>
+        <button type="button" class="btn-local-random" id="btnLocalRandomP${i}" title="Tilfeldig figur">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"></circle><circle cx="15.5" cy="15.5" r="1.5" fill="currentColor"></circle><circle cx="15.5" cy="8.5" r="1.5" fill="currentColor"></circle><circle cx="8.5" cy="15.5" r="1.5" fill="currentColor"></circle><circle cx="12" cy="12" r="1.5" fill="currentColor"></circle></svg>
+        </button>
       `;
 
       // Open character creator on avatar click
@@ -828,28 +830,50 @@
       }
     }
 
-    // 8x8 wall groove intersection points (r: 0-7, c: 0-7)
-    // Board is 9 cells with 8 gaps.
-    // Each cell is 1fr, gap is 8px.
+    // 64 Horizontal border slots (r: 0-7, c: 0-7)
     for (let r = 0; r < 8; r++) {
       for (let c = 0; c < 8; c++) {
-        const groove = document.createElement("div");
-        groove.className = "groove-intersection";
-        groove.dataset.r = r;
-        groove.dataset.c = c;
+        const slotH = document.createElement("div");
+        slotH.className = "border-slot border-slot-h";
+        slotH.dataset.r = r;
+        slotH.dataset.c = c;
+        slotH.dataset.orientation = "H";
+        slotH.style.top = `${((r + 1) / 9) * 100}%`;
+        slotH.style.left = `${(c / 9) * 100}%`;
+        slotH.style.width = `${(2 / 9) * 100}%`;
 
-        // Position percentage: cell index + 1
-        // In CSS grid: percentage calculation: (index + 1) / 9 * 100%
-        groove.style.top = `${((r + 1) / 9) * 100}%`;
-        groove.style.left = `${((c + 1) / 9) * 100}%`;
-
-        groove.addEventListener("mouseenter", () => onGrooveHover(r, c));
-        groove.addEventListener("mouseleave", () => onGrooveLeave(r, c));
-        groove.addEventListener("click", () => onGrooveClick(r, c));
-
-        el.boardGroovesLayer.appendChild(groove);
+        slotH.addEventListener("mouseenter", () => onBorderHover(r, c, "H"));
+        slotH.addEventListener("mouseleave", () => onBorderLeave(r, c, "H"));
+        slotH.addEventListener("click", () => onBorderClick(r, c, "H"));
+        el.boardGroovesLayer.appendChild(slotH);
       }
     }
+
+    // 64 Vertical border slots (r: 0-7, c: 0-7)
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const slotV = document.createElement("div");
+        slotV.className = "border-slot border-slot-v";
+        slotV.dataset.r = r;
+        slotV.dataset.c = c;
+        slotV.dataset.orientation = "V";
+        slotV.style.left = `${((c + 1) / 9) * 100}%`;
+        slotV.style.top = `${(r / 9) * 100}%`;
+        slotV.style.height = `${(2 / 9) * 100}%`;
+
+        slotV.addEventListener("mouseenter", () => onBorderHover(r, c, "V"));
+        slotV.addEventListener("mouseleave", () => onBorderLeave(r, c, "V"));
+        slotV.addEventListener("click", () => onBorderClick(r, c, "V"));
+        el.boardGroovesLayer.appendChild(slotV);
+      }
+    }
+  }
+
+  function updateAudioIcon() {
+    if (!el.audioIcon) return;
+    el.audioIcon.innerHTML = soundEngine.enabled
+      ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>`
+      : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>`;
   }
 
   // --- UI Event Listeners ---
@@ -857,8 +881,9 @@
     // Audio Toggle
     el.btnAudioToggle.addEventListener("click", () => {
       soundEngine.enabled = !soundEngine.enabled;
-      el.audioIcon.textContent = soundEngine.enabled ? "🔊" : "🔇";
+      updateAudioIcon();
     });
+    updateAudioIcon();
 
     // Rules Modal
     el.btnRulesModal.addEventListener("click", () => el.modalRules.classList.remove("hidden"));
@@ -926,12 +951,12 @@
     });
     el.btnStartBot.addEventListener("click", handleStartBotGame);
 
-    // In-Game Mode Toggles (Pawn Move vs Place Wall)
-    el.btnModePawn.addEventListener("click", () => setActionState("pawn"));
-    el.btnModeWall.addEventListener("click", () => setActionState("wall"));
-    el.btnRotateWall.addEventListener("click", toggleWallOrientation);
+    // In-Game Mode Toggles (if present)
+    if (el.btnModePawn) el.btnModePawn.addEventListener("click", () => setActionState("pawn"));
+    if (el.btnModeWall) el.btnModeWall.addEventListener("click", () => setActionState("wall"));
+    if (el.btnRotateWall) el.btnRotateWall.addEventListener("click", toggleWallOrientation);
 
-    // Ergonomic Action Command Dock Listeners
+    // Ergonomic Action Command Dock Listeners (if present)
     if (el.btnDockPawn) el.btnDockPawn.addEventListener("click", () => setActionState("pawn"));
     if (el.btnDockWall) el.btnDockWall.addEventListener("click", () => setActionState("wall"));
     if (el.btnDockRotate) el.btnDockRotate.addEventListener("click", toggleWallOrientation);
@@ -1053,7 +1078,10 @@
 
     // In-Game Reactions
     document.querySelectorAll(".reaction-chip").forEach(btn => {
-      btn.addEventListener("click", () => sendReaction(btn.dataset.emoji));
+      btn.addEventListener("click", () => {
+        const msg = btn.dataset.msg || btn.dataset.emoji || btn.textContent.trim();
+        if (msg) sendReaction(msg);
+      });
     });
 
     // In-Game Footer Controls
@@ -1142,7 +1170,7 @@
       if (!data.ok) {
         alert(data.error || "Kunne ikke opprette rom.");
         el.btnSubmitCreate.disabled = false;
-        el.btnSubmitCreate.textContent = "✨ Opprett rom";
+        el.btnSubmitCreate.textContent = "Opprett rom";
         return;
       }
 
@@ -1158,7 +1186,7 @@
       console.error(err);
       alert("Nettverksfeil ved opprettelse av rom.");
       el.btnSubmitCreate.disabled = false;
-      el.btnSubmitCreate.textContent = "✨ Opprett rom";
+      el.btnSubmitCreate.textContent = "Opprett rom";
     }
   }
 
@@ -1190,7 +1218,7 @@
       if (!data.ok) {
         alert(data.error || "Kunne ikke bli med i rommet.");
         el.btnSubmitJoin.disabled = false;
-        el.btnSubmitJoin.textContent = "🚀 Koble til parti";
+        el.btnSubmitJoin.textContent = "Koble til parti";
         return;
       }
 
@@ -1206,7 +1234,7 @@
       console.error(err);
       alert("Nettverksfeil ved tilkobling til rom.");
       el.btnSubmitJoin.disabled = false;
-      el.btnSubmitJoin.textContent = "🚀 Koble til parti";
+      el.btnSubmitJoin.textContent = "Koble til parti";
     }
   }
 
@@ -1216,7 +1244,7 @@
       .writeText(joinUrl)
       .then(() => {
         const orig = el.btnCopyInviteLink.textContent;
-        el.btnCopyInviteLink.textContent = "✓ Kopiert!";
+        el.btnCopyInviteLink.textContent = "Kopiert!";
         setTimeout(() => (el.btnCopyInviteLink.textContent = orig), 2000);
       })
       .catch(() => alert(`Kopier denne lenken: ${joinUrl}`));
@@ -1240,14 +1268,14 @@
       if (!data.ok) {
         alert(data.error || "Kunne ikke starte spill.");
         el.btnHostStartOnline.disabled = false;
-        el.btnHostStartOnline.textContent = "🎮 Start spill nå";
+        el.btnHostStartOnline.textContent = "Start spill nå";
       } else if (data.state) {
         syncOnlineState(data.state);
       }
     } catch (err) {
       console.error(err);
       el.btnHostStartOnline.disabled = false;
-      el.btnHostStartOnline.textContent = "🎮 Start spill nå";
+      el.btnHostStartOnline.textContent = "Start spill nå";
     }
   }
 
@@ -1279,7 +1307,7 @@
     } finally {
       if (el.btnAddBotOnline) {
         el.btnAddBotOnline.disabled = false;
-        el.btnAddBotOnline.textContent = "🤖 + Legg til bot";
+        el.btnAddBotOnline.textContent = "+ Legg til bot";
       }
     }
   }
@@ -1370,7 +1398,7 @@
       } else {
         card.className = "player-slot-card slot-empty";
         card.innerHTML = `
-          <div class="slot-empty-icon">⏳</div>
+          <div class="slot-empty-icon">--</div>
           <span class="slot-name" style="color:var(--text-muted);">Ledig plass</span>
           <span class="slot-role-tag">Venter…</span>
         `;
@@ -1387,10 +1415,10 @@
       }
       el.btnHostStartOnline.disabled = false;
       if (data.players.length >= 2) {
-        el.btnHostStartOnline.textContent = `🎮 Start spill nå (${data.players.length} spillere)`;
+        el.btnHostStartOnline.textContent = `Start spill nå (${data.players.length} spillere)`;
         el.dispHostHint.textContent = "Klar til start! Eller legg til flere spillere/boter.";
       } else {
-        el.btnHostStartOnline.textContent = "🎮 Start spill nå (med bot)";
+        el.btnHostStartOnline.textContent = "Start spill nå (med bot)";
         el.dispHostHint.textContent = "Du kan invitere en venn, eller starte med en datastyrt motstander.";
       }
     } else {
@@ -1410,8 +1438,6 @@
     state.walls = [];
     state.turnCount = 0;
 
-    const wallsCount = localPlayersCount === 2 ? 10 : localPlayersCount === 3 ? 6 : 5;
-
     state.players = [];
     for (let i = 0; i < localPlayersCount; i++) {
       const cfg = PLAYER_DEFAULTS[i];
@@ -1423,7 +1449,7 @@
         color: extractCharacterColor(pData.avatar, cfg.color),
         colorName: cfg.colorName,
         pos: [...cfg.start],
-        walls: wallsCount,
+        walls: 999,
         goalDesc: cfg.goalDesc,
         isHost: i === 0,
       });
@@ -1454,7 +1480,6 @@
     localStorage.setItem("korridorer_player_name", humanName);
 
     const count = botPlayersCount;
-    const wallsCount = count === 2 ? 10 : 5;
 
     state.players = [
       {
@@ -1464,7 +1489,7 @@
         color: extractCharacterColor(selectedBotAvatar, PLAYER_DEFAULTS[0].color),
         colorName: PLAYER_DEFAULTS[0].colorName,
         pos: [...PLAYER_DEFAULTS[0].start],
-        walls: wallsCount,
+        walls: 999,
         goalDesc: PLAYER_DEFAULTS[0].goalDesc,
         isHost: true,
       },
@@ -1487,7 +1512,7 @@
         color: extractCharacterColor(botAvatars[i - 1], cfg.color),
         colorName: cfg.colorName,
         pos: [...cfg.start],
-        walls: wallsCount,
+        walls: 999,
         goalDesc: cfg.goalDesc,
         isHost: false,
         isBot: true,
@@ -1542,8 +1567,8 @@
 
     let placedWall = false;
 
-    // Tactical Wall Consideration: If bot has walls and human is getting uncomfortably close
-    if (botPlayer.walls > 0 && (humanDist <= 3 || (humanDist < botDist && state.botDifficulty === "hard"))) {
+    // Tactical Wall Consideration: If human is getting uncomfortably close
+    if (humanDist <= 3 || (humanDist < botDist && state.botDifficulty === "hard")) {
       // Find candidate walls near human
       const hr = humanPlayer.pos[0];
       const hc = humanPlayer.pos[1];
@@ -1601,7 +1626,7 @@
     const label = isH ? "Horisontal" : "Vertikal";
     if (el.labelOrientation) el.labelOrientation.textContent = label;
     if (el.dockRotateTitle) el.dockRotateTitle.textContent = `Retning: ${label}`;
-    if (el.dockRotateBadge) el.dockRotateBadge.textContent = isH ? "↔" : "↕";
+    if (el.dockRotateBadge) el.dockRotateBadge.textContent = label.toUpperCase();
   }
 
   function toggleWallOrientation() {
@@ -1609,7 +1634,10 @@
     updateOrientationUI();
     soundEngine.playWallRotate();
 
-    if (state.stagedWall) {
+    if (state.hoveredBorder) {
+      state.hoveredBorder.orientation = state.wallOrientation;
+      onBorderHover(state.hoveredBorder.r, state.hoveredBorder.c, state.wallOrientation);
+    } else if (state.stagedWall) {
       state.stagedWall.orientation = state.wallOrientation;
       updateStagedWallView();
     } else if (state.hoveredIntersection) {
@@ -1617,19 +1645,18 @@
     }
   }
 
-  function showGhostWallTooltip(msg, r, c, isStaged) {
+  function showGhostWallTooltip(msg, r, c, orientation = "H", isStaged = false) {
     if (!el.ghostWallTooltip) return;
     el.ghostWallTooltip.textContent = msg;
-    const topPct = ((r + 1) / 9) * 100;
-    const leftPct = ((c + 1) / 9) * 100;
+    const topPct = orientation === "H" ? ((r + 1) / 9) * 100 : (r / 9) * 100 + (1 / 9) * 100;
+    const leftPct = orientation === "H" ? (c / 9) * 100 + (1 / 9) * 100 : ((c + 1) / 9) * 100;
     el.ghostWallTooltip.style.top = `${topPct}%`;
     el.ghostWallTooltip.style.left = `${leftPct}%`;
 
-    // Position above or below depending on row and if toolbar is visible
     if (r === 0) {
-      el.ghostWallTooltip.style.transform = isStaged ? "translate(-50%, 150%)" : "translate(-50%, 80%)";
+      el.ghostWallTooltip.style.transform = isStaged ? "translate(-50%, 120%)" : "translate(-50%, 60%)";
     } else {
-      el.ghostWallTooltip.style.transform = isStaged ? "translate(-50%, -240%)" : "translate(-50%, -150%)";
+      el.ghostWallTooltip.style.transform = isStaged ? "translate(-50%, -200%)" : "translate(-50%, -150%)";
     }
     el.ghostWallTooltip.classList.remove("hidden");
   }
@@ -1701,8 +1728,8 @@
 
   function setActionState(action) {
     state.actionState = action;
-    el.btnModePawn.classList.toggle("active", action === "pawn");
-    el.btnModeWall.classList.toggle("active", action === "wall");
+    if (el.btnModePawn) el.btnModePawn.classList.toggle("active", action === "pawn");
+    if (el.btnModeWall) el.btnModeWall.classList.toggle("active", action === "wall");
     if (el.btnDockPawn) el.btnDockPawn.classList.toggle("active", action === "pawn");
     if (el.btnDockWall) el.btnDockWall.classList.toggle("active", action === "wall");
 
@@ -1758,32 +1785,37 @@
     }
   }
 
-  function onGrooveHover(r, c) {
+  function onBorderHover(r, c, orientation) {
     if (!state.gameActive) return;
+    state.hoveredBorder = { r, c, orientation };
     state.hoveredIntersection = [r, c];
+    state.wallOrientation = orientation;
+    updateOrientationUI();
 
-    // If a wall is currently staged, don't overwrite preview unless hovering staged wall
     if (state.stagedWall) return;
 
     const curPlayer = state.players[state.currentTurn];
     if (!curPlayer) return;
 
-    if (curPlayer.walls <= 0) {
-      showGhostWallTooltip("Ingen vegger igjen!", r, c, false);
-      return;
-    }
+    renderGhostWall(r, c, orientation, false);
 
-    renderGhostWall(r, c, state.wallOrientation, false);
-
-    const val = validateWallPlacement(r, c, state.wallOrientation, state.walls, state.players);
+    const val = validateWallPlacement(r, c, orientation, state.walls, state.players);
     if (!val.ok) {
-      showGhostWallTooltip(val.error, r, c, false);
+      showGhostWallTooltip(val.error, r, c, orientation, false);
     } else {
       hideGhostWallTooltip();
     }
   }
 
-  function onGrooveLeave(r, c) {
+  function onBorderLeave(r, c, orientation) {
+    if (
+      state.hoveredBorder &&
+      state.hoveredBorder.r === r &&
+      state.hoveredBorder.c === c &&
+      state.hoveredBorder.orientation === orientation
+    ) {
+      state.hoveredBorder = null;
+    }
     if (state.hoveredIntersection && state.hoveredIntersection[0] === r && state.hoveredIntersection[1] === c) {
       state.hoveredIntersection = null;
     }
@@ -1793,7 +1825,7 @@
     }
   }
 
-  function onGrooveClick(r, c) {
+  function onBorderClick(r, c, orientation) {
     if (!state.gameActive) return;
 
     // Check if it's user's turn
@@ -1804,26 +1836,33 @@
     }
 
     const curPlayer = state.players[state.currentTurn];
-    if (!curPlayer || curPlayer.walls <= 0) {
+    if (!curPlayer) return;
+
+    // Direct placement on border!
+    const val = validateWallPlacement(r, c, orientation, state.walls, state.players);
+    if (!val.ok) {
       soundEngine.playInvalid();
-      showGhostWallTooltip("Du har ingen vegger igjen!", r, c, false);
+      showGhostWallTooltip(val.error || "Ugyldig vegg", r, c, orientation, false);
       return;
     }
 
-    // Automatically switch to wall mode if not already
     if (state.actionState !== "wall") {
       setActionState("wall");
     }
 
-    // If clicking the currently staged wall: confirm placement immediately (fast double-click workflow)
-    if (state.stagedWall && state.stagedWall.r === r && state.stagedWall.c === c) {
-      confirmStagedWall();
-      return;
-    }
+    commitWallPlacement(r, c, orientation);
+  }
 
-    // Otherwise, stage this new intersection
-    stageWall(r, c, state.wallOrientation);
-    soundEngine.playWallRotate();
+  function onGrooveHover(r, c) {
+    onBorderHover(r, c, state.wallOrientation);
+  }
+
+  function onGrooveLeave(r, c) {
+    onBorderLeave(r, c, state.wallOrientation);
+  }
+
+  function onGrooveClick(r, c) {
+    onBorderClick(r, c, state.wallOrientation);
   }
 
   // Commit Pawn Move (Dispatch online or apply locally)
@@ -1911,7 +1950,7 @@
 
     // Local / Bot mode
     const curPlayer = state.players[state.currentTurn];
-    curPlayer.walls = Math.max(0, curPlayer.walls - 1);
+    curPlayer.wallsPlaced = (curPlayer.wallsPlaced || 0) + 1;
     state.walls.push({
       r: r,
       c: c,
@@ -1943,7 +1982,7 @@
     if (!curPlayer) return;
 
     el.turnPawnImg.src = getMonImg(curPlayer.avatar);
-    el.btnWallsCount.textContent = curPlayer.walls;
+    if (el.btnWallsCount) el.btnWallsCount.textContent = curPlayer.walls;
     if (el.dockWallsLeft) el.dockWallsLeft.textContent = curPlayer.walls;
     updateOrientationUI();
 
@@ -1953,20 +1992,22 @@
         el.turnSub.textContent = "Du er tilskuer.";
       } else if (state.playerIndex === state.currentTurn) {
         el.turnLabel.textContent = "DIN TUR!";
-        el.turnSub.textContent =
-          state.actionState === "pawn"
-            ? "Klikk en rute for å flytte monsteret ditt (eller velg en vegg)."
-            : "Klikk et kryss for å bygge en vegg (R / høyreklikk for å rotere).";
+        el.turnSub.textContent = "Klikk en rute for å flytte, eller en kantlinje for å bygge vegg.";
       } else {
         el.turnLabel.textContent = `${curPlayer.name}s tur`;
         el.turnSub.textContent = "Venter på trekk…";
       }
+    } else if (state.mode === "bot") {
+      if (state.currentTurn === 0) {
+        el.turnLabel.textContent = "DIN TUR!";
+        el.turnSub.textContent = "Klikk en rute for å flytte, eller en kantlinje for å bygge vegg.";
+      } else {
+        el.turnLabel.textContent = `${curPlayer.name} tenker…`;
+        el.turnSub.textContent = "Datamaskinen beregner neste trekk…";
+      }
     } else {
       el.turnLabel.textContent = `${curPlayer.name}s tur`;
-      el.turnSub.textContent =
-        state.actionState === "pawn"
-          ? "Klikk en rute for å flytte monsteret ditt (eller velg en vegg)."
-          : "Klikk et kryss for å bygge en vegg (R / høyreklikk for å rotere).";
+      el.turnSub.textContent = "Klikk en rute for å flytte, eller en kantlinje for å bygge vegg.";
     }
   }
 
@@ -1980,48 +2021,16 @@
       card.className = `player-game-card ${isTurn ? "active-turn" : ""}`;
       card.id = `playerCard_${idx}`;
 
-      const totalWalls = state.players.length === 2 ? 10 : state.players.length === 3 ? 6 : 5;
-      let slatsHtml = "";
-      for (let s = 0; s < totalWalls; s++) {
-        const isUsed = s >= p.walls;
-        slatsHtml += `<div class="wall-slat ${isUsed ? "used" : ""}" style="${!isUsed ? `background: ${p.color}; box-shadow: 0 0 6px ${p.color}88;` : ""}"></div>`;
-      }
-
       card.innerHTML = `
         <div class="pg-header">
-          <div class="pg-avatar-wrap" style="border-color:${p.color};">
+          <div class="pg-avatar-wrap">
             <img src="${getMonImg(p.avatar)}" class="pg-avatar-img" alt="${p.name}" />
-            ${p.isHost ? '<span class="pg-crown">👑</span>' : ""}
           </div>
           <div class="pg-info">
             <span class="pg-name">${p.name}</span>
-            <span class="pg-goal">${p.goalDesc || ""}</span>
           </div>
-        </div>
-        <div class="pg-walls-rack">
-          <div class="pg-walls-label">
-            <span>Vegger:</span>
-            <span><strong>${p.walls}</strong>/${totalWalls}</span>
-          </div>
-          <div class="pg-walls-slats">${slatsHtml}</div>
         </div>
       `;
-
-      // Allow clicking on active player's rack or avatar to switch modes easily
-      if (isTurn) {
-        const rack = card.querySelector(".pg-walls-rack");
-        if (rack) {
-          rack.style.cursor = "pointer";
-          rack.title = "Klikk for å bygge en vegg";
-          rack.addEventListener("click", () => setActionState("wall"));
-        }
-        const avatarWrap = card.querySelector(".pg-avatar-wrap");
-        if (avatarWrap) {
-          avatarWrap.style.cursor = "pointer";
-          avatarWrap.title = "Klikk for å flytte monsteret";
-          avatarWrap.addEventListener("click", () => setActionState("pawn"));
-        }
-      }
 
       if (idx % 2 === 0) {
         el.colPlayersLeft.appendChild(card);
@@ -2104,7 +2113,7 @@
         ? state.currentTurn === 0
         : true;
 
-    if (!isMyTurn || state.actionState !== "pawn") return;
+    if (!isMyTurn) return;
 
     const curPlayer = state.players[state.currentTurn];
     if (!curPlayer || !curPlayer.pos) return;
@@ -2143,48 +2152,27 @@
 
     // North Goal: Row 0 is Player 1's goal (reaches from bottom to top)
     if (el.goalNorth && p1) {
-      el.goalNorth.style.display = "flex";
+      el.goalNorth.style.display = "block";
       el.goalNorth.style.setProperty("--goal-color", p1.color);
-      el.goalNorth.style.color = p1.color;
       el.goalNorth.style.background = `linear-gradient(90deg, transparent 5%, ${p1.color} 50%, transparent 95%)`;
-      if (myIdx === 0) {
-        el.goalNorth.classList.add("is-my-goal");
-        el.goalNorth.innerHTML = `<span class="goal-badge">⭐️ DITT MÅL ⬆</span>`;
-      } else {
-        el.goalNorth.classList.remove("is-my-goal");
-        el.goalNorth.innerHTML = `<span class="goal-badge">${p1.name}s MÅL ⬆</span>`;
-      }
+      el.goalNorth.innerHTML = "";
     }
 
     // South Goal: Row 8 is Player 2's goal (reaches from top to bottom)
     if (el.goalSouth && p2) {
-      el.goalSouth.style.display = "flex";
+      el.goalSouth.style.display = "block";
       el.goalSouth.style.setProperty("--goal-color", p2.color);
-      el.goalSouth.style.color = p2.color;
       el.goalSouth.style.background = `linear-gradient(90deg, transparent 5%, ${p2.color} 50%, transparent 95%)`;
-      if (myIdx === 1) {
-        el.goalSouth.classList.add("is-my-goal");
-        el.goalSouth.innerHTML = `<span class="goal-badge">⭐️ DITT MÅL ⬇</span>`;
-      } else {
-        el.goalSouth.classList.remove("is-my-goal");
-        el.goalSouth.innerHTML = `<span class="goal-badge">${p2.name}s MÅL ⬇</span>`;
-      }
+      el.goalSouth.innerHTML = "";
     }
 
     // East Goal: Col 8 is Player 3's goal (in 3+ player games)
     if (el.goalEast) {
       if (state.players.length >= 3 && p3) {
-        el.goalEast.style.display = "flex";
+        el.goalEast.style.display = "block";
         el.goalEast.style.setProperty("--goal-color", p3.color);
-        el.goalEast.style.color = p3.color;
         el.goalEast.style.background = `linear-gradient(180deg, transparent 5%, ${p3.color} 50%, transparent 95%)`;
-        if (myIdx === 2) {
-          el.goalEast.classList.add("is-my-goal");
-          el.goalEast.innerHTML = `<span class="goal-badge">⭐️ DITT MÅL ➡</span>`;
-        } else {
-          el.goalEast.classList.remove("is-my-goal");
-          el.goalEast.innerHTML = `<span class="goal-badge">${p3.name}s MÅL ➡</span>`;
-        }
+        el.goalEast.innerHTML = "";
       } else {
         el.goalEast.style.display = "none";
       }
@@ -2193,17 +2181,10 @@
     // West Goal: Col 0 is Player 4's goal (in 4 player games)
     if (el.goalWest) {
       if (state.players.length >= 4 && p4) {
-        el.goalWest.style.display = "flex";
+        el.goalWest.style.display = "block";
         el.goalWest.style.setProperty("--goal-color", p4.color);
-        el.goalWest.style.color = p4.color;
         el.goalWest.style.background = `linear-gradient(180deg, transparent 5%, ${p4.color} 50%, transparent 95%)`;
-        if (myIdx === 3) {
-          el.goalWest.classList.add("is-my-goal");
-          el.goalWest.innerHTML = `<span class="goal-badge">⭐️ DITT MÅL ⬅</span>`;
-        } else {
-          el.goalWest.classList.remove("is-my-goal");
-          el.goalWest.innerHTML = `<span class="goal-badge">${p4.name}s MÅL ⬅</span>`;
-        }
+        el.goalWest.innerHTML = "";
       } else {
         el.goalWest.style.display = "none";
       }

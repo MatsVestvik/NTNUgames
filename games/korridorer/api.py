@@ -163,6 +163,26 @@ def has_path_to_goal(start_pos: Tuple[int, int], goal_fn, walls_set: Set[Tuple[i
     return False
 
 
+def get_shortest_path_distance(start_pos: Tuple[int, int], goal_fn, walls_set: Set[Tuple[int, int, str]]) -> int:
+    """BFS shortest path distance from start_pos to goal cell, or 999 if unreachable."""
+    queue = deque([(start_pos[0], start_pos[1], 0)])
+    visited = {start_pos}
+
+    while queue:
+        cr, cc, dist = queue.popleft()
+        if goal_fn(cr, cc):
+            return dist
+
+        for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+            nr, nc = cr + dr, cc + dc
+            if in_bounds(nr, nc) and (nr, nc) not in visited:
+                if not is_passage_blocked(cr, cc, nr, nc, walls_set):
+                    visited.add((nr, nc))
+                    queue.append((nr, nc, dist + 1))
+
+    return 999
+
+
 def validate_wall_placement(r: int, c: int, orientation: str, walls: List[Dict[str, Any]], active_players: List[Dict[str, Any]]) -> Tuple[bool, str]:
     """Check whether placing a 2-unit wall at (r, c) with given orientation is legal."""
     if not (0 <= r <= 7 and 0 <= c <= 7):
@@ -312,17 +332,13 @@ class KorridorerRoom:
             if len(self.players) < 2:
                 self.add_bot()
 
-            # Calculate wall count per player
-            num_players = len(self.players)
-            walls_per_player = 10 if num_players == 2 else 6 if num_players == 3 else 5
-
             # Position each player at their starting slot
             for idx, p in enumerate(self.players):
                 cfg = PLAYER_CONFIGS[idx]
                 p["color"] = p.get("color") or extract_color_from_avatar(p.get("avatar"), cfg["color"])
                 p["colorName"] = p.get("colorName") or cfg["colorName"]
                 p["pos"] = list(cfg["start"])
-                p["walls"] = walls_per_player
+                p["walls"] = 999
                 p["goalDesc"] = cfg["goalDesc"]
 
             self.walls.clear()
@@ -385,15 +401,11 @@ class KorridorerRoom:
             if current_player["id"] != player_id:
                 return False, "Det er ikke din tur."
 
-            if current_player["walls"] <= 0:
-                return False, "Du har ingen vegger igjen å plassere."
-
             ok, msg = validate_wall_placement(r, c, orientation, self.walls, self.players)
             if not ok:
                 return False, msg
 
-            # Deduct wall and record
-            current_player["walls"] -= 1
+            # Record placed wall (unlimited walls allowed)
             current_player["lastSeen"] = time.time()
             self.walls.append({
                 "r": r,

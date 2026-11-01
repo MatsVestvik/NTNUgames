@@ -256,9 +256,9 @@ body {
 
 .hero-icon-wrap {
   display: inline-block;
-  padding: 10px;
-  background: radial-gradient(circle, rgba(245, 158, 11, 0.2) 0%, transparent 70%);
-  border-radius: 50%;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
   margin-bottom: 0.75rem;
 }
 
@@ -409,10 +409,10 @@ body {
   width: 48px;
   height: 48px;
   min-width: 48px;
-  border-radius: 50%;
-  background: radial-gradient(circle at center, rgba(0, 180, 216, 0.25) 0%, rgba(10, 14, 23, 0.85) 80%);
-  border: 2px solid #00b4d8;
-  box-shadow: 0 0 16px rgba(0, 180, 216, 0.4);
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -425,15 +425,15 @@ body {
 
 .avatar-circle-preview.clickable:hover {
   transform: scale(1.1);
-  border-color: #ffd166;
-  box-shadow: 0 0 22px rgba(255, 209, 102, 0.6);
+  filter: drop-shadow(0 0 12px rgba(255, 209, 102, 0.7));
 }
 
 .avatar-circle-preview img {
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   image-rendering: -moz-crisp-edges;
   image-rendering: pixelated;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.6));
   animation: spriteWiggle 2.5s ease-in-out infinite;
 }
 
@@ -1114,13 +1114,14 @@ body {
 .slot-avatar-wrap {
   width: 54px;
   height: 54px;
-  border-radius: 50%;
-  padding: 4px;
-  background: rgba(0, 0, 0, 0.4);
-  border: 2px solid transparent;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: none;
 }
 
 .slot-avatar-img {
@@ -1182,7 +1183,8 @@ body {
   max-width: 900px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  text-align: center;
   background: var(--bg-card);
   backdrop-filter: blur(14px);
   border: 1px solid var(--border-subtle);
@@ -1200,21 +1202,22 @@ body {
 }
 
 .turn-pawn-preview {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.4);
-  border: 2px solid #fbbf24;
+  width: 44px;
+  height: 44px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+  box-shadow: none;
 }
 
 .turn-pawn-preview img {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   image-rendering: pixelated;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.65));
   animation: spriteWiggle 2s infinite ease-in-out;
 }
 
@@ -1349,27 +1352,32 @@ body {
 .pg-avatar-wrap {
   width: 44px;
   height: 44px;
-  border-radius: 50%;
-  padding: 3px;
-  background: rgba(0, 0, 0, 0.4);
-  border: 2px solid var(--p1-color);
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
+  box-shadow: none;
 }
 
 .pg-avatar-img {
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
   image-rendering: pixelated;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.65));
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.player-game-card.active-turn .pg-avatar-img {
+  filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.8)) drop-shadow(0 4px 6px rgba(0, 0, 0, 0.65));
+  transform: scale(1.08);
 }
 
 .pg-crown {
-  position: absolute;
-  top: -8px;
-  right: -6px;
-  font-size: 0.85rem;
+  display: none !important;
 }
 
 .pg-info {
@@ -1379,7 +1387,7 @@ body {
 }
 
 .pg-name {
-  font-size: 0.88rem;
+  font-size: 0.95rem;
   font-weight: 800;
   color: #fff;
   white-space: nowrap;
@@ -1388,44 +1396,14 @@ body {
 }
 
 .pg-goal {
-  font-size: 0.72rem;
-  color: var(--text-secondary);
+  display: none !important;
 }
 
-/* Wall Rack Slats */
-.pg-walls-rack {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.pg-walls-label {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--text-muted);
-}
-
-.pg-walls-slats {
-  display: flex;
-  gap: 3px;
-  height: 12px;
-}
-
-.wall-slat {
-  flex: 1;
-  height: 100%;
-  background: linear-gradient(180deg, var(--wall-wood-top) 0%, var(--wall-wood-base) 100%);
-  border-radius: 2px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-.wall-slat.used {
-  opacity: 0.15;
-  filter: grayscale(1);
-  transform: scaleY(0.6);
+/* Wall Rack Slats - hidden since unlimited walls is standard */
+.pg-walls-rack,
+.pg-walls-label,
+.pg-unlimited-badge {
+  display: none !important;
 }
 
 /* ======================================================== */
@@ -1446,103 +1424,96 @@ body {
   justify-content: center;
 }
 
-/* Edge Goal Neon Stripes */
+/* Edge Goal Accent Bars */
 .goal-indicator {
   position: absolute;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-pixel);
-  font-size: 0.52rem;
-  letter-spacing: 0.08em;
-  opacity: 0.8;
+  display: block;
+  z-index: 6;
   pointer-events: none;
-  z-index: 5;
+  border-radius: 999px;
+  background: var(--goal-color, #ffd166);
+  opacity: 0.9;
+  box-shadow: 0 0 12px var(--goal-color, #ffd166);
   transition: all 0.25s ease;
 }
 
-.goal-indicator .goal-badge {
-  padding: 1px 7px;
-  border-radius: 4px;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
-  display: inline-block;
-  white-space: nowrap;
-}
-
-.goal-indicator.is-my-goal {
-  opacity: 1;
-  font-weight: 900;
-  box-shadow: 0 0 16px var(--goal-color, #ffd166);
-  border-radius: 4px;
-}
-
-.goal-indicator.is-my-goal .goal-badge {
-  background: var(--goal-color, #ffd166);
-  color: #0b101b;
-  font-weight: 900;
-  box-shadow: 0 0 12px var(--goal-color, #ffd166);
-  text-shadow: none;
-  animation: myGoalPulse 1.8s infinite ease-in-out;
-}
-
-@keyframes myGoalPulse {
-  0%, 100% { transform: scale(1); filter: brightness(1); }
-  50% { transform: scale(1.06); filter: brightness(1.25); }
-}
-
 .goal-north {
-  top: 1px;
-  left: 20px;
-  right: 20px;
-  height: 14px;
+  top: 2px;
+  left: 12px;
+  right: 12px;
+  height: 4px;
 }
 
 .goal-south {
-  bottom: 1px;
-  left: 20px;
-  right: 20px;
-  height: 14px;
+  bottom: 2px;
+  left: 12px;
+  right: 12px;
+  height: 4px;
 }
 
 .goal-west {
-  left: 1px;
-  top: 20px;
-  bottom: 20px;
-  width: 14px;
-  writing-mode: vertical-rl;
+  left: 2px;
+  top: 12px;
+  bottom: 12px;
+  width: 4px;
 }
 
 .goal-east {
-  right: 1px;
-  top: 20px;
-  bottom: 20px;
-  width: 14px;
-  writing-mode: vertical-rl;
+  right: 2px;
+  top: 12px;
+  bottom: 12px;
+  width: 4px;
 }
 
-/* Endzone cell styling on 9x9 board */
-.board-cell.my-endzone-cell {
-  position: relative;
-  border: 1.5px dashed var(--endzone-color, #ffd166) !important;
-  box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.12), 0 0 8px var(--endzone-color, #ffd166) !important;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, #172136 100%) !important;
-}
-
-.board-cell.my-endzone-cell::after {
-  content: "★";
-  position: absolute;
-  top: 2px;
-  right: 3px;
-  font-size: 0.55rem;
-  color: var(--endzone-color, #ffd166);
-  opacity: 0.9;
-  pointer-events: none;
-  filter: drop-shadow(0 0 3px var(--endzone-color, #ffd166));
-}
-
+/* Endzone cell styling on 9x9 board - The row you are supposed to reach is the player's color */
 .board-cell.opponent-endzone-cell {
   position: relative;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: color-mix(in srgb, var(--endzone-color) 20%, #141c2e) !important;
+  border: 1.5px solid color-mix(in srgb, var(--endzone-color) 60%, transparent) !important;
+  box-shadow: inset 0 0 8px color-mix(in srgb, var(--endzone-color) 20%, transparent) !important;
+}
+
+.board-cell.opponent-endzone-cell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 5px;
+  background: var(--endzone-color);
+  opacity: 0.14;
+  pointer-events: none;
+}
+
+.board-cell.my-endzone-cell {
+  position: relative;
+  background: color-mix(in srgb, var(--endzone-color) 35%, #141c2e) !important;
+  border: 2px solid var(--endzone-color) !important;
+  box-shadow: inset 0 0 16px color-mix(in srgb, var(--endzone-color) 45%, transparent), 0 0 10px color-mix(in srgb, var(--endzone-color) 35%, transparent) !important;
+  animation: myGoalRowGlow 2.5s infinite ease-in-out;
+}
+
+.board-cell.my-endzone-cell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 5px;
+  background: var(--endzone-color);
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+@keyframes myGoalRowGlow {
+  0%, 100% {
+    box-shadow: inset 0 0 14px color-mix(in srgb, var(--endzone-color) 40%, transparent), 0 0 8px color-mix(in srgb, var(--endzone-color) 25%, transparent);
+  }
+  50% {
+    box-shadow: inset 0 0 20px color-mix(in srgb, var(--endzone-color) 60%, transparent), 0 0 14px color-mix(in srgb, var(--endzone-color) 50%, transparent);
+  }
+}
+
+.board-cell.my-endzone-cell:hover,
+.board-cell.opponent-endzone-cell:hover {
+  background: color-mix(in srgb, var(--endzone-color) 45%, #141c2e) !important;
+  box-shadow: inset 0 0 20px color-mix(in srgb, var(--endzone-color) 65%, transparent), 0 0 16px var(--endzone-color) !important;
 }
 
 .board-grid-wrapper {
@@ -1693,35 +1664,55 @@ body {
   z-index: 25;
 }
 
-/* Groove Intersection Touch Targets */
-.groove-intersection {
+/* Border Groove Slots (Horizontal & Vertical along cell edges) */
+.border-slot {
   position: absolute;
-  width: 24px;
-  height: 24px;
-  transform: translate(-50%, -50%);
-  cursor: pointer;
-  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s ease;
+  cursor: pointer;
   pointer-events: auto;
+  border-radius: 4px;
+  z-index: 26;
+  transition: all 0.15s ease;
 }
 
-.groove-intersection::after {
+.border-slot::before {
   content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
+  position: absolute;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 3px;
   transition: all 0.18s ease;
 }
 
-.groove-intersection:hover::after {
-  width: 12px;
-  height: 12px;
-  background: rgba(245, 158, 11, 0.5);
-  box-shadow: 0 0 10px rgba(245, 158, 11, 0.8);
+/* Horizontal border slot: covers 2 cells horizontally, centered on the gap between rows */
+.border-slot-h {
+  height: 22px;
+  transform: translateY(-50%);
+}
+
+.border-slot-h::before {
+  left: 6px;
+  right: 6px;
+  height: 4px;
+}
+
+/* Vertical border slot: covers 2 cells vertically, centered on the gap between columns */
+.border-slot-v {
+  width: 22px;
+  transform: translateX(-50%);
+}
+
+.border-slot-v::before {
+  top: 6px;
+  bottom: 6px;
+  width: 4px;
+}
+
+/* Hover and active groove states */
+.border-slot:hover::before {
+  background: rgba(245, 158, 11, 0.7);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.8), 0 0 4px #ffffff;
 }
 
 /* Placed Walls (2 grid units long) */
@@ -1912,40 +1903,18 @@ body {
   box-shadow: inset 0 0 20px rgba(245, 158, 11, 0.15);
 }
 
-.board-grid-wrapper.wall-mode-active .groove-intersection {
-  width: 32px;
-  height: 32px;
+.board-grid-wrapper.wall-mode-active .border-slot::before {
+  background: rgba(245, 158, 11, 0.22);
 }
 
-.board-grid-wrapper.wall-mode-active .groove-intersection::after {
-  width: 8px;
-  height: 8px;
-  background: rgba(245, 158, 11, 0.4);
-  box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+.board-grid-wrapper.wall-mode-active .border-slot:hover::before {
+  background: rgba(245, 158, 11, 0.9);
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.95);
 }
 
-.board-grid-wrapper.wall-mode-active .groove-intersection:hover::after {
-  width: 14px;
-  height: 14px;
-  background: #fbbf24;
-  box-shadow: 0 0 16px #fbbf24;
-}
-
-/* Modern Ergonomic Action Command Dock */
-.game-action-dock {
-  width: 100%;
-  max-width: var(--board-max-size);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--bg-card);
-  backdrop-filter: blur(14px);
-  border: 1.5px solid var(--border-subtle);
-  border-radius: 16px;
-  padding: 0.65rem 1rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
-  gap: 0.75rem;
-  flex-wrap: wrap;
+.game-action-dock,
+.mode-toggles {
+  display: none !important;
 }
 
 .dock-mode-group {
@@ -2059,78 +2028,50 @@ body {
 }
 
 .rotate-preview-badge {
-  font-size: 1.1rem;
-  font-weight: 900;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
   color: #fbbf24;
-  padding: 0.1rem 0.4rem;
-  background: rgba(0, 0, 0, 0.4);
+  padding: 0.25rem 0.55rem;
+  background: rgba(0, 0, 0, 0.45);
   border-radius: 6px;
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  border: 1px solid rgba(245, 158, 11, 0.35);
 }
 
-/* Make wall rack clickable to trigger wall mode */
-.pg-walls-rack {
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 6px;
-  transition: background 0.18s ease;
+.pg-crown-badge {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #0b0f19;
+  text-transform: uppercase;
 }
 
-.pg-walls-rack:hover {
-  background: rgba(245, 158, 11, 0.12);
-}
-
-/* ======================================================== */
-/* GAME BOTTOM BAR & CHAT REACTIONS                         */
-/* ======================================================== */
 .game-bottom-bar {
   width: 100%;
   max-width: 900px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   background: var(--bg-card);
   backdrop-filter: blur(14px);
   border: 1px solid var(--border-subtle);
   border-radius: 14px;
   padding: 0.65rem 1.25rem;
   gap: 1rem;
-  flex-wrap: wrap;
 }
 
 .reactions-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.reactions-title {
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  margin-right: 0.25rem;
-}
-
-.reaction-chip {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  padding: 0.35rem 0.6rem;
-  font-size: 1.15rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.reaction-chip:hover {
-  background: rgba(255, 255, 255, 0.15);
-  transform: scale(1.18);
+  display: none !important;
 }
 
 .game-control-buttons {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+  gap: 0.75rem;
 }
 
 .btn-subtle {
@@ -2287,11 +2228,21 @@ body {
   align-items: flex-start;
 }
 
-.rule-icon {
-  font-size: 1.5rem;
-  padding: 0.35rem;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
+.rule-step-badge {
+  font-family: var(--font-pixel);
+  font-size: 0.85rem;
+  font-weight: 700;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(239, 68, 68, 0.2) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  color: #fbbf24;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
 }
 
 .rule-block h4 {
@@ -2336,20 +2287,21 @@ body {
   width: 96px;
   height: 96px;
   margin: 0 auto 1.25rem;
-  border-radius: 50%;
-  padding: 6px;
-  background: radial-gradient(circle, rgba(245, 158, 11, 0.3) 0%, rgba(0, 0, 0, 0.6) 80%);
-  border: 3px solid #fbbf24;
-  box-shadow: 0 0 30px rgba(245, 158, 11, 0.6);
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .victory-winner-img {
-  width: 80px;
-  height: 80px;
+  width: 88px;
+  height: 88px;
   image-rendering: pixelated;
+  filter: drop-shadow(0 0 24px rgba(245, 158, 11, 0.75)) drop-shadow(0 6px 12px rgba(0, 0, 0, 0.7));
   animation: winnerSpin 3s ease-in-out infinite;
 }
 
