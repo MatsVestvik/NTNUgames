@@ -148,25 +148,45 @@
     });
   });
 
-  // Universal Character Avatar in Hub Header
-  const btnHubOpenCharacter = document.getElementById("btnHubOpenCharacter");
-  const hubAvatarImg = document.getElementById("hubAvatarImg");
+  // Party Lounge Random Figure with Character Creator
+  const plBannerIconImg = document.getElementById("plBannerIconImg");
+  const hubPartyTabIcon = document.getElementById("hubPartyTabIcon");
 
-  function refreshHubAvatar() {
-    if (hubAvatarImg && typeof CharacterCreator !== "undefined") {
-      hubAvatarImg.src = CharacterCreator.getAvatarImgSrc();
+  async function updatePartyLoungeAvatar() {
+    if (typeof CharacterCreator === "undefined") return;
+    try {
+      const randomCfg = CharacterCreator.getRandomConfig();
+      const dataUrl = await CharacterCreator.getDataUrl(randomCfg);
+      if (plBannerIconImg) {
+        plBannerIconImg.src = dataUrl;
+        plBannerIconImg.style.opacity = "1";
+      }
+      if (hubPartyTabIcon) {
+        hubPartyTabIcon.src = dataUrl;
+        hubPartyTabIcon.style.opacity = "1";
+      }
+    } catch (e) {
+      console.warn("Could not generate random figure for party lounge:", e);
     }
   }
 
-  refreshHubAvatar();
-
-  if (btnHubOpenCharacter && typeof CharacterCreator !== "undefined") {
-    btnHubOpenCharacter.addEventListener("click", () => {
-      CharacterCreator.openModal({
-        onSave: () => refreshHubAvatar()
-      });
-    });
+  if (typeof CharacterCreator !== "undefined") {
+    updatePartyLoungeAvatar();
+  } else {
+    window.addEventListener("DOMContentLoaded", updatePartyLoungeAvatar);
   }
 
-  window.addEventListener("spillhjornet:characterUpdated", refreshHubAvatar);
+  if (plBannerIconImg) {
+    plBannerIconImg.style.cursor = "pointer";
+    plBannerIconImg.title = "Tilfeldig spillfigur (klikk for ny figur!)";
+    plBannerIconImg.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      plBannerIconImg.style.transform = "scale(0.85) rotate(12deg)";
+      setTimeout(() => {
+        plBannerIconImg.style.transform = "";
+        updatePartyLoungeAvatar();
+      }, 150);
+    });
+  }
 })();

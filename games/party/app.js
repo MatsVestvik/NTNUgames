@@ -738,6 +738,17 @@
     if (!el.inputCreateName.value) el.inputCreateName.value = savedName;
   }
 
+  // Set random character creator figure for Party Lounge header
+  const partyHeaderIcon = document.getElementById("partyHeaderIcon");
+  if (partyHeaderIcon && window.CharacterCreator) {
+    const randomCfg = window.CharacterCreator.getRandomConfig();
+    window.CharacterCreator.getDataUrl(randomCfg).then(url => {
+      partyHeaderIcon.src = url;
+    }).catch(() => {
+      partyHeaderIcon.src = window.CharacterCreator.getAvatarImgSrc();
+    });
+  }
+
   if (loadSession()) {
     enterLobbyView();
   } else if (codeParam) {

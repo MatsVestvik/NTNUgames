@@ -291,6 +291,13 @@ body {
   vertical-align: middle;
 }
 
+.hub-tab-avatar {
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 4px rgba(251, 133, 0, 0.4);
+  vertical-align: -3px;
+}
+
 .section-title-icon {
   width: 24px;
   height: 24px;
@@ -302,12 +309,23 @@ body {
 }
 
 .pl-banner-icon-img {
-  width: 52px;
-  height: 52px;
+  width: 58px;
+  height: 58px;
   object-fit: contain;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
   flex-shrink: 0;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1.5px solid rgba(251, 133, 0, 0.4);
+  padding: 2px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s ease;
+}
+
+.pl-banner-icon-img:hover {
+  transform: scale(1.08) rotate(-4deg);
+  border-color: #fb8500;
 }
 
 /* Disabled Card State */

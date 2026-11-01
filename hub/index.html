@@ -40,14 +40,6 @@
       </a>
 
       <div class="hub-header-right">
-        <button type="button" class="hub-character-btn" id="btnHubOpenCharacter" title="Tilpass din spillfigur">
-          <img src="" id="hubAvatarImg" class="hub-avatar-icon" alt="" />
-          <span>Min figur</span>
-        </button>
-        <div class="status-dot-pill">
-          <span class="live-pulse-dot"></span>
-          <span>4 AKTIVE SPILL</span>
-        </div>
         <div class="date-badge" id="hubDateBadge">Laster dato…</div>
       </div>
     </header>
@@ -55,17 +47,17 @@
     <!-- Quick Category Filter Pills -->
     <nav class="hub-nav-tabs" aria-label="Filtrer spillkategorier">
       <button type="button" class="hub-tab-btn active" data-filter="all">
-        Alle spill <span class="hub-tab-badge">4</span>
+        Alle spill <span class="hub-tab-badge">6</span>
       </button>
       <button type="button" class="hub-tab-btn" data-filter="daily">
         <img src="/assets/icons/daily.png" class="hub-tab-icon" alt="" /> Dagsspill <span class="hub-tab-badge">2</span>
       </button>
       <button type="button" class="hub-tab-btn" data-filter="party">
-        <img src="/assets/icons/party.png" class="hub-tab-icon" alt="" /> Partyspill <span class="hub-tab-badge">2</span>
+        <img src="/assets/icons/party.png" class="hub-tab-icon" alt="" /> Partyspill <span class="hub-tab-badge">4</span>
       </button>
       <a href="/party/" class="hub-tab-btn"
         style="margin-left: auto; background: rgba(251, 133, 0, 0.15); border-color: rgba(251, 133, 0, 0.4); color: #fb8500;">
-        <img src="/assets/icons/party.png" class="hub-tab-icon" alt="" /> Party Lounge
+        <img src="" id="hubPartyTabIcon" class="hub-tab-icon hub-tab-avatar" alt="" /> Party Lounge
       </a>
     </nav>
 
@@ -76,7 +68,6 @@
           <h2 class="section-title" id="dailyGamesHeading"><img src="/assets/icons/daily.png" class="section-title-icon" alt="" />Daglige utfordringer</h2>
           <p class="section-subtitle">Nye nøtter hver dag kl. 00:00. Hold streak-en gående!</p>
         </div>
-        <span class="section-counter">2 aktive • 1 under utvikling</span>
       </div>
 
       <div class="games-grid">
@@ -129,28 +120,6 @@
             <span class="card-btn" id="merMindreBtn">Spill nå →</span>
           </div>
         </a>
-
-        <!-- Game 3: NTNU guesser (Disabled / Under utvikling) -->
-        <div class="game-card card-blue disabled-card" id="cardGeoguesser" data-category="daily" aria-disabled="true">
-          <div class="card-bg-icon">
-            <img src="/assets/icons/ntnu_guesser.png" alt="" aria-hidden="true" />
-          </div>
-          <div class="card-top">
-            <div class="card-tags-group">
-              <span class="card-tag tag-disabled">Kommer snart</span>
-            </div>
-          </div>
-          <h3 class="card-title">NTNU guesser</h3>
-          <p class="card-subtitle">Kjenner du igjen campuskrokene?</p>
-          <p class="card-desc">
-            Hvor på Gløshaugen, Dragvoll eller Øya er bildet tatt? Test stedsansen på historiske bygg, auditorier og
-            linjeforeningsrom.
-          </p>
-          <div class="card-footer">
-            <span class="card-status">Under utvikling</span>
-            <span class="card-btn card-btn-disabled">Kommer snart</span>
-          </div>
-        </div>
       </div>
     </section>
 
@@ -161,13 +130,12 @@
           <h2 class="section-title" id="partyGamesHeading"><img src="/assets/icons/party.png" class="section-title-icon" alt="" />Partyspill</h2>
           <p class="section-subtitle">Lobby-moro for vorspiel, hybelkvelder og vennegjengen</p>
         </div>
-        <span class="section-counter">4 aktive spill</span>
       </div>
 
       <!-- Featured Party Lounge Banner -->
       <div class="party-lobby-hub-banner">
         <div class="pl-banner-left">
-          <img src="/assets/icons/party.png" class="pl-banner-icon-img" alt="Party Lounge" />
+          <img src="" class="pl-banner-icon-img" id="plBannerIconImg" alt="Party Lounge" />
           <div>
             <span class="pl-banner-tag">Felles Lounge • Multi-enhet</span>
             <h3 class="pl-banner-title">NTNU Party Lounge</h3>
@@ -188,7 +156,6 @@
           </div>
           <div class="card-top">
             <div class="card-tags-group">
-              <span class="card-tag tag-party">Aktivt</span>
               <span class="card-tag tag-multiplayer">2–16 spillere</span>
             </div>
           </div>
@@ -211,7 +178,6 @@
           </div>
           <div class="card-top">
             <div class="card-tags-group">
-              <span class="card-tag tag-party">Aktivt</span>
               <span class="card-tag tag-multiplayer">2–16 spillere</span>
             </div>
           </div>
@@ -234,7 +200,6 @@
           </div>
           <div class="card-top">
             <div class="card-tags-group">
-              <span class="card-tag tag-party">Aktivt</span>
               <span class="card-tag tag-multiplayer">2 spillere</span>
             </div>
           </div>
@@ -256,7 +221,6 @@
           </div>
           <div class="card-top">
             <div class="card-tags-group">
-              <span class="card-tag tag-party">Aktivt</span>
               <span class="card-tag tag-multiplayer">2–4 spillere</span>
             </div>
           </div>
