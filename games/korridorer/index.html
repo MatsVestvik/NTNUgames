@@ -13,14 +13,21 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Press+Start+2P&display=swap"
     rel="stylesheet" />
-  <link rel="stylesheet" href="/hub/parallax-bg.css" />
+  <link rel="stylesheet" href="/parallax-bg.css?v=2.2" />
   <link rel="stylesheet" href="/character/character-creator.css" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 
 <body>
-  <!-- Ambient Parallax Dynamic Background Canvas -->
-  <div id="parallax-bg" class="parallax-container" aria-hidden="true"></div>
+  <!-- Dynamic Multilayered Parallax Background (Prison / Dungeon Theme) -->
+  <div class="dynamic-parallax-bg" id="dynamicParallaxBg" aria-hidden="true">
+    <div class="parallax-layer layer-1-sky" id="plSky" data-depth="0.04"></div>
+    <div class="parallax-layer layer-2-fjord" id="plFjord" data-depth="0.10"></div>
+    <div class="parallax-layer layer-3-campus" id="plCampus" data-depth="0.22"></div>
+    <div class="parallax-layer layer-4-lawn" id="plLawn" data-depth="0.50"></div>
+    <canvas class="ambient-sparkles-canvas" id="ambientSparklesCanvas"></canvas>
+    <div class="parallax-vignette-overlay"></div>
+  </div>
 
   <!-- App Wrapper -->
   <div class="korridorer-app" id="app">
@@ -512,7 +519,7 @@
   </div>
 
   <!-- Background Parallax Logic -->
-  <script src="/parallax-bg.js?v=2.1"></script>
+  <script src="/parallax-bg.js?v=2.2"></script>
   <!-- Character Creator & Compositor -->
   <script src="/character/character-creator.js"></script>
   <!-- Main Game App Script -->
