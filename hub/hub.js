@@ -150,7 +150,6 @@
 
   // Party Lounge Random Figure with Character Creator
   const plBannerIconImg = document.getElementById("plBannerIconImg");
-  const hubPartyTabIcon = document.getElementById("hubPartyTabIcon");
 
   async function updatePartyLoungeAvatar() {
     if (typeof CharacterCreator === "undefined") return;
@@ -160,10 +159,6 @@
       if (plBannerIconImg) {
         plBannerIconImg.src = dataUrl;
         plBannerIconImg.style.opacity = "1";
-      }
-      if (hubPartyTabIcon) {
-        hubPartyTabIcon.src = dataUrl;
-        hubPartyTabIcon.style.opacity = "1";
       }
     } catch (e) {
       console.warn("Could not generate random figure for party lounge:", e);
