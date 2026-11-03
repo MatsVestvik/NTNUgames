@@ -145,10 +145,6 @@ class PartyRoom:
                 self._tick_ordbombe()
             elif self.current_game == "tegn_og_gjett":
                 self._tick_tegn_og_gjett()
-            elif self.current_game == "imposter":
-                self._tick_imposter()
-            elif self.current_game == "fargekoden":
-                self._tick_fargekoden()
 
             players_list = []
             for p in self.players.values():
@@ -169,10 +165,6 @@ class PartyRoom:
 
             if self.current_game == "tegn_og_gjett":
                 effective_game_state = self._get_tegn_og_gjett_public_state(client_player_id)
-            elif self.current_game == "imposter":
-                effective_game_state = self._get_imposter_public_state(client_player_id)
-            elif self.current_game == "fargekoden":
-                effective_game_state = self._get_fargekoden_public_state(client_player_id)
             elif self.current_game == "sjakk":
                 effective_game_state = dict(self.game_state)
                 try:
@@ -947,7 +939,7 @@ class PartyRoom:
 
     def get_draw_actions_since(self, since_id: int) -> Tuple[List[Dict[str, Any]], int]:
         with self.lock:
-            if self.current_game not in ("tegn_og_gjett", "imposter"):
+            if self.current_game != "tegn_og_gjett":
                 return [], 0
             actions = self.game_state.get("draw_actions", [])
             last_id = self.game_state.get("next_action_id", 1) - 1
@@ -1850,13 +1842,13 @@ class PartyAPI:
                 room.touch()
 
             # If polling and client already has current version, short wait (up to 1.5s)
-            if client_v >= 0 and client_v == room.version and room.current_game not in ("ordbombe", "tegn_og_gjett", "imposter", "fargekoden"):
+            if client_v >= 0 and client_v == room.version and room.current_game not in ("ordbombe", "tegn_og_gjett"):
                 time.sleep(0.4)
 
             state = room.get_public_state(player_id)
             return 200, state
 
-        if rel_path in ("/api/tegn-og-gjett/draw-sync", "/api/imposter/draw-sync"):
+        if rel_path == "/api/tegn-og-gjett/draw-sync":
             code = (query.get("code", [""])[0] or "").strip().upper()
             try:
                 since_id = int(query.get("since", [0])[0] or 0)
@@ -1874,12 +1866,6 @@ class PartyAPI:
                 "ok": True,
                 "actions": actions,
                 "lastActionId": last_action_id,
-            }
-
-        if rel_path == "/api/imposter/random-pair":
-            return 200, {
-                "ok": True,
-                "pair": get_random_imposter_pair(),
             }
 
         if rel_path in ("/api/tegn-og-gjett/random-word", "/api/tegn-og-gjett/words"):
@@ -1914,6 +1900,50 @@ class PartyAPI:
                         "players": "2–16 spillere",
                         "icon": "/assets/icons/tegn_og_gjett.png",
                         "route": "/tegn-og-gjett/",
+                    },
+                    {
+                        "id": "sjakk",
+                        "title": "Sjakk",
+                        "subtitle": "Klassisk 2-spillers sjakkduell",
+                        "desc": "Utfordre en venn i pikselkunststil med klokke og tilskuere!",
+                        "status": "ready",
+                        "badge": "Klar til å spilles! ♟️",
+                        "players": "2 spillere + tilskuere",
+                        "icon": "/assets/icons/sjakk.png",
+                        "route": "/sjakk/",
+                    },
+                    {
+                        "id": "korridorer",
+                        "title": "Korridorer",
+                        "subtitle": "Taktisk labyrintduell",
+                        "desc": "Flytt monsteret ditt eller sett opp vegger for å sperre motstanderne ute!",
+                        "status": "ready",
+                        "badge": "Klar til å spilles! 👾",
+                        "players": "2–16 spillere",
+                        "icon": "/assets/icons/korridorer.png",
+                        "route": "/korridorer/",
+                    },
+                    {
+                        "id": "imposter",
+                        "title": "Imposter",
+                        "subtitle": "Tegn én strek & avslør bedrageren",
+                        "desc": "Alle får samme hemmelige ord unntatt Imposteren. Hvem bløffer?",
+                        "status": "dev",
+                        "badge": "Under utvikling 🚧",
+                        "players": "3–16 spillere",
+                        "icon": "/assets/icons/imposter.svg",
+                        "route": None,
+                    },
+                    {
+                        "id": "fargekoden",
+                        "title": "Fargekoden (Hues & Cues)",
+                        "subtitle": "Fargegjettespill på stort fargespekter",
+                        "desc": "Beskriv fargen med 1–2 ord og gjett på det enorme fargekartet!",
+                        "status": "dev",
+                        "badge": "Under utvikling 🚧",
+                        "players": "3–16 spillere",
+                        "icon": "/assets/icons/fargekoden.svg",
+                        "route": None,
                     },
                 ]
             }
@@ -2122,10 +2152,8 @@ class PartyAPI:
                     room.start_ordbombe(settings)
                 elif game_id == "tegn_og_gjett":
                     room.start_tegn_og_gjett(settings)
-                elif game_id == "imposter":
-                    room.start_imposter(settings)
-                elif game_id == "fargekoden":
-                    room.start_fargekoden(settings)
+                elif game_id in ("imposter", "fargekoden"):
+                    return 400, {"ok": False, "error": "Dette spillet er deaktivert"}
                 elif game_id == "sjakk":
                     room.current_game = "sjakk"
                     room.game_state = {"settings": settings, "status": "active"}
@@ -2272,29 +2300,8 @@ class PartyAPI:
 
             return room.handle_tegn_og_gjett_action(player_id, body)
 
-        if rel_path == "/api/imposter/action":
-            code = str(body.get("roomCode") or "").strip().upper()
-            player_id = str(body.get("playerId") or "").strip()
-
-            with _rooms_lock:
-                room = _rooms.get(code)
-
-            if not room:
-                return 404, {"ok": False, "error": "Rommet finnes ikke"}
-
-            return room.handle_imposter_action(player_id, body)
-
-        if rel_path == "/api/fargekoden/action":
-            code = str(body.get("roomCode") or "").strip().upper()
-            player_id = str(body.get("playerId") or "").strip()
-
-            with _rooms_lock:
-                room = _rooms.get(code)
-
-            if not room:
-                return 404, {"ok": False, "error": "Rommet finnes ikke"}
-
-            return room.handle_fargekoden_action(player_id, body)
+        if rel_path in ("/api/imposter/action", "/api/fargekoden/action"):
+            return 400, {"ok": False, "error": "Dette spillet er deaktivert"}
 
         if rel_path == "/api/kick":
             code = str(body.get("roomCode") or "").strip().upper()

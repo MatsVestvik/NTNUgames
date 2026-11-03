@@ -28,6 +28,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 HUB_DIR = os.path.join(BASE_DIR, "hub")
 GAMES_DIR = os.path.join(BASE_DIR, "games")
 
+DISABLED_GAMES = {"imposter", "fargekoden"}
+
 mimetypes.add_type("font/ttf", ".ttf")
 mimetypes.add_type("image/svg+xml", ".svg")
 
@@ -98,13 +100,8 @@ class GameGatewayHandler(BaseHTTPRequestHandler):
                 if res:
                     return self._send_json(res[1], status=res[0])
 
-            # 5. Check Party, Tegn og Gjett, Imposter & Fargekoden API
-            if (
-                path.startswith("/api/party/")
-                or path.startswith("/api/tegn-og-gjett/")
-                or path.startswith("/api/imposter/")
-                or path.startswith("/api/fargekoden/")
-            ):
+            # 5. Check Party & Tegn og Gjett API
+            if path.startswith("/api/party/") or path.startswith("/api/tegn-og-gjett/"):
                 res = PartyAPI.handle_get(path, query)
                 if res:
                     return self._send_json(res[1], status=res[0])
@@ -163,13 +160,8 @@ class GameGatewayHandler(BaseHTTPRequestHandler):
                 if res:
                     return self._send_json(res[1], status=res[0])
 
-            # 5. Check Party, Tegn og Gjett, Imposter & Fargekoden API
-            if (
-                path.startswith("/api/party/")
-                or path.startswith("/api/tegn-og-gjett/")
-                or path.startswith("/api/imposter/")
-                or path.startswith("/api/fargekoden/")
-            ):
+            # 5. Check Party & Tegn og Gjett API
+            if path.startswith("/api/party/") or path.startswith("/api/tegn-og-gjett/"):
                 res = PartyAPI.handle_post(path, body)
                 if res:
                     return self._send_json(res[1], status=res[0])
@@ -198,9 +190,23 @@ class GameGatewayHandler(BaseHTTPRequestHandler):
             self._send_json({"error": "Forbidden"}, status=403)
             return
 
+        # Block disabled games explicitly
+        for disabled in DISABLED_GAMES:
+            disabled_slug = disabled.replace("_", "-")
+            clean_rel = safe_rel.rstrip("/\\")
+            if (
+                clean_rel in (disabled, disabled_slug)
+                or safe_rel.startswith(f"{disabled}/")
+                or safe_rel.startswith(f"{disabled_slug}/")
+                or safe_rel.startswith(f"{disabled}\\")
+                or safe_rel.startswith(f"{disabled_slug}\\")
+            ):
+                self._send_json({"error": "Dette spillet er deaktivert"}, status=404)
+                return
+
         # Check if the request is for a specific game under games/<game_name>/
         game_names = [
-            d for d in os.listdir(GAMES_DIR) if os.path.isdir(os.path.join(GAMES_DIR, d))
+            d for d in os.listdir(GAMES_DIR) if os.path.isdir(os.path.join(GAMES_DIR, d)) and d not in DISABLED_GAMES
         ]
 
         full_path: Optional[str] = None

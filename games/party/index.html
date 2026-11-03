@@ -304,42 +304,57 @@
               </button>
             </div>
           </div>
-          <!-- Game 5: Imposter (3-16 spillere) -->
-          <div class="lobby-game-card active-playable" id="gameCardImposter">
+
+          <!-- Game 5: Imposter (3-16 spillere, Under utvikling) -->
+          <div class="lobby-game-card disabled-playable" id="gameCardImposter">
             <div class="lg-card-bg-icon">
-              <img src="/tegn-og-gjett/assets/icon.png" alt="" aria-hidden="true" />
+              <img src="/assets/icons/imposter.svg" alt="" aria-hidden="true" />
             </div>
             <div class="lg-card-left">
               <div>
                 <div class="lg-card-title-row">
                   <h4 class="lg-card-title">Imposter</h4>
-                  <span class="lg-card-badge badge-ready">Nytt spill! 🕵️</span>
+                  <span class="lg-card-badge badge-soon">Under utvikling 🚧</span>
                 </div>
                 <p class="lg-card-desc">
-                  Alle får et hemmelig ord, men én spiller er Imposter med et annet ord i samme kategori! Tegn én strek hver på tur – avslør Imposteren før hen gjetter ordet!
+                  Alle får et hemmelig ord unntatt Imposteren som får et dekkord! Tegn én strek hver på tur – avslør Imposteren før hen gjetter ordet!
                 </p>
                 <div class="lg-card-meta">
-                  <span>3–16 spillere</span> • <span>Én strek per runde</span> • <span>Sosial deduksjon</span>
+                  <span>3–16 spillere</span> • <span>Sosial deduksjon</span> • <span>Tegn én strek</span>
                 </div>
               </div>
             </div>
 
             <div class="lg-card-right">
-              <div class="lg-settings-inline">
-                <img src="/settings.png" class="party-gear-icon" alt="" />
-                <label>
-                  <span>Strek-tid:</span>
-                  <select id="selectTimerImposter" class="lg-select">
-                    <option value="20">20 sek</option>
-                    <option value="25" selected>25 sek</option>
-                    <option value="35">35 sek</option>
-                  </select>
-                </label>
-              </div>
+              <button type="button" class="party-btn disabled-btn" disabled>
+                Under utvikling 🚧
+              </button>
+            </div>
+          </div>
 
-              <button type="button" class="party-btn start-game-btn" id="btnStartImposter"
-                style="background: linear-gradient(135deg, #ef4444, #b91c1c);">
-                Start Imposter
+          <!-- Game 6: Fargekoden / Hues & Cues (3-16 spillere, Under utvikling) -->
+          <div class="lobby-game-card disabled-playable" id="gameCardFargekoden">
+            <div class="lg-card-bg-icon">
+              <img src="/assets/icons/fargekoden.svg" alt="" aria-hidden="true" />
+            </div>
+            <div class="lg-card-left">
+              <div>
+                <div class="lg-card-title-row">
+                  <h4 class="lg-card-title">Fargekoden (Hues &amp; Cues)</h4>
+                  <span class="lg-card-badge badge-soon">Under utvikling 🚧</span>
+                </div>
+                <p class="lg-card-desc">
+                  Én fargemester gir hint med 1 eller 2 ord for en hemmelig farge på et 480-fargers spekter – gjett nærmest mulig farge for å sanke poeng!
+                </p>
+                <div class="lg-card-meta">
+                  <span>3–16 spillere</span> • <span>Fargekart &amp; gjetting</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="lg-card-right">
+              <button type="button" class="party-btn disabled-btn" disabled>
+                Under utvikling 🚧
               </button>
             </div>
           </div>
