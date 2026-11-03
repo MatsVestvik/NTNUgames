@@ -1284,41 +1284,78 @@
 
       const res = await resp.json();
       if (res.ok) {
+        if (Array.isArray(res.chatMessages)) {
+          renderChatMessages(res.chatMessages);
+        }
         if (res.correct) {
           playCorrectGuessSound();
           state.hasGuessed = true;
+          el.chatInput.disabled = true;
+          el.chatInput.placeholder = "✓ Du har gjettet riktig! Slapp av og se på de andre…";
         } else if (res.close) {
           playTone(480, 0.15);
           addChatMessage({
             type: "close",
             sender: "Tips",
-            text: `«${escapeHtml(res.guess)}» er veldig nærme!`,
+            text: `«${res.guess}» er veldig nærme!`,
           });
         }
       }
     } catch (err) {
       console.warn("Guess send error:", err);
     } finally {
-      el.btnSendGuess.disabled = false;
-      el.chatInput.focus();
+      if (state.hasGuessed || state.isDrawer || state.turnState !== "drawing") {
+        el.btnSendGuess.disabled = true;
+      } else {
+        el.btnSendGuess.disabled = false;
+        el.chatInput.focus();
+      }
     }
   }
 
-  let lastChatMessagesCount = 0;
-  function renderChatMessages(messages) {
-    if (!Array.isArray(messages)) return;
-    if (messages.length === lastChatMessagesCount) return;
-    lastChatMessagesCount = messages.length;
+  let lastChatMessageId = 0;
+  const renderedMessageIds = new Set();
 
-    el.chatMessagesContainer.innerHTML = "";
-    messages.forEach(msg => {
-      addChatMessage(msg, false);
+  function renderChatMessages(messages) {
+    if (!Array.isArray(messages) || messages.length === 0) return;
+
+    const latestId = messages[messages.length - 1].id || 0;
+
+    // Detect game restart (message IDs reset back to 1)
+    if (latestId < lastChatMessageId) {
+      el.chatMessagesContainer.innerHTML = "";
+      lastChatMessageId = 0;
+      renderedMessageIds.clear();
+    }
+
+    const isInitialLoad = lastChatMessageId === 0;
+    const newMessages = messages.filter(msg => {
+      const id = msg.id || 0;
+      return id > 0 ? !renderedMessageIds.has(id) : true;
     });
+
+    if (newMessages.length === 0) return;
+
+    newMessages.forEach((msg, idx) => {
+      if (msg.id) {
+        renderedMessageIds.add(msg.id);
+        if (msg.id > lastChatMessageId) {
+          lastChatMessageId = msg.id;
+        }
+      }
+      const allowCheer = !isInitialLoad && idx === newMessages.length - 1;
+      addChatMessage(msg, false, allowCheer);
+    });
+
+    // Keep DOM bounded over long games
+    while (el.chatMessagesContainer.children.length > 120) {
+      el.chatMessagesContainer.removeChild(el.chatMessagesContainer.firstChild);
+    }
 
     el.chatMessagesContainer.scrollTop = el.chatMessagesContainer.scrollHeight;
   }
 
-  function addChatMessage(msg, scrollToBottom = true) {
+  function addChatMessage(msg, scrollToBottom = true, allowCheer = true) {
     const bubble = document.createElement("div");
     bubble.className = `chat-bubble ${msg.type || "guess"}`;
 
@@ -1326,15 +1363,15 @@
       bubble.innerHTML = `<span class="sender">${escapeHtml(msg.sender)}:</span> ${escapeHtml(msg.text)}`;
     } else if (msg.type === "correct") {
       bubble.innerHTML = `<strong>${escapeHtml(msg.sender)}</strong> ${escapeHtml(msg.text)}`;
-      triggerMascotCheer(`${msg.sender} gjettet riktig! Bra jobba!`);
+      if (allowCheer) triggerMascotCheer(`${msg.sender} gjettet riktig! Bra jobba!`);
     } else if (msg.type === "close") {
       bubble.innerHTML = `<strong>${escapeHtml(msg.sender)}:</strong> ${escapeHtml(msg.text)}`;
-      triggerMascotCheer("Nesten riktig! Kjempenære!");
+      if (allowCheer) triggerMascotCheer("Nesten riktig! Kjempenære!");
     } else if (msg.type === "system_highlight") {
       bubble.innerHTML = `${escapeHtml(msg.text)}`;
     } else if (msg.type === "winner") {
       bubble.innerHTML = `${escapeHtml(msg.text)}`;
-      triggerMascotCheer("Vi har en vinner! Flott runde!");
+      if (allowCheer) triggerMascotCheer("Vi har en vinner! Flott runde!");
     } else {
       bubble.innerHTML = escapeHtml(msg.text);
     }

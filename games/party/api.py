@@ -550,9 +550,11 @@ class PartyRoom:
         if "secret_word" in gs and not (is_drawer or has_guessed or is_revealed_phase):
             del gs["secret_word"]
 
-        # Only send last 50 chat messages to keep payload light
+        # Only send last 80 chat messages to keep payload light
         if "chat_messages" in gs:
-            gs["chat_messages"] = gs["chat_messages"][-50:]
+            if len( self.game_state.get("chat_messages", []) ) > 200:
+                self.game_state["chat_messages"] = self.game_state["chat_messages"][-120:]
+            gs["chat_messages"] = gs["chat_messages"][-80:]
 
         return gs
 
@@ -884,6 +886,7 @@ class PartyRoom:
                         "correct": True,
                         "points": points,
                         "word": secret_word,
+                        "chatMessages": gs["chat_messages"][-80:],
                     }
                 else:
                     is_close = is_close_guess(clean_guess, secret_word)
@@ -908,6 +911,7 @@ class PartyRoom:
                             "ok": True,
                             "correct": False,
                             "close": False,
+                            "chatMessages": gs["chat_messages"][-80:],
                         }
 
             elif action == "restart":
