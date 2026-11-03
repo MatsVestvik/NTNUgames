@@ -1,0 +1,502 @@
+/* Imposter (Tegn-Imposter) Custom Styles */
+
+.imposter-badge-emoji {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+/* Role & Secret Word Banner in Header */
+.role-word-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1.5px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  padding: 0.4rem 0.9rem;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+.role-word-banner.is-imposter {
+  border-color: rgba(239, 68, 68, 0.65);
+  background: linear-gradient(135deg, rgba(69, 10, 10, 0.85), rgba(15, 23, 42, 0.9));
+  box-shadow: 0 0 22px rgba(239, 68, 68, 0.28);
+}
+
+.role-word-banner.is-crew {
+  border-color: rgba(16, 185, 129, 0.55);
+  background: linear-gradient(135deg, rgba(6, 78, 59, 0.75), rgba(15, 23, 42, 0.9));
+}
+
+.role-badge {
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.6rem;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.role-badge.crew {
+  background: rgba(16, 185, 129, 0.25);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.5);
+}
+
+.role-badge.imposter {
+  background: rgba(239, 68, 68, 0.28);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.6);
+  animation: imposterPulse 2s infinite ease-in-out;
+}
+
+@keyframes imposterPulse {
+  0%, 100% { box-shadow: 0 0 0 rgba(239, 68, 68, 0); }
+  50% { box-shadow: 0 0 14px rgba(239, 68, 68, 0.55); }
+}
+
+.role-word-details {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.role-category-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.role-secret-word {
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: 0.03em;
+}
+
+/* Turn Status Strip above Canvas */
+.turn-status-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0.9rem;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.turn-status-strip.my-turn {
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.22), rgba(15, 23, 42, 0.85));
+  border-color: rgba(245, 158, 11, 0.6);
+  color: #fef3c7;
+}
+
+.tss-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #38bdf8;
+  flex-shrink: 0;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.tss-text {
+  flex: 1;
+}
+
+.btn-skip-stroke {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 0.3rem 0.65rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-skip-stroke:hover {
+  background: rgba(245, 158, 11, 0.28);
+  border-color: #f59e0b;
+}
+
+.stroke-rule-hint {
+  font-size: 0.8rem;
+  color: #cbd5e1;
+}
+
+/* Mini Rules Card in Left Panel */
+.imposter-rules-mini {
+  margin-top: auto;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0.75rem 0.85rem;
+}
+
+.irm-title {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #fbbf24;
+  margin-bottom: 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.irm-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.76rem;
+  color: #94a3b8;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  line-height: 1.35;
+}
+
+/* Player Color Dot on Leaderboard */
+.player-color-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.7);
+  flex-shrink: 0;
+}
+
+/* Voting Panel below Canvas */
+.voting-panel {
+  background: linear-gradient(145deg, rgba(30, 27, 75, 0.9), rgba(15, 23, 42, 0.95));
+  border: 1.5px solid rgba(139, 92, 246, 0.55);
+  border-radius: 14px;
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+
+.vp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.vp-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 900;
+  color: #fff;
+}
+
+.vp-subtitle {
+  margin: 0.15rem 0 0;
+  font-size: 0.8rem;
+  color: #cbd5e1;
+}
+
+.vp-tally-badge {
+  background: rgba(139, 92, 246, 0.25);
+  border: 1px solid rgba(139, 92, 246, 0.5);
+  color: #ddd6fe;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+}
+
+.vp-candidates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+  gap: 0.55rem;
+}
+
+.vote-candidate-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1.5px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  color: #f8fafc;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.vote-candidate-btn:hover {
+  border-color: #a855f7;
+  background: rgba(139, 92, 246, 0.18);
+  transform: translateY(-1px);
+}
+
+.vote-candidate-btn.selected {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.22);
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.35);
+}
+
+.vote-candidate-btn.skip-vote-btn {
+  border-style: dashed;
+  border-color: rgba(56, 189, 248, 0.5);
+  color: #bae6fd;
+}
+
+.vote-candidate-left {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  overflow: hidden;
+}
+
+.vote-candidate-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vote-count-pill {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fbbf24;
+  font-size: 0.74rem;
+  font-weight: 900;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+}
+
+/* Imposter Secret Word Guess Box in Right Panel */
+.imposter-guess-box {
+  background: linear-gradient(145deg, rgba(69, 10, 10, 0.85), rgba(30, 15, 30, 0.92));
+  border: 1.5px solid rgba(239, 68, 68, 0.55);
+  border-radius: 12px;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.igb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.igb-title {
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: #fca5a5;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.igb-attempts {
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: rgba(239, 68, 68, 0.25);
+  color: #fecaca;
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+}
+
+.igb-desc {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #e2e8f0;
+  line-height: 1.3;
+}
+
+.igb-form {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.igb-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.45rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.igb-btn {
+  padding: 0.45rem 0.75rem;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.igb-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Imposter Last Chance Overlay */
+.last-chance-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.86);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  z-index: 20;
+}
+
+.lc-card {
+  max-width: 440px;
+  width: 100%;
+  background: linear-gradient(160deg, rgba(69, 10, 10, 0.95), rgba(15, 23, 42, 0.98));
+  border: 2px solid #ef4444;
+  border-radius: 18px;
+  padding: 1.5rem;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65), 0 0 30px rgba(239, 68, 68, 0.35);
+}
+
+.lc-badge {
+  display: inline-block;
+  background: rgba(239, 68, 68, 0.25);
+  border: 1px solid #ef4444;
+  color: #fca5a5;
+  font-size: 0.75rem;
+  font-weight: 900;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  margin-bottom: 0.6rem;
+}
+
+.lc-title {
+  margin: 0 0 0.4rem;
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #fff;
+}
+
+.lc-subtitle {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: #cbd5e1;
+}
+
+.lc-guess-form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.lc-guess-input {
+  flex: 1;
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
+  border: 1.5px solid rgba(239, 68, 68, 0.6);
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.lc-guess-btn {
+  padding: 0.65rem 1rem;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+/* Round Over Reveal Modal */
+.ro-winner-badge {
+  display: inline-block;
+  font-size: 0.82rem;
+  font-weight: 900;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  margin-bottom: 0.6rem;
+  letter-spacing: 0.06em;
+}
+
+.ro-winner-badge.crew-won {
+  background: rgba(16, 185, 129, 0.22);
+  border: 1px solid #10b981;
+  color: #6ee7b7;
+}
+
+.ro-winner-badge.imposter-won {
+  background: rgba(239, 68, 68, 0.25);
+  border: 1px solid #ef4444;
+  color: #fca5a5;
+}
+
+.ro-reveal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+  margin: 1rem 0;
+}
+
+.ro-reveal-box {
+  padding: 0.85rem;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.ro-reveal-box.crew-box {
+  background: rgba(16, 185, 129, 0.14);
+  border: 1px solid rgba(16, 185, 129, 0.45);
+}
+
+.ro-reveal-box.imposter-box {
+  background: rgba(239, 68, 68, 0.14);
+  border: 1px solid rgba(239, 68, 68, 0.45);
+}
+
+.ro-box-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.ro-box-word {
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #fff;
+}
+
+.ro-imposter-identity {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  padding: 0.65rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  margin-bottom: 1.25rem;
+  font-weight: 800;
+  color: #f8fafc;
+}
+

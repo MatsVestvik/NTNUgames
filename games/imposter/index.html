@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="no" data-theme="dark">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Imposter – Tegn én strek og avslør bedrageren | NTNU Games</title>
+  <meta name="description"
+    content="3+ spillere får et ord i samme kategori, men én er Imposter med et annet ord! Tegn én strek på tur – gjetter Imposteren ordet før Crew avslører hen?" />
+
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <link rel="stylesheet" href="/hub.css?v=2.1" />
+  <link rel="stylesheet" href="/parallax-bg.css?v=2.1" />
+  <link rel="stylesheet" href="/character/character-creator.css" />
+  <link rel="stylesheet" href="/tegn-og-gjett/styles.css?v=1.0" />
+  <link rel="stylesheet" href="/imposter/styles.css?v=1.0" />
+</head>
+
+<body>
+  <!-- Ambient Parallax Landscape -->
+  <div class="dynamic-parallax-bg" id="dynamicParallaxBg" aria-hidden="true">
+    <div class="parallax-layer layer-1-sky" id="plSky" data-depth="0.04"></div>
+    <div class="parallax-layer layer-2-fjord" id="plFjord" data-depth="0.12"></div>
+    <div class="parallax-layer layer-3-campus" id="plCampus" data-depth="0.26"></div>
+    <div class="parallax-layer layer-4-lawn" id="plLawn" data-depth="0.50"></div>
+    <canvas class="ambient-sparkles-canvas" id="ambientSparklesCanvas"></canvas>
+    <div class="parallax-vignette-overlay"></div>
+  </div>
+
+  <div class="game-shell">
+    <!-- Game Header Bar -->
+    <header class="game-header">
+      <div class="header-left">
+        <a href="/party/" class="brand-btn" id="btnBack">
+          ‹ <span id="backBtnText">Lounge</span>
+        </a>
+        <div class="brand-badge">
+          <span class="imposter-badge-emoji" aria-hidden="true">🕵️</span>
+          <span class="brand-title">Imposter</span>
+        </div>
+        <span class="round-pill" id="roundIndicator">Strekrunde 1</span>
+      </div>
+
+      <div class="header-center">
+        <div class="role-word-banner" id="roleWordBanner">
+          <span class="role-badge crew" id="myRoleBadge">CREW</span>
+          <div class="role-word-details">
+            <span class="role-category-label" id="myCategoryLabel">Kategori: Dyr</span>
+            <span class="role-secret-word" id="mySecretWord">KATT</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <div class="timer-bubble" id="timerBubble" title="Tid igjen">
+          <span id="timerText">25</span>
+        </div>
+        <button type="button" class="icon-control-btn" id="btnSoundToggle" title="Lyd av/på">
+          🔊
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Game Workspace -->
+    <main class="game-main-grid">
+      <!-- Left Panel: Players & Turn Order -->
+      <aside class="game-panel panel-leaderboard">
+        <div class="panel-header-title">
+          <span>Spillere & Tur</span>
+          <span id="playersCountBadge">3</span>
+        </div>
+        <div class="players-list" id="playersList">
+          <!-- Dynamic player rows -->
+        </div>
+
+        <div class="imposter-rules-mini">
+          <div class="irm-title">🕵️ Slik spiller dere</div>
+          <ul class="irm-list">
+            <li>Alle tegner <strong>én sammenhengende strek</strong> hver per runde.</li>
+            <li><strong>Imposteren</strong> har fått et annet ord i samme kategori.</li>
+            <li>Etter hver runde stemmer dere – eller gjetter Imposteren Crew-ordet først!</li>
+          </ul>
+        </div>
+      </aside>
+
+      <!-- Center Panel: Shared Drawing Canvas, Voting Bar & Last Chance -->
+      <section class="game-panel panel-canvas-container">
+        <!-- Turn Status Banner above canvas -->
+        <div class="turn-status-strip" id="turnStatusStrip">
+          <span class="tss-dot" id="turnStatusDot"></span>
+          <span class="tss-text" id="turnStatusText">Gjør deg klar…</span>
+          <button type="button" class="btn-skip-stroke hidden" id="btnPassStroke" title="Hopp over / ferdig med strek">
+            Fullfør tur →
+          </button>
+        </div>
+
+        <!-- Canvas Viewport -->
+        <div class="canvas-viewport-wrap" id="canvasViewportWrap">
+          <canvas id="paintCanvas" width="800" height="500"></canvas>
+
+          <!-- Imposter Last Chance Overlay (when Imposter is voted out) -->
+          <div class="last-chance-overlay hidden" id="lastChanceOverlay">
+            <div class="lc-card">
+              <div class="lc-badge">🚨 IMPOSTER AVSLØRT!</div>
+              <h2 class="lc-title" id="lcTitle">Imposteren ble tatt!</h2>
+              <p class="lc-subtitle" id="lcSubtitle">
+                Imposteren har 20 sekunder og ett siste forsøk på å gjette Crew-ordet for å stjele seieren!
+              </p>
+              <form class="lc-guess-form hidden" id="lcGuessForm">
+                <input type="text" class="lc-guess-input" id="lcGuessInput" placeholder="Hva tror du Crew-ordet er?"
+                  autocomplete="off" maxlength="40" />
+                <button type="submit" class="lc-guess-btn">Gjett og vinn!</button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Voting Bar (Visible during 'voting' phase right under canvas so drawing remains visible!) -->
+        <div class="voting-panel hidden" id="votingPanel">
+          <div class="vp-header">
+            <div>
+              <h3 class="vp-title">🗳️ Hvem er Imposter?</h3>
+              <p class="vp-subtitle">Se på strekene over, diskuter i chatten, og avgi din stemme:</p>
+            </div>
+            <span class="vp-tally-badge" id="voteProgressBadge">0 / 3 har stemt</span>
+          </div>
+          <div class="vp-candidates-grid" id="voteCandidatesGrid">
+            <!-- Player vote buttons + "Ny runde med streker" button injected via JS -->
+          </div>
+        </div>
+
+        <!-- Drawing Toolbar (Active only when it's your turn to draw 1 stroke) -->
+        <div class="drawing-toolbar" id="drawingToolbar">
+          <div class="tool-group">
+            <span class="stroke-rule-hint" id="strokeRuleHint">
+              ✏️ Tegn <strong>én sammenhengende strek</strong> – når du løfter pennen går turen videre!
+            </span>
+          </div>
+
+          <div class="tool-group">
+            <div class="colors-palette" id="colorsPalette">
+              <!-- Swatches injected via JS -->
+            </div>
+          </div>
+
+          <div class="tool-group" id="brushSizesGroup">
+            <button type="button" class="size-btn" data-size="4" title="Tynn linje">
+              <span class="brush-dot" style="width: 5px; height: 5px;"></span>
+            </button>
+            <button type="button" class="size-btn active" data-size="8" title="Middels linje">
+              <span class="brush-dot" style="width: 9px; height: 9px;"></span>
+            </button>
+            <button type="button" class="size-btn" data-size="16" title="Tykk linje">
+              <span class="brush-dot" style="width: 15px; height: 15px;"></span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Panel: Imposter Secret Word Guess Box + Live Discussion Chat -->
+      <aside class="game-panel panel-chat">
+        <!-- Imposter Secret Guess Box (Only shown to the Imposter!) -->
+        <div class="imposter-guess-box hidden" id="imposterGuessBox">
+          <div class="igb-header">
+            <span class="igb-title">🕵️ Gjett Crew-ordet</span>
+            <span class="igb-attempts" id="imposterAttemptsBadge">2 forsøk igjen</span>
+          </div>
+          <p class="igb-desc">
+            Vet du hva de andre tegner? Gjetter du Crew-ordet før du blir stemt ut, vinner du umiddelbart!
+          </p>
+          <form class="igb-form" id="imposterGuessForm">
+            <input type="text" class="igb-input" id="imposterGuessInput" placeholder="Gjett Crew-ordet…"
+              autocomplete="off" maxlength="40" />
+            <button type="submit" class="igb-btn" id="btnSubmitImposterGuess">Gjett</button>
+          </form>
+        </div>
+
+        <div class="panel-header-title">
+          <span>Diskusjon & Chat</span>
+          <span id="chatConnDot" style="color: #10b981;">●</span>
+        </div>
+        <div class="chat-messages-container" id="chatMessagesContainer">
+          <!-- Dynamic chat bubbles -->
+        </div>
+
+        <form class="chat-form" id="chatForm">
+          <input type="text" class="chat-input" id="chatInput" placeholder="Diskuter hvem som tegnet rart…"
+            autocomplete="off" maxlength="140" />
+          <button type="submit" class="chat-send-btn" id="btnSendChat">
+            Send
+          </button>
+        </form>
+      </aside>
+    </main>
+  </div>
+
+  <!-- Modal: Round Over / Winner Reveal -->
+  <div class="modal-overlay" id="modalRoundOver">
+    <div class="modal-card" style="max-width: 560px;">
+      <div class="ro-winner-badge" id="roWinnerBadge">🎉 CREW VANT!</div>
+      <h2 class="modal-title" id="roTitle">Imposteren ble avslørt!</h2>
+      <p class="modal-subtitle" id="roReason">Crew stemte ut riktig Imposter!</p>
+
+      <div class="ro-reveal-grid">
+        <div class="ro-reveal-box crew-box">
+          <span class="ro-box-label">Crew-ordet</span>
+          <span class="ro-box-word" id="roCrewWord">KATT</span>
+        </div>
+        <div class="ro-reveal-box imposter-box">
+          <span class="ro-box-label">Imposterens dekkord</span>
+          <span class="ro-box-word" id="roImposterWord">HUND</span>
+        </div>
+      </div>
+
+      <div class="ro-imposter-identity" id="roImposterIdentity">
+        <!-- Injected via JS -->
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-primary" id="btnNextRound">
+          Spill ny runde
+        </button>
+        <button type="button" class="btn-secondary" id="btnReturnLobby">
+          ‹ Tilbake til Lounge
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/parallax-bg.js?v=2.1"></script>
+  <script src="/character/character-creator.js"></script>
+  <script src="/imposter/app.js?v=1.0"></script>
+</body>
+
+</html>
+

@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from games.ordbombe.api import check_word, get_prompts_cache
 from games.tegn_og_gjett.words import get_random_word_triplet, is_close_guess
+from games.imposter.words import get_random_imposter_pair, is_matching_word
 
 # In-memory party rooms storage
 _rooms: Dict[str, "PartyRoom"] = {}
@@ -144,6 +145,8 @@ class PartyRoom:
                 self._tick_ordbombe()
             elif self.current_game == "tegn_og_gjett":
                 self._tick_tegn_og_gjett()
+            elif self.current_game == "imposter":
+                self._tick_imposter()
 
             players_list = []
             for p in self.players.values():
@@ -164,6 +167,8 @@ class PartyRoom:
 
             if self.current_game == "tegn_og_gjett":
                 effective_game_state = self._get_tegn_og_gjett_public_state(client_player_id)
+            elif self.current_game == "imposter":
+                effective_game_state = self._get_imposter_public_state(client_player_id)
             elif self.current_game == "sjakk":
                 effective_game_state = dict(self.game_state)
                 try:
@@ -938,13 +943,514 @@ class PartyRoom:
 
     def get_draw_actions_since(self, since_id: int) -> Tuple[List[Dict[str, Any]], int]:
         with self.lock:
-            if self.current_game != "tegn_og_gjett":
+            if self.current_game not in ("tegn_og_gjett", "imposter"):
                 return [], 0
             actions = self.game_state.get("draw_actions", [])
             last_id = self.game_state.get("next_action_id", 1) - 1
             if since_id <= 0:
                 return list(actions), last_id
             return [a for a in actions if a.get("id", 0) > since_id], last_id
+
+    # --- IMPOSTER (TEGN-IMPOSTER) ENGINE ---
+
+    def start_imposter(self, settings: Dict[str, Any], keep_scores: bool = False) -> None:
+        with self.lock:
+            self.current_game = "imposter"
+            stroke_time = int(settings.get("strokeTime") or 25)
+            vote_time = int(settings.get("voteTime") or 45)
+            max_guesses = int(settings.get("imposterGuesses") or 2)
+
+            active_ids = list(self.players.keys())
+            if not active_ids:
+                return
+
+            random.shuffle(active_ids)
+            if not keep_scores:
+                for p in self.players.values():
+                    p["score"] = 0
+                    p["lives"] = 3
+                    p["eliminated"] = False
+
+            imposter_id = random.choice(active_ids)
+            pair = get_random_imposter_pair()
+            now = time.time()
+            first_drawer_id = active_ids[0]
+            first_drawer_name = self.players[first_drawer_id]["name"]
+            prev_match_num = int(self.game_state.get("match_number", 0)) if keep_scores else 0
+
+            self.game_state = {
+                "status": "playing",
+                "settings": {
+                    "strokeTime": stroke_time,
+                    "voteTime": vote_time,
+                    "imposterGuesses": max_guesses,
+                },
+                "match_number": prev_match_num + 1,
+                "stroke_round": 1,
+                "turn_order": active_ids,
+                "turn_idx": 0,
+                "active_drawer_id": first_drawer_id,
+                "active_drawer_name": first_drawer_name,
+                "imposter_id": imposter_id,
+                "category": pair["category"],
+                "crew_word": pair["crew_word"],
+                "imposter_word": pair["imposter_word"],
+                "turn_state": "drawing",  # "drawing", "voting", "imposter_last_chance", "round_over"
+                "stroke_time": stroke_time,
+                "vote_time": vote_time,
+                "phase_start_time": now,
+                "time_remaining": float(stroke_time),
+                "imposter_guesses_left": max_guesses,
+                "votes": {},  # voter_id -> target_player_id or "skip"
+                "draw_actions": [],
+                "next_action_id": 1,
+                "has_drawn_in_turn": False,
+                "winner_team": None,  # "crew" or "imposter"
+                "win_reason": "",
+                "accused_id": None,
+                "winning_guess": None,
+                "chat_messages": [
+                    {
+                        "id": 1,
+                        "type": "system",
+                        "sender": "System",
+                        "text": f"🕵️ Imposter har startet! Kategori: «{pair['category']}». Alle får tegne én strek hver per runde. {first_drawer_name} starter!",
+                        "timestamp": now,
+                    }
+                ],
+                "next_msg_id": 2,
+            }
+            self.bump()
+
+    def _get_imposter_public_state(self, client_player_id: Optional[str]) -> Dict[str, Any]:
+        gs = dict(self.game_state)
+        imposter_id = gs.get("imposter_id")
+        turn_state = gs.get("turn_state", "drawing")
+        is_imposter = bool(client_player_id and client_player_id == imposter_id)
+        is_revealed = turn_state in ("imposter_last_chance", "round_over")
+
+        # Secret word & role masking per player
+        gs["is_imposter"] = is_imposter
+        gs["my_role"] = "imposter" if is_imposter else "crew"
+        gs["my_word"] = gs.get("imposter_word") if is_imposter else gs.get("crew_word")
+        gs["is_drawer"] = bool(client_player_id and client_player_id == gs.get("active_drawer_id"))
+
+        # Hide secret words & imposter identity until revealed
+        if not is_revealed:
+            gs.pop("crew_word", None)
+            gs.pop("imposter_word", None)
+        if not is_revealed and not is_imposter:
+            gs.pop("imposter_id", None)
+        elif is_revealed:
+            imp_player = self.players.get(imposter_id or "", {})
+            gs["imposter_name"] = imp_player.get("name", "Imposter")
+            gs["imposter_avatar"] = imp_player.get("avatar", "charbear")
+            gs["imposter_color"] = imp_player.get("color", "#ef4444")
+
+        # Summarize votes safely
+        votes_map = gs.get("votes") or {}
+        vote_counts: Dict[str, int] = {}
+        for v_target in votes_map.values():
+            vote_counts[v_target] = vote_counts.get(v_target, 0) + 1
+        gs["vote_counts"] = vote_counts
+        gs["voted_player_ids"] = list(votes_map.keys())
+        gs["my_vote"] = votes_map.get(client_player_id or "")
+
+        if "chat_messages" in gs:
+            if len(self.game_state.get("chat_messages", [])) > 200:
+                self.game_state["chat_messages"] = self.game_state["chat_messages"][-120:]
+            gs["chat_messages"] = gs["chat_messages"][-80:]
+
+        return gs
+
+    def _advance_imposter_stroke_turn(self) -> None:
+        now = time.time()
+        gs = self.game_state
+        turn_order = [pid for pid in gs.get("turn_order", []) if pid in self.players]
+        if not turn_order:
+            turn_order = list(self.players.keys())
+        gs["turn_order"] = turn_order
+
+        if not turn_order:
+            return
+
+        next_idx = gs.get("turn_idx", 0) + 1
+        if next_idx >= len(turn_order):
+            # All players have drawn their 1 stroke in this round -> enter voting!
+            gs["turn_state"] = "voting"
+            gs["phase_start_time"] = now
+            gs["time_remaining"] = float(gs.get("vote_time", 45))
+            gs["votes"] = {}
+            gs["has_drawn_in_turn"] = False
+            msg_id = gs.get("next_msg_id", 1)
+            gs["chat_messages"].append({
+                "id": msg_id,
+                "type": "system_highlight",
+                "sender": "System",
+                "text": f"🗳️ Strekrunde {gs.get('stroke_round', 1)} er ferdig! Diskuter i chatten og stem på hvem dere tror er Imposter – eller stem for en ny runde med streker!",
+                "timestamp": now,
+            })
+            gs["next_msg_id"] = msg_id + 1
+            self.bump()
+            return
+
+        next_drawer_id = turn_order[next_idx]
+        next_drawer_name = self.players.get(next_drawer_id, {}).get("name", "Spiller")
+        gs["turn_idx"] = next_idx
+        gs["active_drawer_id"] = next_drawer_id
+        gs["active_drawer_name"] = next_drawer_name
+        gs["turn_state"] = "drawing"
+        gs["phase_start_time"] = now
+        gs["time_remaining"] = float(gs.get("stroke_time", 25))
+        gs["has_drawn_in_turn"] = False
+
+        msg_id = gs.get("next_msg_id", 1)
+        gs["chat_messages"].append({
+            "id": msg_id,
+            "type": "system",
+            "sender": "System",
+            "text": f"✏️ Det er {next_drawer_name} sin tur til å tegne én strek!",
+            "timestamp": now,
+        })
+        gs["next_msg_id"] = msg_id + 1
+        self.bump()
+
+    def _resolve_imposter_votes(self) -> None:
+        now = time.time()
+        gs = self.game_state
+        votes_map: Dict[str, str] = gs.get("votes") or {}
+
+        counts: Dict[str, int] = {}
+        for target in votes_map.values():
+            counts[target] = counts.get(target, 0) + 1
+
+        if not counts:
+            top_target = "skip"
+            is_tie = False
+        else:
+            sorted_targets = sorted(counts.items(), key=lambda x: x[1], reverse=True)
+            top_target, top_count = sorted_targets[0]
+            is_tie = len(sorted_targets) > 1 and sorted_targets[1][1] == top_count
+
+        if top_target == "skip" or is_tie:
+            # Start another round of 1-line strokes!
+            turn_order = [pid for pid in gs.get("turn_order", []) if pid in self.players]
+            if not turn_order:
+                turn_order = list(self.players.keys())
+            gs["turn_order"] = turn_order
+            gs["stroke_round"] = int(gs.get("stroke_round", 1)) + 1
+            gs["turn_idx"] = 0
+            first_id = turn_order[0] if turn_order else ""
+            first_name = self.players.get(first_id, {}).get("name", "Spiller")
+            gs["active_drawer_id"] = first_id
+            gs["active_drawer_name"] = first_name
+            gs["turn_state"] = "drawing"
+            gs["phase_start_time"] = now
+            gs["time_remaining"] = float(gs.get("stroke_time", 25))
+            gs["votes"] = {}
+            gs["has_drawn_in_turn"] = False
+
+            reason_txt = "Stemmene ble uavgjort!" if is_tie else "Flertallet stemte for en ny runde med streker!"
+            msg_id = gs.get("next_msg_id", 1)
+            gs["chat_messages"].append({
+                "id": msg_id,
+                "type": "system_highlight",
+                "sender": "System",
+                "text": f"🎨 {reason_txt} Strekrunde {gs['stroke_round']} starter – {first_name} tegner først!",
+                "timestamp": now,
+            })
+            gs["next_msg_id"] = msg_id + 1
+            self.bump()
+            return
+
+        # A specific player was voted out!
+        accused_id = top_target
+        gs["accused_id"] = accused_id
+        imposter_id = gs.get("imposter_id")
+        accused_name = self.players.get(accused_id, {}).get("name", "Spiller")
+
+        if accused_id == imposter_id:
+            # Crew caught the Imposter! Give Imposter 1 last chance (20s) to guess the Crew's word!
+            gs["turn_state"] = "imposter_last_chance"
+            gs["phase_start_time"] = now
+            gs["time_remaining"] = 20.0
+            msg_id = gs.get("next_msg_id", 1)
+            gs["chat_messages"].append({
+                "id": msg_id,
+                "type": "system_highlight",
+                "sender": "System",
+                "text": f"🚨 Crew avslørte {accused_name} som Imposter! {accused_name} får nå 20 sekunder og ett siste forsøk på å gjette Crew-ordet!",
+                "timestamp": now,
+            })
+            gs["next_msg_id"] = msg_id + 1
+            self.bump()
+        else:
+            # Crew voted out an innocent player -> Imposter wins!
+            self._end_imposter_round(
+                winner_team="imposter",
+                reason=f"Crew stemte ut feil person ({accused_name} var uskyldig)!",
+                accused_id=accused_id,
+            )
+
+    def _end_imposter_round(
+        self,
+        winner_team: str,
+        reason: str,
+        accused_id: Optional[str] = None,
+        winning_guess: Optional[str] = None,
+    ) -> None:
+        now = time.time()
+        gs = self.game_state
+        gs["status"] = "round_over"
+        gs["turn_state"] = "round_over"
+        gs["winner_team"] = winner_team
+        gs["win_reason"] = reason
+        if accused_id:
+            gs["accused_id"] = accused_id
+        if winning_guess:
+            gs["winning_guess"] = winning_guess
+
+        imposter_id = gs.get("imposter_id")
+        imposter_player = self.players.get(imposter_id or "")
+        imposter_name = imposter_player["name"] if imposter_player else "Imposter"
+        crew_word = gs.get("crew_word", "")
+        imposter_word = gs.get("imposter_word", "")
+        votes_map = gs.get("votes") or {}
+
+        if winner_team == "imposter":
+            if imposter_player:
+                imposter_player["score"] = imposter_player.get("score", 0) + 300
+            headline = f"🕵️ Imposteren ({imposter_name}) vant! {reason}"
+        else:
+            for pid, p in self.players.items():
+                if pid != imposter_id:
+                    bonus = 50 if votes_map.get(pid) == imposter_id else 0
+                    p["score"] = p.get("score", 0) + 150 + bonus
+            headline = f"🎉 Crew vant! {reason}"
+
+        msg_id = gs.get("next_msg_id", 1)
+        gs["chat_messages"].append({
+            "id": msg_id,
+            "type": "winner",
+            "sender": "System",
+            "text": f"{headline} Crew-ordet var «{crew_word.upper()}» (Imposterens dekkord: «{imposter_word.upper()}»).",
+            "timestamp": now,
+        })
+        gs["next_msg_id"] = msg_id + 1
+        self.bump()
+
+    def _tick_imposter(self) -> None:
+        gs = self.game_state
+        if gs.get("status") != "playing":
+            return
+
+        now = time.time()
+        turn_state = gs.get("turn_state")
+        phase_start = gs.get("phase_start_time", now)
+
+        if turn_state == "drawing":
+            duration = float(gs.get("stroke_time", 25))
+            remaining = max(0.0, duration - (now - phase_start))
+            gs["time_remaining"] = round(remaining, 1)
+            if remaining <= 0:
+                self._advance_imposter_stroke_turn()
+
+        elif turn_state == "voting":
+            duration = float(gs.get("vote_time", 45))
+            remaining = max(0.0, duration - (now - phase_start))
+            gs["time_remaining"] = round(remaining, 1)
+            if remaining <= 0:
+                self._resolve_imposter_votes()
+
+        elif turn_state == "imposter_last_chance":
+            remaining = max(0.0, 20.0 - (now - phase_start))
+            gs["time_remaining"] = round(remaining, 1)
+            if remaining <= 0:
+                imposter_id = gs.get("imposter_id")
+                imposter_name = self.players.get(imposter_id or "", {}).get("name", "Imposteren")
+                self._end_imposter_round(
+                    winner_team="crew",
+                    reason=f"{imposter_name} ble avslørt og rakk ikke å gjette Crew-ordet i tide!",
+                )
+
+    def handle_imposter_action(self, player_id: str, body: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
+        with self.lock:
+            if self.current_game != "imposter":
+                return 400, {"ok": False, "error": "Imposter er ikke aktivt"}
+
+            action = str(body.get("action") or "").strip()
+            gs = self.game_state
+            player = self.players.get(player_id)
+            if not player:
+                return 403, {"ok": False, "error": "Spiller ikke funnet i rommet"}
+
+            now = time.time()
+
+            if action == "draw":
+                if gs.get("turn_state") != "drawing":
+                    return 400, {"ok": False, "error": "Tegning er ikke aktiv nå"}
+                if gs.get("active_drawer_id") != player_id:
+                    return 403, {"ok": False, "error": "Det er ikke din tur til å tegne"}
+                if gs.get("has_drawn_in_turn"):
+                    return 400, {"ok": False, "error": "Du har allerede tegnet din ene strek denne runden"}
+
+                new_actions = body.get("actions") or []
+                if not isinstance(new_actions, list):
+                    return 400, {"ok": False, "error": "actions må være en liste"}
+
+                draw_actions = gs.setdefault("draw_actions", [])
+                next_id = gs.get("next_action_id", 1)
+
+                for act in new_actions[:200]:
+                    if isinstance(act, dict):
+                        act_copy = dict(act)
+                        act_copy["id"] = next_id
+                        act_copy["drawerId"] = player_id
+                        next_id += 1
+                        draw_actions.append(act_copy)
+
+                gs["next_action_id"] = next_id
+                self.touch()
+
+                if body.get("finishStroke"):
+                    gs["has_drawn_in_turn"] = True
+                    self._advance_imposter_stroke_turn()
+
+                return 200, {"ok": True, "lastActionId": next_id - 1}
+
+            elif action == "finish_stroke":
+                if gs.get("turn_state") != "drawing":
+                    return 400, {"ok": False, "error": "Ikke i tegnefase"}
+                if gs.get("active_drawer_id") != player_id:
+                    return 403, {"ok": False, "error": "Det er ikke din tur"}
+                gs["has_drawn_in_turn"] = True
+                self._advance_imposter_stroke_turn()
+                return 200, {"ok": True}
+
+            elif action == "vote":
+                if gs.get("turn_state") != "voting":
+                    return 400, {"ok": False, "error": "Avstemning er ikke aktiv nå"}
+                target_id = str(body.get("targetId") or "").strip()
+                if target_id != "skip" and target_id not in self.players:
+                    return 400, {"ok": False, "error": "Ugyldig stemmemål"}
+
+                votes = gs.setdefault("votes", {})
+                votes[player_id] = target_id
+                self.bump()
+
+                # Check if everyone in the room has voted
+                if len(votes) >= len(self.players):
+                    self._resolve_imposter_votes()
+
+                return 200, {"ok": True, "myVote": target_id}
+
+            elif action == "imposter_guess":
+                imposter_id = gs.get("imposter_id")
+                if player_id != imposter_id:
+                    return 403, {"ok": False, "error": "Kun Imposteren kan gjette Crew-ordet!"}
+
+                turn_state = gs.get("turn_state")
+                if turn_state not in ("drawing", "voting", "imposter_last_chance"):
+                    return 400, {"ok": False, "error": "Kan ikke gjette nå"}
+
+                guess_text = str(body.get("guess") or "").strip()
+                if not guess_text:
+                    return 400, {"ok": False, "error": "Skriv inn et ord å gjette"}
+
+                crew_word = gs.get("crew_word", "")
+
+                if turn_state == "imposter_last_chance":
+                    if is_matching_word(guess_text, crew_word):
+                        self._end_imposter_round(
+                            winner_team="imposter",
+                            reason=f"{player['name']} gjettet Crew-ordet «{crew_word.upper()}» på siste forsøk og stjal seieren!",
+                            winning_guess=guess_text,
+                        )
+                        return 200, {"ok": True, "correct": True}
+                    else:
+                        self._end_imposter_round(
+                            winner_team="crew",
+                            reason=f"{player['name']} ble avslørt og gjettet feil på siste forsøk («{guess_text}»)!",
+                            winning_guess=guess_text,
+                        )
+                        return 200, {"ok": True, "correct": False}
+
+                # Normal guess during drawing or voting
+                guesses_left = int(gs.get("imposter_guesses_left", 0))
+                if guesses_left <= 0:
+                    return 400, {"ok": False, "error": "Du har brukt opp dine forsøk underveis!"}
+
+                guesses_left -= 1
+                gs["imposter_guesses_left"] = guesses_left
+
+                if is_matching_word(guess_text, crew_word):
+                    self._end_imposter_round(
+                        winner_team="imposter",
+                        reason=f"Imposteren ({player['name']}) gjettet Crew-ordet «{crew_word.upper()}» før Crew avslørte hen!",
+                        winning_guess=guess_text,
+                    )
+                    return 200, {"ok": True, "correct": True, "guessesLeft": guesses_left}
+                else:
+                    msg_id = gs.get("next_msg_id", 1)
+                    gs["chat_messages"].append({
+                        "id": msg_id,
+                        "type": "system_highlight",
+                        "sender": "System",
+                        "text": f"🕵️ Imposteren prøvde å gjette Crew-ordet med «{guess_text}» – FEIL! ({guesses_left} forsøk igjen)",
+                        "timestamp": now,
+                    })
+                    gs["next_msg_id"] = msg_id + 1
+                    self.bump()
+                    return 200, {
+                        "ok": True,
+                        "correct": False,
+                        "guessesLeft": guesses_left,
+                        "chatMessages": gs["chat_messages"][-80:],
+                    }
+
+            elif action == "chat":
+                text = str(body.get("text") or "").strip()[:140]
+                if not text:
+                    return 400, {"ok": False, "error": "Tom melding"}
+                msg_id = gs.get("next_msg_id", 1)
+                gs["chat_messages"].append({
+                    "id": msg_id,
+                    "type": "chat",
+                    "sender": player["name"],
+                    "senderColor": player.get("color", "#ffd166"),
+                    "text": text,
+                    "timestamp": now,
+                })
+                gs["next_msg_id"] = msg_id + 1
+                self.bump()
+                return 200, {"ok": True, "chatMessages": gs["chat_messages"][-80:]}
+
+            elif action in ("next_round", "restart"):
+                host_token = str(body.get("hostToken") or "").strip()
+                is_host_req = bool(
+                    (host_token and self.host_token == host_token)
+                    or (player_id and self.host_id == player_id)
+                )
+                if not is_host_req and gs.get("turn_state") != "round_over":
+                    return 403, {"ok": False, "error": "Kun verten kan starte ny runde mens spillet pågår"}
+                keep_scores = action == "next_round"
+                self.start_imposter(gs.get("settings") or {}, keep_scores=keep_scores)
+                return 200, {"ok": True}
+
+            elif action == "to_lobby":
+                host_token = str(body.get("hostToken") or "").strip()
+                is_host_req = bool(
+                    (host_token and self.host_token == host_token)
+                    or (player_id and self.host_id == player_id)
+                )
+                if not (is_host_req or gs.get("turn_state") == "round_over"):
+                    return 403, {"ok": False, "error": "Kun verten kan gå tilbake til lobby mens spillet pågår"}
+                self.current_game = None
+                self.game_state = {}
+                self.bump()
+                return 200, {"ok": True}
+
+            return 400, {"ok": False, "error": f"Ukjent handling «{action}»"}
 
 
 class PartyAPI:
@@ -973,13 +1479,13 @@ class PartyAPI:
                 room.touch()
 
             # If polling and client already has current version, short wait (up to 1.5s)
-            if client_v >= 0 and client_v == room.version and room.current_game not in ("ordbombe", "tegn_og_gjett"):
+            if client_v >= 0 and client_v == room.version and room.current_game not in ("ordbombe", "tegn_og_gjett", "imposter"):
                 time.sleep(0.4)
 
             state = room.get_public_state(player_id)
             return 200, state
 
-        if rel_path == "/api/tegn-og-gjett/draw-sync":
+        if rel_path in ("/api/tegn-og-gjett/draw-sync", "/api/imposter/draw-sync"):
             code = (query.get("code", [""])[0] or "").strip().upper()
             try:
                 since_id = int(query.get("since", [0])[0] or 0)
@@ -997,6 +1503,12 @@ class PartyAPI:
                 "ok": True,
                 "actions": actions,
                 "lastActionId": last_action_id,
+            }
+
+        if rel_path == "/api/imposter/random-pair":
+            return 200, {
+                "ok": True,
+                "pair": get_random_imposter_pair(),
             }
 
         if rel_path in ("/api/tegn-og-gjett/random-word", "/api/tegn-og-gjett/words"):
@@ -1239,6 +1751,8 @@ class PartyAPI:
                     room.start_ordbombe(settings)
                 elif game_id == "tegn_og_gjett":
                     room.start_tegn_og_gjett(settings)
+                elif game_id == "imposter":
+                    room.start_imposter(settings)
                 elif game_id == "sjakk":
                     room.current_game = "sjakk"
                     room.game_state = {"settings": settings, "status": "active"}
@@ -1384,6 +1898,18 @@ class PartyAPI:
                 return 404, {"ok": False, "error": "Rommet finnes ikke"}
 
             return room.handle_tegn_og_gjett_action(player_id, body)
+
+        if rel_path == "/api/imposter/action":
+            code = str(body.get("roomCode") or "").strip().upper()
+            player_id = str(body.get("playerId") or "").strip()
+
+            with _rooms_lock:
+                room = _rooms.get(code)
+
+            if not room:
+                return 404, {"ok": False, "error": "Rommet finnes ikke"}
+
+            return room.handle_imposter_action(player_id, body)
 
         if rel_path == "/api/kick":
             code = str(body.get("roomCode") or "").strip().upper()

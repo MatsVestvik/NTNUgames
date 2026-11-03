@@ -304,6 +304,45 @@
               </button>
             </div>
           </div>
+          <!-- Game 5: Imposter (3-16 spillere) -->
+          <div class="lobby-game-card active-playable" id="gameCardImposter">
+            <div class="lg-card-bg-icon">
+              <img src="/tegn-og-gjett/assets/icon.png" alt="" aria-hidden="true" />
+            </div>
+            <div class="lg-card-left">
+              <div>
+                <div class="lg-card-title-row">
+                  <h4 class="lg-card-title">Imposter</h4>
+                  <span class="lg-card-badge badge-ready">Nytt spill! 🕵️</span>
+                </div>
+                <p class="lg-card-desc">
+                  Alle får et hemmelig ord, men én spiller er Imposter med et annet ord i samme kategori! Tegn én strek hver på tur – avslør Imposteren før hen gjetter ordet!
+                </p>
+                <div class="lg-card-meta">
+                  <span>3–16 spillere</span> • <span>Én strek per runde</span> • <span>Sosial deduksjon</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="lg-card-right">
+              <div class="lg-settings-inline">
+                <img src="/settings.png" class="party-gear-icon" alt="" />
+                <label>
+                  <span>Strek-tid:</span>
+                  <select id="selectTimerImposter" class="lg-select">
+                    <option value="20">20 sek</option>
+                    <option value="25" selected>25 sek</option>
+                    <option value="35">35 sek</option>
+                  </select>
+                </label>
+              </div>
+
+              <button type="button" class="party-btn start-game-btn" id="btnStartImposter"
+                style="background: linear-gradient(135deg, #ef4444, #b91c1c);">
+                Start Imposter
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 

@@ -82,6 +82,8 @@
     btnStartSjakk: document.getElementById("btnStartSjakk"),
     selectTimerSjakk: document.getElementById("selectTimerSjakk"),
     btnStartKorridorer: document.getElementById("btnStartKorridorer"),
+    btnStartImposter: document.getElementById("btnStartImposter"),
+    selectTimerImposter: document.getElementById("selectTimerImposter"),
     btnLeaveRoom: document.getElementById("btnLeaveRoom"),
     connStatusText: document.getElementById("connStatusText"),
   };
@@ -401,6 +403,13 @@
             window.location.href = target;
             return;
           }
+
+          if (data.currentGame === "imposter" && data.gameState?.status !== "round_over") {
+            // Redirect to Imposter in room mode!
+            const target = `/imposter/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
+            window.location.href = target;
+            return;
+          }
         }
       } catch (err) {
         console.warn("Poll connection hiccup:", err);
@@ -712,6 +721,44 @@
         alert("Feil ved start av spill.");
         el.btnStartKorridorer.disabled = false;
         el.btnStartKorridorer.textContent = "Start Korridorer";
+      }
+    });
+  }
+
+  // Host launches Imposter
+  if (el.btnStartImposter) {
+    el.btnStartImposter.addEventListener("click", async () => {
+      if (!state.isHost || !state.roomCode) return;
+      const strokeTime = parseInt(el.selectTimerImposter?.value || "25", 10) || 25;
+      try {
+        el.btnStartImposter.disabled = true;
+        el.btnStartImposter.textContent = "Starter spill…";
+
+        const resp = await fetch("/api/party/select-game", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            roomCode: state.roomCode,
+            hostToken: state.hostToken,
+            gameId: "imposter",
+            settings: { strokeTime },
+          }),
+        });
+
+        const data = await resp.json();
+        if (!data.ok) {
+          alert(data.error || "Kunne ikke starte Imposter.");
+          el.btnStartImposter.disabled = false;
+          el.btnStartImposter.textContent = "Start Imposter";
+          return;
+        }
+
+        window.location.href = `/imposter/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
+      } catch (err) {
+        console.error(err);
+        alert("Feil ved start av spill.");
+        el.btnStartImposter.disabled = false;
+        el.btnStartImposter.textContent = "Start Imposter";
       }
     });
   }
