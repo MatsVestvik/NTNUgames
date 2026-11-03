@@ -147,6 +147,8 @@ class PartyRoom:
                 self._tick_tegn_og_gjett()
             elif self.current_game == "imposter":
                 self._tick_imposter()
+            elif self.current_game == "fargekoden":
+                self._tick_fargekoden()
 
             players_list = []
             for p in self.players.values():
@@ -169,6 +171,8 @@ class PartyRoom:
                 effective_game_state = self._get_tegn_og_gjett_public_state(client_player_id)
             elif self.current_game == "imposter":
                 effective_game_state = self._get_imposter_public_state(client_player_id)
+            elif self.current_game == "fargekoden":
+                effective_game_state = self._get_fargekoden_public_state(client_player_id)
             elif self.current_game == "sjakk":
                 effective_game_state = dict(self.game_state)
                 try:
@@ -1452,6 +1456,373 @@ class PartyRoom:
 
             return 400, {"ok": False, "error": f"Ukjent handling «{action}»"}
 
+    # --- FARGEKODEN (HUES AND CUES) ENGINE ---
+
+    @staticmethod
+    def _generate_color_candidates() -> List[List[int]]:
+        """Generate 4 distinct candidate coordinates [r, c] on the 16x30 color board."""
+        candidates: List[List[int]] = []
+        col_buckets = [random.randint(2, 7), random.randint(8, 14), random.randint(15, 21), random.randint(22, 27)]
+        random.shuffle(col_buckets)
+        for c in col_buckets:
+            r = random.randint(2, 13)
+            candidates.append([r, c])
+        return candidates
+
+    def start_fargekoden(self, settings: Dict[str, Any]) -> None:
+        with self.lock:
+            self.current_game = "fargekoden"
+            rounds = int(settings.get("rounds") or 1)
+            guess_time = int(settings.get("guessTime") or 35)
+
+            active_ids = list(self.players.keys())
+            if not active_ids:
+                return
+
+            random.shuffle(active_ids)
+            for p in self.players.values():
+                p["score"] = 0
+                p["lives"] = 3
+                p["eliminated"] = False
+
+            first_giver_id = active_ids[0]
+            first_giver_name = self.players[first_giver_id]["name"]
+            candidates = self._generate_color_candidates()
+            now = time.time()
+
+            self.game_state = {
+                "status": "playing",
+                "settings": {"rounds": rounds, "guessTime": guess_time},
+                "total_rounds": rounds,
+                "current_round": 1,
+                "turn_order": active_ids,
+                "turn_idx": 0,
+                "active_giver_id": first_giver_id,
+                "active_giver_name": first_giver_name,
+                "turn_state": "giving_clue_1",  # "giving_clue_1", "guessing_1", "giving_clue_2", "guessing_2", "turn_recap", "game_over"
+                "candidates": candidates,
+                "target_pos": candidates[0],
+                "clue_1": "",
+                "clue_2": "",
+                "markers": [],  # [{playerId, playerName, playerColor, playerAvatar, r, c, guessRound, points}]
+                "guessed_in_step": [],
+                "phase_start_time": now,
+                "phase_duration": 30.0,
+                "time_remaining": 30.0,
+                "last_turn_summary": None,
+                "podium": [],
+                "winner": None,
+            }
+            self.bump()
+
+    def _get_fargekoden_public_state(self, client_player_id: Optional[str]) -> Dict[str, Any]:
+        gs = dict(self.game_state)
+        giver_id = gs.get("active_giver_id")
+        turn_state = gs.get("turn_state", "giving_clue_1")
+        is_giver = bool(client_player_id and client_player_id == giver_id)
+        is_revealed = turn_state in ("turn_recap", "game_over")
+
+        gs["is_giver"] = is_giver
+        if not is_giver and not is_revealed:
+            gs.pop("target_pos", None)
+            gs.pop("candidates", None)
+
+        guessed_step = gs.get("guessed_in_step") or []
+        gs["has_placed_this_step"] = bool(client_player_id and client_player_id in guessed_step)
+        return gs
+
+    def _score_fargekoden_turn(self) -> None:
+        now = time.time()
+        gs = self.game_state
+        target = gs.get("target_pos") or [7, 15]
+        tr, tc = int(target[0]), int(target[1])
+        giver_id = gs.get("active_giver_id")
+        markers = gs.get("markers") or []
+
+        giver_bonus = 0
+        player_turn_gains: Dict[str, int] = {}
+
+        for m in markers:
+            mr, mc = int(m["r"]), int(m["c"])
+            dist = max(abs(mr - tr), abs(mc - tc))
+            pts = 0
+            if dist == 0:
+                pts = 3
+                giver_bonus += 1
+            elif dist == 1:
+                pts = 2
+                giver_bonus += 1
+            elif dist == 2:
+                pts = 1
+            m["points"] = pts
+            pid = m["playerId"]
+            if pid in self.players:
+                self.players[pid]["score"] = self.players[pid].get("score", 0) + pts
+                player_turn_gains[pid] = player_turn_gains.get(pid, 0) + pts
+
+        if giver_id and giver_id in self.players:
+            self.players[giver_id]["score"] = self.players[giver_id].get("score", 0) + giver_bonus
+            player_turn_gains[giver_id] = giver_bonus
+
+        gs["turn_state"] = "turn_recap"
+        gs["phase_start_time"] = now
+        gs["phase_duration"] = 10.0
+        gs["time_remaining"] = 10.0
+        gs["last_turn_summary"] = {
+            "targetPos": [tr, tc],
+            "clue1": gs.get("clue_1", ""),
+            "clue2": gs.get("clue_2", ""),
+            "giverName": gs.get("active_giver_name", ""),
+            "giverBonus": giver_bonus,
+            "gains": player_turn_gains,
+        }
+        self.bump()
+
+    def _advance_fargekoden_turn(self) -> None:
+        now = time.time()
+        gs = self.game_state
+        turn_order = [pid for pid in gs.get("turn_order", []) if pid in self.players]
+        if not turn_order:
+            turn_order = list(self.players.keys())
+        gs["turn_order"] = turn_order
+
+        if not turn_order:
+            return
+
+        next_idx = int(gs.get("turn_idx", 0)) + 1
+        curr_round = int(gs.get("current_round", 1))
+        total_rounds = int(gs.get("total_rounds", 1))
+
+        if next_idx >= len(turn_order):
+            next_idx = 0
+            curr_round += 1
+            if curr_round > total_rounds:
+                # Game over!
+                gs["status"] = "game_over"
+                gs["turn_state"] = "game_over"
+                sorted_p = sorted(self.players.values(), key=lambda p: p.get("score", 0), reverse=True)
+                gs["podium"] = [
+                    {
+                        "rank": idx + 1,
+                        "id": p["id"],
+                        "name": p["name"],
+                        "avatar": p["avatar"],
+                        "color": p["color"],
+                        "score": p["score"],
+                    }
+                    for idx, p in enumerate(sorted_p[:3])
+                ]
+                gs["winner"] = sorted_p[0] if sorted_p else None
+                self.bump()
+                return
+
+        next_giver_id = turn_order[next_idx]
+        next_giver_name = self.players.get(next_giver_id, {}).get("name", "Spiller")
+        candidates = self._generate_color_candidates()
+
+        gs["current_round"] = curr_round
+        gs["turn_idx"] = next_idx
+        gs["active_giver_id"] = next_giver_id
+        gs["active_giver_name"] = next_giver_name
+        gs["turn_state"] = "giving_clue_1"
+        gs["candidates"] = candidates
+        gs["target_pos"] = candidates[0]
+        gs["clue_1"] = ""
+        gs["clue_2"] = ""
+        gs["markers"] = []
+        gs["guessed_in_step"] = []
+        gs["phase_start_time"] = now
+        gs["phase_duration"] = 30.0
+        gs["time_remaining"] = 30.0
+        self.bump()
+
+    def _tick_fargekoden(self) -> None:
+        gs = self.game_state
+        if gs.get("status") != "playing":
+            return
+
+        now = time.time()
+        turn_state = gs.get("turn_state")
+        phase_start = float(gs.get("phase_start_time", now))
+        duration = float(gs.get("phase_duration", 30.0))
+        remaining = max(0.0, duration - (now - phase_start))
+        gs["time_remaining"] = round(remaining, 1)
+
+        if remaining > 0:
+            return
+
+        if turn_state == "giving_clue_1":
+            # Auto-submit fallback 1-word clue if Cue Giver timed out
+            if not gs.get("clue_1"):
+                gs["clue_1"] = "Mysterie"
+            gs["turn_state"] = "guessing_1"
+            gs["guessed_in_step"] = []
+            gs["phase_start_time"] = now
+            gs["phase_duration"] = float(gs.get("settings", {}).get("guessTime", 35))
+            gs["time_remaining"] = gs["phase_duration"]
+            self.bump()
+        elif turn_state == "guessing_1":
+            gs["turn_state"] = "giving_clue_2"
+            gs["guessed_in_step"] = []
+            gs["phase_start_time"] = now
+            gs["phase_duration"] = 25.0
+            gs["time_remaining"] = 25.0
+            self.bump()
+        elif turn_state == "giving_clue_2":
+            # Timed out on clue 2 -> go straight to scoring!
+            self._score_fargekoden_turn()
+        elif turn_state == "guessing_2":
+            self._score_fargekoden_turn()
+        elif turn_state == "turn_recap":
+            self._advance_fargekoden_turn()
+
+    def handle_fargekoden_action(self, player_id: str, body: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
+        with self.lock:
+            if self.current_game != "fargekoden":
+                return 400, {"ok": False, "error": "Fargekoden er ikke aktivt"}
+
+            action = str(body.get("action") or "").strip()
+            gs = self.game_state
+            player = self.players.get(player_id)
+            if not player:
+                return 403, {"ok": False, "error": "Spiller ikke funnet i rommet"}
+
+            now = time.time()
+
+            if action == "select_candidate":
+                if gs.get("active_giver_id") != player_id or gs.get("turn_state") != "giving_clue_1":
+                    return 403, {"ok": False, "error": "Kan ikke velge farge nå"}
+                r = int(body.get("r", 7))
+                c = int(body.get("c", 15))
+                if 0 <= r < 16 and 0 <= c < 30:
+                    gs["target_pos"] = [r, c]
+                    self.bump()
+                return 200, {"ok": True, "targetPos": gs["target_pos"]}
+
+            elif action == "submit_clue_1":
+                if gs.get("active_giver_id") != player_id or gs.get("turn_state") != "giving_clue_1":
+                    return 403, {"ok": False, "error": "Bare hintgiveren kan gi første hint nå"}
+                clue_raw = str(body.get("clue") or "").strip()[:32]
+                words = clue_raw.split()
+                if not words:
+                    return 400, {"ok": False, "error": "Skriv inn et ett-ords hint!"}
+                if len(words) > 1:
+                    return 400, {"ok": False, "error": "Første hint kan bare være ETT ord!"}
+
+                if "r" in body and "c" in body:
+                    r, c = int(body["r"]), int(body["c"])
+                    if 0 <= r < 16 and 0 <= c < 30:
+                        gs["target_pos"] = [r, c]
+
+                gs["clue_1"] = words[0]
+                gs["turn_state"] = "guessing_1"
+                gs["guessed_in_step"] = []
+                gs["phase_start_time"] = now
+                gs["phase_duration"] = float(gs.get("settings", {}).get("guessTime", 35))
+                gs["time_remaining"] = gs["phase_duration"]
+                self.bump()
+                return 200, {"ok": True}
+
+            elif action == "submit_clue_2":
+                if gs.get("active_giver_id") != player_id or gs.get("turn_state") != "giving_clue_2":
+                    return 403, {"ok": False, "error": "Bare hintgiveren kan gi andre hint nå"}
+                clue_raw = str(body.get("clue") or "").strip()[:45]
+                words = clue_raw.split()
+                if not words:
+                    return 400, {"ok": False, "error": "Skriv inn et hint på opptil to ord!"}
+                if len(words) > 2:
+                    return 400, {"ok": False, "error": "Andre hint kan være maks TO ord!"}
+
+                gs["clue_2"] = " ".join(words)
+                gs["turn_state"] = "guessing_2"
+                gs["guessed_in_step"] = []
+                gs["phase_start_time"] = now
+                gs["phase_duration"] = float(gs.get("settings", {}).get("guessTime", 35))
+                gs["time_remaining"] = gs["phase_duration"]
+                self.bump()
+                return 200, {"ok": True}
+
+            elif action == "skip_clue_2":
+                if gs.get("active_giver_id") != player_id or gs.get("turn_state") != "giving_clue_2":
+                    return 403, {"ok": False, "error": "Kan ikke hoppe over nå"}
+                self._score_fargekoden_turn()
+                return 200, {"ok": True}
+
+            elif action == "place_marker":
+                turn_state = gs.get("turn_state")
+                if turn_state not in ("guessing_1", "guessing_2"):
+                    return 400, {"ok": False, "error": "Ikke i gjettefase nå"}
+                if gs.get("active_giver_id") == player_id and len(self.players) > 1:
+                    return 403, {"ok": False, "error": "Hintgiveren plasserer ikke brikker"}
+
+                guessed_step = gs.setdefault("guessed_in_step", [])
+                if player_id in guessed_step:
+                    return 400, {"ok": False, "error": "Du har allerede plassert brikken din i denne fasen"}
+
+                r = int(body.get("r", -1))
+                c = int(body.get("c", -1))
+                if not (0 <= r < 16 and 0 <= c < 30):
+                    return 400, {"ok": False, "error": "Ugyldig rute på fargebrettet"}
+
+                markers = gs.setdefault("markers", [])
+                for existing in markers:
+                    if existing["r"] == r and existing["c"] == c:
+                        return 400, {"ok": False, "error": "Denne fargeruten er allerede tatt av en brikke!"}
+
+                guess_round = 1 if turn_state == "guessing_1" else 2
+                markers.append({
+                    "playerId": player_id,
+                    "playerName": player["name"],
+                    "playerColor": player.get("color", "#ffd166"),
+                    "playerAvatar": player.get("avatar", "charbear"),
+                    "r": r,
+                    "c": c,
+                    "guessRound": guess_round,
+                    "points": 0,
+                })
+                guessed_step.append(player_id)
+                self.bump()
+
+                # Check if all eligible guessers have placed their marker
+                expected_guessers = max(1, len(self.players) - (1 if len(self.players) > 1 else 0))
+                if len(guessed_step) >= expected_guessers:
+                    if turn_state == "guessing_1":
+                        gs["turn_state"] = "giving_clue_2"
+                        gs["guessed_in_step"] = []
+                        gs["phase_start_time"] = now
+                        gs["phase_duration"] = 25.0
+                        gs["time_remaining"] = 25.0
+                        self.bump()
+                    else:
+                        self._score_fargekoden_turn()
+
+                return 200, {"ok": True}
+
+            elif action == "next_turn":
+                if gs.get("turn_state") == "turn_recap":
+                    self._advance_fargekoden_turn()
+                return 200, {"ok": True}
+
+            elif action == "restart":
+                host_token = str(body.get("hostToken") or "").strip()
+                is_host_req = bool((host_token and self.host_token == host_token) or (player_id and self.host_id == player_id))
+                if not is_host_req and gs.get("turn_state") != "game_over":
+                    return 403, {"ok": False, "error": "Kun verten kan starte spillet på nytt"}
+                self.start_fargekoden(gs.get("settings") or {})
+                return 200, {"ok": True}
+
+            elif action == "to_lobby":
+                host_token = str(body.get("hostToken") or "").strip()
+                is_host_req = bool((host_token and self.host_token == host_token) or (player_id and self.host_id == player_id))
+                if not (is_host_req or gs.get("turn_state") == "game_over"):
+                    return 403, {"ok": False, "error": "Kun verten kan gå tilbake til lobby mens spillet pågår"}
+                self.current_game = None
+                self.game_state = {}
+                self.bump()
+                return 200, {"ok": True}
+
+            return 400, {"ok": False, "error": f"Ukjent handling «{action}»"}
+
 
 class PartyAPI:
     @staticmethod
@@ -1479,7 +1850,7 @@ class PartyAPI:
                 room.touch()
 
             # If polling and client already has current version, short wait (up to 1.5s)
-            if client_v >= 0 and client_v == room.version and room.current_game not in ("ordbombe", "tegn_og_gjett", "imposter"):
+            if client_v >= 0 and client_v == room.version and room.current_game not in ("ordbombe", "tegn_og_gjett", "imposter", "fargekoden"):
                 time.sleep(0.4)
 
             state = room.get_public_state(player_id)
@@ -1753,6 +2124,8 @@ class PartyAPI:
                     room.start_tegn_og_gjett(settings)
                 elif game_id == "imposter":
                     room.start_imposter(settings)
+                elif game_id == "fargekoden":
+                    room.start_fargekoden(settings)
                 elif game_id == "sjakk":
                     room.current_game = "sjakk"
                     room.game_state = {"settings": settings, "status": "active"}
@@ -1910,6 +2283,18 @@ class PartyAPI:
                 return 404, {"ok": False, "error": "Rommet finnes ikke"}
 
             return room.handle_imposter_action(player_id, body)
+
+        if rel_path == "/api/fargekoden/action":
+            code = str(body.get("roomCode") or "").strip().upper()
+            player_id = str(body.get("playerId") or "").strip()
+
+            with _rooms_lock:
+                room = _rooms.get(code)
+
+            if not room:
+                return 404, {"ok": False, "error": "Rommet finnes ikke"}
+
+            return room.handle_fargekoden_action(player_id, body)
 
         if rel_path == "/api/kick":
             code = str(body.get("roomCode") or "").strip().upper()

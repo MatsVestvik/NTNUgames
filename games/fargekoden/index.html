@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="no" data-theme="dark">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Fargekoden (Hues & Cues) – Gjett nyansen på fargebrettet | NTNU Games</title>
+  <meta name="description"
+    content="Hues and Cues på norsk! Hintgiveren beskriver én av 480 fargenyanser med ett og to ord – plasser brikkene dine nærmest mulig blinken i 3x3-rammen!" />
+
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <link rel="stylesheet" href="/hub.css?v=2.1" />
+  <link rel="stylesheet" href="/parallax-bg.css?v=2.1" />
+  <link rel="stylesheet" href="/character/character-creator.css" />
+  <link rel="stylesheet" href="/fargekoden/styles.css?v=1.0" />
+</head>
+
+<body>
+  <!-- Ambient Parallax Landscape -->
+  <div class="dynamic-parallax-bg" id="dynamicParallaxBg" aria-hidden="true">
+    <div class="parallax-layer layer-1-sky" id="plSky" data-depth="0.04"></div>
+    <div class="parallax-layer layer-2-fjord" id="plFjord" data-depth="0.12"></div>
+    <div class="parallax-layer layer-3-campus" id="plCampus" data-depth="0.26"></div>
+    <div class="parallax-layer layer-4-lawn" id="plLawn" data-depth="0.50"></div>
+    <canvas class="ambient-sparkles-canvas" id="ambientSparklesCanvas"></canvas>
+    <div class="parallax-vignette-overlay"></div>
+  </div>
+
+  <div class="fk-shell">
+    <!-- Top Header -->
+    <header class="fk-header">
+      <div class="fk-header-left">
+        <a href="/party/" class="fk-back-btn" id="btnBack">
+          ‹ <span id="backBtnText">Lounge</span>
+        </a>
+        <div class="fk-brand">
+          <span class="fk-brand-icon" aria-hidden="true">🌈</span>
+          <div>
+            <h1 class="fk-brand-title">Fargekoden</h1>
+            <span class="fk-brand-sub">Hues &amp; Cues • 480 nyanser</span>
+          </div>
+        </div>
+        <span class="fk-round-pill" id="roundIndicator">Runde 1</span>
+      </div>
+
+      <!-- Active Clues Banner -->
+      <div class="fk-clues-banner" id="cluesBanner">
+        <div class="fk-clue-chip" id="clue1Chip">
+          <span class="fk-clue-label">1. Hint (1 ord)</span>
+          <span class="fk-clue-text" id="clue1Text">Venter på hint…</span>
+        </div>
+        <div class="fk-clue-divider">→</div>
+        <div class="fk-clue-chip muted" id="clue2Chip">
+          <span class="fk-clue-label">2. Hint (2 ord)</span>
+          <span class="fk-clue-text" id="clue2Text">—</span>
+        </div>
+      </div>
+
+      <div class="fk-header-right">
+        <div class="fk-timer-bubble" id="timerBubble" title="Tid igjen">
+          <span id="timerText">30</span>
+        </div>
+        <button type="button" class="fk-icon-btn" id="btnSoundToggle" title="Lyd av/på">
+          🔊
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="fk-main">
+      <!-- Left Sidebar: Players & Scoring Legend -->
+      <aside class="fk-sidebar">
+        <div class="fk-panel-title">
+          <span>Spillere</span>
+          <span id="playersCountBadge">1</span>
+        </div>
+        <div class="fk-players-list" id="playersList">
+          <!-- Dynamic player cards -->
+        </div>
+
+        <!-- Hover / Selected Cell Magnifier -->
+        <div class="fk-magnifier-card" id="magnifierCard">
+          <div class="fk-mag-swatch" id="magSwatch" style="background: #38bdf8;"></div>
+          <div class="fk-mag-info">
+            <span class="fk-mag-coord" id="magCoord">H15</span>
+            <span class="fk-mag-hint" id="magHint">Pek eller klikk på en rute</span>
+          </div>
+        </div>
+
+        <!-- Scoring Frame Legend -->
+        <div class="fk-legend-card">
+          <div class="fk-legend-title">🎯 Poengramme (3×3)</div>
+          <div class="fk-legend-row">
+            <span class="fk-legend-badge p3">★ 3p</span>
+            <span>Midt i blinken (eksakt farge)</span>
+          </div>
+          <div class="fk-legend-row">
+            <span class="fk-legend-badge p2">2p</span>
+            <span>Innenfor 3×3-rammen (nabo)</span>
+          </div>
+          <div class="fk-legend-row">
+            <span class="fk-legend-badge p1">1p</span>
+            <span>Rett utenfor 3×3-rammen (5×5)</span>
+          </div>
+          <div class="fk-legend-row">
+            <span class="fk-legend-badge pg">Hintgiver</span>
+            <span>+1p per brikke i 3×3-rammen!</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Center: Cue Giver Controls + 16x30 Hues & Cues Color Board -->
+      <section class="fk-board-section">
+        <!-- Status / Action Strip -->
+        <div class="fk-status-bar" id="statusBar">
+          <div class="fk-status-text" id="statusText">Gjør deg klar…</div>
+          <div class="fk-status-actions" id="statusActions">
+            <button type="button" class="fk-btn fk-btn-secondary hidden" id="btnNextTurnNow">
+              Neste tur →
+            </button>
+            <button type="button" class="fk-btn fk-btn-primary hidden" id="btnSoloNext">
+              Ny fargeoppgave →
+            </button>
+          </div>
+        </div>
+
+        <!-- Cue Giver Control Dock (Shown only to active Cue Giver during giving_clue_1 / giving_clue_2) -->
+        <div class="fk-giver-dock hidden" id="giverDock">
+          <!-- Step 1: Pick 1 of 4 candidate colors + write 1-word clue -->
+          <div class="fk-giver-step" id="giverStep1">
+            <div class="fk-giver-candidates-wrap">
+              <span class="fk-giver-label">1. Velg hemmelig målfarge (eller klikk en av de 4):</span>
+              <div class="fk-candidates-row" id="candidatesRow">
+                <!-- 4 candidate color buttons -->
+              </div>
+            </div>
+            <form class="fk-clue-form" id="formClue1">
+              <input type="text" class="fk-clue-input" id="inputClue1"
+                placeholder="Skriv ETT ord som hint (f.eks. «Jordbær», «Rust», «isbre»)…" maxlength="28"
+                autocomplete="off" />
+              <button type="submit" class="fk-btn fk-btn-primary">Send 1. hint</button>
+            </form>
+          </div>
+
+          <!-- Step 2: Write up to 2-word clue or skip to reveal -->
+          <div class="fk-giver-step hidden" id="giverStep2">
+            <form class="fk-clue-form" id="formClue2">
+              <input type="text" class="fk-clue-input" id="inputClue2"
+                placeholder="Skriv andre hint (maks TO ord, f.eks. «Moden frukt»)…" maxlength="40"
+                autocomplete="off" />
+              <button type="submit" class="fk-btn fk-btn-primary">Send 2. hint</button>
+              <button type="button" class="fk-btn fk-btn-secondary" id="btnSkipClue2"
+                title="Avslutt runden og vis fasit nå hvis folk allerede er nære!">
+                Vis fasit nå ✓
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- 16x30 Color Spectrum Board -->
+        <div class="fk-board-outer">
+          <div class="fk-board-scroll">
+            <div class="fk-col-headers" id="colHeaders"></div>
+            <div class="fk-board-body">
+              <div class="fk-row-headers" id="rowHeaders"></div>
+              <div class="fk-color-grid" id="colorGrid">
+                <!-- 16 x 30 = 480 color cells generated via JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal: Game Over Podium -->
+  <div class="fk-modal-overlay hidden" id="modalGameOver">
+    <div class="fk-modal-card">
+      <div class="fk-trophy-wrap">🏆</div>
+      <h2 class="fk-modal-title">Fargekoden er ferdig!</h2>
+      <p class="fk-modal-sub" id="gameOverSubtitle">Her er mesterne av fargespekteret:</p>
+      <div class="fk-podium-list" id="podiumContainer"></div>
+      <div class="fk-modal-actions">
+        <button type="button" class="fk-btn fk-btn-primary" id="btnPlayAgain">Spill igjen</button>
+        <button type="button" class="fk-btn fk-btn-secondary" id="btnReturnLobby">‹ Tilbake til Lounge</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/parallax-bg.js?v=2.1"></script>
+  <script src="/character/character-creator.js"></script>
+  <script src="/fargekoden/app.js?v=1.0"></script>
+</body>
+
+</html>
+

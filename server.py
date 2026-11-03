@@ -98,8 +98,13 @@ class GameGatewayHandler(BaseHTTPRequestHandler):
                 if res:
                     return self._send_json(res[1], status=res[0])
 
-            # 5. Check Party, Tegn og Gjett & Imposter API
-            if path.startswith("/api/party/") or path.startswith("/api/tegn-og-gjett/") or path.startswith("/api/imposter/"):
+            # 5. Check Party, Tegn og Gjett, Imposter & Fargekoden API
+            if (
+                path.startswith("/api/party/")
+                or path.startswith("/api/tegn-og-gjett/")
+                or path.startswith("/api/imposter/")
+                or path.startswith("/api/fargekoden/")
+            ):
                 res = PartyAPI.handle_get(path, query)
                 if res:
                     return self._send_json(res[1], status=res[0])
@@ -158,8 +163,13 @@ class GameGatewayHandler(BaseHTTPRequestHandler):
                 if res:
                     return self._send_json(res[1], status=res[0])
 
-            # 5. Check Party, Tegn og Gjett & Imposter API
-            if path.startswith("/api/party/") or path.startswith("/api/tegn-og-gjett/") or path.startswith("/api/imposter/"):
+            # 5. Check Party, Tegn og Gjett, Imposter & Fargekoden API
+            if (
+                path.startswith("/api/party/")
+                or path.startswith("/api/tegn-og-gjett/")
+                or path.startswith("/api/imposter/")
+                or path.startswith("/api/fargekoden/")
+            ):
                 res = PartyAPI.handle_post(path, body)
                 if res:
                     return self._send_json(res[1], status=res[0])
