@@ -4,9 +4,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Korridorer – Taktisk labyrintduell for 2–4 spillere | NTNU Games</title>
+  <title>Korridorer – Taktisk labyrintduell for 2–16 spillere | NTNU Games</title>
   <meta name="description"
-    content="Spill Korridorer (Quoridor) for 2–4 spillere online, på samme skjerm, eller mot bots. Flytt monsteret ditt over brettet eller sett opp vegger for å sperre motstanderne ute!" />
+    content="Spill Korridorer (Quoridor) for 2–16 spillere online, på samme skjerm, eller mot bots. Flytt monsteret ditt over brettet eller sett opp vegger for å sperre motstanderne ute!" />
   <link rel="icon" type="image/png" href="/hub/assets/icons/korridorer.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -41,7 +41,7 @@
           <img src="/hub/assets/icons/korridorer.png" class="header-game-icon" alt="" aria-hidden="true" />
           <div>
             <h1 class="header-title">KORRIDORER</h1>
-            <span class="header-badge">2–4 Spillere</span>
+            <span class="header-badge">2–16 Spillere</span>
           </div>
         </div>
       </div>
@@ -162,11 +162,15 @@
 
                   <div class="action-box-content">
                     <div class="form-group">
-                      <label>Antall spillere i partiet</label>
-                      <div class="segmented-control" id="controlPlayerCount">
-                        <button type="button" class="seg-btn" data-count="2">2 spillere</button>
-                        <button type="button" class="seg-btn" data-count="3">3 spillere</button>
-                        <button type="button" class="seg-btn active" data-count="4">4 spillere</button>
+                      <label for="inputOnlinePlayerCount">Maks antall spillere i partiet (2–16)</label>
+                      <div class="player-count-picker" id="controlPlayerCount">
+                        <button type="button" class="pcp-step-btn" data-step="-1" aria-label="Færre spillere">−</button>
+                        <input type="range" class="pcp-slider" id="sliderOnlinePlayerCount" min="2" max="16" value="4" />
+                        <button type="button" class="pcp-step-btn" data-step="1" aria-label="Flere spillere">+</button>
+                        <div class="pcp-number-wrap">
+                          <input type="number" class="pcp-number-input" id="inputOnlinePlayerCount" min="2" max="16" value="4" />
+                          <span class="pcp-unit">spillere</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -206,17 +210,21 @@
           <!-- TAB 2: Local Pass & Play Panel -->
           <div class="tab-panel hidden" id="panelLocal">
             <div class="action-box single-box">
-              <h3 class="box-title">Spill 2–4 spillere på samme skjerm</h3>
+              <h3 class="box-title">Spill 2–16 spillere på samme skjerm</h3>
               <p class="box-desc">
                 Send telefonen, laptopen eller iPaden rundt i hybelen eller sofaen!
               </p>
 
               <div class="form-group">
-                <label>Antall spillere</label>
-                <div class="segmented-control" id="controlLocalCount">
-                  <button type="button" class="seg-btn active" data-count="2">2 spillere</button>
-                  <button type="button" class="seg-btn" data-count="3">3 spillere</button>
-                  <button type="button" class="seg-btn" data-count="4">4 spillere</button>
+                <label for="inputLocalPlayerCount">Antall spillere (2–16)</label>
+                <div class="player-count-picker" id="controlLocalCount">
+                  <button type="button" class="pcp-step-btn" data-step="-1" aria-label="Færre spillere">−</button>
+                  <input type="range" class="pcp-slider" id="sliderLocalPlayerCount" min="2" max="16" value="2" />
+                  <button type="button" class="pcp-step-btn" data-step="1" aria-label="Flere spillere">+</button>
+                  <div class="pcp-number-wrap">
+                    <input type="number" class="pcp-number-input" id="inputLocalPlayerCount" min="2" max="16" value="2" />
+                    <span class="pcp-unit">spillere</span>
+                  </div>
                 </div>
               </div>
 
@@ -268,10 +276,15 @@
               </div>
 
               <div class="form-group">
-                <label>Antall motstandere</label>
-                <div class="segmented-control" id="controlBotCount">
-                  <button type="button" class="seg-btn active" data-count="2">1 mot 1 (2 spillere)</button>
-                  <button type="button" class="seg-btn" data-count="4">Alle mot alle (4 spillere)</button>
+                <label for="inputBotPlayerCount">Antall spillere inkludert deg (2–16)</label>
+                <div class="player-count-picker" id="controlBotCount">
+                  <button type="button" class="pcp-step-btn" data-step="-1" aria-label="Færre spillere">−</button>
+                  <input type="range" class="pcp-slider" id="sliderBotPlayerCount" min="2" max="16" value="2" />
+                  <button type="button" class="pcp-step-btn" data-step="1" aria-label="Flere spillere">+</button>
+                  <div class="pcp-number-wrap">
+                    <input type="number" class="pcp-number-input" id="inputBotPlayerCount" min="2" max="16" value="2" />
+                    <span class="pcp-unit">spillere</span>
+                  </div>
                 </div>
               </div>
 
@@ -310,7 +323,7 @@
           </div>
 
           <p class="waiting-subtitle" id="dispWaitingSubtitle">
-            Venter på at motspillerne skal bli med… (2–4 spillere)
+            Venter på at motspillerne skal bli med… (2–16 spillere)
           </p>
 
           <!-- 4 Player Slots Grid -->

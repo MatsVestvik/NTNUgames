@@ -1283,16 +1283,16 @@ class PartyAPI:
                                 code=code,
                                 host_name=host_player.get("name", "Spiller 1"),
                                 host_avatar=host_player.get("avatar", "charbear"),
-                                max_players=4
+                                max_players=16
                             )
                             k_room.host_id = room.host_id
                             k_room.players[0]["id"] = room.host_id
                             k_room.players[0]["avatar"] = host_player.get("avatar", "charbear")
                             k_room.players[0]["color"] = host_player.get("color") or extract_color_from_avatar(host_player.get("avatar"), PLAYER_CONFIGS[0]["color"])
                             for pid, pdata in room.players.items():
-                                if pid != room.host_id and len(k_room.players) < 4:
+                                if pid != room.host_id and len(k_room.players) < 16:
                                     idx = len(k_room.players)
-                                    cfg = PLAYER_CONFIGS[idx]
+                                    cfg = PLAYER_CONFIGS[idx % len(PLAYER_CONFIGS)]
                                     p_color = pdata.get("color") or extract_color_from_avatar(pdata.get("avatar"), cfg["color"])
                                     k_room.players.append({
                                         "id": pid,

@@ -834,6 +834,89 @@ body {
   border: 1px solid rgba(245, 158, 11, 0.4);
 }
 
+/* Player Count Picker (Slider + +/- Stepper + Direct Number Input) */
+.player-count-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 0.45rem 0.65rem;
+}
+
+.pcp-step-btn {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.07);
+  color: #fbbf24;
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pcp-step-btn:hover {
+  background: rgba(245, 158, 11, 0.22);
+  border-color: #f59e0b;
+  color: #fff;
+  transform: scale(1.05);
+}
+
+.pcp-step-btn:active {
+  transform: scale(0.96);
+}
+
+.pcp-slider {
+  flex: 1;
+  accent-color: #f59e0b;
+  cursor: pointer;
+  height: 6px;
+  min-width: 70px;
+}
+
+.pcp-number-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(14, 20, 36, 0.85);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-radius: 8px;
+  padding: 0.25rem 0.55rem;
+  flex-shrink: 0;
+}
+
+.pcp-number-input {
+  width: 38px;
+  background: transparent;
+  border: none;
+  color: #fbbf24;
+  font-size: 0.98rem;
+  font-weight: 800;
+  text-align: center;
+  outline: none;
+  -moz-appearance: textfield;
+}
+
+.pcp-number-input::-webkit-outer-spin-button,
+.pcp-number-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.pcp-unit {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
 /* Sprite Picker Grid */
 .sprite-picker-grid {
   display: grid;
@@ -1083,6 +1166,29 @@ body {
   margin-bottom: 2rem;
 }
 
+.player-slots-grid.many-players {
+  grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));
+  gap: 0.65rem;
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.player-slots-grid.many-players .player-slot-card {
+  padding: 0.65rem 0.5rem;
+  gap: 0.35rem;
+}
+
+.player-slots-grid.many-players .slot-avatar-wrap {
+  width: 38px;
+  height: 38px;
+}
+
+.player-slots-grid.many-players .slot-avatar-img {
+  width: 32px;
+  height: 32px;
+}
+
 .player-slot-card {
   background: rgba(14, 20, 36, 0.7);
   border: 1.5px solid var(--border-subtle);
@@ -1300,11 +1406,42 @@ body {
   width: 190px;
 }
 
+.players-column.many-players {
+  gap: 0.45rem;
+  width: 210px;
+  max-height: 540px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.players-column.many-players .player-game-card {
+  padding: 0.45rem 0.65rem;
+  border-radius: 10px;
+}
+
+.players-column.many-players .pg-avatar-wrap {
+  width: 30px;
+  height: 30px;
+}
+
+.players-column.many-players .pg-avatar-img {
+  width: 28px;
+  height: 28px;
+}
+
+.players-column.many-players .pg-name {
+  font-size: 0.82rem;
+}
+
 @media (max-width: 900px) {
   .players-column {
     flex-direction: row;
+    flex-wrap: wrap;
     width: 100%;
     max-width: var(--board-max-size);
+  }
+  .players-column.many-players {
+    max-height: none;
   }
 }
 

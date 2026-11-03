@@ -46,48 +46,24 @@
     return fallbackColor;
   }
 
-  // Player configuration defaults for 4 slots
+  // Player configuration defaults for up to 16 slots
   const PLAYER_DEFAULTS = [
-    {
-      slot: 0,
-      color: "#ef4444",
-      colorName: "Rød",
-      start: [8, 4],
-      goalDesc: "Nå rad 0 (øverst)",
-      goalFn: (r, c) => r === 0,
-      defaultAvatar: "charbear",
-      defaultName: "Spiller 1",
-    },
-    {
-      slot: 1,
-      color: "#06b6d4",
-      colorName: "Cyan",
-      start: [0, 4],
-      goalDesc: "Nå rad 8 (nederst)",
-      goalFn: (r, c) => r === 8,
-      defaultAvatar: "jormundgandr",
-      defaultName: "Spiller 2",
-    },
-    {
-      slot: 2,
-      color: "#10b981",
-      colorName: "Grønn",
-      start: [4, 0],
-      goalDesc: "Nå kolonne 8 (høyre)",
-      goalFn: (r, c) => c === 8,
-      defaultAvatar: "tanuki",
-      defaultName: "Spiller 3",
-    },
-    {
-      slot: 3,
-      color: "#a855f7",
-      colorName: "Lilla",
-      start: [4, 8],
-      goalDesc: "Nå kolonne 0 (venstre)",
-      goalFn: (r, c) => c === 0,
-      defaultAvatar: "squitonkey",
-      defaultName: "Spiller 4",
-    },
+    { slot: 0, color: "#ef4444", colorName: "Rød", start: [8, 4], goalDesc: "Nå rad 0 (øverst)", goalFn: (r, c) => r === 0, defaultAvatar: "charbear", defaultName: "Spiller 1" },
+    { slot: 1, color: "#06b6d4", colorName: "Cyan", start: [0, 4], goalDesc: "Nå rad 8 (nederst)", goalFn: (r, c) => r === 8, defaultAvatar: "jormundgandr", defaultName: "Spiller 2" },
+    { slot: 2, color: "#10b981", colorName: "Grønn", start: [5, 0], goalDesc: "Nå sentrum (rute 5, 5)", goalFn: (r, c) => r === 5 && c === 5, defaultAvatar: "tanuki", defaultName: "Spiller 3" },
+    { slot: 3, color: "#a855f7", colorName: "Lilla", start: [5, 10], goalDesc: "Nå sentrum (rute 5, 5)", goalFn: (r, c) => r === 5 && c === 5, defaultAvatar: "squitonkey", defaultName: "Spiller 4" },
+    { slot: 4, color: "#f59e0b", colorName: "Oransje", start: [10, 3], goalDesc: "Nå sentrum (rute 5, 5)", goalFn: (r, c) => r === 5 && c === 5, defaultAvatar: "pixiu", defaultName: "Spiller 5" },
+    { slot: 5, color: "#ec4899", colorName: "Rosa", start: [0, 7], goalDesc: "Nå sentrum (rute 5, 5)", goalFn: (r, c) => r === 5 && c === 5, defaultAvatar: "totter", defaultName: "Spiller 6" },
+    { slot: 6, color: "#3b82f6", colorName: "Blå", start: [3, 0], goalDesc: "Nå sentrum (rute 5, 5)", goalFn: (r, c) => r === 5 && c === 5, defaultAvatar: "charbear", defaultName: "Spiller 7" },
+    { slot: 7, color: "#eab308", colorName: "Gul", start: [7, 10], goalDesc: "Nå sentrum (rute 5, 5)", goalFn: (r, c) => r === 5 && c === 5, defaultAvatar: "jormundgandr", defaultName: "Spiller 8" },
+    { slot: 8, color: "#14b8a6", colorName: "Turkis", start: [10, 7], goalDesc: "Nå sentrum (rute 5, 5)", goalFn: (r, c) => r === 5 && c === 5, defaultAvatar: "tanuki", defaultName: "Spiller 9" },
+    { slot: 9, color: "#f97316", colorName: "Korall", start: [0, 3], goalDesc: "Nå sentrum (rute 5, 5)", goalFn: (r, c) => r === 5 && c === 5, defaultAvatar: "squitonkey", defaultName: "Spiller 10" },
+    { slot: 10, color: "#8b5cf6", colorName: "Indigo", start: [7, 0], goalDesc: "Nå sentrum (rute 5, 5)", goalFn: (r, c) => r === 5 && c === 5, defaultAvatar: "pixiu", defaultName: "Spiller 11" },
+    { slot: 11, color: "#84cc16", colorName: "Lime", start: [3, 10], goalDesc: "Nå sentrum (rute 5, 5)", goalFn: (r, c) => r === 5 && c === 5, defaultAvatar: "totter", defaultName: "Spiller 12" },
+    { slot: 12, color: "#f43f5e", colorName: "Rubin", start: [10, 1], goalDesc: "Nå sentrum (rute 5, 5)", goalFn: (r, c) => r === 5 && c === 5, defaultAvatar: "charbear", defaultName: "Spiller 13" },
+    { slot: 13, color: "#0ea5e9", colorName: "Himmelblå", start: [0, 9], goalDesc: "Nå sentrum (rute 5, 5)", goalFn: (r, c) => r === 5 && c === 5, defaultAvatar: "jormundgandr", defaultName: "Spiller 14" },
+    { slot: 14, color: "#d946ef", colorName: "Magentarosa", start: [1, 0], goalDesc: "Nå sentrum (rute 5, 5)", goalFn: (r, c) => r === 5 && c === 5, defaultAvatar: "tanuki", defaultName: "Spiller 15" },
+    { slot: 15, color: "#22c55e", colorName: "Smaragd", start: [9, 10], goalDesc: "Nå sentrum (rute 5, 5)", goalFn: (r, c) => r === 5 && c === 5, defaultAvatar: "squitonkey", defaultName: "Spiller 16" },
   ];
 
   function getBoardSize() {
@@ -98,12 +74,12 @@
     if (numPlayers > 2) {
       // 11x11 board: center is (5, 5), max index is 10
       const starts = [
-        [10, 5], // P1: South
-        [0, 5],  // P2: North
-        [5, 0],  // P3: West
-        [5, 10], // P4: East
+        [10, 5], [0, 5], [5, 0], [5, 10],
+        [10, 3], [0, 7], [3, 0], [7, 10],
+        [10, 7], [0, 3], [7, 0], [3, 10],
+        [10, 1], [0, 9], [1, 0], [9, 10],
       ];
-      return starts[idx] || [10, 5];
+      return starts[idx % starts.length] || [10, 5];
     }
     // 9x9 board for 2 players
     return idx === 0 ? [8, 4] : [0, 4];
@@ -503,12 +479,22 @@
   let botPlayersCount = 2;
 
   // Local Pass & Play temporary player settings
-  const localConfig = [
-    { name: savedName || "Spiller 1", avatar: selectedCreateAvatar },
-    { name: "Spiller 2", avatar: "char:h1:c_06d6a0:r2:e2:m2" },
-    { name: "Spiller 3", avatar: "char:h1:c_ef476f:r3:e3:m3" },
-    { name: "Spiller 4", avatar: "char:h1:c_8338ec:r1:e1:m1" },
-  ];
+  const localConfig = Array.from({ length: 16 }, (_, idx) => {
+    if (idx === 0) return { name: savedName || "Spiller 1", avatar: selectedCreateAvatar };
+    const defaultAvatars = [
+      "char:h1:c_06d6a0:r2:e2:m2",
+      "char:h1:c_ef476f:r3:e3:m3",
+      "char:h1:c_8338ec:r1:e1:m1",
+      "char:h2:c_f59e0b:r1:e2:m1",
+      "char:h2:c_ec4899:r2:e1:m3",
+      "char:h3:c_3b82f6:r3:e3:m2",
+      "char:h3:c_eab308:r1:e1:m2",
+    ];
+    return {
+      name: `Spiller ${idx + 1}`,
+      avatar: defaultAvatars[(idx - 1) % defaultAvatars.length],
+    };
+  });
 
   // DOM Elements
   const el = {
@@ -954,13 +940,50 @@
     el.tabLocal.addEventListener("click", () => switchLobbyTab("local"));
     el.tabBot.addEventListener("click", () => switchLobbyTab("bot"));
 
-    // Online Mode Controls
-    el.controlPlayerCount.querySelectorAll(".seg-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        el.controlPlayerCount.querySelectorAll(".seg-btn").forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        createMaxPlayers = parseInt(btn.dataset.count, 10);
+    // Helper to wire a player-count-picker (slider + +/- buttons + direct number input)
+    function bindPlayerCountPicker(container, initialVal, onChange) {
+      if (!container) return;
+      const slider = container.querySelector(".pcp-slider");
+      const numInput = container.querySelector(".pcp-number-input");
+      const stepBtns = container.querySelectorAll(".pcp-step-btn");
+
+      function applyCount(rawVal, commitInput = true) {
+        const parsed = parseInt(rawVal, 10);
+        if (Number.isNaN(parsed)) return;
+        const clamped = Math.max(2, Math.min(16, parsed));
+        if (slider) slider.value = String(clamped);
+        if (numInput && commitInput) numInput.value = String(clamped);
+        onChange(clamped);
+      }
+
+      if (slider) {
+        slider.value = String(initialVal);
+        slider.addEventListener("input", () => applyCount(slider.value, true));
+      }
+      if (numInput) {
+        numInput.value = String(initialVal);
+        numInput.addEventListener("input", () => {
+          const v = parseInt(numInput.value, 10);
+          if (!Number.isNaN(v) && v >= 2 && v <= 16) {
+            if (slider) slider.value = String(v);
+            onChange(v);
+          }
+        });
+        numInput.addEventListener("change", () => applyCount(numInput.value, true));
+        numInput.addEventListener("blur", () => applyCount(numInput.value || initialVal, true));
+      }
+      stepBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+          const step = parseInt(btn.dataset.step || "0", 10);
+          const current = parseInt((numInput && numInput.value) || (slider && slider.value) || initialVal, 10) || initialVal;
+          applyCount(current + step, true);
+        });
       });
+    }
+
+    // Online Mode Controls
+    bindPlayerCountPicker(el.controlPlayerCount, createMaxPlayers, val => {
+      createMaxPlayers = val;
     });
 
     el.btnSubmitCreate.addEventListener("click", handleCreateOnlineRoom);
@@ -972,23 +995,15 @@
     }
 
     // Local Mode Controls
-    el.controlLocalCount.querySelectorAll(".seg-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        el.controlLocalCount.querySelectorAll(".seg-btn").forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        localPlayersCount = parseInt(btn.dataset.count, 10);
-        renderLocalPlayersSetup();
-      });
+    bindPlayerCountPicker(el.controlLocalCount, localPlayersCount, val => {
+      localPlayersCount = val;
+      renderLocalPlayersSetup();
     });
     el.btnStartLocal.addEventListener("click", handleStartLocalGame);
 
     // Bot Mode Controls
-    el.controlBotCount.querySelectorAll(".seg-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        el.controlBotCount.querySelectorAll(".seg-btn").forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        botPlayersCount = parseInt(btn.dataset.count, 10);
-      });
+    bindPlayerCountPicker(el.controlBotCount, botPlayersCount, val => {
+      botPlayersCount = val;
     });
 
     el.controlBotDiff.querySelectorAll(".seg-btn").forEach(btn => {
@@ -1431,7 +1446,8 @@
     el.dispRoomCode.textContent = data.roomCode;
     el.containerWaitingSlots.innerHTML = "";
 
-    const max = data.maxPlayers || 4;
+    const max = data.maxPlayers || 16;
+    el.containerWaitingSlots.classList.toggle("many-players", max > 6);
     for (let i = 0; i < max; i++) {
       const p = data.players[i];
       const card = document.createElement("div");
@@ -1549,16 +1565,26 @@
       "char:h1:c_ffd166:r3:e3:m3",
       "char:h1:c_ef476f:r1:e1:m1",
       "char:h1:c_8338ec:r3:e2:m3",
+      "char:h2:c_f59e0b:r1:e2:m1",
+      "char:h2:c_ec4899:r2:e1:m3",
+      "char:h3:c_3b82f6:r3:e3:m2",
+      "char:h3:c_eab308:r1:e1:m2",
     ];
-    const botNames = ["Bot Sigurd", "Bot Freja", "Bot Thor", "Bot Odin"];
+    const botNames = [
+      "Bot Sigurd", "Bot Freja", "Bot Thor", "Bot Odin",
+      "Bot Loke", "Bot Balder", "Bot Frigg", "Bot Tyr",
+      "Bot Idunn", "Bot Brage", "Bot Heimdall", "Bot Njord",
+      "Bot Skade", "Bot Vidar", "Bot Vale",
+    ];
 
     for (let i = 1; i < count; i++) {
-      const cfg = PLAYER_DEFAULTS[i];
+      const cfg = PLAYER_DEFAULTS[i % PLAYER_DEFAULTS.length];
+      const av = botAvatars[(i - 1) % botAvatars.length];
       state.players.push({
         id: `bot_${i}`,
-        name: botNames[i - 1],
-        avatar: botAvatars[i - 1],
-        color: extractCharacterColor(botAvatars[i - 1], cfg.color),
+        name: botNames[(i - 1) % botNames.length],
+        avatar: av,
+        color: cfg.color,
         colorName: cfg.colorName,
         pos: getPlayerStartPos(i, count),
         walls: 999,
@@ -2067,6 +2093,9 @@
   function renderPlayersSideCards() {
     el.colPlayersLeft.innerHTML = "";
     el.colPlayersRight.innerHTML = "";
+    const manyPlayers = state.players.length > 6;
+    el.colPlayersLeft.classList.toggle("many-players", manyPlayers);
+    el.colPlayersRight.classList.toggle("many-players", manyPlayers);
 
     state.players.forEach((p, idx) => {
       const isTurn = idx === state.currentTurn;

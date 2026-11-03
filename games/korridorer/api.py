@@ -1,5 +1,5 @@
 """
-Korridorer API - Multiplayer backend for Quoridor (2-4 players).
+Korridorer API - Multiplayer backend for Quoridor (2-16 players).
 Handles board validation, pawn jumps, wall placements, BFS pathfinding,
 lobby management, and game state synchronization.
 """
@@ -20,6 +20,19 @@ CLEAN_ROOM_CODES = [
     "RUTE", "TARN", "SKAN", "PORTER", "HURT", "TRIPP",
     "KROSS", "FELLE", "SMAL", "PORT", "HEKK", "BOM"
 ]
+
+
+def get_multi_start_positions(board_size: int = 11) -> List[Tuple[int, int]]:
+    """Return up to 16 symmetric perimeter starting positions for >2 players."""
+    mid = board_size // 2
+    m = board_size - 1
+    return [
+        (m, mid), (0, mid), (mid, 0), (mid, m),
+        (m, max(0, mid - 2)), (0, min(m, mid + 2)), (max(0, mid - 2), 0), (min(m, mid + 2), m),
+        (m, min(m, mid + 2)), (0, max(0, mid - 2)), (min(m, mid + 2), 0), (max(0, mid - 2), m),
+        (m, max(0, mid - 4)), (0, min(m, mid + 4)), (max(0, mid - 4), 0), (min(m, mid + 4), m),
+    ]
+
 
 PLAYER_CONFIGS = [
     {
@@ -44,18 +57,126 @@ PLAYER_CONFIGS = [
         "slot": 2,
         "color": "#10b981",
         "colorName": "Grønn",
-        "start": (4, 0),
-        "goalDesc": "Nå høyre kant (kolonne 8)",
-        "goalFn": lambda r, c: c == 8,
+        "start": (5, 0),
+        "goalDesc": "Nå sentrum (rute 5, 5)",
+        "goalFn": lambda r, c: r == 5 and c == 5,
         "defaultAvatar": "tanuki",
     },
     {
         "slot": 3,
         "color": "#a855f7",
         "colorName": "Lilla",
-        "start": (4, 8),
-        "goalDesc": "Nå venstre kant (kolonne 0)",
-        "goalFn": lambda r, c: c == 0,
+        "start": (5, 10),
+        "goalDesc": "Nå sentrum (rute 5, 5)",
+        "goalFn": lambda r, c: r == 5 and c == 5,
+        "defaultAvatar": "squitonkey",
+    },
+    {
+        "slot": 4,
+        "color": "#f59e0b",
+        "colorName": "Oransje",
+        "start": (10, 3),
+        "goalDesc": "Nå sentrum (rute 5, 5)",
+        "goalFn": lambda r, c: r == 5 and c == 5,
+        "defaultAvatar": "pixiu",
+    },
+    {
+        "slot": 5,
+        "color": "#ec4899",
+        "colorName": "Rosa",
+        "start": (0, 7),
+        "goalFn": lambda r, c: r == 5 and c == 5,
+        "goalDesc": "Nå sentrum (rute 5, 5)",
+        "defaultAvatar": "totter",
+    },
+    {
+        "slot": 6,
+        "color": "#3b82f6",
+        "colorName": "Blå",
+        "start": (3, 0),
+        "goalDesc": "Nå sentrum (rute 5, 5)",
+        "goalFn": lambda r, c: r == 5 and c == 5,
+        "defaultAvatar": "charbear",
+    },
+    {
+        "slot": 7,
+        "color": "#eab308",
+        "colorName": "Gul",
+        "start": (7, 10),
+        "goalDesc": "Nå sentrum (rute 5, 5)",
+        "goalFn": lambda r, c: r == 5 and c == 5,
+        "defaultAvatar": "jormundgandr",
+    },
+    {
+        "slot": 8,
+        "color": "#14b8a6",
+        "colorName": "Turkis",
+        "start": (10, 7),
+        "goalDesc": "Nå sentrum (rute 5, 5)",
+        "goalFn": lambda r, c: r == 5 and c == 5,
+        "defaultAvatar": "tanuki",
+    },
+    {
+        "slot": 9,
+        "color": "#f97316",
+        "colorName": "Korall",
+        "start": (0, 3),
+        "goalDesc": "Nå sentrum (rute 5, 5)",
+        "goalFn": lambda r, c: r == 5 and c == 5,
+        "defaultAvatar": "squitonkey",
+    },
+    {
+        "slot": 10,
+        "color": "#8b5cf6",
+        "colorName": "Indigo",
+        "start": (7, 0),
+        "goalDesc": "Nå sentrum (rute 5, 5)",
+        "goalFn": lambda r, c: r == 5 and c == 5,
+        "defaultAvatar": "pixiu",
+    },
+    {
+        "slot": 11,
+        "color": "#84cc16",
+        "colorName": "Lime",
+        "start": (3, 10),
+        "goalDesc": "Nå sentrum (rute 5, 5)",
+        "goalFn": lambda r, c: r == 5 and c == 5,
+        "defaultAvatar": "totter",
+    },
+    {
+        "slot": 12,
+        "color": "#f43f5e",
+        "colorName": "Rubin",
+        "start": (10, 1),
+        "goalDesc": "Nå sentrum (rute 5, 5)",
+        "goalFn": lambda r, c: r == 5 and c == 5,
+        "defaultAvatar": "charbear",
+    },
+    {
+        "slot": 13,
+        "color": "#0ea5e9",
+        "colorName": "Himmelblå",
+        "start": (0, 9),
+        "goalDesc": "Nå sentrum (rute 5, 5)",
+        "goalFn": lambda r, c: r == 5 and c == 5,
+        "defaultAvatar": "jormundgandr",
+    },
+    {
+        "slot": 14,
+        "color": "#d946ef",
+        "colorName": "ibis",
+        "start": (1, 0),
+        "goalDesc": "Nå sentrum (rute 5, 5)",
+        "goalFn": lambda r, c: r == 5 and c == 5,
+        "defaultAvatar": "tanuki",
+    },
+    {
+        "slot": 15,
+        "color": "#22c55e",
+        "colorName": "Smaragd",
+        "start": (9, 10),
+        "goalDesc": "Nå sentrum (rute 5, 5)",
+        "goalFn": lambda r, c: r == 5 and c == 5,
         "defaultAvatar": "squitonkey",
     },
 ]
@@ -226,14 +347,14 @@ def validate_wall_placement(r: int, c: int, orientation: str, walls: List[Dict[s
 
 
 class KorridorerRoom:
-    def __init__(self, code: str, host_name: str, host_avatar: str, max_players: int = 4):
+    def __init__(self, code: str, host_name: str, host_avatar: str, max_players: int = 16):
         self.code = code
         self.created_at = time.time()
         self.last_active = time.time()
         self.version = 1
         self.lock = threading.RLock()
 
-        self.max_players = max(2, min(4, max_players))
+        self.max_players = max(2, min(16, max_players))
         self.status = "waiting"  # waiting, active, finished
         self.current_turn = 0
         self.winner: Optional[Dict[str, Any]] = None
@@ -276,13 +397,22 @@ class KorridorerRoom:
                 return False, "Rommet er fullt.", None
 
             bot_idx = len(self.players)
-            cfg = PLAYER_CONFIGS[bot_idx]
-            bot_names = ["Bot Sigurd", "Bot Freja", "Bot Thor", "Bot Odin"]
+            cfg = PLAYER_CONFIGS[bot_idx % len(PLAYER_CONFIGS)]
+            bot_names = [
+                "Bot Sigurd", "Bot Freja", "Bot Thor", "Bot Odin",
+                "Bot Loke", "Bot Balder", "Bot Frigg", "Bot Tyr",
+                "Bot Idunn", "Bot Brage", "Bot Heimdall", "Bot Njord",
+                "Bot Skade", "Bot Vidar", "Bot Vale",
+            ]
             bot_avatars = [
                 "char:h1:c_06d6a0:r2:e2:m2",
                 "char:h1:c_ffd166:r3:e3:m3",
                 "char:h1:c_ef476f:r1:e1:m1",
                 "char:h1:c_8338ec:r3:e2:m3",
+                "char:h2:c_f59e0b:r1:e2:m1",
+                "char:h2:c_ec4899:r2:e1:m3",
+                "char:h3:c_3b82f6:r3:e3:m2",
+                "char:h3:c_eab308:r1:e1:m2",
             ]
 
             bot_id = f"bot_{uuid.uuid4().hex[:6]}"
@@ -353,17 +483,16 @@ class KorridorerRoom:
             board_size = self.get_board_size()
             is_multi = len(self.players) > 2
             mid = board_size // 2
-            max_coord = board_size - 1
 
-            starts_multi = [(max_coord, mid), (0, mid), (mid, 0), (mid, max_coord)]
+            starts_multi = get_multi_start_positions(board_size)
             starts_2p = [(8, 4), (0, 4)]
 
             # Position each player at their starting slot
             for idx, p in enumerate(self.players):
-                cfg = PLAYER_CONFIGS[idx]
+                cfg = PLAYER_CONFIGS[idx % len(PLAYER_CONFIGS)]
                 p["color"] = p.get("color") or extract_color_from_avatar(p.get("avatar"), cfg["color"])
                 p["colorName"] = p.get("colorName") or cfg["colorName"]
-                p["pos"] = list(starts_multi[idx] if is_multi else starts_2p[idx])
+                p["pos"] = list(starts_multi[idx % len(starts_multi)] if is_multi else starts_2p[idx])
                 p["walls"] = 999
                 p["goalDesc"] = f"Nå sentrum (rute {mid}, {mid})" if is_multi else cfg["goalDesc"]
 
@@ -625,7 +754,7 @@ class KorridorerAPI:
 
                 if room.status == "waiting" and len(room.players) < room.max_players:
                     idx = len(room.players)
-                    cfg = PLAYER_CONFIGS[idx]
+                    cfg = PLAYER_CONFIGS[idx % len(PLAYER_CONFIGS)]
                     new_player = {
                         "id": player_id,
                         "name": player_name,
