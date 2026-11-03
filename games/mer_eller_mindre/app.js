@@ -280,7 +280,7 @@
       }
     }
 
-    if (savedData && !savedData.submittedToServer) {
+    if (!dailyData.submittedToServer) {
       submitGameResults(state.score);
     } else {
       updateGraphAndPercentileUI(state.score, {
@@ -288,10 +288,10 @@
         totalPlays: state.totalPlays,
         brackets: state.brackets,
         distribution: state.distribution,
-        betterThanPct: state.betterThanPct,
-        percentile: state.percentile,
+        betterThanPct: dailyData.betterThanPct ?? state.betterThanPct,
+        percentile: dailyData.percentile ?? state.percentile,
       });
-      fetch(`/api/mer-eller-mindre/stats?date=${encodeURIComponent(state.todayStr)}`)
+      fetch(`/api/mer-eller-mindre/stats?date=${encodeURIComponent(state.todayStr)}&score=${encodeURIComponent(state.score)}`)
         .then((r) => (r.ok ? r.json() : null))
         .then((statsData) => {
           if (statsData) {

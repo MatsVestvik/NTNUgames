@@ -850,7 +850,13 @@ class MerEllerMindreAPI:
                 datetime.date.fromisoformat(req_date)
             except ValueError:
                 req_date = today_str
-            stats = calculate_mer_eller_mindre_stats(req_date)
+            user_score = None
+            if "score" in query and query["score"]:
+                try:
+                    user_score = int(query["score"][0])
+                except (ValueError, TypeError):
+                    user_score = None
+            stats = calculate_mer_eller_mindre_stats(req_date, user_score=user_score)
             return 200, stats
 
         if rel_path in ("/api/daily", "/api/today"):
