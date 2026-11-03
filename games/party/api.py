@@ -105,6 +105,7 @@ class PartyRoom:
         self.current_game: Optional[str] = None  # None (lobby), "ordbombe", "tegn_og_gjett", etc.
         self.game_state: Dict[str, Any] = {}
         self.players: Dict[str, Dict[str, Any]] = {}
+        self.kicked_players: set = set()
         self.version = 1
         self.lock = threading.RLock()
 
@@ -208,6 +209,7 @@ class PartyRoom:
                 "playerCount": len(players_list),
                 "isHost": bool(client_player and client_player.get("is_host")),
                 "me": client_player,
+                "kicked": bool(client_player_id and client_player_id in self.kicked_players),
                 "gameState": effective_game_state,
                 "serverTime": time.time(),
             }
@@ -1382,6 +1384,43 @@ class PartyAPI:
                 return 404, {"ok": False, "error": "Rommet finnes ikke"}
 
             return room.handle_tegn_og_gjett_action(player_id, body)
+
+        if rel_path == "/api/kick":
+            code = str(body.get("roomCode") or "").strip().upper()
+            host_token = str(body.get("hostToken") or "").strip()
+            player_id = str(body.get("playerId") or "").strip()
+            target_id = str(body.get("targetPlayerId") or "").strip()
+
+            with _rooms_lock:
+                room = _rooms.get(code)
+
+            if not room:
+                return 404, {"ok": False, "error": "Rommet finnes ikke"}
+
+            with room.lock:
+                is_host_req = bool(
+                    (host_token and room.host_token == host_token)
+                    or (player_id and room.host_id == player_id)
+                )
+                if not is_host_req:
+                    return 403, {"ok": False, "error": "Bare romverten kan fjerne spillere"}
+
+                if not target_id or target_id not in room.players:
+                    return 404, {"ok": False, "error": "Spilleren finnes ikke i rommet"}
+
+                if target_id == room.host_id:
+                    return 400, {"ok": False, "error": "Verten kan ikke fjerne seg selv"}
+
+                kicked_player = room.players.pop(target_id)
+                room.kicked_players.add(target_id)
+                room.bump()
+                state = room.get_public_state(room.host_id)
+
+            return 200, {
+                "ok": True,
+                "kickedName": kicked_player.get("name", "Spiller"),
+                "state": state,
+            }
 
         if rel_path == "/api/leave":
             code = str(body.get("roomCode") or "").strip().upper()

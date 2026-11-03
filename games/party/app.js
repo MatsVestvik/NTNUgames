@@ -350,6 +350,24 @@
 
         const data = await resp.json();
         if (data.ok) {
+          if (data.kicked || !data.me) {
+            stopPolling();
+            if (lobbyWidget) {
+              lobbyWidget.destroy();
+              lobbyWidget = null;
+            }
+            sessionStorage.clear();
+            state.roomCode = null;
+            state.hostToken = null;
+            state.playerId = null;
+            state.isHost = false;
+            el.viewLobby.classList.add("hidden");
+            el.viewAuth.classList.remove("hidden");
+            history.replaceState(null, "", window.location.pathname);
+            showToast("Du ble fjernet fra party-rommet av verten.");
+            return;
+          }
+
           state.version = data.version;
           state.isHost = data.isHost;
 
@@ -430,26 +448,68 @@
       }
     }
 
+    // If host status changed, update before rendering tiles so kick buttons match
+    if (typeof room.isHost === "boolean" && room.isHost !== state.isHost) {
+      state.isHost = room.isHost;
+      renderHostVsGuestUI(state.isHost);
+      el.hostHint.textContent = state.isHost ? "Du er vert 👑" : `Tilkoblet som ${state.playerName}`;
+    }
+
     // Render players grid
     el.playersGrid.innerHTML = "";
     (room.players || []).forEach((p) => {
       const isMe = p.id === state.playerId;
+      const canKick = state.isHost && !isMe && !p.isHost;
       const tile = document.createElement("div");
       tile.className = `player-tile ${p.isHost ? "is-host" : ""} ${isMe ? "is-me" : ""}`;
       tile.innerHTML = `
         ${p.isHost ? '<span class="player-crown-badge">VERT</span>' : ''}
         ${isMe ? '<span class="player-me-badge">DEG</span>' : ''}
+        ${canKick ? `<button type="button" class="player-kick-btn" title="Fjern ${escapeHtml(p.name)} fra rommet" aria-label="Fjern ${escapeHtml(p.name)}">✕</button>` : ''}
         <div class="player-avatar-circle" style="border-color: ${p.color || '#3b5080'}">${renderAvatarHtml(p.avatar)}</div>
         <div class="player-name-text">${escapeHtml(p.name)}</div>
       `;
+      if (canKick) {
+        const kickBtn = tile.querySelector(".player-kick-btn");
+        if (kickBtn) {
+          kickBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (confirm(`Vil du fjerne ${p.name} fra party-rommet?`)) {
+              kickPlayer(p.id, p.name);
+            }
+          });
+        }
+      }
       el.playersGrid.appendChild(tile);
     });
+  }
 
-    // If host status changed
-    if (typeof room.isHost === "boolean" && room.isHost !== state.isHost) {
-      state.isHost = room.isHost;
-      renderHostVsGuestUI(state.isHost);
-      el.hostHint.textContent = state.isHost ? "Du er vert 👑" : `Tilkoblet som ${state.playerName}`;
+  async function kickPlayer(targetPlayerId, targetPlayerName) {
+    if (!state.isHost || !state.roomCode || !targetPlayerId) return;
+    try {
+      const resp = await fetch("/api/party/kick", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roomCode: state.roomCode,
+          hostToken: state.hostToken,
+          playerId: state.playerId,
+          targetPlayerId: targetPlayerId,
+        }),
+      });
+      const data = await resp.json();
+      if (data.ok) {
+        if (data.state) {
+          state.version = data.state.version;
+          updateLobbyUI(data.state);
+        }
+        showToast(`${targetPlayerName || data.kickedName || "Spiller"} ble fjernet fra rommet.`);
+      } else if (data.error) {
+        showToast(data.error);
+      }
+    } catch (err) {
+      console.warn("Kick player error:", err);
+      showToast("Kunne ikke fjerne spilleren.");
     }
   }
 

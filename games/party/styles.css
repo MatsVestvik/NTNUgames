@@ -557,6 +557,35 @@ body {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
+.player-kick-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid rgba(239, 71, 111, 0.45);
+  background: rgba(13, 19, 34, 0.85);
+  color: #ef476f;
+  font-size: 0.78rem;
+  font-weight: 900;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.15s ease, background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.player-kick-btn:hover {
+  background: #ef476f;
+  color: #ffffff;
+  border-color: #ef476f;
+  transform: scale(1.12);
+  box-shadow: 0 0 10px rgba(239, 71, 111, 0.55);
+}
+
 .lobby-character-section {
   background: rgba(13, 19, 33, 0.7);
   border: 1.5px solid rgba(255, 255, 255, 0.1);
