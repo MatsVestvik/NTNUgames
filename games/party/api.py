@@ -17,7 +17,7 @@ from games.tegn_og_gjett.words import get_random_word_triplet, is_close_guess
 
 # In-memory party rooms storage
 _rooms: Dict[str, "PartyRoom"] = {}
-_rooms_lock = threading.Lock()
+_rooms_lock = threading.RLock()
 
 # Clean room code words for easy typing on phones
 CLEAN_WORDS = [
@@ -171,6 +171,7 @@ class PartyRoom:
                         s_room = sjakk_rooms.get(self.code)
                     if s_room:
                         with s_room.lock:
+                            s_room._tick_clock()
                             effective_game_state["status"] = s_room.status
                             effective_game_state["resultReason"] = s_room.result_reason
                             if s_room.status == "finished":
@@ -1173,6 +1174,7 @@ class PartyAPI:
                         s_room = sjakk_rooms[code]
                         with s_room.lock:
                             s_room.status = "finished"
+                            s_room.returned_to_lounge = True
                             s_room.result_reason = "Partiet ble avsluttet (returnert til Party Lounge)."
                             s_room.bump()
             except Exception as err:
@@ -1217,6 +1219,7 @@ class PartyAPI:
                                 s_room = sjakk_rooms[code]
                                 with s_room.lock:
                                     s_room.status = "finished"
+                                    s_room.returned_to_lounge = True
                                     s_room.result_reason = "Partiet ble avsluttet (returnert til Party Lounge)."
                                     s_room.bump()
                     except Exception:

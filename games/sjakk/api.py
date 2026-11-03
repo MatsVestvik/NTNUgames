@@ -11,7 +11,7 @@ import uuid
 from typing import Any, Dict, List, Optional, Tuple
 
 _rooms: Dict[str, "SjakkRoom"] = {}
-_rooms_lock = threading.Lock()
+_rooms_lock = threading.RLock()
 
 CLEAN_ROOM_CODES = [
     "SJAKK", "TARN", "BONDE", "HEST", "DRONN", "KONGE",
@@ -70,6 +70,7 @@ class SjakkRoom:
         # Draw offers & Rematch
         self.draw_offered_by: Optional[str] = None
         self.rematch_requested_by: Optional[str] = None
+        self.returned_to_lounge: bool = False
 
     def touch(self) -> None:
         self.last_active = time.time()
@@ -78,7 +79,7 @@ class SjakkRoom:
         self.version += 1
         self.touch()
 
-    def _tick_clock(self) -> None:
+    def _tick_clock(self, tolerance: float = 0.05) -> None:
         """Update clocks if game is active."""
         if self.status != "active" or self.time_control <= 0 or not self.turn_start_time:
             return
@@ -88,20 +89,31 @@ class SjakkRoom:
 
         if self.turn == "w":
             rem = self.white_time - elapsed
-            if rem <= 0:
+            if rem <= tolerance:
                 self.white_time = 0.0
                 self.status = "finished"
                 self.result = "0-1"
                 self.result_reason = "Tiden er ute! Svart vinner på tid."
+                self.draw_offered_by = None
                 self.bump()
+                self._notify_party_finished()
         else:
             rem = self.black_time - elapsed
-            if rem <= 0:
+            if rem <= tolerance:
                 self.black_time = 0.0
                 self.status = "finished"
                 self.result = "1-0"
                 self.result_reason = "Tiden er ute! Hvit vinner på tid."
+                self.draw_offered_by = None
                 self.bump()
+                self._notify_party_finished()
+
+    def _is_party_room(self) -> bool:
+        try:
+            from games.party.api import _rooms as party_rooms
+            return self.code in party_rooms
+        except Exception:
+            return False
 
     def get_public_state(self, player_id: Optional[str] = None) -> Dict[str, Any]:
         with self.lock:
@@ -143,6 +155,8 @@ class SjakkRoom:
                 "turn": self.turn,
                 "result": self.result,
                 "resultReason": self.result_reason,
+                "returnedToLounge": self.returned_to_lounge,
+                "isPartyRoom": self._is_party_room(),
                 "timeControl": self.time_control,
                 "whitePlayer": self.white_player,
                 "blackPlayer": self.black_player,
@@ -165,7 +179,13 @@ class SjakkRoom:
 
     def make_move(self, player_id: str, move_data: Dict[str, Any]) -> Tuple[bool, str]:
         with self.lock:
-            self._tick_clock()
+            is_premove = bool(move_data.get("isPremove"))
+            if is_premove:
+                # Allow polling roundtrip grace when executing a premove
+                self._tick_clock(tolerance=-1.5)
+            else:
+                self._tick_clock()
+
             if self.status != "active":
                 return False, "Partiet er ikke aktivt."
 
@@ -185,6 +205,8 @@ class SjakkRoom:
             now = time.time()
             if self.time_control > 0 and self.turn_start_time:
                 elapsed = now - self.turn_start_time
+                if is_premove:
+                    elapsed = min(elapsed, 0.1)
                 if self.turn == "w":
                     self.white_time = max(0.0, self.white_time - elapsed + self.increment)
                 else:
@@ -221,8 +243,16 @@ class SjakkRoom:
             self.bump()
             return True, "Trekk registrert."
 
+    def claim_timeout(self) -> Tuple[bool, str]:
+        with self.lock:
+            self._tick_clock(tolerance=0.6)
+            if self.status == "finished":
+                return True, self.result_reason or "Tiden er ute!"
+            return False, "Spilleren har fortsatt tid igjen."
+
     def offer_draw(self, player_id: str) -> Tuple[bool, str]:
         with self.lock:
+            self._tick_clock()
             if self.status != "active":
                 return False, "Partiet er ikke aktivt."
 
@@ -250,6 +280,7 @@ class SjakkRoom:
 
     def resign(self, player_id: str) -> Tuple[bool, str]:
         with self.lock:
+            self._tick_clock()
             if self.status != "active":
                 return False, "Partiet er ikke aktivt."
 
@@ -275,6 +306,7 @@ class SjakkRoom:
 
     def request_rematch(self, player_id: str) -> Tuple[bool, str]:
         with self.lock:
+            self._tick_clock(tolerance=0.6)
             if self.status != "finished":
                 return False, "Partiet må være ferdig først."
 
@@ -298,6 +330,7 @@ class SjakkRoom:
                 self.status = "active"
                 self.result = None
                 self.result_reason = None
+                self.returned_to_lounge = False
                 self.turn = "w"
                 self.white_time = float(self.time_control) if self.time_control > 0 else 0.0
                 self.black_time = float(self.time_control) if self.time_control > 0 else 0.0
@@ -462,7 +495,7 @@ class SjakkAPI:
 
             ok, msg = room.make_move(player_id, move_data)
             if not ok:
-                return 400, {"ok": False, "error": msg}
+                return 400, {"ok": False, "error": msg, "state": room.get_public_state(player_id)}
 
             return 200, {"ok": True, "message": msg, "state": room.get_public_state(player_id)}
 
@@ -483,17 +516,21 @@ class SjakkAPI:
                 ok, msg = room.resign(player_id)
             elif action == "rematch":
                 ok, msg = room.request_rematch(player_id)
+            elif action == "timeout":
+                ok, msg = room.claim_timeout()
             elif action in ("to-lounge", "to_lobby", "exit"):
-                room.status = "finished"
-                room.result_reason = "Partiet ble avsluttet (returnert til Party Lounge)."
-                room.bump()
+                with room.lock:
+                    room.status = "finished"
+                    room.returned_to_lounge = True
+                    room.result_reason = "Partiet ble avsluttet (returnert til Party Lounge)."
+                    room.bump()
                 room._notify_party_finished()
                 return 200, {"ok": True, "message": "Returnert til lounge"}
             else:
                 return 400, {"ok": False, "error": "Ukjent handling."}
 
             if not ok:
-                return 400, {"ok": False, "error": msg}
+                return 400, {"ok": False, "error": msg, "state": room.get_public_state(player_id)}
 
             return 200, {"ok": True, "message": msg, "state": room.get_public_state(player_id)}
 
@@ -504,6 +541,7 @@ class SjakkAPI:
             if room:
                 with room.lock:
                     room.status = "finished"
+                    room.returned_to_lounge = True
                     room.result_reason = "Partiet ble avsluttet (returnert til Party Lounge)."
                     room.bump()
                 room._notify_party_finished()

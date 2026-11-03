@@ -746,6 +746,72 @@
       }
       return whiteScore - blackScore;
     }
+
+    getPremoveTargets(r, c, color) {
+      const p = this.board[r][c];
+      if (!p || this.getColor(p) !== color) return [];
+
+      const targets = [];
+      const isW = color === "w";
+      const type = p.toUpperCase();
+      const addTarget = (nr, nc) => {
+        if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && !(nr === r && nc === c)) {
+          if (!targets.some((t) => t.r === nr && t.c === nc)) {
+            targets.push({ r: nr, c: nc });
+          }
+        }
+      };
+
+      if (type === "P") {
+        const dir = isW ? -1 : 1;
+        const startRank = isW ? 6 : 1;
+        addTarget(r + dir, c);
+        if (r === startRank) {
+          addTarget(r + 2 * dir, c);
+        }
+        addTarget(r + dir, c - 1);
+        addTarget(r + dir, c + 1);
+      } else if (type === "N") {
+        const offsets = [
+          [-2, -1], [-2, 1], [-1, -2], [-1, 2],
+          [1, -2], [1, 2], [2, -1], [2, 1],
+        ];
+        for (const [dr, dc] of offsets) {
+          addTarget(r + dr, c + dc);
+        }
+      } else if (type === "B" || type === "R" || type === "Q") {
+        const dirs = [];
+        if (type === "B" || type === "Q") {
+          dirs.push([-1, -1], [-1, 1], [1, -1], [1, 1]);
+        }
+        if (type === "R" || type === "Q") {
+          dirs.push([-1, 0], [1, 0], [0, -1], [0, 1]);
+        }
+        for (const [dr, dc] of dirs) {
+          let nr = r + dr;
+          let nc = c + dc;
+          while (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+            addTarget(nr, nc);
+            nr += dr;
+            nc += dc;
+          }
+        }
+      } else if (type === "K") {
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            addTarget(r + dr, c + dc);
+          }
+        }
+        const homeRank = isW ? 7 : 0;
+        if (r === homeRank && c === 4) {
+          if (isW ? this.castling.wK : this.castling.bK) addTarget(homeRank, 6);
+          if (isW ? this.castling.wQ : this.castling.bQ) addTarget(homeRank, 2);
+        }
+      }
+
+      return targets;
+    }
   }
 
   // --- UI Controller & Multiplayer Sync ---
@@ -755,6 +821,8 @@
     perspective: "w", // 'w' or 'b'
     selectedSquare: null, // { r, c }
     legalMovesForSelected: [],
+    premove: null, // { from: {r, c}, to: {r, c}, promo: 'Q' }
+    premoveTargetsForSelected: [], // [{ r, c }]
     lastMove: null, // { from: {r, c}, to: {r, c} }
     autoFlip: false,
 
@@ -770,11 +838,14 @@
     playerId: null,
     playerColor: "w", // 'w', 'b', or 'spectator'
     isHost: false,
+    isPartyRoom: false,
     pollTimer: null,
     lastPolledVersion: 0,
     pendingPromotionMove: null,
     gameStatus: "waiting", // 'waiting', 'active', 'finished'
     dismissedGameOver: false,
+    customGameOverTitle: null,
+    customGameOverReason: null,
     manuallyFlipped: false,
     partyRoomCode: null,
   };
@@ -885,9 +956,45 @@
     }
   }
 
+  function clearPremove() {
+    state.premove = null;
+    state.premoveTargetsForSelected = [];
+  }
+
+  function formatServerGameOverTitle(data) {
+    const reason = (data.resultReason || "").toLowerCase();
+    const res = data.result || "";
+    const wName = (data.whitePlayer && data.whitePlayer.name) || "Hvit";
+    const bName = (data.blackPlayer && data.blackPlayer.name) || "Svart";
+
+    if (reason.includes("tid")) {
+      if (res === "1-0") return `Tiden er ute! ${wName} vinner! 🏆`;
+      if (res === "0-1") return `Tiden er ute! ${bName} vinner! 🏆`;
+      return "Tiden er ute! ⏱️";
+    }
+    if (reason.includes("sjakkmatt")) {
+      if (res === "1-0") return `Sjakkmatt! ${wName} vinner! 🏆`;
+      if (res === "0-1") return `Sjakkmatt! ${bName} vinner! 🏆`;
+      return "Sjakkmatt! 🏆";
+    }
+    if (res === "1-0") return `${wName} vinner! 🏆`;
+    if (res === "0-1") return `${bName} vinner! 🏆`;
+    if (res === "1/2-1/2") return "Remis! 🤝";
+    return "Partiet er over!";
+  }
+
   // --- Render Board & Squares ---
   function initBoardDOM() {
     el.chessGrid.innerHTML = "";
+    el.chessGrid.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      if (state.premove || state.selectedSquare) {
+        clearPremove();
+        state.selectedSquare = null;
+        state.legalMovesForSelected = [];
+        renderBoard();
+      }
+    });
     for (let vRow = 0; vRow < 8; vRow++) {
       for (let vCol = 0; vCol < 8; vCol++) {
         const sq = document.createElement("div");
@@ -934,7 +1041,17 @@
           sq.classList.add("last-move");
         }
 
-        // Selected square highlight
+        // Premove highlight
+        if (state.premove) {
+          if (state.premove.from.r === r && state.premove.from.c === c) {
+            sq.classList.add("premove-from");
+          }
+          if (state.premove.to.r === r && state.premove.to.c === c) {
+            sq.classList.add("premove-to");
+          }
+        }
+
+        // Selected square (lifted piece, no blue square)
         if (state.selectedSquare && state.selectedSquare.r === r && state.selectedSquare.c === c) {
           sq.classList.add("selected");
         }
@@ -956,12 +1073,21 @@
           sq.appendChild(pieceEl);
         }
 
-        // Legal move indicator
+        // Legal move indicator (when it's our turn)
         const legalMove = state.legalMovesForSelected.find((m) => m.to.r === r && m.to.c === c);
         if (legalMove) {
           const isCapture = !!state.game.board[r][c] || legalMove.isEnPassant;
           const indicator = document.createElement("div");
           indicator.className = isCapture ? "capture-ring" : "move-dot";
+          sq.appendChild(indicator);
+        }
+
+        // Premove target indicator (when selecting a premove during opponent's turn)
+        const premoveTarget = state.premoveTargetsForSelected.find((t) => t.r === r && t.c === c);
+        if (premoveTarget) {
+          const hasPiece = !!state.game.board[r][c];
+          const indicator = document.createElement("div");
+          indicator.className = hasPiece ? "premove-ring" : "premove-dot";
           sq.appendChild(indicator);
         }
       }
@@ -980,14 +1106,15 @@
     const topColor = whitePlayerIsBottom ? "b" : "w";
 
     // Turn styling
-    el.bottomPlayerCard.classList.toggle("is-turn", state.game.turn === bottomColor);
-    el.topPlayerCard.classList.toggle("is-turn", state.game.turn === topColor);
+    const isFinished = state.gameStatus === "finished" || state.game.getGameStatus().over;
+    el.bottomPlayerCard.classList.toggle("is-turn", !isFinished && state.game.turn === bottomColor);
+    el.topPlayerCard.classList.toggle("is-turn", !isFinished && state.game.turn === topColor);
 
-    el.bottomTurnBadge.classList.toggle("hidden", state.game.turn !== bottomColor);
-    el.topTurnBadge.classList.toggle("hidden", state.game.turn !== topColor);
+    el.bottomTurnBadge.classList.toggle("hidden", isFinished || state.game.turn !== bottomColor);
+    el.topTurnBadge.classList.toggle("hidden", isFinished || state.game.turn !== topColor);
 
-    el.bottomClock.classList.toggle("active", state.game.turn === bottomColor);
-    el.topClock.classList.toggle("active", state.game.turn === topColor);
+    el.bottomClock.classList.toggle("active", !isFinished && state.game.turn === bottomColor);
+    el.topClock.classList.toggle("active", !isFinished && state.game.turn === topColor);
 
     // Color dots
     el.bottomColorDot.className = `player-color-indicator ${bottomColor === "w" ? "white" : "black"}`;
@@ -1027,12 +1154,26 @@
     // Status text
     const status = state.game.getGameStatus();
     if (status.over || state.gameStatus === "finished") {
+      const reasonStr =
+        status.reason ||
+        state.customGameOverReason ||
+        (el.gameOverReason ? el.gameOverReason.textContent : "") ||
+        "Partiet er over.";
+      const titleStr =
+        status.title ||
+        state.customGameOverTitle ||
+        (el.gameOverTitle ? el.gameOverTitle.textContent : "") ||
+        "Partiet er over";
+
       if (state.dismissedGameOver) {
-        updateStatusTextForDismissed(status.reason || (el.gameOverReason ? el.gameOverReason.textContent : "") || "Partiet er over.");
+        updateStatusTextForDismissed(reasonStr);
       } else {
-        el.gameStatusText.textContent = status.title || "Partiet er over";
+        el.gameStatusText.textContent = titleStr;
         el.gameStatusText.style.color = "var(--accent-gold)";
       }
+    } else if (state.premove) {
+      el.gameStatusText.textContent = "Premove klar – venter på motstander…";
+      el.gameStatusText.style.color = "var(--accent-orange)";
     } else {
       el.gameStatusText.textContent = isWhiteTurn ? "Hvits trekk" : "Svarts trekk";
       el.gameStatusText.style.color = "var(--accent-blue)";
@@ -1053,6 +1194,8 @@
     if (state.timeControl <= 0) {
       el.bottomClock.textContent = "∞";
       el.topClock.textContent = "∞";
+      el.bottomClock.classList.remove("low-time");
+      el.topClock.classList.remove("low-time");
       return;
     }
 
@@ -1109,18 +1252,90 @@
 
   // --- Interaction & Move Handling ---
   function handleSquareClick(vRow, vCol) {
+    if (state.gameStatus === "finished" || state.game.getGameStatus().over) {
+      return;
+    }
+
     const { r, c } = toMatrixCoords(vRow, vCol);
     const piece = state.game.board[r][c];
 
-    // In room mode, disallow moving if it's not our turn or role
+    // In room mode, handle premoves when it is not our turn
     if (state.mode === "room") {
+      if (state.playerColor !== "w" && state.playerColor !== "b") {
+        return; // spectator
+      }
+      if (state.gameStatus !== "active") {
+        return;
+      }
+
       if (state.playerColor !== state.game.turn) {
-        return; // not our turn
+        // --- PREMOVE SELECTION & SETTING ---
+        if (state.selectedSquare) {
+          // Clicking the same square deselects
+          if (state.selectedSquare.r === r && state.selectedSquare.c === c) {
+            state.selectedSquare = null;
+            state.premoveTargetsForSelected = [];
+            renderBoard();
+            return;
+          }
+
+          // Check if clicked square is a valid premove target for the selected piece
+          const isTarget = state.premoveTargetsForSelected.some((t) => t.r === r && t.c === c);
+          if (isTarget) {
+            state.premove = {
+              from: { ...state.selectedSquare },
+              to: { r, c },
+              promo: "Q",
+            };
+            state.selectedSquare = null;
+            state.premoveTargetsForSelected = [];
+            soundEngine.playMove();
+            renderBoard();
+            return;
+          }
+        }
+
+        // Clicking one of our own pieces selects it for premoving
+        if (piece && state.game.getColor(piece) === state.playerColor) {
+          // If clicking the piece that already had an active premove, cancel the premove
+          if (
+            state.premove &&
+            state.premove.from.r === r &&
+            state.premove.from.c === c &&
+            !state.selectedSquare
+          ) {
+            clearPremove();
+            renderBoard();
+            return;
+          }
+          clearPremove();
+          state.selectedSquare = { r, c };
+          state.legalMovesForSelected = [];
+          state.premoveTargetsForSelected = state.game.getPremoveTargets(r, c, state.playerColor);
+          renderBoard();
+        } else {
+          // Clicking elsewhere clears any active premove or selection
+          clearPremove();
+          state.selectedSquare = null;
+          state.legalMovesForSelected = [];
+          renderBoard();
+        }
+        return;
       }
     }
 
+    // --- NORMAL TURN MOVE HANDLING ---
+    clearPremove();
+
     // 1. If clicking a legal target square for already selected piece
     if (state.selectedSquare) {
+      if (state.selectedSquare.r === r && state.selectedSquare.c === c) {
+        state.selectedSquare = null;
+        state.legalMovesForSelected = [];
+        renderBoard();
+        return;
+      }
+
       const legalMove = state.legalMovesForSelected.find((m) => m.to.r === r && m.to.c === c);
 
       if (legalMove) {
@@ -1175,7 +1390,9 @@
       el.promotionChoices.appendChild(btn);
     });
 
-    el.modalPromotion.showModal();
+    if (!el.modalPromotion.open) {
+      el.modalPromotion.showModal();
+    }
   }
 
   async function executeMove(move) {
@@ -1186,6 +1403,7 @@
     state.lastMove = { from: { ...move.from }, to: { ...move.to } };
     state.selectedSquare = null;
     state.legalMovesForSelected = [];
+    clearPremove();
 
     // Sound FX
     if (isCapture) {
@@ -1211,8 +1429,13 @@
       soundEngine.playVictory();
       state.gameStatus = "finished";
       state.dismissedGameOver = false;
+      state.customGameOverTitle = status.title;
+      state.customGameOverReason = status.reason;
       triggerGameOver(status.title, status.reason);
     } else {
+      if (state.mode === "local") {
+        state.gameStatus = "active";
+      }
       startTimer();
     }
 
@@ -1224,10 +1447,31 @@
     }
   }
 
+  function updateExitButtonsLabels() {
+    if (state.mode === "room") {
+      if (el.btnBack) {
+        el.btnBack.textContent = state.isPartyRoom ? "‹ Lounge" : "‹ Avslutt rom";
+      }
+      if (el.btnGameOverLounge) {
+        el.btnGameOverLounge.textContent = state.isPartyRoom ? "‹ Tilbake til Lounge" : "‹ Avslutt rom";
+      }
+    } else {
+      if (el.btnBack) {
+        el.btnBack.textContent = "‹ NTNU GAMES";
+      }
+      if (el.btnGameOverLounge) {
+        el.btnGameOverLounge.textContent = "‹ Tilbake til menyen";
+      }
+    }
+  }
+
   function triggerGameOver(title, reason) {
     el.gameOverTitle.textContent = title;
     el.gameOverReason.textContent = reason;
-    el.modalGameOver.showModal();
+    updateExitButtonsLabels();
+    if (!el.modalGameOver.open) {
+      el.modalGameOver.showModal();
+    }
   }
 
   // --- Clocks & Timers ---
@@ -1239,6 +1483,11 @@
     let lastTick = Date.now();
 
     state.timerInterval = setInterval(() => {
+      if (state.gameStatus === "finished") {
+        stopTimer();
+        return;
+      }
+
       const now = Date.now();
       const delta = (now - lastTick) / 1000;
       lastTick = now;
@@ -1267,26 +1516,71 @@
     }
   }
 
-  function handleTimeout(color) {
+  async function handleTimeout(color) {
+    if (state.gameStatus === "finished") return;
     stopTimer();
+    state.gameStatus = "finished";
+    state.dismissedGameOver = false;
+    state.selectedSquare = null;
+    state.legalMovesForSelected = [];
+    clearPremove();
+    if (el.modalPromotion && el.modalPromotion.open) {
+      el.modalPromotion.close();
+    }
+    state.pendingPromotionMove = null;
+
     const winner = color === "w" ? "Svart" : "Hvit";
-    triggerGameOver("Tiden er ute! ⏱️", `${winner} vinner på tid!`);
+    const title = `Tiden er ute! ${winner} vinner! 🏆`;
+    const reason = `Tiden er ute! ${winner} vinner på tid.`;
+    state.customGameOverTitle = title;
+    state.customGameOverReason = reason;
+
+    soundEngine.playVictory();
+    renderBoard();
+    triggerGameOver(title, reason);
+
+    if (state.mode === "room" && state.roomCode) {
+      try {
+        await fetch("/api/sjakk/action", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            roomCode: state.roomCode,
+            playerId: state.playerId,
+            action: "timeout",
+          }),
+        });
+      } catch (err) {
+        console.warn("Kunne ikke rapportere timeout:", err);
+      }
+    }
   }
 
   function resetGame() {
     state.game.reset();
     state.selectedSquare = null;
     state.legalMovesForSelected = [];
+    clearPremove();
     state.lastMove = null;
     state.whiteTime = state.timeControl;
     state.blackTime = state.timeControl;
     state.dismissedGameOver = false;
+    state.customGameOverTitle = null;
+    state.customGameOverReason = null;
+    if (state.mode === "local") {
+      state.gameStatus = "waiting";
+      el.btnDrawOffer.disabled = false;
+      el.btnDrawOffer.textContent = "Remis";
+      el.btnDrawOffer.classList.remove("btn-rematch-pulse");
+      el.btnResign.disabled = false;
+    }
     stopTimer();
 
     if (state.mode === "local" && state.autoFlip) {
       state.perspective = "w";
     }
 
+    updateExitButtonsLabels();
     renderBoard();
   }
 
@@ -1297,7 +1591,7 @@
       const fromStr = `${files[move.from.c]}${8 - move.from.r}`;
       const toStr = `${files[move.to.c]}${8 - move.to.r}`;
 
-      await fetch("/api/sjakk/move", {
+      const resp = await fetch("/api/sjakk/move", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1309,12 +1603,26 @@
             piece: move.piece,
             san: san,
             promotion: move.promo,
+            isPremove: !!move.isPremove,
             gameOver: status.over,
             result: status.result || "*",
             resultReason: status.reason || "",
           },
         }),
       });
+
+      const data = await resp.json();
+      if (!resp.ok || !data.ok) {
+        // Server rejected the move (e.g. flag fell on server right before move arrived)
+        state.game.undoMove();
+        state.lastMove = state.game.history.length
+          ? {
+              from: { ...state.game.history[state.game.history.length - 1].from },
+              to: { ...state.game.history[state.game.history.length - 1].to },
+            }
+          : null;
+        renderBoard();
+      }
     } catch (err) {
       console.warn("Nettverksfeil ved sending av trekk:", err);
     }
@@ -1332,23 +1640,74 @@
     if (btnReopen) {
       btnReopen.onclick = () => {
         state.dismissedGameOver = false;
-        el.modalGameOver.showModal();
+        if (!el.modalGameOver.open) {
+          el.modalGameOver.showModal();
+        }
       };
     }
   }
 
+  function exitStandaloneRoomToLocal() {
+    if (state.pollTimer) {
+      clearInterval(state.pollTimer);
+      state.pollTimer = null;
+    }
+    stopTimer();
+    if (el.modalGameOver && el.modalGameOver.open) {
+      el.modalGameOver.close();
+    }
+    state.roomCode = null;
+    state.partyRoomCode = null;
+    state.isPartyRoom = false;
+    state.mode = "local";
+    state.perspective = "w";
+    el.tabLocal.classList.add("active");
+    el.tabRoom.classList.remove("active");
+    el.roomPill.classList.add("hidden");
+    el.btnUndo.disabled = false;
+    el.labelAutoFlip.classList.remove("hidden");
+    window.history.replaceState({}, document.title, window.location.pathname);
+    resetGame();
+  }
+
   async function returnToLounge() {
-    const code = state.roomCode || sessionStorage.getItem("party_room_code");
+    // 1. Local mode: go back to main NTNU Games hub
+    if (state.mode === "local") {
+      stopTimer();
+      if (el.modalGameOver && el.modalGameOver.open) {
+        el.modalGameOver.close();
+      }
+      window.location.href = "/";
+      return;
+    }
+
+    // 2. Room mode
+    const code = state.roomCode || state.partyRoomCode;
     const playerId = state.playerId || sessionStorage.getItem("party_player_id") || "";
     const hostToken = sessionStorage.getItem("party_host_token") || "";
+    const isGameOver =
+      state.gameStatus === "finished" ||
+      state.game.getGameStatus().over ||
+      (state.timeControl > 0 && (state.whiteTime <= 0 || state.blackTime <= 0));
 
-    if (code) {
-      if (state.gameStatus === "active") {
-        const ok = confirm("Vil du avslutte partiet og gå til Party Lounge?");
-        if (!ok) return;
-      }
+    if (state.gameStatus === "active" && !isGameOver) {
+      const promptMsg = state.isPartyRoom
+        ? "Vil du avslutte partiet og gå til Party Lounge?"
+        : "Vil du avslutte partiet og forlate rommet?";
+      const ok = confirm(promptMsg);
+      if (!ok) return;
+    }
 
-      // Notify party to return to lounge
+    if (state.pollTimer) {
+      clearInterval(state.pollTimer);
+      state.pollTimer = null;
+    }
+    stopTimer();
+    if (el.modalGameOver && el.modalGameOver.open) {
+      el.modalGameOver.close();
+    }
+
+    if (code && state.isPartyRoom) {
       try {
         await fetch("/api/party/to-lounge", {
           method: "POST",
@@ -1369,7 +1728,23 @@
       return;
     }
 
-    window.location.href = "/party/";
+    // Standalone Sjakk room (not launched from Party Lounge)
+    if (code) {
+      try {
+        await fetch("/api/sjakk/exit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            roomCode: code,
+            playerId: playerId,
+          }),
+        });
+      } catch (_) {}
+      exitStandaloneRoomToLocal();
+      return;
+    }
+
+    window.location.href = "/";
   }
 
   function startRoomPolling() {
@@ -1387,6 +1762,20 @@
         const data = await resp.json();
         if (!data.ok) return;
 
+        // Sync whether this room belongs to a Party Lounge
+        if (typeof data.isPartyRoom === "boolean") {
+          state.isPartyRoom = data.isPartyRoom;
+        }
+        updateExitButtonsLabels();
+
+        // Sync time control from server
+        if (typeof data.timeControl === "number" && state.timeControl !== data.timeControl) {
+          state.timeControl = data.timeControl;
+          if (el.selectTimeControl) {
+            el.selectTimeControl.value = String(data.timeControl);
+          }
+        }
+
         // Sync player role and board perspective
         if (data.myRole && (data.myRole === "w" || data.myRole === "b" || data.myRole === "spectator")) {
           state.playerColor = data.myRole;
@@ -1401,11 +1790,6 @@
         // Sync host status
         if (data.whitePlayer && state.playerId) {
           state.isHost = (data.whitePlayer.id === state.playerId);
-        }
-
-        // Sync back button text
-        if (el.btnBack) {
-          el.btnBack.textContent = "‹ Lounge";
         }
 
         // Sync player labels
@@ -1430,17 +1814,45 @@
         state.blackTime = data.blackTime;
         renderClocks();
 
+        // Check if lounge return / exit was triggered
+        if (data.returnedToLounge || (data.resultReason && data.resultReason.includes("Party Lounge"))) {
+          if (state.pollTimer) {
+            clearInterval(state.pollTimer);
+            state.pollTimer = null;
+          }
+          stopTimer();
+          if (state.isPartyRoom) {
+            const code = state.roomCode || sessionStorage.getItem("party_room_code");
+            const pId = state.playerId || sessionStorage.getItem("party_player_id") || "";
+            if (code) {
+              window.location.href = `/party/?code=${encodeURIComponent(code)}&player=${encodeURIComponent(pId)}`;
+              return;
+            }
+          } else {
+            exitStandaloneRoomToLocal();
+            return;
+          }
+        }
+
         // 1. Detect rematch transition: finished -> active
         if (state.gameStatus === "finished" && data.status === "active") {
           state.gameStatus = "active";
           state.dismissedGameOver = false;
+          state.customGameOverTitle = null;
+          state.customGameOverReason = null;
           if (el.modalGameOver.open) el.modalGameOver.close();
           el.btnGameOverRematch.disabled = false;
           el.btnGameOverRematch.textContent = "Spill omkamp";
           el.btnGameOverRematch.classList.remove("btn-rematch-pulse");
+          el.btnResign.disabled = false;
+          el.btnDrawOffer.disabled = false;
           resetGame();
+          state.gameStatus = "active";
           if (data.moves && data.moves.length > 0) {
             applyRemoteMoves(data.moves);
+          }
+          if (state.timeControl > 0) {
+            startTimer();
           }
           return;
         }
@@ -1448,8 +1860,13 @@
         // 2. Check initial start: waiting -> active
         if (state.gameStatus === "waiting" && data.status === "active") {
           state.gameStatus = "active";
+          el.btnResign.disabled = false;
+          el.btnDrawOffer.disabled = false;
           if (data.moves && data.moves.length > 0) {
             applyRemoteMoves(data.moves);
+          }
+          if (state.timeControl > 0 && !state.timerRunning) {
+            startTimer();
           }
         }
 
@@ -1458,8 +1875,15 @@
           applyRemoteMoves(data.moves);
         }
 
-        // 4. Handle Draw Offer updates
+        // 4. Handle active state (timers & draw offers)
         if (data.status === "active") {
+          if (state.timeControl > 0 && !state.timerRunning) {
+            startTimer();
+          } else if (state.timeControl <= 0 && state.timerRunning) {
+            stopTimer();
+          }
+
+          el.btnResign.disabled = false;
           if (data.drawOfferedBy && data.drawOfferedBy !== state.playerColor) {
             el.btnDrawOffer.textContent = "Godta remis 🤝";
             el.btnDrawOffer.classList.add("btn-rematch-pulse");
@@ -1478,18 +1902,23 @@
         // 5. Handle finished state and rematch button states
         if (data.status === "finished") {
           stopTimer();
+          clearPremove();
+          state.selectedSquare = null;
+          state.legalMovesForSelected = [];
+          if (el.modalPromotion && el.modalPromotion.open) {
+            el.modalPromotion.close();
+          }
+          el.btnResign.disabled = true;
+          el.btnDrawOffer.disabled = true;
+          el.btnDrawOffer.classList.remove("btn-rematch-pulse");
+
           const justFinished = state.gameStatus !== "finished";
           state.gameStatus = "finished";
 
-          // If party lounge return was triggered, navigate to lounge
-          if (data.resultReason && data.resultReason.includes("Party Lounge")) {
-            const code = state.roomCode || sessionStorage.getItem("party_room_code");
-            const pId = state.playerId || sessionStorage.getItem("party_player_id") || "";
-            if (code) {
-              window.location.href = `/party/?code=${encodeURIComponent(code)}&player=${encodeURIComponent(pId)}`;
-              return;
-            }
-          }
+          const serverTitle = formatServerGameOverTitle(data);
+          const serverReason = data.resultReason || "Spillet ble avsluttet.";
+          state.customGameOverTitle = serverTitle;
+          state.customGameOverReason = serverReason;
 
           // Sync rematch button text based on server rematchRequestedBy
           if (data.rematchRequestedBy) {
@@ -1511,21 +1940,23 @@
           if (justFinished) {
             state.dismissedGameOver = false;
             soundEngine.playVictory();
-            triggerGameOver("Partiet er over!", data.resultReason || "Spillet ble avsluttet.");
-          } else if (!el.modalGameOver.open && !state.dismissedGameOver) {
-            triggerGameOver("Partiet er over!", data.resultReason || "Spillet ble avsluttet.");
+            triggerGameOver(serverTitle, serverReason);
+          } else if (el.modalGameOver.open) {
+            el.gameOverTitle.textContent = serverTitle;
+            el.gameOverReason.textContent = serverReason;
+            updateExitButtonsLabels();
+          } else if (!state.dismissedGameOver) {
+            triggerGameOver(serverTitle, serverReason);
           }
 
-          if (state.dismissedGameOver) {
-            updateStatusTextForDismissed(data.resultReason || "Partiet er avsluttet.");
-          }
+          renderBoard();
         }
       } catch (err) {
         console.warn("Polling feil:", err);
       }
     }
 
-    state.pollTimer = setInterval(poll, 750);
+    state.pollTimer = setInterval(poll, 400);
     poll();
   }
 
@@ -1566,6 +1997,50 @@
       }
     }
 
+    // If it is now our turn and the game is still active, check for queued premove!
+    const status = state.game.getGameStatus();
+    if (!status.over && state.gameStatus === "active" && state.game.turn === state.playerColor) {
+      if (state.premove) {
+        const pm = state.premove;
+        clearPremove();
+        state.selectedSquare = null;
+        state.legalMovesForSelected = [];
+
+        const legalMoves = state.game.getLegalMoves();
+        const matchedMove = legalMoves.find(
+          (m) =>
+            m.from.r === pm.from.r &&
+            m.from.c === pm.from.c &&
+            m.to.r === pm.to.r &&
+            m.to.c === pm.to.c &&
+            (!m.promo || m.promo === (pm.promo || "Q"))
+        );
+
+        if (matchedMove) {
+          matchedMove.isPremove = true;
+          if (matchedMove.promo) {
+            matchedMove.promo = pm.promo || "Q";
+          }
+          executeMove(matchedMove);
+          return;
+        }
+      } else if (state.selectedSquare) {
+        // Player had selected one of their pieces during opponent's turn -> upgrade to legal moves
+        const selPiece = state.game.board[state.selectedSquare.r][state.selectedSquare.c];
+        if (selPiece && state.game.getColor(selPiece) === state.playerColor) {
+          state.premoveTargetsForSelected = [];
+          const allLegal = state.game.getLegalMoves();
+          state.legalMovesForSelected = allLegal.filter(
+            (m) => m.from.r === state.selectedSquare.r && m.from.c === state.selectedSquare.c
+          );
+        } else {
+          state.selectedSquare = null;
+          state.premoveTargetsForSelected = [];
+          state.legalMovesForSelected = [];
+        }
+      }
+    }
+
     renderBoard();
   }
 
@@ -1596,9 +2071,14 @@
       el.btnUndo.disabled = false;
       el.labelAutoFlip.classList.remove("hidden");
       state.mode = "local";
+      state.isPartyRoom = false;
+      state.roomCode = null;
       state.perspective = "w";
-      if (state.pollTimer) clearInterval(state.pollTimer);
-      renderBoard();
+      if (state.pollTimer) {
+        clearInterval(state.pollTimer);
+        state.pollTimer = null;
+      }
+      resetGame();
     });
 
     el.tabRoom.addEventListener("click", () => {
@@ -1624,7 +2104,8 @@
     // Submit Create Room
     el.btnSubmitCreateRoom.addEventListener("click", async () => {
       const hostName = el.inputHostName.value.trim() || "Hvit";
-      const timeSec = parseInt(el.selectTimeControl.value, 10) || 300;
+      const timeSec = parseInt(el.selectTimeControl.value, 10);
+      const validTime = Number.isNaN(timeSec) ? 300 : timeSec;
 
       el.btnSubmitCreateRoom.disabled = true;
       el.btnSubmitCreateRoom.textContent = "Oppretter rom…";
@@ -1635,7 +2116,7 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             hostName: hostName,
-            timeControl: timeSec,
+            timeControl: validTime,
           }),
         });
 
@@ -1645,8 +2126,10 @@
           state.playerId = data.playerId;
           state.playerColor = "w";
           state.isHost = true;
+          state.isPartyRoom = false;
           state.mode = "room";
           state.perspective = "w";
+          state.gameStatus = "waiting";
 
           el.tabRoom.classList.add("active");
           el.tabLocal.classList.remove("active");
@@ -1696,8 +2179,10 @@
           state.playerId = data.playerId;
           state.playerColor = data.playerColor;
           state.isHost = false;
+          state.isPartyRoom = false;
           state.mode = "room";
           state.perspective = data.playerColor === "b" ? "b" : "w";
+          state.gameStatus = "waiting";
 
           el.tabRoom.classList.add("active");
           el.tabLocal.classList.remove("active");
@@ -1735,9 +2220,14 @@
     // Undo Move (Local mode)
     el.btnUndo.addEventListener("click", () => {
       if (state.mode === "room") return;
+      if (state.timeControl > 0 && (state.whiteTime <= 0 || state.blackTime <= 0)) return;
       if (state.game.undoMove()) {
         state.selectedSquare = null;
         state.legalMovesForSelected = [];
+        state.gameStatus = state.game.history.length > 0 ? "active" : "waiting";
+        state.customGameOverTitle = null;
+        state.customGameOverReason = null;
+        state.dismissedGameOver = false;
         state.lastMove = state.game.history.length
           ? { ...state.game.history[state.game.history.length - 1] }
           : null;
@@ -1750,6 +2240,7 @@
 
     // Draw Offer
     el.btnDrawOffer.addEventListener("click", async () => {
+      if (state.gameStatus === "finished") return;
       if (state.mode === "room") {
         await fetch("/api/sjakk/action", {
           method: "POST",
@@ -1764,13 +2255,22 @@
         const agree = confirm("Begge spillere godtar remis (uavgjort)?");
         if (agree) {
           stopTimer();
-          triggerGameOver("Remis! 🤝", "Spillerne ble enige om remis.");
+          state.gameStatus = "finished";
+          state.dismissedGameOver = false;
+          state.selectedSquare = null;
+          state.legalMovesForSelected = [];
+          state.customGameOverTitle = "Remis! 🤝";
+          state.customGameOverReason = "Spillerne ble enige om remis.";
+          soundEngine.playVictory();
+          renderBoard();
+          triggerGameOver(state.customGameOverTitle, state.customGameOverReason);
         }
       }
     });
 
     // Resign
     el.btnResign.addEventListener("click", async () => {
+      if (state.gameStatus === "finished") return;
       const confirmResign = confirm("Er du sikker på at du vil gi opp partiet?");
       if (!confirmResign) return;
 
@@ -1786,16 +2286,35 @@
         });
       } else {
         stopTimer();
+        state.gameStatus = "finished";
+        state.dismissedGameOver = false;
+        state.selectedSquare = null;
+        state.legalMovesForSelected = [];
         const resigning = state.game.turn === "w" ? "Hvit" : "Svart";
         const winner = state.game.turn === "w" ? "Svart" : "Hvit";
-        triggerGameOver(`${winner} vinner! 🏆`, `${resigning} ga opp partiet.`);
+        state.customGameOverTitle = `${winner} vinner! 🏆`;
+        state.customGameOverReason = `${resigning} ga opp partiet.`;
+        soundEngine.playVictory();
+        renderBoard();
+        triggerGameOver(state.customGameOverTitle, state.customGameOverReason);
       }
     });
 
     // New Game / Rematch
-    el.btnNewGame.addEventListener("click", () => {
+    el.btnNewGame.addEventListener("click", async () => {
+      if (state.mode === "room") {
+        if (state.gameStatus === "finished") {
+          el.btnGameOverRematch.click();
+        } else {
+          alert("Du kan ikke starte nytt parti midt i en nettduell uten å gi opp eller tilby remis.");
+        }
+        return;
+      }
       if (confirm("Starte et nytt parti?")) {
         state.dismissedGameOver = false;
+        if (el.modalGameOver && el.modalGameOver.open) {
+          el.modalGameOver.close();
+        }
         resetGame();
       }
     });
@@ -1836,7 +2355,10 @@
     el.btnGameOverClose.addEventListener("click", () => {
       state.dismissedGameOver = true;
       el.modalGameOver.close();
-      const reason = el.gameOverReason ? el.gameOverReason.textContent : "Partiet er avsluttet.";
+      const reason =
+        state.customGameOverReason ||
+        (el.gameOverReason ? el.gameOverReason.textContent : "") ||
+        "Partiet er avsluttet.";
       updateStatusTextForDismissed(reason);
     });
 
@@ -1849,6 +2371,7 @@
 
     // Time Control Change
     el.selectTimeControl.addEventListener("change", (e) => {
+      if (state.mode === "room") return;
       state.timeControl = parseInt(e.target.value, 10);
       state.whiteTime = state.timeControl;
       state.blackTime = state.timeControl;
@@ -1877,6 +2400,7 @@
         state.playerId = playerParam;
         state.roomCode = roomUpper;
         state.partyRoomCode = roomUpper;
+        state.isPartyRoom = true;
         state.mode = "room";
         sessionStorage.setItem("party_room_code", roomUpper);
         sessionStorage.setItem("party_player_id", playerParam);
@@ -1886,9 +2410,7 @@
         el.roomPillCode.textContent = state.roomCode;
         el.btnUndo.disabled = true;
         el.labelAutoFlip.classList.add("hidden");
-        if (el.btnBack) {
-          el.btnBack.textContent = "‹ Lounge";
-        }
+        updateExitButtonsLabels();
         el.modalRoomSetup.close();
         startRoomPolling();
       }
