@@ -356,7 +356,7 @@ def main() -> None:
     print(f"   • Ordbombe:     http://{HOST}:{PORT}/ordbombe/ (Partyspill)")
     print(f"   • Sjakk:        http://{HOST}:{PORT}/sjakk/ (2 spillere)")
     print(f"   • Korridorer:   http://{HOST}:{PORT}/korridorer/ (2-4 spillere)")
-    print(f"   • Turbosladd:   http://{HOST}:{PORT}/turbosladd/ (2-4 spillere)")
+    print(f"   • Turbosladd:   http://{HOST}:{PORT}/turbosladd/ (1-16 spillere)")
     print(f"   • NTNU guesser: http://{HOST}:{PORT}/geoguesser/ (under utvikling)\n")
 
     try:

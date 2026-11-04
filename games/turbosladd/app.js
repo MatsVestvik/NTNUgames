@@ -7,7 +7,7 @@
  * - High-performance pre-rendered offscreen track caching for solid 60 FPS
  * - Multi-device synchronization over /api/turbosladd/sync and Party Lounge bridge
  * - Immediate camera centering with forward look-ahead
- * - Highly responsive keyboard controls (Arrows, WASD, Space for handbrake)
+ * - Highly responsive keyboard controls (Arrows for P1 / Solo / Online, WASD for P2)
  * - Web Audio procedural sound synthesizer (engine rev, drift screech, turbo burst)
  */
 
@@ -207,7 +207,6 @@
       accelInput: 0,
       brakeInput: 0,
       steerInput: 0,
-      handbrakeInput: 0,
       isDrifting: false,
       driftAngle: 0,
       driftBoostCharge: 0,
@@ -235,8 +234,8 @@
     car2: null,
     cam1: { x: 1200, y: 1500, zoom: 1.15 },
     cam2: { x: 1200, y: 1500, zoom: 1.15 },
-    keysP1: { up: false, down: false, left: false, right: false, space: false },
-    keysP2: { up: false, down: false, left: false, right: false, space: false },
+    keysP1: { up: false, down: false, left: false, right: false },
+    keysP2: { up: false, down: false, left: false, right: false },
     splitFinishTimeout: null,
 
     opponentCars: {},
@@ -244,7 +243,7 @@
     skidmarks: [],
     particles: [],
 
-    keys: { up: false, down: false, left: false, right: false, space: false },
+    keys: { up: false, down: false, left: false, right: false },
 
     animFrameId: null,
     syncTimerId: null,
@@ -320,6 +319,9 @@
     btnCopyCode: document.getElementById("btnCopyCode"),
     loungeTrackName: document.getElementById("loungeTrackName"),
     loungeLapsBadge: document.getElementById("loungeLapsBadge"),
+    loungeCarPreviewCanvas: document.getElementById("loungeCarPreviewCanvas"),
+    loungeCarColorName: document.getElementById("loungeCarColorName"),
+    loungeColorPalette: document.getElementById("loungeColorPalette"),
     racersGrid: document.getElementById("racersGrid"),
     racersCountBadge: document.getElementById("racersCountBadge"),
     btnLeaveRoom: document.getElementById("btnLeaveRoom"),
@@ -504,6 +506,8 @@
       el.backBtnText.textContent = "Lobby";
       el.btnHeaderBack.href = "#";
       el.btnHeaderLeave.classList.remove("hidden");
+      renderLoungeCarPreview();
+      renderLoungeColorPalette(state.players || []);
       stopEngineSound();
       stopSimulation();
     } else if (viewName === "game") {
@@ -593,6 +597,7 @@
   baseCarImage.onload = () => {
     tintedCarCache.clear();
     renderProfileCarPreview();
+    renderLoungeCarPreview();
   };
 
   function drawCarOnCanvas(ctx, cx, cy, angle, color, scale = 1.0, steerInput = 0, isBraking = false) {
@@ -680,6 +685,104 @@
 
     // Draw car model facing upwards in preview with driver's active tint
     drawCarOnCanvas(ctx, canvas.width / 2, canvas.height / 2, -Math.PI / 2, state.driverColor, 1.25, 0);
+  }
+
+  function renderLoungeCarPreview() {
+    const canvas = el.loungeCarPreviewCanvas;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+    ctx.lineWidth = 1;
+    for (let x = 0; x < canvas.width; x += 15) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, canvas.height);
+      ctx.stroke();
+    }
+    for (let y = 0; y < canvas.height; y += 15) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(canvas.width, y);
+      ctx.stroke();
+    }
+
+    // In lounge, display the car tinted with driver's assigned/chosen color
+    drawCarOnCanvas(ctx, canvas.width / 2, canvas.height / 2, -Math.PI / 2, state.driverColor || "#ef4444", 1.15, 0);
+
+    if (el.loungeCarColorName) {
+      const match = PALETTE.find(p => p.color.toLowerCase() === (state.driverColor || "").toLowerCase());
+      el.loungeCarColorName.textContent = match ? match.name : "Valgt lakk";
+      el.loungeCarColorName.style.color = state.driverColor || "#38bdf8";
+    }
+  }
+
+  function renderLoungeColorPalette(players = []) {
+    if (!el.loungeColorPalette) return;
+    el.loungeColorPalette.innerHTML = "";
+
+    // Map of taken colors by OTHER active players in the room
+    const takenByOthers = new Map();
+    (players || []).forEach(p => {
+      if (p.id !== state.playerId && p.color) {
+        takenByOthers.set(p.color.toLowerCase(), p.name || "En annen spiller");
+      }
+    });
+
+    PALETTE.forEach(item => {
+      const isSelected = item.color.toLowerCase() === (state.driverColor || "").toLowerCase();
+      const takenBy = takenByOthers.get(item.color.toLowerCase());
+      const isTaken = Boolean(takenBy);
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "lcpc-swatch" +
+        (isSelected ? " active" : "") +
+        (isTaken ? " taken" : "");
+      btn.style.setProperty("--swatch-color", item.color);
+      btn.style.backgroundColor = item.color;
+
+      if (isTaken) {
+        btn.title = `${item.name} (Tatt av ${takenBy})`;
+        btn.disabled = true;
+      } else if (isSelected) {
+        btn.title = `${item.name} (Din valgte farge)`;
+      } else {
+        btn.title = `Velg ${item.name}`;
+        btn.addEventListener("click", () => handleSelectLobbyColor(item.color));
+      }
+
+      el.loungeColorPalette.appendChild(btn);
+    });
+  }
+
+  async function handleSelectLobbyColor(newColor) {
+    if (!state.roomCode || !state.playerId) return;
+    if (state.driverColor && state.driverColor.toLowerCase() === newColor.toLowerCase()) return;
+
+    try {
+      const res = await fetch("/api/turbosladd/color", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roomCode: state.roomCode,
+          playerId: state.playerId,
+          color: newColor,
+        }),
+      });
+      const data = await res.json();
+      if (data && data.ok) {
+        state.driverColor = newColor;
+        localStorage.setItem("ts_driver_color", newColor);
+        renderLoungeCarPreview();
+        pollLobbyState();
+      } else {
+        alert(data.error || "Fargen er dessverre opptatt av en annen sjåfør.");
+      }
+    } catch (err) {
+      console.error("Feil ved endring av lakkfarge:", err);
+    }
   }
 
   function updateDriverProfileUI() {
@@ -772,7 +875,6 @@
       accelInput: 0,
       brakeInput: 0,
       steerInput: 0,
-      handbrakeInput: 0,
       isDrifting: false,
       driftAngle: 0,
       driftBoostCharge: 0,
@@ -831,7 +933,6 @@
     const throttle = car.accelInput;
     const brake = car.brakeInput;
     const steer = car.steerInput;
-    const handbrake = car.handbrakeInput;
 
     let enginePower = CAR_SPEC.accel;
     let maxSpeed = CAR_SPEC.maxSpeed;
@@ -871,10 +972,8 @@
 
     // Drifting on ice:
     // 1. Sliding sideways when heading diverges from travel vector (absSlip > 0.18 & speed > 35)
-    // 2. Handbrake held (Space)
-    // 3. Tapping brake while steering at speed
+    // 2. Tapping brake while steering at speed
     const isSlidingOnIce = (absSlip > 0.18 && speed > 35) ||
-      Boolean(handbrake && speed > 25) ||
       Boolean(brake > 0 && Math.abs(steer) > 0.15 && speed > 40);
 
     if (isSlidingOnIce) {
@@ -916,17 +1015,9 @@
     }
 
     // Ice Surface Physics:
-    // - Low lateral friction while sliding (0.976 retention per 60Hz frame = smooth glide!)
-    // - Handbrake frees lateral slip even further (0.985 retention)
+    // - Low lateral friction while sliding (0.978 retention per 60Hz frame = smooth glide!)
     // - Once straightened out, studded tire grip bites into the track (0.88 retention)
-    let latRetention;
-    if (handbrake) {
-      latRetention = 0.985;
-    } else if (isSlidingOnIce) {
-      latRetention = 0.976;
-    } else {
-      latRetention = 0.88;
-    }
+    const latRetention = isSlidingOnIce ? 0.978 : 0.88;
 
     let newVLateral = vLateral * Math.pow(latRetention, dt * 60);
 
@@ -1597,17 +1688,15 @@
       const track = TRACKS[state.trackId] || TRACKS.grand_prix;
 
       if (state.mode === "splitscreen" && state.car1 && state.car2) {
-        // Player 1 inputs (Arrows + Space)
+        // Player 1 inputs (Arrows)
         state.car1.accelInput = state.keysP1.up ? 1 : 0;
         state.car1.brakeInput = state.keysP1.down ? 1 : 0;
         state.car1.steerInput = (state.keysP1.right ? 1 : 0) - (state.keysP1.left ? 1 : 0);
-        state.car1.handbrakeInput = state.keysP1.space ? 1 : 0;
 
-        // Player 2 inputs (WASD + Q/E)
+        // Player 2 inputs (WASD)
         state.car2.accelInput = state.keysP2.up ? 1 : 0;
         state.car2.brakeInput = state.keysP2.down ? 1 : 0;
         state.car2.steerInput = (state.keysP2.right ? 1 : 0) - (state.keysP2.left ? 1 : 0);
-        state.car2.handbrakeInput = state.keysP2.space ? 1 : 0;
 
         updateCarPhysics(state.car1, track, dt);
         updateCarPhysics(state.car2, track, dt);
@@ -1625,7 +1714,7 @@
           const ctx = canvas.getContext("2d");
           const w = canvas.width;
           const h = canvas.height;
-          const halfH = Math.floor(h / 2);
+          const halfW = Math.floor(w / 2);
 
           // P1 camera update
           const look1 = Math.min(100, state.car1.speed * 0.28);
@@ -1637,60 +1726,60 @@
           state.cam2.x += (state.car2.x + Math.cos(state.car2.angle) * look2 - state.cam2.x) * 0.16;
           state.cam2.y += (state.car2.y + Math.sin(state.car2.angle) * look2 - state.cam2.y) * 0.16;
 
-          // --- VIEWPORT 1 (PLAYER 1 - TOP HALF) ---
+          // --- VIEWPORT 1 (PLAYER 1 - VENSTRE HALVDEL) ---
           ctx.save();
           ctx.beginPath();
-          ctx.rect(0, 0, w, halfH);
+          ctx.rect(0, 0, halfW, h);
           ctx.clip();
           ctx.fillStyle = "#090d16";
-          ctx.fillRect(0, 0, w, halfH);
+          ctx.fillRect(0, 0, halfW, h);
 
           ctx.save();
-          ctx.translate(w / 2, halfH / 2);
+          ctx.translate(halfW / 2, h / 2);
           ctx.scale(state.cam1.zoom, state.cam1.zoom);
           ctx.translate(-state.cam1.x, -state.cam1.y);
 
           drawTexturedTrack(ctx, track);
           drawSkidmarks(ctx);
-          drawParticles(ctx); // Under cars!
+          drawParticles(ctx); // Under bilene!
 
           drawPlayerCar(ctx, state.car2, state.splitP2.color, state.splitP2.name, false);
           drawPlayerCar(ctx, state.car1, state.splitP1.color, state.splitP1.name, true);
           ctx.restore();
 
-          drawSplitscreenHUD(ctx, 0, 0, w, halfH, state.car1, state.splitP1.name, state.splitP1.color, 1, state.laps);
+          drawSplitscreenHUD(ctx, 0, 0, halfW, h, state.car1, state.splitP1.name, state.splitP1.color, 1, state.laps);
           ctx.restore();
 
-          // --- VIEWPORT 2 (PLAYER 2 - BOTTOM HALF) ---
+          // --- VIEWPORT 2 (PLAYER 2 - HØYRE HALVDEL) ---
           ctx.save();
           ctx.beginPath();
-          ctx.rect(0, halfH, w, h - halfH);
+          ctx.rect(halfW, 0, w - halfW, h);
           ctx.clip();
           ctx.fillStyle = "#090d16";
-          ctx.fillRect(0, halfH, w, h - halfH);
+          ctx.fillRect(halfW, 0, w - halfW, h);
 
           ctx.save();
-          ctx.translate(w / 2, halfH + (h - halfH) / 2);
+          ctx.translate(halfW + (w - halfW) / 2, h / 2);
           ctx.scale(state.cam2.zoom, state.cam2.zoom);
           ctx.translate(-state.cam2.x, -state.cam2.y);
 
           drawTexturedTrack(ctx, track);
           drawSkidmarks(ctx);
-          drawParticles(ctx); // Under cars!
+          drawParticles(ctx); // Under bilene!
 
           drawPlayerCar(ctx, state.car1, state.splitP1.color, state.splitP1.name, false);
           drawPlayerCar(ctx, state.car2, state.splitP2.color, state.splitP2.name, true);
           ctx.restore();
 
-          drawSplitscreenHUD(ctx, 0, halfH, w, h - halfH, state.car2, state.splitP2.name, state.splitP2.color, 2, state.laps);
+          drawSplitscreenHUD(ctx, halfW, 0, w - halfW, h, state.car2, state.splitP2.name, state.splitP2.color, 2, state.laps);
           ctx.restore();
 
-          // --- CENTER DIVIDER LINE ---
+          // --- VERTIKAL NEON DELELINJE (MIDTEN) ---
           ctx.save();
           ctx.fillStyle = "#38bdf8";
           ctx.shadowColor = "#38bdf8";
           ctx.shadowBlur = 10;
-          ctx.fillRect(0, halfH - 2, w, 4);
+          ctx.fillRect(halfW - 2, 0, 4, h);
           ctx.shadowBlur = 0;
           ctx.restore();
         }
@@ -1724,18 +1813,15 @@
           state.myCar.accelInput = state.keys.up ? 1 : 0;
           state.myCar.brakeInput = state.keys.down ? 1 : 0;
           state.myCar.steerInput = (state.keys.right ? 1 : 0) - (state.keys.left ? 1 : 0);
-          state.myCar.handbrakeInput = state.keys.space ? 1 : 0;
         } else if (state.roomStatus === "countdown") {
           // Allow steering & wheel angling before green flag
           state.myCar.accelInput = 0;
           state.myCar.brakeInput = 0;
           state.myCar.steerInput = (state.keys.right ? 1 : 0) - (state.keys.left ? 1 : 0);
-          state.myCar.handbrakeInput = 0;
         } else {
           state.myCar.accelInput = 0;
           state.myCar.brakeInput = 0.5;
           state.myCar.steerInput = 0;
-          state.myCar.handbrakeInput = 0;
         }
 
         updateCarPhysics(state.myCar, track, dt);
@@ -1952,7 +2038,17 @@
         state.laps = data.laps || 3;
         state.maxPlayers = data.maxPlayers || 4;
         state.players = data.players || [];
+
+        // Sync driverColor if server assigned or updated our color
+        const me = (data.players || []).find(p => p.id === state.playerId);
+        if (me && me.color && me.color.toLowerCase() !== (state.driverColor || "").toLowerCase()) {
+          state.driverColor = me.color;
+          localStorage.setItem("ts_driver_color", me.color);
+        }
+
         renderLoungeRacers(data.players);
+        renderLoungeColorPalette(data.players);
+        renderLoungeCarPreview();
 
         if (data.status === "countdown" || data.status === "racing") {
           stopLobbyPolling();
@@ -2032,8 +2128,8 @@
     state.particles = [];
     state.laps = state.splitLaps || 3;
     state.splitFinishTimeout = null;
-    state.keysP1 = { up: false, down: false, left: false, right: false, space: false };
-    state.keysP2 = { up: false, down: false, left: false, right: false, space: false };
+    state.keysP1 = { up: false, down: false, left: false, right: false };
+    state.keysP2 = { up: false, down: false, left: false, right: false };
 
     const track = TRACKS[state.trackId] || TRACKS.grand_prix;
     state.car1 = createCarState(0, track);
@@ -2059,7 +2155,7 @@
     state.opponentCars = {};
     state.skidmarks = [];
     state.particles = [];
-    state.keys = { up: false, down: false, left: false, right: false, space: false };
+    state.keys = { up: false, down: false, left: false, right: false };
 
     const track = TRACKS[state.trackId] || TRACKS.grand_prix;
     const myPlayer = (data.players || []).find(p => p.id === state.playerId);
@@ -2101,7 +2197,7 @@
     state.opponentCars = {};
     state.skidmarks = [];
     state.particles = [];
-    state.keys = { up: false, down: false, left: false, right: false, space: false };
+    state.keys = { up: false, down: false, left: false, right: false };
 
     const track = TRACKS[state.trackId] || TRACKS.grand_prix;
     resetCarToSlot(state.myCar, track, 0);
@@ -2153,19 +2249,17 @@
 
       if (state.mode === "splitscreen") {
         let matched = false;
-        // Player 1 controls (Arrow keys + Space/ShiftRight/Enter)
+        // Player 1 controls (Arrow keys)
         if (k === "ArrowUp" || c === "ArrowUp") { state.keysP1.up = isDown; matched = true; }
         if (k === "ArrowDown" || c === "ArrowDown") { state.keysP1.down = isDown; matched = true; }
         if (k === "ArrowLeft" || c === "ArrowLeft") { state.keysP1.left = isDown; matched = true; }
         if (k === "ArrowRight" || c === "ArrowRight") { state.keysP1.right = isDown; matched = true; }
-        if (k === " " || c === "Space" || c === "ShiftRight" || c === "Enter") { state.keysP1.space = isDown; matched = true; }
 
-        // Player 2 controls (WASD + Q/E/ShiftLeft)
+        // Player 2 controls (WASD keys)
         if (k === "w" || k === "W" || c === "KeyW") { state.keysP2.up = isDown; matched = true; }
         if (k === "s" || k === "S" || c === "KeyS") { state.keysP2.down = isDown; matched = true; }
         if (k === "a" || k === "A" || c === "KeyA") { state.keysP2.left = isDown; matched = true; }
         if (k === "d" || k === "D" || c === "KeyD") { state.keysP2.right = isDown; matched = true; }
-        if (k === "q" || k === "Q" || c === "KeyQ" || k === "e" || k === "E" || c === "KeyE" || c === "ShiftLeft") { state.keysP2.space = isDown; matched = true; }
 
         if (matched && !el.viewGame.classList.contains("hidden")) {
           e.preventDefault();
@@ -2188,10 +2282,6 @@
           state.keys.right = isDown;
           matched = true;
         }
-        if (k === " " || c === "Space" || k === "Spacebar") {
-          state.keys.space = isDown;
-          matched = true;
-        }
 
         if (matched && !el.viewGame.classList.contains("hidden")) {
           e.preventDefault();
@@ -2208,9 +2298,9 @@
     // Reset keys only when tab is actually hidden, not on internal DOM blurs
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) {
-        state.keys = { up: false, down: false, left: false, right: false, space: false };
-        state.keysP1 = { up: false, down: false, left: false, right: false, space: false };
-        state.keysP2 = { up: false, down: false, left: false, right: false, space: false };
+        state.keys = { up: false, down: false, left: false, right: false };
+        state.keysP1 = { up: false, down: false, left: false, right: false };
+        state.keysP2 = { up: false, down: false, left: false, right: false };
       }
     });
 
@@ -2369,6 +2459,10 @@
           state.playerId = data.playerId;
           state.hostToken = data.hostToken;
           state.isHost = true;
+          if (data.color) {
+            state.driverColor = data.color;
+            localStorage.setItem("ts_driver_color", data.color);
+          }
           el.displayRoomCode.textContent = data.roomCode;
           el.loungeTrackName.textContent = TRACKS[state.trackId].name;
           el.loungeLapsBadge.textContent = `${state.laps} runder`;
@@ -2407,6 +2501,10 @@
           state.isHost = false;
           state.trackId = data.trackId || "grand_prix";
           state.laps = data.laps || 3;
+          if (data.color) {
+            state.driverColor = data.color;
+            localStorage.setItem("ts_driver_color", data.color);
+          }
           el.displayRoomCode.textContent = data.roomCode;
           el.loungeTrackName.textContent = TRACKS[state.trackId].name;
           el.loungeLapsBadge.textContent = `${state.laps} runder`;

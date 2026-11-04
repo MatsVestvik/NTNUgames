@@ -224,6 +224,27 @@ class TurbosladdRoom:
                 return True
             return False
 
+    def change_color(self, player_id: str, new_color: str) -> Tuple[bool, str]:
+        with self.lock:
+            if player_id not in self.players or self.players[player_id].get("left"):
+                return False, "Spilleren finnes ikke i rommet."
+            if self.status != "lobby":
+                return False, "Kan ikke endre farge etter at løpet har startet."
+
+            new_color_clean = new_color.strip().lower()
+            if not new_color_clean:
+                return False, "Ugyldig fargekode."
+
+            # Check if any other player currently in the room uses this color
+            for pid, p in self.players.items():
+                if pid != player_id and not p.get("left"):
+                    if p.get("color", "").strip().lower() == new_color_clean:
+                        return False, f"Fargen er allerede valgt av {p.get('name', 'en annen spiller')}."
+
+            self.players[player_id]["color"] = new_color.strip()
+            self.bump()
+            return True, "Farge oppdatert."
+
     def start_race(self, player_id: str) -> Tuple[bool, str]:
         with self.lock:
             if player_id != self.host_id:
@@ -446,6 +467,7 @@ class TurbosladdAPI:
                 "playerId": room.host_id,
                 "hostToken": room.host_token,
                 "slot": 0,
+                "color": host_color,
                 "trackId": room.track_id,
                 "laps": room.laps,
             }
@@ -489,6 +511,23 @@ class TurbosladdAPI:
 
             ok = room.set_ready(player_id, ready)
             return 200, {"ok": ok}
+
+        # 3b. Change Color (Lobby only, max 1 player per color)
+        if path == "/api/turbosladd/color":
+            code = str(body.get("roomCode", "")).strip().upper()
+            player_id = str(body.get("playerId", "")).strip()
+            color = str(body.get("color", "")).strip()
+
+            with _rooms_lock:
+                room = _rooms.get(code)
+            if not room:
+                return 404, {"error": "Fant ikke løpet."}
+
+            ok, msg = room.change_color(player_id, color)
+            if not ok:
+                return 400, {"error": msg}
+
+            return 200, {"ok": True, "color": color, "message": msg}
 
         # 4. Start Race (Host only)
         if path == "/api/turbosladd/start":
