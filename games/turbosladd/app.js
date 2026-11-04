@@ -37,13 +37,13 @@
     { color: "#22c55e", name: "Smaragd" },
   ];
 
-  // Single Standardized Drift Car Spec: Responsive, fast & drifty on ice
+  // Single Standardized Drift Car Spec: Responsive, realistic acceleration & drifty on ice
   const CAR_SPEC = {
     name: "Turbosladd GT",
-    accel: 850,
-    maxSpeed: 530,
-    reverseSpeed: 210,
-    turnSpeed: 3.9,
+    accel: 420, // Noticeably slower, heavier acceleration giving true momentum
+    maxSpeed: 520,
+    reverseSpeed: 180,
+    turnSpeed: 3.8,
   };
 
   // =========================================================================
@@ -478,115 +478,121 @@
   }
 
   // =========================================================================
-  // SINGLE STANDARDIZED DRIFT CAR DRAWING
+  // CAR MODEL SPRITE & DYNAMIC COLOR TINTING
   // =========================================================================
+
+  const baseCarImage = new Image();
+  baseCarImage.src = "/bil.png";
+  const tintedCarCache = new Map();
+
+  function hexToRgb(hex) {
+    if (!hex) return { r: 56, g: 189, b: 248 };
+    let c = String(hex).replace("#", "");
+    if (c.length === 3) c = c[0] + c[0] + c[1] + c[1] + c[2] + c[2];
+    const num = parseInt(c, 16);
+    if (isNaN(num)) return { r: 56, g: 189, b: 248 };
+    return {
+      r: (num >> 16) & 255,
+      g: (num >> 8) & 255,
+      b: num & 255,
+    };
+  }
+
+  function getTintedCarCanvas(colorHex) {
+    const key = (colorHex || "#ef4444").toLowerCase();
+    if (tintedCarCache.has(key)) {
+      return tintedCarCache.get(key);
+    }
+    if (!baseCarImage.complete || baseCarImage.naturalWidth === 0) {
+      return null;
+    }
+
+    const w = baseCarImage.naturalWidth || 64;
+    const h = baseCarImage.naturalHeight || 64;
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(baseCarImage, 0, 0);
+
+    try {
+      const imgData = ctx.getImageData(0, 0, w, h);
+      const data = imgData.data;
+      const target = hexToRgb(key);
+
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        const a = data[i + 3];
+
+        if (a < 20) continue;
+
+        // Black outlines and performance tires remain black
+        if (r === 0 && g === 0 && b === 0) continue;
+
+        // Yellow headlights remain yellow
+        if (r > 200 && g > 200 && b < 50) continue;
+
+        // Cockpit window glass remains blueish
+        if (b > r && b > g) continue;
+
+        // Greyscale car body: tint to driver color with highlight/shadow shading
+        const lum = (r + g + b) / (3.0 * 255.0);
+        data[i] = Math.min(255, Math.round(target.r * lum * 1.15));
+        data[i + 1] = Math.min(255, Math.round(target.g * lum * 1.15));
+        data[i + 2] = Math.min(255, Math.round(target.b * lum * 1.15));
+      }
+
+      ctx.putImageData(imgData, 0, 0);
+      tintedCarCache.set(key, canvas);
+      return canvas;
+    } catch (e) {
+      return canvas;
+    }
+  }
+
+  baseCarImage.onload = () => {
+    tintedCarCache.clear();
+    renderProfileCarPreview();
+  };
 
   function drawCarOnCanvas(ctx, cx, cy, angle, color, scale = 1.0, steerInput = 0, isBraking = false) {
     ctx.save();
     ctx.translate(cx, cy);
-    ctx.rotate(angle);
+
+    // bil.png points UP. Angle = 0 in game physics points RIGHT.
+    // Rotate 90 deg so the sprite's nose points along car.angle.
+    ctx.rotate(angle + Math.PI / 2);
     ctx.scale(scale, scale);
 
-    // Drop Shadow
+    // Dynamic drop shadow underneath the car
     ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
     ctx.beginPath();
-    ctx.roundRect(-23, -13, 46, 26, 6);
+    ctx.roundRect(-18, -26, 36, 54, 8);
     ctx.fill();
 
-    // 4 Wide Performance Tires
-    const steerRad = (steerInput || 0) * 0.45;
-    ctx.fillStyle = "#090d16";
+    const sprite = getTintedCarCanvas(color);
+    if (sprite) {
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(sprite, -32, -32, 64, 64);
+    } else {
+      // Clean fallback placeholder while image loads
+      ctx.fillStyle = color || "#ef4444";
+      ctx.beginPath();
+      ctx.roundRect(-15, -25, 30, 50, 5);
+      ctx.fill();
+    }
 
-    // Front Left Tire (steerable)
-    ctx.save();
-    ctx.translate(15, -13);
-    ctx.rotate(steerRad);
-    ctx.fillRect(-6, -3, 13, 7);
-    ctx.fillStyle = "#64748b";
-    ctx.fillRect(-2, -1, 5, 3);
-    ctx.restore();
-
-    // Front Right Tire (steerable)
-    ctx.save();
-    ctx.translate(15, 13);
-    ctx.rotate(steerRad);
-    ctx.fillStyle = "#090d16";
-    ctx.fillRect(-6, -4, 13, 7);
-    ctx.fillStyle = "#64748b";
-    ctx.fillRect(-2, -2, 5, 3);
-    ctx.restore();
-
-    // Rear tires (fixed wide rubber)
-    ctx.fillStyle = "#090d16";
-    ctx.fillRect(-21, -16, 13, 7);
-    ctx.fillRect(-21, 9, 13, 7);
-    ctx.fillStyle = "#64748b";
-    ctx.fillRect(-17, -14, 5, 3);
-    ctx.fillRect(-17, 11, 5, 3);
-
-    // Front aero splitter
-    ctx.fillStyle = "#0f172a";
-    ctx.beginPath();
-    ctx.roundRect(16, -11, 8, 22, 3);
-    ctx.fill();
-
-    // Car Body Base
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.roundRect(-21, -13, 42, 26, 6);
-    ctx.fill();
-
-    // Body bevel outline
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.45)";
-    ctx.lineWidth = 1.4;
-    ctx.stroke();
-
-    // Dark Cockpit & Windshield
-    ctx.fillStyle = "rgba(11, 15, 25, 0.9)";
-    ctx.beginPath();
-    ctx.roundRect(-7, -9, 17, 18, 4);
-    ctx.fill();
-
-    // Windshield Cyan Glint
-    ctx.fillStyle = "rgba(56, 189, 248, 0.75)";
-    ctx.beginPath();
-    ctx.moveTo(3, -8);
-    ctx.lineTo(9, -8);
-    ctx.lineTo(9, 8);
-    ctx.lineTo(3, 8);
-    ctx.closePath();
-    ctx.fill();
-
-    // Dual Racing Stripes
-    ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
-    ctx.fillRect(-19, -3, 38, 2);
-    ctx.fillRect(-19, 1, 38, 2);
-
-    // Front Headlights
-    ctx.fillStyle = "#fef08a";
-    ctx.fillRect(18, -10, 3, 4);
-    ctx.fillRect(18, 6, 3, 4);
-
-    // Rear Brake Lights (Red, glowing bright when braking)
+    // Rear glowing brake lights when braking
     if (isBraking) {
       ctx.fillStyle = "#ff2222";
       ctx.shadowColor = "#ef4444";
-      ctx.shadowBlur = 10;
-      ctx.fillRect(-22, -10, 3, 5);
-      ctx.fillRect(-22, 5, 3, 5);
+      ctx.shadowBlur = 8;
+      ctx.fillRect(-14, 23, 6, 4);
+      ctx.fillRect(8, 23, 6, 4);
       ctx.shadowBlur = 0;
-    } else {
-      ctx.fillStyle = "#b91c1c";
-      ctx.fillRect(-21, -10, 3, 4);
-      ctx.fillRect(-21, 6, 3, 4);
     }
-
-    // Rear Aerodynamic Drift Spoiler
-    ctx.fillStyle = "#090d16";
-    ctx.fillRect(-24, -14, 4, 28);
-    ctx.fillStyle = color;
-    ctx.fillRect(-24, -14, 4, 3);
-    ctx.fillRect(-24, 11, 4, 3);
 
     ctx.restore();
   }
@@ -612,7 +618,8 @@
       ctx.stroke();
     }
 
-    drawCarOnCanvas(ctx, canvas.width / 2, canvas.height / 2, -0.15, state.driverColor, 1.45, 0.3);
+    // Draw car model facing upwards in preview
+    drawCarOnCanvas(ctx, canvas.width / 2, canvas.height / 2, -Math.PI / 2, state.driverColor, 1.25, 0);
   }
 
   function initColorPalette() {
@@ -794,31 +801,30 @@
     car.vx = newVForward * forwardX + newVLateral * rightX;
     car.vy = newVForward * forwardY + newVLateral * rightY;
 
-    // Track surface check (asphalt vs snowbank / grass vs barrier)
-    const trackDist = getDistanceToTrackSpine(car.x, car.y, track);
+    // Solid Track Barrier Walls Collision
+    const closest = getClosestPointOnTrack(car.x, car.y, track);
+    const toTrackX = closest.x - car.x;
+    const toTrackY = closest.y - car.y;
+    const trackDist = Math.hypot(toTrackX, toTrackY);
     const halfRoad = track.roadWidth * 0.5;
+    const wallCollisionDist = halfRoad + 16;
 
-    if (trackDist > halfRoad + 45) {
-      // Off-road Deep Snowbank
-      car.vx *= Math.pow(0.88, dt * 60);
-      car.vy *= Math.pow(0.88, dt * 60);
-    }
-
-    // Barrier bounce
-    const barrierLimit = halfRoad + 85;
-    if (trackDist > barrierLimit) {
-      const closest = getClosestPointOnTrack(car.x, car.y, track);
-      const toTrackX = closest.x - car.x;
-      const toTrackY = closest.y - car.y;
-      const d = Math.hypot(toTrackX, toTrackY) || 1;
+    if (trackDist > wallCollisionDist) {
+      const d = trackDist || 1;
       const nx = toTrackX / d;
       const ny = toTrackY / d;
 
+      // Keep car firmly inside wall boundary (cannot penetrate or clip through)
+      car.x = closest.x - nx * wallCollisionDist;
+      car.y = closest.y - ny * wallCollisionDist;
+
+      // Normal velocity component towards track
       const dot = car.vx * nx + car.vy * ny;
       if (dot < 0) {
-        car.vx = (car.vx - 1.5 * dot * nx) * 0.55;
-        car.vy = (car.vy - 1.5 * dot * ny) * 0.55;
-        playTone(150, 0.12, "sawtooth", 0.25);
+        // Elastic deflection off the barrier wall + tangential scrape friction
+        car.vx = (car.vx - 1.5 * dot * nx) * 0.75;
+        car.vy = (car.vy - 1.5 * dot * ny) * 0.75;
+        playTone(160, 0.12, "sawtooth", 0.32);
         addSparkParticles(car.x, car.y);
       }
     }
@@ -846,9 +852,9 @@
     let bestDist = Infinity;
     let bestPt = { x: px, y: py };
     const pts = track.points;
-    for (let i = 0; i < pts.length; i += 4) {
+    for (let i = 0; i < pts.length; i += 2) {
       const pA = pts[i];
-      const pB = pts[(i + 4) % pts.length];
+      const pB = pts[(i + 2) % pts.length];
       const cp = getClosestPointOnSegment(px, py, pA, pB);
       const d = Math.hypot(px - cp.x, py - cp.y);
       if (d < bestDist) {
@@ -1025,46 +1031,68 @@
       ctx.fill();
     }
 
-    // 2. Sand / Gravel Runoff Bed (wide beige/sand base)
+    // 2. Sand / Gravel Runoff Bed (wide sand base beyond walls)
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.beginPath();
     ctx.moveTo(pts[0].x, pts[0].y);
     for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
     ctx.closePath();
-    ctx.lineWidth = rw + 84;
-    ctx.strokeStyle = "#927757";
+    ctx.lineWidth = rw + 86;
+    ctx.strokeStyle = "#785a3a";
     ctx.stroke();
 
     ctx.lineWidth = rw + 76;
-    ctx.strokeStyle = "#a18462";
+    ctx.strokeStyle = "#8c6b45";
     ctx.stroke();
 
-    // 3. 3D Tire Wall Barriers
-    ctx.lineWidth = rw + 54;
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.55)";
+    // 3. Heavy 3D Crash Barrier Walls (Solid Outer & Inner Bounds)
+    // Wall Drop Shadow
+    ctx.lineWidth = rw + 66;
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.7)";
     ctx.stroke();
 
+    // Wall Heavy Concrete Footing
+    ctx.lineWidth = rw + 58;
+    ctx.strokeStyle = "#0f172a";
+    ctx.stroke();
+
+    // Steel Barrier Structure
+    ctx.lineWidth = rw + 50;
+    ctx.strokeStyle = "#334155";
+    ctx.stroke();
+
+    // High-visibility Racing Chevron Blocks (Red & White alternating barriers)
     ctx.lineWidth = rw + 44;
     ctx.strokeStyle = "#dc2626";
     ctx.stroke();
 
     ctx.lineWidth = rw + 44;
-    ctx.setLineDash([28, 28]);
-    ctx.strokeStyle = "#ffffff";
+    ctx.setLineDash([24, 24]);
+    ctx.strokeStyle = "#f8fafc";
     ctx.stroke();
     ctx.setLineDash([]);
 
-    ctx.lineWidth = rw + 40;
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.35)";
+    // Wall Top Metallic Safety Cap (Bright bevel giving distinct 3D wall height)
+    ctx.lineWidth = rw + 38;
+    ctx.strokeStyle = "#94a3b8";
+    ctx.stroke();
+
+    ctx.lineWidth = rw + 34;
+    ctx.strokeStyle = "#ffffff";
+    ctx.stroke();
+
+    // Inner Wall Depth Shadow
+    ctx.lineWidth = rw + 30;
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.5)";
     ctx.stroke();
 
     // 4. Red & White Apex Rumble Strips (Curbs)
-    ctx.lineWidth = rw + 24;
+    ctx.lineWidth = rw + 20;
     ctx.strokeStyle = "#ef4444";
     ctx.stroke();
 
-    ctx.lineWidth = rw + 24;
+    ctx.lineWidth = rw + 20;
     ctx.setLineDash([16, 16]);
     ctx.strokeStyle = "#ffffff";
     ctx.stroke();

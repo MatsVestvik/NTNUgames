@@ -1994,7 +1994,7 @@ class PartyAPI:
                         "status": "ready",
                         "badge": "Klar til å spilles! 🏎️",
                         "players": "2–4 spillere",
-                        "icon": "/assets/icons/turbosladd.svg",
+                        "icon": "/assets/icons/turbosladd.png",
                         "route": "/turbosladd/",
                     },
                 ]
