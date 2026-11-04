@@ -124,6 +124,135 @@
   const tabButtons = document.querySelectorAll(".hub-tab-btn[data-filter]");
   const sections = document.querySelectorAll(".game-category-section");
   const allGameCards = document.querySelectorAll(".game-card");
+  const grids = document.querySelectorAll(".games-grid");
+
+  // Record original order and text for all cards
+  grids.forEach(grid => {
+    const cards = Array.from(grid.querySelectorAll(".game-card"));
+    cards.forEach((card, idx) => {
+      card.dataset.origOrder = String(idx);
+      const btn = card.querySelector(".card-btn");
+      if (btn) btn.dataset.origBtnText = btn.textContent;
+    });
+  });
+
+  // Hub Toast notification for disabled games
+  function showHubToast(msg) {
+    let toast = document.getElementById("hubToast");
+    if (!toast) {
+      toast = document.createElement("div");
+      toast.id = "hubToast";
+      toast.className = "hub-toast";
+      document.body.appendChild(toast);
+    }
+    toast.textContent = msg;
+    toast.classList.add("show");
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => {
+      toast.classList.remove("show");
+    }, 2500);
+  }
+
+  // Intercept clicks on disabled cards
+  allGameCards.forEach(card => {
+    card.addEventListener("click", (e) => {
+      if (card.classList.contains("card-disabled-players")) {
+        e.preventDefault();
+        e.stopPropagation();
+        const min = card.dataset.minPlayers || "2";
+        showHubToast(`Dette spillet krever minst ${min} spillere.`);
+      }
+    });
+  });
+
+  // Filter and move disabled cards to the bottom based on player count
+  let currentSelectedPlayers = "all";
+
+  function applyPlayerCountFilter(count) {
+    currentSelectedPlayers = count;
+    grids.forEach(grid => {
+      const cards = Array.from(grid.querySelectorAll(".game-card"));
+      const enabledCards = [];
+      const disabledCards = [];
+
+      cards.forEach(card => {
+        const min = parseInt(card.dataset.minPlayers || "1", 10);
+        const btn = card.querySelector(".card-btn");
+        const tagsGroup = card.querySelector(".card-tags-group");
+
+        const isDisabled = (count !== "all" && parseInt(count, 10) < min);
+
+        if (isDisabled) {
+          card.classList.add("card-disabled-players");
+          card.style.order = "99";
+          if (btn) {
+            btn.textContent = `Trenger ${min} spillere`;
+          }
+          if (tagsGroup && !tagsGroup.querySelector(".tag-needed-players")) {
+            const badge = document.createElement("span");
+            badge.className = "card-tag tag-needed-players";
+            badge.textContent = `Trenger ${min} spillere`;
+            tagsGroup.appendChild(badge);
+          }
+          disabledCards.push(card);
+        } else {
+          card.classList.remove("card-disabled-players");
+          card.style.order = "1";
+          if (btn && btn.dataset.origBtnText) {
+            btn.textContent = btn.dataset.origBtnText;
+          }
+          if (tagsGroup) {
+            const neededBadge = tagsGroup.querySelector(".tag-needed-players");
+            if (neededBadge) neededBadge.remove();
+          }
+          enabledCards.push(card);
+        }
+      });
+
+      // Preserve relative original order within enabled and disabled groups
+      enabledCards.sort((a, b) => parseInt(a.dataset.origOrder || "0", 10) - parseInt(b.dataset.origOrder || "0", 10));
+      disabledCards.sort((a, b) => parseInt(a.dataset.origOrder || "0", 10) - parseInt(b.dataset.origOrder || "0", 10));
+
+      // Physically re-append in DOM: enabled first, disabled at bottom
+      [...enabledCards, ...disabledCards].forEach(c => grid.appendChild(c));
+    });
+  }
+
+  // Player count filter pill buttons
+  const playerFilterButtons = document.querySelectorAll(".hub-player-btn[data-player-count]");
+  playerFilterButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const count = btn.dataset.playerCount;
+      playerFilterButtons.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      try {
+        localStorage.setItem("ntnu_hub_player_filter", count);
+      } catch (e) {}
+      applyPlayerCountFilter(count);
+    });
+  });
+
+  // Init player filter
+  let initialPlayerCount = "all";
+  try {
+    const partyRoom = sessionStorage.getItem("party_room_code");
+    const partyCount = sessionStorage.getItem("party_player_count");
+    const savedFilter = localStorage.getItem("ntnu_hub_player_filter");
+    if (partyRoom && partyCount) {
+      initialPlayerCount = parseInt(partyCount, 10) >= 3 ? "3" : String(partyCount);
+    } else if (savedFilter) {
+      initialPlayerCount = savedFilter;
+    }
+  } catch (e) {}
+
+  if (initialPlayerCount !== "all") {
+    const targetBtn = document.querySelector(`.hub-player-btn[data-player-count="${initialPlayerCount}"]`);
+    if (targetBtn) {
+      playerFilterButtons.forEach(b => b.classList.remove("active"));
+      targetBtn.classList.add("active");
+    }
+  }
+  applyPlayerCountFilter(initialPlayerCount);
 
   tabButtons.forEach(btn => {
     btn.addEventListener("click", () => {

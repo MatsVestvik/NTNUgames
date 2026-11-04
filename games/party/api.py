@@ -2189,6 +2189,19 @@ class PartyAPI:
                 if not is_host_req:
                     return 403, {"ok": False, "error": "Bare romverten kan starte eller bytte spill"}
 
+                MIN_PLAYERS = {
+                    "ordbombe": 1,
+                    "tegn_og_gjett": 2,
+                    "sjakk": 2,
+                    "korridorer": 2,
+                    "imposter": 3,
+                    "fargekoden": 2,
+                    "wavelength": 2,
+                }
+                min_req = MIN_PLAYERS.get(game_id, 2)
+                if len(room.players) < min_req:
+                    return 400, {"ok": False, "error": f"Dette spillet krever minst {min_req} spillere i rommet."}
+
                 if game_id == "ordbombe":
                     room.start_ordbombe(settings)
                 elif game_id == "tegn_og_gjett":

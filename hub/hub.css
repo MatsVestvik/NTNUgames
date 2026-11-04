@@ -238,9 +238,120 @@ body {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 2rem;
+  margin-bottom: 0.85rem;
   overflow-x: auto;
   padding-bottom: 0.25rem;
+}
+
+/* Quick Player Count Filter Subrow */
+.hub-filter-subrow {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 2rem;
+  padding: 0.55rem 0.9rem;
+  background: rgba(19, 27, 46, 0.6);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  flex-wrap: wrap;
+}
+
+.hub-subfilter-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.hub-subfilter-label svg {
+  color: var(--text-muted);
+}
+
+.hub-player-pills {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.hub-player-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-muted);
+  font-family: var(--font-main);
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.hub-player-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.hub-player-btn.active {
+  background: #ffffff;
+  color: #0a0e17;
+  border-color: #ffffff;
+  box-shadow: 0 2px 10px rgba(255, 255, 255, 0.22);
+}
+
+.game-card.card-disabled-players {
+  opacity: 0.42;
+  filter: grayscale(0.5);
+  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+  box-shadow: none !important;
+  transform: none !important;
+  order: 99;
+}
+
+.game-card.card-disabled-players:hover {
+  transform: none !important;
+  box-shadow: none !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+.game-card.card-disabled-players .card-btn {
+  color: var(--text-muted) !important;
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+.tag-needed-players {
+  background: rgba(239, 68, 68, 0.16);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  font-weight: 800;
+}
+
+.hub-toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(19, 27, 46, 0.95);
+  border: 1px solid rgba(251, 133, 0, 0.5);
+  color: #ffffff;
+  padding: 0.75rem 1.4rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  opacity: 0;
+  transition: all 0.25s ease;
+  z-index: 9999;
+}
+.hub-toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
 }
 
 .hub-tab-btn {

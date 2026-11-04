@@ -64,6 +64,20 @@
       </a>
     </nav>
 
+    <!-- Quick Player Count Filter Subrow -->
+    <div class="hub-filter-subrow" id="hubPlayerFilterRow" aria-label="Filtrer spill etter antall spillere">
+      <span class="hub-subfilter-label">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+        Antall spillere:
+      </span>
+      <div class="hub-player-pills">
+        <button type="button" class="hub-player-btn active" data-player-count="all">Alle</button>
+        <button type="button" class="hub-player-btn" data-player-count="1">1 spiller</button>
+        <button type="button" class="hub-player-btn" data-player-count="2">2 spillere</button>
+        <button type="button" class="hub-player-btn" data-player-count="3">3+ spillere</button>
+      </div>
+    </div>
+
     <!-- Category Section 1: Daglige spill -->
     <section class="game-category-section" data-section-category="daily" aria-labelledby="dailyGamesHeading">
       <div class="section-header">
@@ -75,7 +89,7 @@
 
       <div class="games-grid">
         <!-- Game 1: Kattfisking -->
-        <a href="/kattfisking/" class="game-card featured-card" id="cardKattfisking" data-category="daily">
+        <a href="/kattfisking/" class="game-card featured-card" id="cardKattfisking" data-category="daily" data-min-players="1">
           <div class="card-bg-icon">
             <img src="/assets/icons/catfish.png" alt="" aria-hidden="true" />
           </div>
@@ -100,7 +114,7 @@
         </a>
 
         <!-- Game 2: Mer eller Mindre -->
-        <a href="/mer-eller-mindre/" class="game-card card-green" id="cardMerMindre" data-category="daily">
+        <a href="/mer-eller-mindre/" class="game-card card-green" id="cardMerMindre" data-category="daily" data-min-players="1">
           <div class="card-bg-icon">
             <img src="/assets/icons/moreorless.png" alt="" aria-hidden="true" />
           </div>
@@ -155,13 +169,13 @@
 
       <div class="games-grid">
         <!-- Game 1: Ordbombe -->
-        <a href="/ordbombe/" class="game-card card-orange" id="cardOrdbombe" data-category="party">
+        <a href="/ordbombe/" class="game-card card-orange" id="cardOrdbombe" data-category="party" data-min-players="1">
           <div class="card-bg-icon">
             <img src="/assets/icons/ordbombe.png" alt="" aria-hidden="true" />
           </div>
           <div class="card-top">
             <div class="card-tags-group">
-              <span class="card-tag tag-multiplayer">2–16 spillere</span>
+              <span class="card-tag tag-multiplayer">1–16 spillere</span>
             </div>
           </div>
           <h3 class="card-title">Ordbombe</h3>
@@ -177,7 +191,7 @@
         </a>
 
         <!-- Game 2: Tegn & Gjett -->
-        <a href="/tegn-og-gjett/" class="game-card card-cyan" id="cardTegnOgGjett" data-category="party">
+        <a href="/tegn-og-gjett/" class="game-card card-cyan" id="cardTegnOgGjett" data-category="party" data-min-players="2">
           <div class="card-bg-icon">
             <img src="/assets/icons/tegn_og_gjett.png" alt="" aria-hidden="true" />
           </div>
@@ -199,7 +213,7 @@
         </a>
 
         <!-- Game 3: Sjakk -->
-        <a href="/sjakk/" class="game-card card-purple" id="cardSjakk" data-category="party" data-tags="pass-and-play">
+        <a href="/sjakk/" class="game-card card-purple" id="cardSjakk" data-category="party" data-tags="pass-and-play" data-min-players="2">
           <div class="card-bg-icon">
             <img src="/assets/icons/sjakk.png" alt="" aria-hidden="true" />
           </div>
@@ -221,7 +235,7 @@
         </a>
 
         <!-- Game 4: Korridorer -->
-        <a href="/korridorer/" class="game-card card-amber" id="cardKorridorer" data-category="party" data-tags="pass-and-play">
+        <a href="/korridorer/" class="game-card card-amber" id="cardKorridorer" data-category="party" data-tags="pass-and-play" data-min-players="2">
           <div class="card-bg-icon">
             <img src="/assets/icons/korridorer.png" alt="" aria-hidden="true" />
           </div>
@@ -243,7 +257,7 @@
         </a>
 
         <!-- Game 5: Imposter -->
-        <a href="/party/" class="game-card card-crimson" id="cardImposter" data-category="party">
+        <a href="/party/" class="game-card card-crimson" id="cardImposter" data-category="party" data-min-players="3">
           <div class="card-bg-icon">
             <img src="/assets/icons/imposter.svg" alt="" aria-hidden="true" />
           </div>
@@ -265,7 +279,7 @@
         </a>
 
         <!-- Game 6: Fargekoden / Hues and Cues -->
-        <a href="/fargekoden/" class="game-card card-spectrum" id="cardFargekoden" data-category="party" data-tags="pass-and-play">
+        <a href="/fargekoden/" class="game-card card-spectrum" id="cardFargekoden" data-category="party" data-tags="pass-and-play" data-min-players="2">
           <div class="card-bg-icon">
             <img src="/assets/icons/fargekoden.svg" alt="" aria-hidden="true" />
           </div>
@@ -288,7 +302,7 @@
         </a>
 
         <!-- Game 7: Wavelength -->
-        <a href="/wavelength/" class="game-card card-cyan" id="cardWavelength" data-category="party" data-tags="pass-and-play">
+        <a href="/wavelength/" class="game-card card-cyan" id="cardWavelength" data-category="party" data-tags="pass-and-play" data-min-players="2">
           <div class="card-bg-icon">
             <img src="/assets/icons/wavelength.svg" alt="" aria-hidden="true" />
           </div>

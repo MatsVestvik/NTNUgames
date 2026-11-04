@@ -509,6 +509,82 @@
       }
       el.playersGrid.appendChild(tile);
     });
+
+    // Update games list based on current player count & move disabled games to the bottom
+    state.lastPlayerCount = room.playerCount || (room.players ? room.players.length : 1);
+    try {
+      sessionStorage.setItem("party_player_count", String(state.lastPlayerCount));
+    } catch (e) {
+      // Ignore
+    }
+    updatePartyGamesListByPlayerCount(state.lastPlayerCount, state.isHost);
+  }
+
+  function updatePartyGamesListByPlayerCount(playerCount, isHost) {
+    const container = document.getElementById("lobbyGamesList");
+    if (!container) return;
+
+    const cards = Array.from(container.querySelectorAll(".lobby-game-card"));
+    const enabledCards = [];
+    const disabledCards = [];
+
+    cards.forEach((card) => {
+      const minPlayers = parseInt(card.dataset.minPlayers || "2", 10);
+      const startBtn = card.querySelector(".start-game-btn");
+      const badge = card.querySelector(".lg-card-badge");
+      const selects = card.querySelectorAll("select");
+
+      if (badge && !badge.dataset.origText) {
+        badge.dataset.origText = badge.textContent.trim();
+      }
+      if (startBtn && !startBtn.dataset.hostText) {
+        startBtn.dataset.hostText = startBtn.textContent.trim();
+      }
+
+      const hasEnough = playerCount >= minPlayers;
+
+      if (!hasEnough) {
+        card.classList.add("disabled-playable");
+        card.classList.remove("active-playable");
+        card.style.order = "99";
+
+        if (startBtn) {
+          startBtn.disabled = true;
+          startBtn.classList.add("disabled-btn");
+          startBtn.textContent = `Trenger minst ${minPlayers} spillere`;
+        }
+        if (badge) {
+          badge.className = "lg-card-badge badge-needed";
+          badge.textContent = `Trenger ${minPlayers} spillere`;
+        }
+        selects.forEach((s) => (s.disabled = true));
+        disabledCards.push(card);
+      } else {
+        card.classList.remove("disabled-playable");
+        card.classList.add("active-playable");
+        card.style.order = "1";
+
+        if (startBtn) {
+          startBtn.classList.remove("disabled-btn");
+          if (isHost) {
+            startBtn.disabled = false;
+            startBtn.textContent = startBtn.dataset.hostText || "Start spill";
+          } else {
+            startBtn.disabled = true;
+            startBtn.textContent = "Venter på vert 👑";
+          }
+        }
+        if (badge) {
+          badge.className = "lg-card-badge badge-ready";
+          badge.textContent = badge.dataset.origText || "Klar til spill";
+        }
+        selects.forEach((s) => (s.disabled = !isHost));
+        enabledCards.push(card);
+      }
+    });
+
+    // Move disabled games to bottom of the list in DOM
+    [...enabledCards, ...disabledCards].forEach((card) => container.appendChild(card));
   }
 
   async function kickPlayer(targetPlayerId, targetPlayerName) {
@@ -548,30 +624,13 @@
       el.sectionGameSelector.classList.remove("is-guest-view");
       el.playerWaitingBox.classList.add("hidden");
       if (sectionHint) sectionHint.textContent = "Verten velger spill for hele rommet";
-
-      document.querySelectorAll(".start-game-btn").forEach((btn) => {
-        btn.disabled = false;
-        const originalText = btn.dataset.hostText || btn.textContent;
-        btn.dataset.hostText = originalText;
-        btn.textContent = originalText;
-      });
-      document.querySelectorAll(".lg-settings-inline select").forEach((sel) => {
-        sel.disabled = false;
-      });
     } else {
       el.sectionGameSelector.classList.add("is-guest-view");
       el.playerWaitingBox.classList.remove("hidden");
       if (sectionHint) sectionHint.textContent = "Tilgjengelige partyspill (Verten velger spill):";
-
-      document.querySelectorAll(".start-game-btn").forEach((btn) => {
-        if (!btn.dataset.hostText) btn.dataset.hostText = btn.textContent;
-        btn.disabled = true;
-        btn.textContent = "Venter på vert 👑";
-      });
-      document.querySelectorAll(".lg-settings-inline select").forEach((sel) => {
-        sel.disabled = true;
-      });
     }
+
+    updatePartyGamesListByPlayerCount(state.lastPlayerCount || 1, isHost);
   }
 
   // Host launches Ordbombe
