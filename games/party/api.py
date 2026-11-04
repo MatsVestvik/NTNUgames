@@ -1986,6 +1986,17 @@ class PartyAPI:
                         "icon": "/assets/icons/wavelength.svg",
                         "route": "/wavelength/",
                     },
+                    {
+                        "id": "turbosladd",
+                        "title": "Turbosladd",
+                        "subtitle": "Topp-ned 2D arkaderacing & drifting",
+                        "desc": "Legg bilen bredt gjennom svingene med piltastene og utfordre vennegjengen!",
+                        "status": "ready",
+                        "badge": "Klar til å spilles! 🏎️",
+                        "players": "2–4 spillere",
+                        "icon": "/assets/icons/turbosladd.svg",
+                        "route": "/turbosladd/",
+                    },
                 ]
             }
 
@@ -2197,6 +2208,7 @@ class PartyAPI:
                     "imposter": 3,
                     "fargekoden": 2,
                     "wavelength": 2,
+                    "turbosladd": 1,
                 }
                 min_req = MIN_PLAYERS.get(game_id, 2)
                 if len(room.players) < min_req:
@@ -2319,6 +2331,80 @@ class PartyAPI:
                             wl_rooms[code] = wl_room
                     except Exception as err:
                         print("Error creating wavelength party room bridge:", err)
+                    room.bump()
+                elif game_id == "turbosladd":
+                    room.current_game = "turbosladd"
+                    room.game_state = {"settings": settings, "status": "active"}
+                    try:
+                        from games.turbosladd.api import _rooms as ts_rooms, TurbosladdRoom, PLAYER_PALETTE
+                        with _rooms_lock:
+                            host_player = room.players.get(room.host_id, {})
+                            laps = int(settings.get("laps", 3))
+                            track_id = str(settings.get("trackId", "grand_prix"))
+                            t_room = TurbosladdRoom(
+                                code=code,
+                                host_name=host_player.get("name", "Sjåfør 1"),
+                                host_color=host_player.get("color") or PLAYER_PALETTE[0]["color"],
+                                host_car="sport",
+                                track_id=track_id,
+                                laps=laps,
+                                max_players=4
+                            )
+                            t_room.host_id = room.host_id
+                            t_room.players = {}
+                            # Host
+                            t_room.players[room.host_id] = {
+                                "id": room.host_id,
+                                "name": host_player.get("name", "Sjåfør 1"),
+                                "color": host_player.get("color") or PLAYER_PALETTE[0]["color"],
+                                "carModel": "sport",
+                                "isHost": True,
+                                "isReady": True,
+                                "slot": 0,
+                                "x": 0.0,
+                                "y": 0.0,
+                                "angle": 0.0,
+                                "vx": 0.0,
+                                "vy": 0.0,
+                                "speed": 0.0,
+                                "isDrifting": False,
+                                "lap": 1,
+                                "checkpoint": 0,
+                                "finished": False,
+                                "finishTime": 0.0,
+                                "bestLap": 0.0,
+                                "lastSeen": time.time(),
+                            }
+                            slot = 1
+                            for pid, pdata in room.players.items():
+                                if pid != room.host_id and len(t_room.players) < 4:
+                                    pal = PLAYER_PALETTE[slot % len(PLAYER_PALETTE)]
+                                    t_room.players[pid] = {
+                                        "id": pid,
+                                        "name": pdata.get("name", f"Sjåfør {slot + 1}"),
+                                        "color": pdata.get("color") or pal["color"],
+                                        "carModel": "drift" if slot % 2 == 1 else "sport",
+                                        "isHost": False,
+                                        "isReady": True,
+                                        "slot": slot,
+                                        "x": 0.0,
+                                        "y": 0.0,
+                                        "angle": 0.0,
+                                        "vx": 0.0,
+                                        "vy": 0.0,
+                                        "speed": 0.0,
+                                        "isDrifting": False,
+                                        "lap": 1,
+                                        "checkpoint": 0,
+                                        "finished": False,
+                                        "finishTime": 0.0,
+                                        "bestLap": 0.0,
+                                        "lastSeen": time.time(),
+                                    }
+                                    slot += 1
+                            ts_rooms[code] = t_room
+                    except Exception as err:
+                        print("Error creating turbosladd party room bridge:", err)
                     room.bump()
                 elif game_id is None:
                     # Return to lobby

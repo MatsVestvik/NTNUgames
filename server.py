@@ -21,6 +21,7 @@ from games.party import PartyAPI
 from games.sjakk import SjakkAPI
 from games.korridorer import KorridorerAPI
 from games.wavelength import WavelengthAPI
+from games.turbosladd import TurbosladdAPI
 
 PORT = int(os.environ.get("PORT", "3000"))
 HOST = os.environ.get("HOST", "0.0.0.0")
@@ -128,7 +129,13 @@ class GameGatewayHandler(BaseHTTPRequestHandler):
                 if res:
                     return self._send_json(res[1], status=res[0])
 
-            # 9. Static files
+            # 9. Check Turbosladd API
+            if path.startswith("/api/turbosladd/"):
+                res = TurbosladdAPI.handle_get(path, query)
+                if res:
+                    return self._send_json(res[1], status=res[0])
+
+            # 10. Static files
             self.serve_static(path, head_only=head_only)
 
         except Exception as exc:
@@ -196,6 +203,12 @@ class GameGatewayHandler(BaseHTTPRequestHandler):
             # 8. Check Wavelength API
             if path.startswith("/api/wavelength/"):
                 res = WavelengthAPI.handle_post(path, body)
+                if res:
+                    return self._send_json(res[1], status=res[0])
+
+            # 9. Check Turbosladd API
+            if path.startswith("/api/turbosladd/"):
+                res = TurbosladdAPI.handle_post(path, body)
                 if res:
                     return self._send_json(res[1], status=res[0])
 
@@ -343,6 +356,7 @@ def main() -> None:
     print(f"   • Ordbombe:     http://{HOST}:{PORT}/ordbombe/ (Partyspill)")
     print(f"   • Sjakk:        http://{HOST}:{PORT}/sjakk/ (2 spillere)")
     print(f"   • Korridorer:   http://{HOST}:{PORT}/korridorer/ (2-4 spillere)")
+    print(f"   • Turbosladd:   http://{HOST}:{PORT}/turbosladd/ (2-4 spillere)")
     print(f"   • NTNU guesser: http://{HOST}:{PORT}/geoguesser/ (under utvikling)\n")
 
     try:

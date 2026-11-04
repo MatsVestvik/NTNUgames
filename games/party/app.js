@@ -88,6 +88,9 @@
     selectRoundsFargekoden: document.getElementById("selectRoundsFargekoden"),
     btnStartWavelength: document.getElementById("btnStartWavelength"),
     selectRoundsWavelength: document.getElementById("selectRoundsWavelength"),
+    btnStartTurbosladd: document.getElementById("btnStartTurbosladd"),
+    selectTrackTurbosladd: document.getElementById("selectTrackTurbosladd"),
+    selectLapsTurbosladd: document.getElementById("selectLapsTurbosladd"),
     btnLeaveRoom: document.getElementById("btnLeaveRoom"),
     connStatusText: document.getElementById("connStatusText"),
   };
@@ -425,6 +428,13 @@
           if (data.currentGame === "wavelength" && data.gameState?.status !== "game_over") {
             // Redirect to Wavelength in room mode!
             const target = `/wavelength/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
+            window.location.href = target;
+            return;
+          }
+
+          if (data.currentGame === "turbosladd") {
+            // Redirect to Turbosladd in room mode!
+            const target = `/turbosladd/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
             window.location.href = target;
             return;
           }
@@ -912,6 +922,45 @@
         alert("Feil ved start av spill.");
         el.btnStartWavelength.disabled = false;
         el.btnStartWavelength.textContent = "Start Wavelength";
+      }
+    });
+  }
+
+  // Host launches Turbosladd
+  if (el.btnStartTurbosladd) {
+    el.btnStartTurbosladd.addEventListener("click", async () => {
+      if (!state.isHost || !state.roomCode) return;
+      const laps = parseInt(el.selectLapsTurbosladd?.value || "3", 10) || 3;
+      const trackId = el.selectTrackTurbosladd?.value || "grand_prix";
+      try {
+        el.btnStartTurbosladd.disabled = true;
+        el.btnStartTurbosladd.textContent = "Starter løp…";
+
+        const resp = await fetch("/api/party/select-game", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            roomCode: state.roomCode,
+            hostToken: state.hostToken,
+            gameId: "turbosladd",
+            settings: { laps, trackId },
+          }),
+        });
+
+        const data = await resp.json();
+        if (!data.ok) {
+          alert(data.error || "Kunne ikke starte Turbosladd.");
+          el.btnStartTurbosladd.disabled = false;
+          el.btnStartTurbosladd.textContent = "Start Turbosladd 🏁";
+          return;
+        }
+
+        window.location.href = `/turbosladd/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
+      } catch (err) {
+        console.error(err);
+        alert("Feil ved start av spill.");
+        el.btnStartTurbosladd.disabled = false;
+        el.btnStartTurbosladd.textContent = "Start Turbosladd 🏁";
       }
     });
   }

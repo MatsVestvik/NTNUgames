@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="no">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Turbosladd • Topp-ned 2D Racing &amp; Drifting</title>
+
+  <link rel="icon" type="image/svg+xml" href="/assets/icons/turbosladd.svg" />
+  <link rel="stylesheet" href="/hub.css" />
+  <link rel="stylesheet" href="/game-lobby.css" />
+  <link rel="stylesheet" href="/parallax-bg.css" />
+  <link rel="stylesheet" href="styles.css?v=2.0" />
+</head>
+
+<body class="turbosladd-page">
+  <!-- Parallax Background Canvas -->
+  <canvas id="parallaxCanvas" class="parallax-bg" aria-hidden="true"></canvas>
+
+  <div class="ts-app-shell">
+    <!-- Top Sticky Header (Standard NTNUgames Navbar) -->
+    <header class="app-header">
+      <div class="header-left">
+        <a href="/" class="btn-back" id="btnHeaderBack" title="Tilbake">
+          <span class="back-arrow" aria-hidden="true">←</span> <span id="backBtnText">Hub</span>
+        </a>
+        <div class="header-branding">
+          <img src="/assets/icons/turbosladd.svg" class="header-game-icon" alt="" aria-hidden="true" />
+          <div>
+            <h1 class="header-title">TURBOSLADD</h1>
+            <span class="header-badge">2D Racing</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <button type="button" class="icon-btn" id="btnAudioToggle" title="Skru av/på lydeffekter" aria-label="Lyd">
+          <svg id="iconSoundOn" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+          </svg>
+          <svg id="iconSoundOff" class="hidden" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <line x1="23" y1="9" x2="17" y2="15"></line>
+            <line x1="17" y1="9" x2="23" y2="15"></line>
+          </svg>
+        </button>
+        <button type="button" class="btn-leave-room hidden" id="btnHeaderLeave">
+          Forlat løp
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="ts-main">
+      <!-- ============================================== -->
+      <!-- VIEW 1: LOBBY & GAME MODE SELECTION            -->
+      <!-- ============================================== -->
+      <section class="view-panel" id="viewLobby">
+        <div class="lobby-card">
+          <!-- Hero Header -->
+          <div class="lobby-hero">
+            <div class="hero-icon-wrap hero-icon-racing">
+              <img src="/assets/icons/turbosladd.svg" alt="Turbosladd ikon" class="hero-icon" />
+            </div>
+            <h2 class="hero-title">Turbosladd</h2>
+            <p class="hero-desc">
+              Topp-ned 2D arkaderacing med ekte drifting! Kontroller med piltastene, gi full gass og legg bilen bredt gjennom svingene.
+            </p>
+          </div>
+
+          <!-- Mode Navigation Tabs -->
+          <div class="lobby-tabs" role="tablist">
+            <button type="button" class="lobby-tab-btn active" id="tabOnline" role="tab" aria-selected="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              </svg>
+              <span>Nettspill (2–4 enheter)</span>
+            </button>
+            <button type="button" class="lobby-tab-btn" id="tabSolo" role="tab" aria-selected="false">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="7"></circle>
+                <polyline points="12 9 12 12 13.5 13.5"></polyline>
+                <path d="M16.51 17.35l-.35 3.83a2 2 0 0 1-2 1.82H9.83a2 2 0 0 1-2-1.82l-.35-3.83m.01-10.7l.35-3.83A2 2 0 0 1 9.83 1h4.35a2 2 0 0 1 2 1.82l.35 3.83"></path>
+              </svg>
+              <span>Tidskjøring (Solo)</span>
+            </button>
+            <button type="button" class="lobby-tab-btn" id="tabSplitscreen" role="tab" aria-selected="false">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                <line x1="12" y1="3" x2="12" y2="17"></line>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
+              </svg>
+              <span>Delt skjerm</span>
+              <span class="tab-mini-badge">Kommer</span>
+            </button>
+          </div>
+
+          <!-- TAB 1: Online Multiplayer Panel -->
+          <div class="tab-panel active" id="panelOnline">
+            <div class="online-lobby-deck">
+              <!-- Driver Profile Box -->
+              <div class="online-profile-card">
+                <div class="opc-header">
+                  <div class="opc-title-group">
+                    <span class="opc-badge">Sjåførprofil</span>
+                    <h3 class="opc-title">Ditt navn &amp; biloppsett</h3>
+                  </div>
+                  <span class="opc-hint">Velg din lakkfarge og bilmodell for løpet</span>
+                </div>
+
+                <div class="opc-grid">
+                  <div class="form-group opc-name-col">
+                    <label for="inputDriverName">Ditt kallenavn</label>
+                    <input type="text" id="inputDriverName" class="text-input" maxlength="18"
+                      placeholder="F.eks. Petter Solberg" value="Sjåfør 1" required />
+
+                    <label style="margin-top: 0.75rem;">Bilmodell</label>
+                    <div class="segmented-control" id="controlCarModel">
+                      <button type="button" class="seg-btn active" data-car="sport">🏎️ Sport</button>
+                      <button type="button" class="seg-btn" data-car="drift">🏁 Drift Spec</button>
+                      <button type="button" class="seg-btn" data-car="formula">🚀 Formula</button>
+                      <button type="button" class="seg-btn" data-car="muscle">🚙 Muscle</button>
+                    </div>
+                  </div>
+
+                  <div class="form-group opc-sprites-col">
+                    <label>Bilen din på banen</label>
+                    <div class="ts-car-preview-card">
+                      <canvas id="carPreviewCanvas" width="130" height="70" class="ts-car-preview-canvas"></canvas>
+                      <div class="ts-palette-picker">
+                        <span class="ts-palette-label">Lakkfarge:</span>
+                        <div class="ts-colors-row" id="tsColorPalette"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Action Cards: Create vs Join -->
+              <div class="online-split">
+                <!-- Create Race Card -->
+                <div class="action-box card-theme-orange">
+                  <div class="action-box-header">
+                    <div class="box-badge-row">
+                      <span class="action-card-badge badge-orange">Romvert</span>
+                    </div>
+                    <h3 class="box-title">Opprett nytt løp</h3>
+                    <p class="box-desc">Start et løpsrom for 2–4 sjåfører med 4-bokstavskode.</p>
+                  </div>
+
+                  <div class="action-box-content">
+                    <div class="form-group">
+                      <label for="selectTrack">Bane</label>
+                      <select id="selectTrack" class="text-input select-input">
+                        <option value="grand_prix">Grand Prix Banen (Middels)</option>
+                        <option value="fjord_drift">Fjordsvingen (Teknisk drift)</option>
+                      </select>
+                    </div>
+
+                    <div class="form-group">
+                      <label>Antall runder</label>
+                      <div class="segmented-control" id="controlLaps">
+                        <button type="button" class="seg-btn active" data-laps="3">3 runder</button>
+                        <button type="button" class="seg-btn" data-laps="5">5 runder</button>
+                        <button type="button" class="seg-btn" data-laps="8">8 runder</button>
+                      </div>
+                    </div>
+
+                    <div class="form-group">
+                      <label>Maks spillere</label>
+                      <div class="segmented-control" id="controlMaxPlayers">
+                        <button type="button" class="seg-btn" data-max="2">2 spillere</button>
+                        <button type="button" class="seg-btn active" data-max="4">4 spillere</button>
+                      </div>
+                      <span class="input-subhint">Arkitekturen støtter opptil 16 spillere i fremtidige turneringer.</span>
+                    </div>
+                  </div>
+
+                  <button type="button" class="primary-btn pulse-glow" id="btnCreateRace">
+                    Opprett løp →
+                  </button>
+                </div>
+
+                <!-- Join Race Card -->
+                <div class="action-box card-theme-purple">
+                  <div class="action-box-header">
+                    <div class="box-badge-row">
+                      <span class="action-card-badge badge-purple">Bli med</span>
+                    </div>
+                    <h3 class="box-title">Bli med i et løp</h3>
+                    <p class="box-desc">Skriv inn romkoden fra vennen din for å delta.</p>
+                  </div>
+
+                  <div class="action-box-content">
+                    <div class="form-group">
+                      <label for="inputRoomCode">Romkode (4 bokstaver)</label>
+                      <input type="text" id="inputRoomCode" class="text-input code-input" maxlength="6"
+                        placeholder="TURBO" autocomplete="off" autocorrect="off" autocapitalize="characters" />
+                    </div>
+
+                    <div class="race-controls-hint">
+                      <span class="hint-title">Styring:</span>
+                      <span class="hint-keys">
+                        <kbd>↑</kbd> Gass &nbsp;
+                        <kbd>↓</kbd> Brems &nbsp;
+                        <kbd>←</kbd> <kbd>→</kbd> Sving/Sladd
+                      </span>
+                    </div>
+                  </div>
+
+                  <button type="button" class="btn-cyan-accent" id="btnJoinRace">
+                    Koble til løp
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 2: Solo Time-Trial Panel -->
+          <div class="tab-panel hidden" id="panelSolo">
+            <div class="action-box single-box card-theme-cyan">
+              <div class="action-box-header">
+                <div class="box-badge-row">
+                  <span class="action-card-badge badge-cyan">Tidskjøring</span>
+                </div>
+                <h3 class="box-title">Solo testkjøring &amp; banerekord</h3>
+                <p class="box-desc">
+                  Øv på drifteteknikken din på egen hånd! Finn det perfekte sporet, mestr motstyring og sett banens raskeste rundetid.
+                </p>
+              </div>
+
+              <div class="action-box-content">
+                <div class="form-group">
+                  <label for="selectSoloTrack">Bane for tidskjøring</label>
+                  <select id="selectSoloTrack" class="text-input select-input">
+                    <option value="grand_prix">Grand Prix Banen</option>
+                    <option value="fjord_drift">Fjordsvingen</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>Antall runder</label>
+                  <div class="segmented-control" id="controlSoloLaps">
+                    <button type="button" class="seg-btn active" data-laps="3">3 runder</button>
+                    <button type="button" class="seg-btn" data-laps="5">5 runder</button>
+                  </div>
+                </div>
+
+                <div class="stat-pills-row">
+                  <div class="stat-pill">
+                    <span class="stat-pill-label">Styring</span>
+                    <strong class="stat-pill-val">Piltaster / WASD</strong>
+                  </div>
+                  <div class="stat-pill">
+                    <span class="stat-pill-label">Turbo boost</span>
+                    <strong class="stat-pill-val">Lades ved sladd</strong>
+                  </div>
+                </div>
+              </div>
+
+              <button type="button" class="primary-btn pulse-glow" id="btnStartSolo">
+                Kjør tidskjøring nå 🏁
+              </button>
+            </div>
+          </div>
+
+          <!-- TAB 3: Splitscreen Preview Panel -->
+          <div class="tab-panel hidden" id="panelSplitscreen">
+            <div class="action-box single-box card-theme-pink">
+              <div class="action-box-header">
+                <div class="box-badge-row">
+                  <span class="action-card-badge badge-pink">Under utvikling</span>
+                </div>
+                <h3 class="box-title">Delt skjerm for 2 spillere</h3>
+                <p class="box-desc">
+                  Kjør skulder ved skulder på samme skjerm! Spiller 1 styrer med piltastene (<kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd>) og Spiller 2 med WASD (<kbd>W</kbd><kbd>S</kbd><kbd>A</kbd><kbd>D</kbd>).
+                </p>
+              </div>
+
+              <div class="action-box-content">
+                <p style="color: #cbd5e1; font-size: 0.95rem; margin: 0;">
+                  Spillmotoren er modulært bygget og klar for delt skjerm i en kommende oppdatering. Bruk <strong>Nettspill</strong> for å rase mot venner på hver deres telefon eller PC i dag!
+                </p>
+              </div>
+
+              <button type="button" class="btn-cyan-accent" id="btnGoToOnlineTab">
+                Bytt til Nettspill →
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- VIEW 2: MULTIDEVICE WAITING LOUNGE             -->
+      <!-- ============================================== -->
+      <section class="view-panel hidden" id="viewRoomLounge">
+        <div class="lobby-card">
+          <div class="room-lounge-header">
+            <div class="rlh-left">
+              <span class="opc-badge">Løpsrom</span>
+              <div class="room-code-display">
+                <span class="rc-label">Romkode:</span>
+                <span class="rc-code" id="displayRoomCode">TURBO</span>
+                <button type="button" class="btn-copy-code" id="btnCopyCode" title="Kopier romkode">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="rlh-right">
+              <div class="track-badge-pill" id="loungeTrackBadge">
+                <span class="tb-name" id="loungeTrackName">Grand Prix Banen</span>
+                <span class="tb-laps" id="loungeLapsBadge">3 runder</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Racers Grid: Slots 1 to 4 (Prepared for up to 16) -->
+          <div class="racers-grid-container">
+            <h4 class="racers-grid-title">
+              <span>Sjåfører på startstreken</span>
+              <span class="racers-count-badge" id="racersCountBadge">1/4</span>
+            </h4>
+            <div class="racers-grid" id="racersGrid">
+              <!-- Dynamic racer slots injected here -->
+            </div>
+          </div>
+
+          <!-- Room Action Controls -->
+          <div class="room-lounge-actions">
+            <button type="button" class="btn-exit-subtle" id="btnLeaveRoom">
+              Forlat rom
+            </button>
+            <div class="action-btn-group">
+              <button type="button" class="btn-cyan-accent" id="btnToggleReady">
+                Jeg er klar!
+              </button>
+              <button type="button" class="primary-btn pulse-glow hidden" id="btnHostStartRace">
+                Start løpet! 🏁
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- VIEW 3: IN-GAME RACING ARENA (FULLSCREEN)      -->
+      <!-- ============================================== -->
+      <section class="view-panel hidden view-game-fullscreen" id="viewGame">
+        <div class="race-viewport-wrapper">
+          <!-- Top HUD -->
+          <div class="race-hud">
+            <div class="hud-left">
+              <div class="hud-position-badge" id="hudPositionBadge">
+                <span class="pos-num" id="hudPosNum">1</span>
+                <span class="pos-suffix" id="hudPosSuffix">. plass</span>
+              </div>
+              <div class="hud-lap-badge">
+                <span class="hud-label">RUNDE</span>
+                <strong class="hud-val" id="hudLapText">1/3</strong>
+              </div>
+            </div>
+
+            <div class="hud-center">
+              <!-- Drift / Boost Meter -->
+              <div class="drift-meter-wrap" id="driftMeterWrap">
+                <div class="drift-meter-bar" id="driftMeterBar"></div>
+                <span class="drift-meter-label" id="driftMeterLabel">DRIFT BOOST</span>
+              </div>
+            </div>
+
+            <div class="hud-right">
+              <div class="hud-time-block">
+                <div class="hud-time-row">
+                  <span class="hud-label">TID:</span>
+                  <span class="hud-val-time" id="hudCurrentTime">00:00.0</span>
+                </div>
+                <div class="hud-time-row">
+                  <span class="hud-label">BESTE:</span>
+                  <span class="hud-val-time best" id="hudBestLap">--:--.-</span>
+                </div>
+              </div>
+
+              <div class="hud-speedometer">
+                <span class="speed-num" id="hudSpeedNum">0</span>
+                <span class="speed-unit">km/t</span>
+              </div>
+
+              <button type="button" class="hud-quit-btn" id="btnQuitRace" title="Avslutt løpet">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Minimap HUD widget -->
+          <div class="race-minimap-card">
+            <canvas id="minimapCanvas" width="160" height="110" class="minimap-canvas"></canvas>
+          </div>
+
+          <!-- Main Racing 2D Canvas -->
+          <canvas id="raceCanvas" class="race-canvas" tabindex="0"></canvas>
+
+          <!-- Big Countdown Overlay: 3.. 2.. 1.. KJØR! -->
+          <div class="race-countdown-overlay hidden" id="countdownOverlay">
+            <div class="countdown-circle" id="countdownCircle">
+              <span class="countdown-text" id="countdownText">3</span>
+            </div>
+          </div>
+
+          <!-- Touch Controls for Mobile / Tablets -->
+          <div class="touch-controls-layer" id="touchControlsLayer">
+            <div class="touch-cluster-left">
+              <button type="button" class="touch-btn touch-btn-steer" id="btnTouchLeft" aria-label="Sving venstre">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+              </button>
+              <button type="button" class="touch-btn touch-btn-steer" id="btnTouchRight" aria-label="Sving høyre">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+              </button>
+            </div>
+            <div class="touch-cluster-right">
+              <button type="button" class="touch-btn touch-btn-brake" id="btnTouchBrake" aria-label="Brems / Revers">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+              </button>
+              <button type="button" class="touch-btn touch-btn-gas" id="btnTouchGas" aria-label="Gass">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ============================================== -->
+    <!-- MODAL: VICTORY PODIUM / GAME OVER              -->
+    <!-- ============================================== -->
+    <div class="modal-backdrop hidden" id="modalPodium">
+      <div class="podium-modal-card">
+        <div class="podium-header">
+          <span class="flag-icon">🏁</span>
+          <h2 class="podium-title" id="podiumTitle">Målgang!</h2>
+          <p class="podium-desc" id="podiumDesc">Løpet er fullført. Her er resultatlisten:</p>
+        </div>
+
+        <div class="podium-standings" id="podiumStandings">
+          <!-- Dynamically populated podium rows -->
+        </div>
+
+        <div class="podium-actions">
+          <button type="button" class="primary-btn pulse-glow" id="btnPodiumPlayAgain">
+            Kjør et nytt løp! 🔄
+          </button>
+          <button type="button" class="btn-exit-subtle" id="btnPodiumReturnLobby">
+            Tilbake til lobby
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/parallax-bg.js?v=2.1"></script>
+  <script src="app.js?v=2.0"></script>
+</body>
+
+</html>

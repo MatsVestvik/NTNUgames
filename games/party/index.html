@@ -424,6 +424,52 @@
               </button>
             </div>
           </div>
+
+          <!-- Game 8: Turbosladd (2-4 spillere) -->
+          <div class="lobby-game-card active-playable" id="gameCardTurbosladd" data-min-players="1">
+            <div class="lg-card-bg-icon">
+              <img src="/assets/icons/turbosladd.svg" alt="" aria-hidden="true" />
+            </div>
+            <div class="lg-card-left">
+              <div>
+                <div class="lg-card-title-row">
+                  <h4 class="lg-card-title">Turbosladd</h4>
+                  <span class="lg-card-badge badge-ready">Klar til spill! 🏎️</span>
+                </div>
+                <p class="lg-card-desc">
+                  Topp-ned 2D arkaderacing med ekte drifting! Hold gassen inne og sladd gjennom svingene mot vennene dine.
+                </p>
+                <div class="lg-card-meta">
+                  <span>2–4 spillere</span> • <span>Drifting &amp; Racing</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="lg-card-right">
+              <div class="lg-settings-inline">
+                <img src="/settings.png" class="party-gear-icon" alt="" />
+                <label>
+                  <span>Bane:</span>
+                  <select id="selectTrackTurbosladd" class="lg-select">
+                    <option value="grand_prix" selected>Grand Prix</option>
+                    <option value="fjord_drift">Fjordsvingen</option>
+                  </select>
+                </label>
+                <label style="margin-top:0.35rem;">
+                  <span>Runder:</span>
+                  <select id="selectLapsTurbosladd" class="lg-select">
+                    <option value="3" selected>3 runder</option>
+                    <option value="5">5 runder</option>
+                  </select>
+                </label>
+              </div>
+
+              <button type="button" class="party-btn start-game-btn" id="btnStartTurbosladd"
+                style="background: linear-gradient(135deg, #f97316, #ef4444);">
+                Start Turbosladd 🏁
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 

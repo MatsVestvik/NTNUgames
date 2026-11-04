@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="roadGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+    <linearGradient id="carGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ef4444" />
+      <stop offset="50%" stop-color="#f97316" />
+      <stop offset="100%" stop-color="#facc15" />
+    </linearGradient>
+    <linearGradient id="flameGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#06b6d4" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background rounded card -->
+  <rect x="4" y="4" width="56" height="56" rx="12" fill="url(#roadGrad)" stroke="#334155" stroke-width="2"/>
+
+  <!-- Curved Asphalt Road & Kerb -->
+  <path d="M 8 50 C 20 50, 44 48, 52 14" fill="none" stroke="#334155" stroke-width="26" stroke-linecap="round"/>
+  <path d="M 8 50 C 20 50, 44 48, 52 14" fill="none" stroke="#1e293b" stroke-width="22" stroke-linecap="round"/>
+
+  <!-- Road dashed centerline -->
+  <path d="M 8 50 C 20 50, 44 48, 52 14" fill="none" stroke="#f8fafc" stroke-width="2" stroke-dasharray="4 4" opacity="0.6"/>
+
+  <!-- Rubber Skid Marks (Drift curves) -->
+  <path d="M 12 55 C 24 55, 36 46, 42 32" fill="none" stroke="#020617" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+  <path d="M 16 57 C 27 57, 39 49, 45 35" fill="none" stroke="#020617" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+
+  <!-- Drifting Sports Car (Rotated ~-32deg) -->
+  <g transform="translate(36, 30) rotate(-32)">
+    <!-- Wheels -->
+    <rect x="-14" y="-9" width="6" height="4" rx="1.5" fill="#0f172a" stroke="#64748b" stroke-width="0.8"/>
+    <rect x="8" y="-9" width="6" height="4" rx="1.5" fill="#0f172a" stroke="#64748b" stroke-width="0.8"/>
+    <rect x="-14" y="5" width="6" height="4" rx="1.5" fill="#0f172a" stroke="#64748b" stroke-width="0.8"/>
+    <rect x="8" y="5" width="6" height="4" rx="1.5" fill="#0f172a" stroke="#64748b" stroke-width="0.8"/>
+
+    <!-- Exhaust Turbo Flame -->
+    <polygon points="-16,-2 -23,0 -16,2" fill="url(#flameGrad)" />
+
+    <!-- Car Body -->
+    <rect x="-13" y="-7" width="26" height="14" rx="4" fill="url(#carGrad)" stroke="#ffffff" stroke-width="1.2"/>
+
+    <!-- Windshield & Cockpit -->
+    <path d="M 0 -5 L 6 -5 L 8 -3 L 8 3 L 6 5 L 0 5 L -2 3 L -2 -3 Z" fill="#0f172a" opacity="0.85"/>
+    <path d="M 1 -4 L 5 -4 L 6.5 -2 L 6.5 2 L 5 4 L 1 4 Z" fill="#38bdf8" opacity="0.75"/>
+
+    <!-- Racing Stripe & Headlights -->
+    <rect x="9.5" y="-6.5" width="3" height="3" rx="1" fill="#fef08a"/>
+    <rect x="9.5" y="3.5" width="3" height="3" rx="1" fill="#fef08a"/>
+    <rect x="-12" y="-1.5" width="24" height="3" fill="#ffffff" opacity="0.4"/>
+
+    <!-- Rear Spoiler -->
+    <rect x="-14" y="-8" width="2.5" height="16" rx="1" fill="#0f172a"/>
+  </g>
+
+  <!-- Checkered Flag Accent at top right -->
+  <g transform="translate(48, 8) scale(0.65)">
+    <rect x="0" y="0" width="4" height="4" fill="#ffffff"/>
+    <rect x="4" y="0" width="4" height="4" fill="#000000"/>
+    <rect x="0" y="4" width="4" height="4" fill="#000000"/>
+    <rect x="4" y="4" width="4" height="4" fill="#ffffff"/>
+    <rect x="8" y="0" width="4" height="4" fill="#ffffff"/>
+    <rect x="8" y="4" width="4" height="4" fill="#000000"/>
+  </g>
+</svg>
+
