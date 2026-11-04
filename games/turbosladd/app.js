@@ -129,9 +129,108 @@
     { x: 750, y: 1550 },  // 17: Straightaway runway continuation (spacious 16-car grid)
   ];
 
+  // Deterministic PRNG for consistent rally scenery placement
+  function createSceneryRng(seed = 12345) {
+    let s = seed;
+    return function() {
+      s = (s * 1664525 + 1013904223) >>> 0;
+      return s / 4294967296;
+    };
+  }
+
+  function generateTrackScenery(track) {
+    const rng = createSceneryRng(track.id === "grand_prix" ? 4281 : 7719);
+    const pts = track.points;
+    const rw = track.roadWidth;
+    const halfRoad = rw * 0.5;
+    const trees = [];
+    const rocks = [];
+
+    // 1. Roadside trees & boulders along the track
+    for (let i = 0; i < pts.length; i += 7) {
+      const p1 = pts[i];
+      const p2 = pts[(i + 1) % pts.length];
+      const dx = p2.x - p1.x;
+      const dy = p2.y - p1.y;
+      const len = Math.hypot(dx, dy) || 1;
+      const nx = -dy / len;
+      const ny = dx / len;
+
+      for (const side of [-1, 1]) {
+        const roll = rng();
+        if (roll < 0.32) {
+          // OVERHANGING TREE (canopy partially covers the dirt road so cars drive under!)
+          const dist = halfRoad + (rng() * 8 - 4);
+          const size = 96 + Math.floor(rng() * 32); // 96px - 128px
+          trees.push({
+            x: Math.round(p1.x + nx * side * dist),
+            y: Math.round(p1.y + ny * side * dist),
+            tile: rng() > 0.5 ? 1 : 0,
+            size,
+            overhang: true,
+          });
+        } else if (roll < 0.62) {
+          // Roadside tree in the forest verge
+          const dist = halfRoad + 32 + rng() * 110;
+          const size = 80 + Math.floor(rng() * 40);
+          trees.push({
+            x: Math.round(p1.x + nx * side * dist),
+            y: Math.round(p1.y + ny * side * dist),
+            tile: rng() > 0.5 ? 1 : 0,
+            size,
+            overhang: false,
+          });
+        } else if (roll < 0.82) {
+          // Roadside boulder / rock
+          const dist = halfRoad + 12 + rng() * 36;
+          const size = 36 + Math.floor(rng() * 24);
+          rocks.push({
+            x: Math.round(p1.x + nx * side * dist),
+            y: Math.round(p1.y + ny * side * dist),
+            tile: rng() > 0.4 ? 1 : 0,
+            size,
+          });
+        }
+      }
+    }
+
+    // 2. Wilderness background groves (infield and outer boundaries)
+    for (let x = 80; x < 2920; x += 160) {
+      for (let y = 80; y < 1920; y += 160) {
+        const rx = x + (rng() - 0.5) * 80;
+        const ry = y + (rng() - 0.5) * 80;
+        let minDist = Infinity;
+        for (let i = 0; i < pts.length; i += 4) {
+          const d = Math.hypot(rx - pts[i].x, ry - pts[i].y);
+          if (d < minDist) minDist = d;
+        }
+        if (minDist > halfRoad + 42 && minDist < 680) {
+          if (rng() > 0.22) {
+            trees.push({
+              x: Math.round(rx),
+              y: Math.round(ry),
+              tile: rng() > 0.5 ? 1 : 0,
+              size: 72 + Math.floor(rng() * 44),
+              overhang: false,
+            });
+          } else {
+            rocks.push({
+              x: Math.round(rx),
+              y: Math.round(ry),
+              tile: rng() > 0.4 ? 1 : 0,
+              size: 32 + Math.floor(rng() * 24),
+            });
+          }
+        }
+      }
+    }
+
+    return { trees, rocks };
+  }
+
   function createTrack(id, name, rawPoints, roadWidth = 185) {
     const smoothPoints = generateSmoothTrack(rawPoints, 16);
-    return {
+    const track = {
       id,
       name,
       roadWidth,
@@ -140,11 +239,13 @@
       checkpoints: rawPoints,
       totalPoints: smoothPoints.length,
     };
+    track.scenery = generateTrackScenery(track);
+    return track;
   }
 
   const TRACKS = {
-    grand_prix: createTrack("grand_prix", "Grand Prix Banen", RAW_GP_POINTS, 185),
-    fjord_drift: createTrack("fjord_drift", "Fjordsvingen", RAW_FJORD_POINTS, 180),
+    grand_prix: createTrack("grand_prix", "Grand Prix Skogsrally", RAW_GP_POINTS, 185),
+    fjord_drift: createTrack("fjord_drift", "Fjordsvingen Rally", RAW_FJORD_POINTS, 180),
   };
 
   // Staggered starting grid slots on the spacious start straightaway (1–16 players)
@@ -426,15 +527,15 @@
       const now = state.audioCtx.currentTime;
       const osc = state.audioCtx.createOscillator();
       const gain = state.audioCtx.createGain();
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(320 + Math.random() * 120, now);
-      osc.frequency.exponentialRampToValueAtTime(180, now + 0.1);
-      gain.gain.setValueAtTime(0.045, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(220 + Math.random() * 80, now);
+      osc.frequency.exponentialRampToValueAtTime(110, now + 0.12);
+      gain.gain.setValueAtTime(0.055, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
       osc.connect(gain);
       gain.connect(state.audioCtx.destination);
       osc.start(now);
-      osc.stop(now + 0.1);
+      osc.stop(now + 0.12);
     } catch (e) {}
   }
 
@@ -591,6 +692,66 @@
     renderProfileCarPreview();
     renderLoungeCarPreview();
   };
+
+  // =========================================================================
+  // DIRT RALLY TILESET & SPRITE ASSETS (Trees & Rocks)
+  // =========================================================================
+
+  const tilemapImage = new Image();
+  tilemapImage.src = "/turbosladd/map_assets_tilemap.png";
+  let treeCanopyCanvas = null;
+  let treeShadowCanvas = null;
+
+  function initTilemapAssets() {
+    if (!tilemapImage.complete || tilemapImage.naturalWidth === 0) return;
+    try {
+      const w = tilemapImage.naturalWidth || 32;
+      const h = tilemapImage.naturalHeight || 32;
+
+      // 1. Canopy canvas: only foliage (alpha >= 200) for overhead drawing above cars
+      treeCanopyCanvas = document.createElement("canvas");
+      treeCanopyCanvas.width = 32;
+      treeCanopyCanvas.height = 16;
+      const cCtx = treeCanopyCanvas.getContext("2d");
+      cCtx.drawImage(tilemapImage, 0, 0);
+      const cData = cCtx.getImageData(0, 0, 32, 16);
+      for (let i = 0; i < cData.data.length; i += 4) {
+        if (cData.data[i + 3] < 200) {
+          cData.data[i + 3] = 0; // Strip ground shadows from the overhead canopy layer
+        }
+      }
+      cCtx.putImageData(cData, 0, 0);
+
+      // 2. Tree ground shadow canvas
+      treeShadowCanvas = document.createElement("canvas");
+      treeShadowCanvas.width = 32;
+      treeShadowCanvas.height = 16;
+      const sCtx = treeShadowCanvas.getContext("2d");
+      sCtx.drawImage(tilemapImage, 0, 0);
+      const sData = sCtx.getImageData(0, 0, 32, 16);
+      for (let i = 0; i < sData.data.length; i += 4) {
+        if (sData.data[i + 3] >= 200) {
+          sData.data[i + 3] = 0;
+        } else if (sData.data[i + 3] > 0) {
+          sData.data[i + 3] = Math.min(255, Math.round(sData.data[i + 3] * 1.6));
+        }
+      }
+      sCtx.putImageData(sData, 0, 0);
+
+      // Invalidate offscreen track canvas so scenery re-renders
+      cachedTrackId = null;
+      cachedTrackCanvas = null;
+    } catch (e) {
+      console.warn("Tilemap asset init warning:", e);
+    }
+  }
+
+  tilemapImage.onload = () => {
+    initTilemapAssets();
+  };
+  if (tilemapImage.complete) {
+    initTilemapAssets();
+  }
 
   function drawCarOnCanvas(ctx, cx, cy, angle, color, scale = 1.0, steerInput = 0, isBraking = false) {
     ctx.save();
@@ -1165,7 +1326,7 @@
   }
 
   // =========================================================================
-  // PARTICLES & SKIDMARKS
+  // PARTICLES & SKIDMARKS (Pixel-Art Dirt Rally Style)
   // =========================================================================
 
   function addSkidmark(car) {
@@ -1174,41 +1335,68 @@
     const backX = -Math.cos(car.angle) * 16;
     const backY = -Math.sin(car.angle) * 16;
 
-    state.skidmarks.push({ x: car.x + backX - rightX * 11, y: car.y + backY - rightY * 11, alpha: 0.65, isIce: true });
-    state.skidmarks.push({ x: car.x + backX + rightX * 11, y: car.y + backY + rightY * 11, alpha: 0.65, isIce: true });
+    // Packed dirt tire ruts
+    state.skidmarks.push({ x: car.x + backX - rightX * 11, y: car.y + backY - rightY * 11, alpha: 0.72 });
+    state.skidmarks.push({ x: car.x + backX + rightX * 11, y: car.y + backY + rightY * 11, alpha: 0.72 });
 
-    if (state.skidmarks.length > 600) {
-      state.skidmarks.splice(0, 50);
+    if (state.skidmarks.length > 700) {
+      state.skidmarks.splice(0, 60);
     }
   }
 
-  function addIceSprayParticle(car) {
+  function addRallyDustParticle(car) {
     const rightX = -Math.sin(car.angle);
     const rightY = Math.cos(car.angle);
     const backX = -Math.cos(car.angle) * 16;
     const backY = -Math.sin(car.angle) * 16;
 
-    // Both left and right rear tires throw up ice crystals & snow spray
+    // Both left and right rear tires throw up chunky dirt dust clouds & flying gravel
     [-10, 10].forEach(sideOffset => {
       const startX = car.x + backX + rightX * sideOffset;
       const startY = car.y + backY + rightY * sideOffset;
-      const sprayAngle = Math.atan2(car.vy || 1, car.vx || 1) + Math.PI + (Math.random() - 0.5) * 0.8;
-      const spraySpeed = (car.speed * 0.25) + 20 + Math.random() * 45;
+      const sprayAngle = Math.atan2(car.vy || 1, car.vx || 1) + Math.PI + (Math.random() - 0.5) * 0.85;
+      const spraySpeed = (car.speed * 0.28) + 24 + Math.random() * 50;
+
+      // Earthy rally dust tones: tan, light ochre, dirt clay, and coarse gravel
+      const dustColors = [
+        "rgba(214, 168, 120,",
+        "rgba(186, 138, 92,",
+        "rgba(142, 94, 48,",
+        "rgba(92, 58, 30,"
+      ];
+      const col = dustColors[Math.floor(Math.random() * dustColors.length)];
 
       state.particles.push({
-        x: startX + (Math.random() - 0.5) * 4,
-        y: startY + (Math.random() - 0.5) * 4,
+        x: startX + (Math.random() - 0.5) * 5,
+        y: startY + (Math.random() - 0.5) * 5,
         vx: Math.cos(sprayAngle) * spraySpeed + (Math.random() - 0.5) * 15,
         vy: Math.sin(sprayAngle) * spraySpeed + (Math.random() - 0.5) * 15,
-        size: 3.5 + Math.random() * 5.5,
-        alpha: 0.85,
-        decay: 1.3,
-        color: Math.random() > 0.35 ? "rgba(240, 249, 255," : "rgba(186, 230, 253,",
+        size: 3 + Math.random() * 5,
+        alpha: 0.88,
+        decay: 1.4,
+        color: col,
       });
+
+      // Occasional flying gravel pebble
+      if (Math.random() < 0.35) {
+        const pAngle = sprayAngle + (Math.random() - 0.5) * 0.6;
+        const pSpeed = spraySpeed * 1.35;
+        state.particles.push({
+          x: startX,
+          y: startY,
+          vx: Math.cos(pAngle) * pSpeed,
+          vy: Math.sin(pAngle) * pSpeed,
+          size: 2,
+          alpha: 1.0,
+          decay: 2.2,
+          color: "rgba(50, 32, 18,",
+        });
+      }
     });
   }
 
-  const addSmokeParticle = addIceSprayParticle;
+  const addIceSprayParticle = addRallyDustParticle;
+  const addSmokeParticle = addRallyDustParticle;
 
   function addBoostParticle(car) {
     const backX = -Math.cos(car.angle) * 23;
@@ -1223,10 +1411,10 @@
         y: car.y + backY + rightY * exhaustOffset + (Math.random() - 0.5) * 4,
         vx: -Math.cos(car.angle) * (180 + Math.random() * 80) + (Math.random() - 0.5) * 25,
         vy: -Math.sin(car.angle) * (180 + Math.random() * 80) + (Math.random() - 0.5) * 25,
-        size: 5.5 + Math.random() * 6.5,
+        size: 4.5 + Math.random() * 5.5,
         alpha: 0.95,
         decay: 2.1,
-        color: Math.random() > 0.35 ? "rgba(56, 189, 248," : "rgba(251, 191, 36,",
+        color: Math.random() > 0.35 ? "rgba(249, 115, 22," : "rgba(251, 191, 36,",
       });
     });
   }
@@ -1277,11 +1465,30 @@
     canvas.height = 2000;
     const ctx = canvas.getContext("2d");
 
-    // 1. Normal clean dark blue background (standard NTNU games theme)
-    ctx.fillStyle = "#090d16";
+    // 1. Deep forest green base ground (dirt rally wilderness)
+    ctx.fillStyle = "#193218";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // 2. Heavy 3D Crash Barrier Walls (Solid Outer & Inner Bounds)
+    // 2. Procedural pixel-art terrain tufts & forest loam
+    const bgRng = createSceneryRng(track.id === "grand_prix" ? 1042 : 8821);
+    for (let i = 0; i < 2800; i++) {
+      const px = Math.floor(bgRng() * canvas.width);
+      const py = Math.floor(bgRng() * canvas.height);
+      const roll = bgRng();
+      if (roll < 0.35) {
+        ctx.fillStyle = "#132712"; // Deep moss
+      } else if (roll < 0.65) {
+        ctx.fillStyle = "#224320"; // Pine needle grass
+      } else if (roll < 0.85) {
+        ctx.fillStyle = "#2a5427"; // Bright fern tuft
+      } else {
+        ctx.fillStyle = "#24180f"; // Forest dirt patch
+      }
+      const sz = Math.floor(bgRng() * 3) * 2 + 2; // 2, 4, or 6 px
+      ctx.fillRect(px, py, sz, sz);
+    }
+
+    // 3. Dirt road path construction
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.beginPath();
@@ -1289,107 +1496,108 @@
     for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
     ctx.closePath();
 
-    // Wall Drop Shadow
-    ctx.lineWidth = rw + 66;
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.7)";
+    // 4. Timber Barrier Outer Drop Shadow
+    ctx.lineWidth = rw + 48;
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.42)";
     ctx.stroke();
 
-    // Wall Heavy Concrete Footing
-    ctx.lineWidth = rw + 58;
-    ctx.strokeStyle = "#0f172a";
+    // 5. Earth Embankment & Runoff Berm
+    ctx.lineWidth = rw + 40;
+    ctx.strokeStyle = "#382415";
     ctx.stroke();
 
-    // Steel Barrier Structure
-    ctx.lineWidth = rw + 50;
-    ctx.strokeStyle = "#334155";
+    // 6. Rustic Timber Log Barrier Fence (Solid wall boundary at rw + 32)
+    ctx.lineWidth = rw + 34;
+    ctx.strokeStyle = "#27170c"; // Dark timber rail base
     ctx.stroke();
 
-    // High-visibility Racing Chevron Blocks (Red & White alternating barriers)
-    ctx.lineWidth = rw + 44;
+    ctx.lineWidth = rw + 28;
+    ctx.strokeStyle = "#5a361c"; // Wood plank rail
+    ctx.stroke();
+
+    // Timber upright posts (dashed log tops)
+    ctx.lineWidth = rw + 28;
+    ctx.setLineDash([8, 22]);
+    ctx.strokeStyle = "#824e27";
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Rally Hazard Chevron Strips (Alternating red & white rally barrier tape)
+    ctx.lineWidth = rw + 22;
+    ctx.strokeStyle = "#b91c1c";
+    ctx.stroke();
+
+    ctx.lineWidth = rw + 22;
+    ctx.setLineDash([20, 20]);
+    ctx.strokeStyle = "#fef3c7";
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 7. Gravel Shoulder / Road Verge
+    ctx.lineWidth = rw + 14;
+    ctx.strokeStyle = "#54371f";
+    ctx.stroke();
+
+    // 8. Apex Timber Rumble Curbs
+    ctx.lineWidth = rw + 8;
     ctx.strokeStyle = "#dc2626";
     ctx.stroke();
 
-    ctx.lineWidth = rw + 44;
-    ctx.setLineDash([24, 24]);
-    ctx.strokeStyle = "#f8fafc";
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Wall Top Metallic Safety Cap (Bright bevel giving distinct 3D wall height)
-    ctx.lineWidth = rw + 38;
-    ctx.strokeStyle = "#94a3b8";
-    ctx.stroke();
-
-    ctx.lineWidth = rw + 34;
-    ctx.strokeStyle = "#ffffff";
-    ctx.stroke();
-
-    // Inner Wall Depth Shadow
-    ctx.lineWidth = rw + 30;
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.5)";
-    ctx.stroke();
-
-    // 4. Red & White Apex Rumble Strips (Curbs)
-    ctx.lineWidth = rw + 20;
-    ctx.strokeStyle = "#ef4444";
-    ctx.stroke();
-
-    ctx.lineWidth = rw + 20;
+    ctx.lineWidth = rw + 8;
     ctx.setLineDash([16, 16]);
-    ctx.strokeStyle = "#ffffff";
+    ctx.strokeStyle = "#fef08a";
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // 5. Dark Asphalt Surface
+    // 9. Packed Rally Dirt Bed
     ctx.lineWidth = rw;
-    ctx.strokeStyle = "#171d26";
+    ctx.strokeStyle = "#7c4e28";
     ctx.stroke();
 
-    // 6. Rubbered Racing Line (Subtle darker grip groove where cars drive)
-    ctx.lineWidth = rw * 0.42;
-    ctx.strokeStyle = "#0f141c";
+    // 10. Surface Loam / Fine Dirt
+    ctx.lineWidth = rw - 10;
+    ctx.strokeStyle = "#8c5b2e";
     ctx.stroke();
 
-    // 7. Crisp White Outer Edge Lines
-    ctx.lineWidth = rw - 6;
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+    // 11. Carved Twin Tire Ruts (Compacted darker wheel channels)
+    ctx.lineWidth = rw * 0.60;
+    ctx.strokeStyle = "#56341a";
     ctx.stroke();
 
-    // Re-fill inner road between edge lines
-    ctx.lineWidth = rw - 14;
-    ctx.strokeStyle = "#171d26";
+    ctx.lineWidth = rw * 0.48;
+    ctx.strokeStyle = "#492b15";
     ctx.stroke();
 
-    // Re-touch racing groove
-    ctx.lineWidth = rw * 0.38;
-    ctx.strokeStyle = "#0f141c";
+    // 12. Center Gravel Ridge (Looser lighter dirt & gravel between wheel ruts)
+    ctx.lineWidth = rw * 0.22;
+    ctx.strokeStyle = "#9c6838";
     ctx.stroke();
 
-    // 8. Yellow Dashed Centerline
-    ctx.lineWidth = 4;
-    ctx.setLineDash([24, 24]);
-    ctx.strokeStyle = "#facc15";
+    // Subtle textured rut dashes
+    ctx.lineWidth = 3;
+    ctx.setLineDash([14, 26]);
+    ctx.strokeStyle = "#3e2410";
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // 9. Starting Grid Boxes (Slots 1..16 painted on track)
+    // 13. Starting Grid Boxes (Slots 1..16 carved on dirt with whitewash)
     const slots = getStartGridSlots(track, 16);
     slots.forEach((s, idx) => {
       ctx.save();
       ctx.translate(s.x, s.y);
       ctx.rotate(s.angle);
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
+      ctx.strokeStyle = "rgba(254, 243, 199, 0.75)";
       ctx.lineWidth = 2.5;
       ctx.strokeRect(-26, -18, 52, 36);
-      ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
-      ctx.font = "900 13px sans-serif";
+      ctx.fillStyle = "rgba(254, 243, 199, 0.85)";
+      ctx.font = "900 13px monospace";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText(String(idx + 1), -18, 0);
       ctx.restore();
     });
 
-    // 10. Checkered Start / Finish Line
+    // 14. Checkered Start / Finish Line
     const p0 = track.rawPoints[0];
     const p1 = track.rawPoints[1];
     const angle = Math.atan2(p1.y - p0.y, p1.x - p0.x);
@@ -1405,20 +1613,52 @@
 
     for (let c = 0; c < cols; c++) {
       for (let r = 0; r < rows; r++) {
-        ctx.fillStyle = (c + r) % 2 === 0 ? "#ffffff" : "#090d16";
+        ctx.fillStyle = (c + r) % 2 === 0 ? "#fef3c7" : "#26150b";
         ctx.fillRect(-28 + c * boxSize, -halfW + r * boxSize, boxSize, boxSize);
       }
     }
 
-    // Overhead gantry shadow & pillars
-    ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+    // Rustic Timber Start/Finish Gantry Overhead Shadow & Pillars
+    ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
     ctx.fillRect(-22, -halfW - 24, 44, rw + 48);
 
-    ctx.fillStyle = "#334155";
+    // Sturdy wooden side posts
+    ctx.fillStyle = "#3c2312";
     ctx.fillRect(-20, -halfW - 22, 40, 18);
     ctx.fillRect(-20, halfW + 4, 40, 18);
 
+    ctx.fillStyle = "#5c381c";
+    ctx.fillRect(-18, -halfW - 20, 36, 14);
+    ctx.fillRect(-18, halfW + 6, 36, 14);
+
     ctx.restore();
+
+    // 15. Scenery: Ground Rocks & Boulders (Tilemap tiles 0,16,16,16 and 16,16,16,16)
+    if (tilemapImage.complete && track.scenery && track.scenery.rocks) {
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+      for (let i = 0; i < track.scenery.rocks.length; i++) {
+        const r = track.scenery.rocks[i];
+        const sx = r.tile === 1 ? 16 : 0;
+        const halfSize = r.size * 0.5;
+        ctx.drawImage(tilemapImage, sx, 16, 16, 16, Math.round(r.x - halfSize), Math.round(r.y - halfSize), r.size, r.size);
+      }
+      ctx.restore();
+    }
+
+    // 16. Scenery: Tree Ground Shadows (Cast on ground before overhead foliage)
+    if (treeShadowCanvas && track.scenery && track.scenery.trees) {
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+      ctx.globalAlpha = 0.55;
+      for (let i = 0; i < track.scenery.trees.length; i++) {
+        const t = track.scenery.trees[i];
+        const sx = t.tile === 1 ? 16 : 0;
+        const halfSize = t.size * 0.5;
+        ctx.drawImage(treeShadowCanvas, sx, 0, 16, 16, Math.round(t.x - halfSize), Math.round(t.y - halfSize), t.size, t.size);
+      }
+      ctx.restore();
+    }
 
     return canvas;
   }
@@ -1447,23 +1687,38 @@
     if (!state.skidmarks.length) return;
     for (let i = 0; i < state.skidmarks.length; i++) {
       const sm = state.skidmarks[i];
-      ctx.fillStyle = sm.isIce ? "rgba(224, 242, 254, 0.45)" : "rgba(15, 23, 42, 0.55)";
-      ctx.globalAlpha = (sm.alpha || 0.6) * 0.65;
-      ctx.beginPath();
-      ctx.arc(sm.x, sm.y, 3.2, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fillStyle = "rgba(42, 24, 10, " + ((sm.alpha || 0.6) * 0.75) + ")";
+      // Chunky pixel rut block
+      ctx.fillRect(Math.round(sm.x - 3), Math.round(sm.y - 3), 6, 6);
     }
-    ctx.globalAlpha = 1.0;
   }
 
   function drawParticles(ctx) {
     for (let i = 0; i < state.particles.length; i++) {
       const p = state.particles[i];
       ctx.fillStyle = p.color + p.alpha + ")";
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      ctx.fill();
+      const s = Math.max(2, Math.round(p.size * 2));
+      // Crisp pixel-art square dust & pebbles
+      ctx.fillRect(Math.round(p.x - s * 0.5), Math.round(p.y - s * 0.5), s, s);
     }
+  }
+
+  function drawTreeCanopies(ctx, track) {
+    if (!track || !track.scenery || !track.scenery.trees) return;
+    const img = treeCanopyCanvas || (tilemapImage.complete ? tilemapImage : null);
+    if (!img) return;
+
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    const trees = track.scenery.trees;
+    for (let i = 0; i < trees.length; i++) {
+      const t = trees[i];
+      const sx = t.tile === 1 ? 16 : 0;
+      const halfSize = t.size * 0.5;
+      // Foliage canopy drawn overhead so cars drive UNDER overhanging branches!
+      ctx.drawImage(img, sx, 0, 16, 16, Math.round(t.x - halfSize), Math.round(t.y - halfSize), t.size, t.size);
+    }
+    ctx.restore();
   }
 
   function drawPlayerCar(ctx, car, color, name, isLocal = false) {
@@ -1509,12 +1764,12 @@
       ctx.lineTo(offsetX + pts[i].x * scale, offsetY + pts[i].y * scale);
     }
     ctx.closePath();
-    ctx.lineWidth = 8;
-    ctx.strokeStyle = "#334155";
+    ctx.lineWidth = 9;
+    ctx.strokeStyle = "#382415"; // Timber embankment boundary
     ctx.stroke();
 
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = "#64748b";
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = "#8c5b2e"; // Packed dirt track line
     ctx.stroke();
 
     allCars.forEach(c => {
@@ -1567,10 +1822,10 @@
         el.driftMeterLabel.textContent = "⚡ BOOST KLAR! (RETT OPP)";
         el.driftMeterWrap.style.boxShadow = "0 0 14px rgba(251, 191, 36, 0.9)";
       } else if (state.myCar.isDrifting) {
-        el.driftMeterLabel.textContent = `❄️ ISSLADD! ${pct}%`;
+        el.driftMeterLabel.textContent = `🏎️ RALLY SLADD! ${pct}%`;
         el.driftMeterWrap.style.boxShadow = "0 0 12px rgba(56, 189, 248, 0.8)";
       } else {
-        el.driftMeterLabel.textContent = "IS-SLADD BOOST";
+        el.driftMeterLabel.textContent = "RALLY SLADD BOOST";
         el.driftMeterWrap.style.boxShadow = "none";
       }
     }
@@ -1683,7 +1938,7 @@
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 9px sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText(car.turboTimer > 0 ? "TURBO BOOST!" : (car.isDrifting ? "ISSLADD" : "DRIFT BOOST"), barX + barW / 2, barY + 9);
+    ctx.fillText(car.turboTimer > 0 ? "TURBO BOOST!" : (car.isDrifting ? "RALLY SLADD" : "DRIFT BOOST"), barX + barW / 2, barY + 9);
 
     // Splitscreen Winner / Finish Banner Overlay
     if (car.finished) {
@@ -1775,7 +2030,7 @@
           ctx.beginPath();
           ctx.rect(0, 0, halfW, h);
           ctx.clip();
-          ctx.fillStyle = "#090d16";
+          ctx.fillStyle = "#193218";
           ctx.fillRect(0, 0, halfW, h);
 
           ctx.save();
@@ -1789,6 +2044,7 @@
 
           drawPlayerCar(ctx, state.car2, state.splitP2.color, state.splitP2.name, false);
           drawPlayerCar(ctx, state.car1, state.splitP1.color, state.splitP1.name, true);
+          drawTreeCanopies(ctx, track); // Bilene kjører under tretoppene!
           ctx.restore();
 
           drawSplitscreenHUD(ctx, 0, 0, halfW, h, state.car1, state.splitP1.name, state.splitP1.color, 1, state.laps);
@@ -1799,7 +2055,7 @@
           ctx.beginPath();
           ctx.rect(halfW, 0, w - halfW, h);
           ctx.clip();
-          ctx.fillStyle = "#090d16";
+          ctx.fillStyle = "#193218";
           ctx.fillRect(halfW, 0, w - halfW, h);
 
           ctx.save();
@@ -1813,6 +2069,7 @@
 
           drawPlayerCar(ctx, state.car1, state.splitP1.color, state.splitP1.name, false);
           drawPlayerCar(ctx, state.car2, state.splitP2.color, state.splitP2.name, true);
+          drawTreeCanopies(ctx, track); // Bilene kjører under tretoppene!
           ctx.restore();
 
           drawSplitscreenHUD(ctx, halfW, 0, w - halfW, h, state.car2, state.splitP2.name, state.splitP2.color, 2, state.laps);
@@ -1902,7 +2159,7 @@
         const canvas = el.raceCanvas;
         if (canvas && canvas.width > 0 && canvas.height > 0) {
           const ctx = canvas.getContext("2d");
-          ctx.fillStyle = "#090d16";
+          ctx.fillStyle = "#193218";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
 
           // Smooth camera follow with look-ahead
@@ -1929,6 +2186,9 @@
 
           drawPlayerCar(ctx, state.myCar, state.driverColor, state.driverName, true);
           allMinimapCars.push({ x: state.myCar.x, y: state.myCar.y, color: state.driverColor, isMe: true });
+
+          // Bilene kjører under tretoppene!
+          drawTreeCanopies(ctx, track);
 
           ctx.restore();
 
@@ -2357,8 +2617,8 @@
 
   function updateLoungeSettingsUI() {
     const trackNames = {
-      grand_prix: "Grand Prix Banen",
-      fjord_drift: "Fjordsvingen",
+      grand_prix: "Grand Prix Skogsrally",
+      fjord_drift: "Fjordsvingen Rally",
     };
     if (el.loungeTrackName) {
       el.loungeTrackName.textContent = trackNames[state.trackId] || state.trackId;

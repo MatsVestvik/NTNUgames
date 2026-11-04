@@ -44,8 +44,8 @@ PLAYER_PALETTE = [
 TRACK_CONFIGS = {
     "grand_prix": {
         "id": "grand_prix",
-        "name": "Grand Prix Banen",
-        "desc": "Klassisk asfaltsløyfe med krappe svinger og langstrekke.",
+        "name": "Grand Prix Skogsrally",
+        "desc": "Rask grusetappe gjennom barskog, med lange sladder og tretopper som henger over banen.",
         "difficulty": "Middels",
         "lapsDefault": 3,
         "width": 1800,
@@ -53,8 +53,8 @@ TRACK_CONFIGS = {
     },
     "fjord_drift": {
         "id": "fjord_drift",
-        "name": "Fjordsvingen",
-        "desc": "Teknisk og smal driftbane med kontinuerlige hårnåler.",
+        "name": "Fjordsvingen Rally",
+        "desc": "Teknisk grusrally med krappe hårnåler, store kampesteiner og overhengende trær.",
         "difficulty": "Ekspert",
         "lapsDefault": 3,
         "width": 1800,
