@@ -105,6 +105,10 @@
     podiumContainer: document.getElementById("podiumContainer"),
     btnPlayAgain: document.getElementById("btnPlayAgain"),
     btnReturnLobby: document.getElementById("btnReturnLobby"),
+
+    fkModeBar: document.getElementById("fkModeBar"),
+    tabPassAndPlay: document.getElementById("tabPassAndPlay"),
+    tabSolo: document.getElementById("tabSolo"),
   };
 
   // =========================================================================
@@ -160,7 +164,7 @@
   }
 
   function updateSoundBtn() {
-    el.btnSoundToggle.textContent = state.soundEnabled ? "🔊" : "🔇";
+    el.btnSoundToggle.textContent = state.soundEnabled ? "Lyd på" : "Lyd av";
     localStorage.setItem("tegn_sound", String(state.soundEnabled));
   }
 
@@ -267,7 +271,11 @@
     playTone(659.25, 0.12, "triangle", 0.16);
 
     if (state.isSolo) {
-      handleSoloPlaceMarker(r, c);
+      if (state.localSubMode === "pass_and_play") {
+        handlePassAndPlayPlaceMarker(r, c);
+      } else {
+        handleSoloPlaceMarker(r, c);
+      }
       return;
     }
 
@@ -322,10 +330,6 @@
             const cell = cellElements[nr][nc];
             if (dist === 0) {
               cell.classList.add("target-bullseye");
-              const star = document.createElement("span");
-              star.className = "fk-bullseye-star";
-              star.textContent = "★";
-              cell.appendChild(star);
             } else if (dist === 1) {
               cell.classList.add("frame-3x3");
             } else if (dist === 2 && (state.turnState === "turn_recap" || state.turnState === "game_over")) {
@@ -405,6 +409,11 @@
       alert("Første hint kan bare være ETT ord!");
       return;
     }
+    el.inputClue1.value = "";
+    if (state.isSolo && state.localSubMode === "pass_and_play") {
+      handlePassAndPlaySubmitClue1(clue);
+      return;
+    }
     try {
       const body = {
         roomCode: state.roomCode,
@@ -439,6 +448,11 @@
       alert("Andre hint kan være maks TO ord!");
       return;
     }
+    el.inputClue2.value = "";
+    if (state.isSolo && state.localSubMode === "pass_and_play") {
+      handlePassAndPlaySubmitClue2(clue);
+      return;
+    }
     try {
       const resp = await fetch("/api/fargekoden/action", {
         method: "POST",
@@ -455,12 +469,15 @@
         alert(data.error);
         return;
       }
-      el.inputClue2.value = "";
       pollRoomState();
     } catch (err) {}
   });
 
   el.btnSkipClue2.addEventListener("click", async () => {
+    if (state.isSolo && state.localSubMode === "pass_and_play") {
+      handlePassAndPlaySkipClue2();
+      return;
+    }
     try {
       await fetch("/api/fargekoden/action", {
         method: "POST",
@@ -579,45 +596,45 @@
         el.giverStep1.classList.remove("hidden");
         el.giverStep2.classList.add("hidden");
         renderCandidateButtons();
-        el.statusText.textContent = "🎨 DIN TUR SOM HINTGIVER! Velg en målfarge (markert med ★ på brettet) og skriv ett ord som hint.";
+        el.statusText.textContent = "DIN TUR SOM HINTGIVER: Velg en målfarge og skriv ett ord som hint.";
       } else {
         el.giverDock.classList.add("hidden");
-        el.statusText.textContent = `⏳ ${state.activeGiverName} velger en hemmelig farge og skriver sitt første hint (1 ord)…`;
+        el.statusText.textContent = `${state.activeGiverName} velger en hemmelig farge og skriver sitt første hint (1 ord)…`;
       }
     } else if (state.turnState === "guessing_1") {
       el.giverDock.classList.add("hidden");
       if (state.isGiver && state.players.length > 1) {
-        el.statusText.textContent = `👀 Spillerne plasserer sin 1. brikke basert på «${state.clue1.toUpperCase()}»…`;
+        el.statusText.textContent = `Spillerne plasserer sin 1. brikke basert på «${state.clue1.toUpperCase()}»…`;
       } else if (state.hasPlacedThisStep) {
-        el.statusText.textContent = "✅ 1. brikke er plassert! Venter på de andre spillerne…";
+        el.statusText.textContent = "1. brikke er plassert! Venter på de andre spillerne…";
       } else {
-        el.statusText.textContent = `📍 Klikk på fargebrettet for å plassere din 1. brikke for hintet «${state.clue1.toUpperCase()}»!`;
+        el.statusText.textContent = `Klikk på fargebrettet for å plassere din 1. brikke for hintet «${state.clue1.toUpperCase()}»!`;
       }
     } else if (state.turnState === "giving_clue_2") {
       if (state.isGiver) {
         el.giverDock.classList.remove("hidden");
         el.giverStep1.classList.add("hidden");
         el.giverStep2.classList.remove("hidden");
-        el.statusText.textContent = "🗣️ Gi et 2. hint (maks 2 ord) for å lede spillerne nærmere blinken – eller vis fasit nå!";
+        el.statusText.textContent = "Gi et 2. hint (maks 2 ord) for å lede spillerne nærmere blinken – eller vis fasit nå!";
       } else {
         el.giverDock.classList.add("hidden");
-        el.statusText.textContent = `⏳ ${state.activeGiverName} vurderer brikkene og skriver et 2. hint (opptil 2 ord)…`;
+        el.statusText.textContent = `${state.activeGiverName} vurderer brikkene og skriver et 2. hint (opptil 2 ord)…`;
       }
     } else if (state.turnState === "guessing_2") {
       el.giverDock.classList.add("hidden");
       if (state.isGiver && state.players.length > 1) {
-        el.statusText.textContent = `👀 Spillerne plasserer sin 2. brikke basert på «${state.clue2.toUpperCase()}»…`;
+        el.statusText.textContent = `Spillerne plasserer sin 2. brikke basert på «${state.clue2.toUpperCase()}»…`;
       } else if (state.hasPlacedThisStep) {
-        el.statusText.textContent = "✅ 2. brikke er plassert! Venter på avsløring av 3×3-rammen…";
+        el.statusText.textContent = "2. brikke er plassert! Venter på avsløring av 3×3-rammen…";
       } else {
-        el.statusText.textContent = `📍 Klikk på fargebrettet for å plassere din 2. brikke (${state.clue1.toUpperCase()} → ${state.clue2.toUpperCase()})!`;
+        el.statusText.textContent = `Klikk på fargebrettet for å plassere din 2. brikke (${state.clue1.toUpperCase()} → ${state.clue2.toUpperCase()})!`;
       }
     } else if (state.turnState === "turn_recap") {
       el.giverDock.classList.add("hidden");
       const [tr, tc] = state.targetPos || [0, 0];
       const coord = getCoordLabel(tr, tc);
       const bonus = gs.last_turn_summary ? gs.last_turn_summary.giverBonus : 0;
-      el.statusText.textContent = `🎯 Blinken var ${coord}! 3×3-rammen er vist på brettet (${state.activeGiverName} fikk +${bonus}p som hintgiver).`;
+      el.statusText.textContent = `Blinken var ${coord}! 3×3-rammen er vist på brettet (${state.activeGiverName} fikk +${bonus}p som hintgiver).`;
     } else if (state.turnState === "game_over") {
       el.giverDock.classList.add("hidden");
       showGameOverModal(gs.podium || []);
@@ -647,7 +664,7 @@
           </div>
           <div class="fk-player-score">${p.score || 0} poeng</div>
         </div>
-        <span class="fk-player-tag">${isGiver ? "🎨 Hint" : ""}</span>
+        <span class="fk-player-tag">${isGiver ? "Hintgiver" : ""}</span>
       `;
       el.playersList.appendChild(row);
     });
@@ -656,12 +673,12 @@
   function showGameOverModal(podium) {
     el.modalGameOver.classList.remove("hidden");
     el.podiumContainer.innerHTML = "";
-    const medals = ["🥇", "🥈", "🥉"];
+    const ranks = ["1.", "2.", "3."];
     podium.forEach((p, i) => {
       const item = document.createElement("div");
       item.className = "fk-podium-item";
       item.innerHTML = `
-        <span>${medals[i] || ""} ${escapeHtml(p.name)}</span>
+        <span>${ranks[i] || `${i + 1}.`} ${escapeHtml(p.name)}</span>
         <span style="color:#fbbf24;">${p.score} poeng</span>
       `;
       el.podiumContainer.appendChild(item);
@@ -690,18 +707,179 @@
   }
 
   // =========================================================================
-  // Standalone Solo Mode
+  // Standalone Pass & Play (2 spillere på 1 enhet) & Solo Mode
   // =========================================================================
+  function initPassAndPlayMode() {
+    state.localSubMode = "pass_and_play";
+    if (el.tabPassAndPlay) el.tabPassAndPlay.classList.add("active");
+    if (el.tabSolo) el.tabSolo.classList.remove("active");
+    el.backBtnText.textContent = "Hub";
+    el.timerBubble.classList.add("hidden");
+
+    state.players = [
+      { id: "p1", name: "Spiller 1", color: "#38bdf8", avatar: "charbear", score: 0 },
+      { id: "p2", name: "Spiller 2", color: "#f43f5e", avatar: "pixiu", score: 0 },
+    ];
+    state.currentRound = 1;
+    state.totalRounds = 4;
+    startPassAndPlayRound();
+  }
+
+  function startPassAndPlayRound() {
+    const giverIdx = (state.currentRound - 1) % 2;
+    state.activeGiverId = state.players[giverIdx].id;
+    state.activeGiverName = state.players[giverIdx].name;
+    state.isGiver = true;
+
+    // Pick 4 random candidate colors
+    const colBuckets = [
+      Math.floor(2 + Math.random() * 6),
+      Math.floor(8 + Math.random() * 7),
+      Math.floor(15 + Math.random() * 7),
+      Math.floor(22 + Math.random() * 6),
+    ];
+    state.candidates = colBuckets.map(c => [Math.floor(2 + Math.random() * 12), c]);
+    state.targetPos = state.candidates[0];
+
+    state.clue1 = "";
+    state.clue2 = "";
+    state.markers = [];
+    state.turnState = "giving_clue_1";
+
+    el.btnSoloNext.classList.add("hidden");
+    el.roundIndicator.textContent = `Runde ${state.currentRound} / ${state.totalRounds}`;
+    el.clue1Chip.classList.remove("muted");
+    el.clue1Text.textContent = "Venter på hint…";
+    el.clue2Chip.classList.add("muted");
+    el.clue2Text.textContent = "—";
+    el.statusText.textContent = `${state.activeGiverName}: Velg en målfarge under og tast inn 1 ord som hint!`;
+
+    el.giverDock.classList.remove("hidden");
+    el.giverStep1.classList.remove("hidden");
+    el.giverStep2.classList.add("hidden");
+    renderCandidateButtons();
+
+    renderSidebarPlayers();
+    renderBoardHighlightsAndMarkers();
+  }
+
+  function handlePassAndPlaySubmitClue1(clue) {
+    state.clue1 = clue;
+    state.turnState = "guessing_1";
+    state.isGiver = false;
+    el.giverDock.classList.add("hidden");
+    el.clue1Text.textContent = `«${clue.toUpperCase()}»`;
+
+    const giverIdx = (state.currentRound - 1) % 2;
+    const guesserIdx = 1 - giverIdx;
+    const guesserName = state.players[guesserIdx].name;
+
+    el.statusText.textContent = `Send enheten til ${guesserName}! Klikk på fargebrettet for å plassere 1. brikke for «${clue.toUpperCase()}».`;
+    renderBoardHighlightsAndMarkers();
+  }
+
+  function handlePassAndPlaySubmitClue2(clue) {
+    state.clue2 = clue;
+    state.turnState = "guessing_2";
+    state.isGiver = false;
+    el.giverDock.classList.add("hidden");
+    el.clue2Chip.classList.remove("muted");
+    el.clue2Text.textContent = `«${clue.toUpperCase()}»`;
+
+    const giverIdx = (state.currentRound - 1) % 2;
+    const guesserIdx = 1 - giverIdx;
+    const guesserName = state.players[guesserIdx].name;
+
+    el.statusText.textContent = `Send enheten til ${guesserName}! Klikk på fargebrettet for å plassere 2. brikke.`;
+    renderBoardHighlightsAndMarkers();
+  }
+
+  function handlePassAndPlaySkipClue2() {
+    scorePassAndPlayTurn();
+  }
+
+  function handlePassAndPlayPlaceMarker(r, c) {
+    const giverIdx = (state.currentRound - 1) % 2;
+    const guesserIdx = 1 - giverIdx;
+    const guesser = state.players[guesserIdx];
+
+    if (state.turnState === "guessing_1") {
+      state.markers.push({
+        playerId: guesser.id,
+        playerName: guesser.name,
+        playerColor: guesser.color,
+        r,
+        c,
+        guessRound: 1,
+        points: 0,
+      });
+
+      state.turnState = "giving_clue_2";
+      state.isGiver = true;
+      el.giverDock.classList.remove("hidden");
+      el.giverStep1.classList.add("hidden");
+      el.giverStep2.classList.remove("hidden");
+      el.statusText.textContent = `Send enheten tilbake til ${state.activeGiverName}! Gi et 2. hint (maks 2 ord) – eller vis fasit nå.`;
+      renderBoardHighlightsAndMarkers();
+    } else if (state.turnState === "guessing_2") {
+      state.markers.push({
+        playerId: guesser.id,
+        playerName: guesser.name,
+        playerColor: guesser.color,
+        r,
+        c,
+        guessRound: 2,
+        points: 0,
+      });
+      scorePassAndPlayTurn();
+    }
+  }
+
+  function scorePassAndPlayTurn() {
+    const giverIdx = (state.currentRound - 1) % 2;
+    const guesserIdx = 1 - giverIdx;
+    const [tr, tc] = state.targetPos;
+
+    let guesserPts = 0;
+    let giverBonus = 0;
+
+    state.markers.forEach(m => {
+      const dist = Math.max(Math.abs(m.r - tr), Math.abs(m.c - tc));
+      let pts = 0;
+      if (dist === 0) {
+        pts = 3;
+        giverBonus += 1;
+      } else if (dist === 1) {
+        pts = 2;
+        giverBonus += 1;
+      } else if (dist === 2) {
+        pts = 1;
+      }
+      m.points = pts;
+      guesserPts += pts;
+    });
+
+    state.players[guesserIdx].score += guesserPts;
+    state.players[giverIdx].score += giverBonus;
+    state.turnState = "turn_recap";
+
+    el.giverDock.classList.add("hidden");
+    el.statusText.textContent = `Blinken var ${getCoordLabel(tr, tc)}! ${state.players[guesserIdx].name} fikk +${guesserPts}p, ${state.activeGiverName} fikk +${giverBonus}p som hintgiver!`;
+    el.btnSoloNext.textContent = state.currentRound < state.totalRounds ? "Neste runde →" : "Se resultat!";
+    el.btnSoloNext.classList.remove("hidden");
+    renderSidebarPlayers();
+    renderBoardHighlightsAndMarkers();
+  }
+
   function initSoloMode() {
+    state.localSubMode = "solo";
+    if (el.tabSolo) el.tabSolo.classList.add("active");
+    if (el.tabPassAndPlay) el.tabPassAndPlay.classList.remove("active");
     el.backBtnText.textContent = "Hub";
     el.timerBubble.classList.add("hidden");
     state.players = [
       { id: "solo", name: localStorage.getItem("party_player_name") || "Spiller 1", color: "#38bdf8", avatar: localStorage.getItem("ntnu_char_config") || "charbear", score: 0 }
     ];
-    el.btnSoloNext.addEventListener("click", () => {
-      state.soloRound++;
-      startSoloRound();
-    });
     startSoloRound();
   }
 
@@ -716,11 +894,12 @@
     state.isGiver = false;
 
     el.btnSoloNext.classList.add("hidden");
+    el.btnSoloNext.textContent = "Neste oppgave →";
     el.roundIndicator.textContent = `Oppgave ${state.soloRound}`;
     el.clue1Text.textContent = `«${state.clue1.toUpperCase()}»`;
     el.clue2Chip.classList.add("muted");
     el.clue2Text.textContent = "—";
-    el.statusText.textContent = `📍 Solo-modus: Klikk på fargebrettet for å plassere din 1. brikke for hintet «${state.clue1.toUpperCase()}»!`;
+    el.statusText.textContent = `Solo-modus: Klikk på fargebrettet for å plassere din 1. brikke for hintet «${state.clue1.toUpperCase()}»!`;
 
     renderSidebarPlayers();
     renderBoardHighlightsAndMarkers();
@@ -742,7 +921,7 @@
       state.turnState = "guessing_2";
       el.clue2Chip.classList.remove("muted");
       el.clue2Text.textContent = `«${state.clue2.toUpperCase()}»`;
-      el.statusText.textContent = `📍 2. hint er «${state.clue2.toUpperCase()}»! Plasser din 2. brikke på fargebrettet.`;
+      el.statusText.textContent = `2. hint er «${state.clue2.toUpperCase()}»! Plasser din 2. brikke på fargebrettet.`;
       renderBoardHighlightsAndMarkers();
     } else if (state.turnState === "guessing_2") {
       state.markers.push({
@@ -765,17 +944,44 @@
       });
       state.players[0].score += turnPts;
       state.turnState = "turn_recap";
-      el.statusText.textContent = `🎯 Blinken var ${getCoordLabel(tr, tc)}! Du fikk +${turnPts} poeng denne runden!`;
+      el.statusText.textContent = `Blinken var ${getCoordLabel(tr, tc)}! Du fikk +${turnPts} poeng denne runden!`;
+      el.btnSoloNext.textContent = "Neste oppgave →";
       el.btnSoloNext.classList.remove("hidden");
       renderSidebarPlayers();
       renderBoardHighlightsAndMarkers();
     }
   }
 
+  el.btnSoloNext.addEventListener("click", () => {
+    if (state.localSubMode === "pass_and_play") {
+      if (state.currentRound < state.totalRounds) {
+        state.currentRound++;
+        startPassAndPlayRound();
+      } else {
+        showGameOverModal(state.players.slice().sort((a, b) => b.score - a.score));
+      }
+    } else {
+      state.soloRound++;
+      startSoloRound();
+    }
+  });
+
+  if (el.tabPassAndPlay) {
+    el.tabPassAndPlay.addEventListener("click", () => {
+      initPassAndPlayMode();
+    });
+  }
+  if (el.tabSolo) {
+    el.tabSolo.addEventListener("click", () => {
+      initSoloMode();
+    });
+  }
+
   buildBoardDOM();
   if (state.isSolo) {
-    initSoloMode();
+    initPassAndPlayMode();
   } else {
+    if (el.fkModeBar) el.fkModeBar.style.display = "none";
     pollRoomState();
     state.pollTimer = setInterval(pollRoomState, 750);
   }

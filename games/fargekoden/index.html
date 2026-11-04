@@ -34,7 +34,6 @@
           ‹ <span id="backBtnText">Lounge</span>
         </a>
         <div class="fk-brand">
-          <span class="fk-brand-icon" aria-hidden="true">🌈</span>
           <div>
             <h1 class="fk-brand-title">Fargekoden</h1>
             <span class="fk-brand-sub">Hues &amp; Cues • 480 nyanser</span>
@@ -61,10 +60,19 @@
           <span id="timerText">30</span>
         </div>
         <button type="button" class="fk-icon-btn" id="btnSoundToggle" title="Lyd av/på">
-          🔊
+          Lyd
         </button>
       </div>
     </header>
+
+    <!-- Mode Selector for Pass & Play / Solo / Lounge -->
+    <div class="fk-mode-bar" id="fkModeBar">
+      <div class="fk-mode-tabs">
+        <button type="button" class="fk-mode-tab active" id="tabPassAndPlay">Pass &amp; Play (2 spillere)</button>
+        <button type="button" class="fk-mode-tab" id="tabSolo">Solo (1 spiller)</button>
+        <a href="/party/" class="fk-mode-tab" id="tabPartyLounge">Party Lounge</a>
+      </div>
+    </div>
 
     <!-- Main Workspace -->
     <main class="fk-main">
@@ -89,9 +97,9 @@
 
         <!-- Scoring Frame Legend -->
         <div class="fk-legend-card">
-          <div class="fk-legend-title">🎯 Poengramme (3×3)</div>
+          <div class="fk-legend-title">Poengramme (3×3)</div>
           <div class="fk-legend-row">
-            <span class="fk-legend-badge p3">★ 3p</span>
+            <span class="fk-legend-badge p3">3p</span>
             <span>Midt i blinken (eksakt farge)</span>
           </div>
           <div class="fk-legend-row">
@@ -151,7 +159,7 @@
               <button type="submit" class="fk-btn fk-btn-primary">Send 2. hint</button>
               <button type="button" class="fk-btn fk-btn-secondary" id="btnSkipClue2"
                 title="Avslutt runden og vis fasit nå hvis folk allerede er nære!">
-                Vis fasit nå ✓
+                Vis fasit nå
               </button>
             </form>
           </div>
@@ -176,7 +184,7 @@
   <!-- Modal: Game Over Podium -->
   <div class="fk-modal-overlay hidden" id="modalGameOver">
     <div class="fk-modal-card">
-      <div class="fk-trophy-wrap">🏆</div>
+      <div class="fk-trophy-wrap">Finale</div>
       <h2 class="fk-modal-title">Fargekoden er ferdig!</h2>
       <p class="fk-modal-sub" id="gameOverSubtitle">Her er mesterne av fargespekteret:</p>
       <div class="fk-podium-list" id="podiumContainer"></div>

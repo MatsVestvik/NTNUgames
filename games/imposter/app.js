@@ -179,7 +179,7 @@
   }
 
   function updateSoundButton() {
-    el.btnSoundToggle.textContent = state.soundEnabled ? "🔊" : "🔇";
+    el.btnSoundToggle.textContent = state.soundEnabled ? "Lyd på" : "Lyd av";
     localStorage.setItem("tegn_sound", String(state.soundEnabled));
   }
 
@@ -562,13 +562,13 @@
       el.roleWordBanner.classList.add("is-imposter");
       el.roleWordBanner.classList.remove("is-crew");
       el.myRoleBadge.className = "role-badge imposter";
-      el.myRoleBadge.textContent = "🕵️ IMPOSTER";
+      el.myRoleBadge.textContent = "IMPOSTER";
       el.mySecretWord.textContent = `Dekkord: ${state.myWord.toUpperCase()}`;
     } else {
       el.roleWordBanner.classList.add("is-crew");
       el.roleWordBanner.classList.remove("is-imposter");
       el.myRoleBadge.className = "role-badge crew";
-      el.myRoleBadge.textContent = "🟢 CREW";
+      el.myRoleBadge.textContent = "CREW";
       el.mySecretWord.textContent = state.myWord.toUpperCase();
     }
 
@@ -577,26 +577,26 @@
       if (state.isDrawer) {
         el.turnStatusStrip.classList.add("my-turn");
         el.turnStatusDot.style.background = "#fbbf24";
-        el.turnStatusText.textContent = "✏️ DIN TUR! Tegn én sammenhengende strek på lerretet.";
+        el.turnStatusText.textContent = "DIN TUR! Tegn én sammenhengende strek på lerretet.";
         el.btnPassStroke.classList.remove("hidden");
         el.drawingToolbar.classList.remove("disabled");
       } else {
         el.turnStatusStrip.classList.remove("my-turn");
         el.turnStatusDot.style.background = "#38bdf8";
-        el.turnStatusText.textContent = `🎨 ${state.activeDrawerName} tegner sin ene strek…`;
+        el.turnStatusText.textContent = `${state.activeDrawerName} tegner sin ene strek…`;
         el.btnPassStroke.classList.add("hidden");
         el.drawingToolbar.classList.add("disabled");
       }
     } else if (state.turnState === "voting") {
       el.turnStatusStrip.classList.remove("my-turn");
       el.turnStatusDot.style.background = "#a855f7";
-      el.turnStatusText.textContent = "🗳️ AVSTEMNING! Hvem tegnet mistenkelig? Stem under lerretet!";
+      el.turnStatusText.textContent = "AVSTEMNING! Hvem tegnet mistenkelig? Stem under lerretet!";
       el.btnPassStroke.classList.add("hidden");
       el.drawingToolbar.classList.add("disabled");
     } else if (state.turnState === "imposter_last_chance") {
       el.turnStatusStrip.classList.remove("my-turn");
       el.turnStatusDot.style.background = "#ef4444";
-      el.turnStatusText.textContent = "🚨 Imposteren ble avslørt og har ett siste forsøk på å gjette Crew-ordet!";
+      el.turnStatusText.textContent = "Imposteren ble avslørt og har ett siste forsøk på å gjette Crew-ordet!";
       el.btnPassStroke.classList.add("hidden");
       el.drawingToolbar.classList.add("disabled");
     }
@@ -640,7 +640,7 @@
       el.modalRoundOver.classList.add("active");
       const crewWon = gs.winner_team === "crew";
       el.roWinnerBadge.className = `ro-winner-badge ${crewWon ? "crew-won" : "imposter-won"}`;
-      el.roWinnerBadge.textContent = crewWon ? "🎉 CREW VANT RUNDEN!" : "🕵️ IMPOSTEREN VANT RUNDEN!";
+      el.roWinnerBadge.textContent = crewWon ? "CREW VANT RUNDEN!" : "IMPOSTEREN VANT RUNDEN!";
       el.roTitle.textContent = crewWon ? "Imposteren ble beseiret!" : "Imposteren lurte alle!";
       el.roReason.textContent = gs.win_reason || "";
       el.roCrewWord.textContent = (gs.crew_word || "").toUpperCase();
@@ -687,7 +687,7 @@
           <div class="player-score">${p.score || 0} poeng</div>
         </div>
         <div class="player-status-icon">
-          ${isTurn ? "✏️" : hasVoted ? "✅" : ""}
+          ${isTurn ? "Tegner" : hasVoted ? "Stemt" : ""}
         </div>
       `;
       el.playersList.appendChild(row);
@@ -722,7 +722,7 @@
     skipBtn.className = `vote-candidate-btn skip-vote-btn ${state.myVote === "skip" ? "selected" : ""}`;
     skipBtn.innerHTML = `
       <div class="vote-candidate-left">
-        <span>🎨 Ny runde med streker</span>
+        <span>Ny runde med streker</span>
       </div>
       <span class="vote-count-pill">${skipCount}</span>
     `;

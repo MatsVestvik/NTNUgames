@@ -998,7 +998,25 @@
     for (let vRow = 0; vRow < 8; vRow++) {
       for (let vCol = 0; vCol < 8; vCol++) {
         const sq = document.createElement("div");
-        sq.className = "square";
+        const isLight = (vRow + vCol) % 2 === 0;
+        sq.className = isLight ? "square square-light" : "square square-dark";
+
+        // Rank label (on file 0 / leftmost column)
+        if (vCol === 0) {
+          const rankLabel = document.createElement("span");
+          rankLabel.className = "coord-label coord-rank";
+          rankLabel.textContent = state.perspective === "w" ? String(8 - vRow) : String(vRow + 1);
+          sq.appendChild(rankLabel);
+        }
+
+        // File label (on rank 7 / bottom row)
+        if (vRow === 7) {
+          const fileLabel = document.createElement("span");
+          fileLabel.className = "coord-label coord-file";
+          const fileLetter = state.perspective === "w" ? String.fromCharCode(97 + vCol) : String.fromCharCode(104 - vCol);
+          fileLabel.textContent = fileLetter;
+          sq.appendChild(fileLabel);
+        }
         sq.dataset.vrow = String(vRow);
         sq.dataset.vcol = String(vCol);
         sq.addEventListener("click", () => handleSquareClick(vRow, vCol));
@@ -1030,7 +1048,25 @@
         const { r, c } = toMatrixCoords(vRow, vCol);
         const sq = el.chessGrid.children[vRow * 8 + vCol];
         sq.innerHTML = "";
-        sq.className = "square";
+        const isLight = (vRow + vCol) % 2 === 0;
+        sq.className = isLight ? "square square-light" : "square square-dark";
+
+        // Rank label (on file 0 / leftmost column)
+        if (vCol === 0) {
+          const rankLabel = document.createElement("span");
+          rankLabel.className = "coord-label coord-rank";
+          rankLabel.textContent = state.perspective === "w" ? String(8 - vRow) : String(vRow + 1);
+          sq.appendChild(rankLabel);
+        }
+
+        // File label (on rank 7 / bottom row)
+        if (vRow === 7) {
+          const fileLabel = document.createElement("span");
+          fileLabel.className = "coord-label coord-file";
+          const fileLetter = state.perspective === "w" ? String.fromCharCode(97 + vCol) : String.fromCharCode(104 - vCol);
+          fileLabel.textContent = fileLetter;
+          sq.appendChild(fileLabel);
+        }
 
         // Last move highlight
         if (

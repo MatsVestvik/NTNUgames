@@ -367,25 +367,25 @@
 
   function renderTickMarks() {
     el.dialTickMarks.innerHTML = "";
-    // Draw tick marks every 15 degrees from 0 to 180
-    for (let deg = 0; deg <= 180; deg += 15) {
+    // Subtle, clean reference notches: 45°, 90° (center neutral), 135°
+    [45, 90, 135].forEach((deg) => {
       const rad = (deg * Math.PI) / 180;
-      const isMajor = deg % 45 === 0;
-      const len = isMajor ? 12 : 6;
+      const isCenter = deg === 90;
+      const len = isCenter ? 8 : 4;
       const x1 = CX + (RADIUS - len) * Math.cos(rad);
       const y1 = CY - (RADIUS - len) * Math.sin(rad);
       const x2 = CX + (RADIUS + len) * Math.cos(rad);
       const y2 = CY - (RADIUS + len) * Math.sin(rad);
 
       const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-      line.setAttribute("x1", x1);
-      line.setAttribute("y1", y1);
-      line.setAttribute("x2", x2);
-      line.setAttribute("y2", y2);
-      line.setAttribute("stroke-width", isMajor ? "3" : "1.5");
-      line.setAttribute("stroke", isMajor ? "#64748b" : "#475569");
+      line.setAttribute("x1", x1.toFixed(1));
+      line.setAttribute("y1", y1.toFixed(1));
+      line.setAttribute("x2", x2.toFixed(1));
+      line.setAttribute("y2", y2.toFixed(1));
+      line.setAttribute("stroke-width", isCenter ? "2" : "1");
+      line.setAttribute("stroke", isCenter ? "#64748b" : "#334155");
       el.dialTickMarks.appendChild(line);
-    }
+    });
   }
 
   function polarToCartesian(deg) {
@@ -674,7 +674,7 @@
     // Show privacy screen
     el.privacyGateCard.classList.remove("hidden");
     const otherPlayerNum = state.psychicPlayerNum === 1 ? 2 : 1;
-    el.privacyGateTitle.textContent = `🔮 Spiller ${state.psychicPlayerNum} er Telepaten!`;
+    el.privacyGateTitle.textContent = `Spiller ${state.psychicPlayerNum} er Telepaten!`;
     el.privacyGateDesc.textContent = `Snu skjermen bort fra Spiller ${otherPlayerNum}. Bare Spiller ${state.psychicPlayerNum} skal se målskiven.`;
   }
 
@@ -706,12 +706,12 @@
 
       el.clueFormWrap.classList.add("hidden");
       el.clueBanner.classList.remove("hidden");
-      el.clueBannerLabel.textContent = `Ledetråd fra Spiller ${state.psychicPlayerNum} 🔮`;
+      el.clueBannerLabel.textContent = `Ledetråd fra Spiller ${state.psychicPlayerNum}`;
       el.clueBannerText.textContent = `«${val}»`;
 
       const guesserNum = state.psychicPlayerNum === 1 ? 2 : 1;
       el.guesserActionWrap.classList.remove("hidden");
-      el.btnLockDial.querySelector("span").textContent = `Spiller ${guesserNum}: Lås inn svar 🔒`;
+      el.btnLockDial.querySelector("span").textContent = `Spiller ${guesserNum}: Lås inn svar`;
     } else {
       sendRoomClue(val);
     }
@@ -738,20 +738,20 @@
 
     if (diff <= 0.025) {
       pts = 4;
-      headline = "🎯 BULLSEYE! Perfekt!";
+      headline = "BULLSEYE! Perfekt!";
       sfx.bullseye();
       confetti.fire();
     } else if (diff <= 0.065) {
       pts = 3;
-      headline = "🌟 3 POENG! Kjempenært!";
+      headline = "3 POENG! Kjempenært!";
       sfx.scoreHit();
     } else if (diff <= 0.120) {
       pts = 2;
-      headline = "👍 2 POENG! Godkjent!";
+      headline = "2 POENG! Godkjent!";
       sfx.scoreHit();
     } else {
       pts = 0;
-      headline = "💨 0 POENG! Bom!";
+      headline = "0 POENG! Bom!";
       sfx.miss();
     }
 
@@ -812,33 +812,27 @@
     const pct = state.teamScore / (state.totalRounds * 4);
     let title = "";
     let desc = "";
-    let icon = "🧠";
 
     if (pct >= 0.88) {
-      icon = "🌌";
       title = "Kosmisk telepati!";
       desc = "Dere deler én felles bevissthet! Skremmende samkjørte hjerner.";
       confetti.fire();
     } else if (pct >= 0.70) {
-      icon = "🔮";
       title = "Telepatiske mestere!";
       desc = "Fantastisk intuisjon! Dere leser hverandre som en åpen bok.";
       confetti.fire();
     } else if (pct >= 0.50) {
-      icon = "📻";
       title = "Klar FM-frekvens!";
       desc = "Stort sett på samme bølgelengde! Et solid og samkjørt lag.";
     } else if (pct >= 0.28) {
-      icon = "⚡";
       title = "Skurrende signaler!";
       desc = "Noe statisk støy på linja, men dere fant hverandre innimellom.";
     } else {
-      icon = "🛸";
       title = "To forskjellige galakser!";
       desc = "Dere tenker fullstendig ulikt, men herregud så gøy det var å prøve!";
     }
 
-    el.goBadgeIcon.textContent = icon;
+    el.goBadgeIcon.textContent = "";
     el.goSynergyTitle.textContent = title;
     el.goSynergyDesc.textContent = desc;
   }
@@ -1046,7 +1040,7 @@
     // Clue banner
     if (data.clue) {
       el.clueBanner.classList.remove("hidden");
-      el.clueBannerLabel.textContent = `Ledetråd fra ${data.psychicName} 🔮`;
+      el.clueBannerLabel.textContent = `Ledetråd fra ${data.psychicName}`;
       el.clueBannerText.textContent = `«${data.clue}»`;
     } else {
       el.clueBanner.classList.add("hidden");
@@ -1054,23 +1048,23 @@
 
     if (status === "waiting") {
       el.roomWaitingCard.classList.remove("hidden");
-      el.roomWaitingTitle.textContent = "Venter på medspiller… ⏳";
+      el.roomWaitingTitle.textContent = "Venter på medspiller…";
       el.roomWaitingDesc.textContent = `Del romkoden ${state.roomCode} med en venn for å starte partiet!`;
     } else if (status === "giving_clue") {
       if (isPsychic) {
         el.clueFormWrap.classList.remove("hidden");
       } else {
         el.roomWaitingCard.classList.remove("hidden");
-        el.roomWaitingTitle.textContent = `${data.psychicName} tenker… 🔮`;
+        el.roomWaitingTitle.textContent = `${data.psychicName} tenker…`;
         el.roomWaitingDesc.textContent = "Telepaten ser det hemmelige målet og skriver en ledetråd.";
       }
     } else if (status === "guessing") {
       if (isGuesser) {
         el.guesserActionWrap.classList.remove("hidden");
-        el.btnLockDial.querySelector("span").textContent = "Lås inn peker & Avslør! 🔒";
+        el.btnLockDial.querySelector("span").textContent = "Lås inn peker & Avslør!";
       } else {
         el.roomWaitingCard.classList.remove("hidden");
-        el.roomWaitingTitle.textContent = `${data.guesserName} stiller inn hjulet… 🎯`;
+        el.roomWaitingTitle.textContent = `${data.guesserName} stiller inn hjulet…`;
         el.roomWaitingDesc.textContent = "Gjettespilleren vrir nålen til ledetråden din.";
       }
     } else if (status === "revealed") {
@@ -1240,7 +1234,7 @@
 
   el.btnSoundToggle.addEventListener("click", () => {
     const on = sfx.toggle();
-    el.soundIcon.textContent = on ? "🔊" : "🔇";
+    el.soundIcon.textContent = on ? "Lyd på" : "Lyd av";
   });
 
   el.btnHelp.addEventListener("click", () => {
@@ -1263,7 +1257,7 @@
     const url = window.location.href;
     try {
       await navigator.clipboard.writeText(url);
-      el.btnCopyRoomLink.textContent = "✓ Kopiert!";
+      el.btnCopyRoomLink.textContent = "Kopiert!";
       setTimeout(() => (el.btnCopyRoomLink.textContent = "Kopier"), 1800);
     } catch (e) {
       prompt("Kopier lenken:", url);
@@ -1273,7 +1267,7 @@
   // --- INITIALIZATION ---
   renderTickMarks();
   initDialPointerEvents();
-  el.soundIcon.textContent = sfx.enabled ? "🔊" : "🔇";
+  el.soundIcon.textContent = sfx.enabled ? "Lyd på" : "Lyd av";
   checkUrlParamsAndInit();
 })();
 

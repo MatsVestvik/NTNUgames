@@ -35,7 +35,6 @@
           ‹ <span id="backBtnText">Lounge</span>
         </a>
         <div class="brand-badge">
-          <span class="imposter-badge-emoji" aria-hidden="true">🕵️</span>
           <span class="brand-title">Imposter</span>
         </div>
         <span class="round-pill" id="roundIndicator">Strekrunde 1</span>
@@ -56,7 +55,7 @@
           <span id="timerText">25</span>
         </div>
         <button type="button" class="icon-control-btn" id="btnSoundToggle" title="Lyd av/på">
-          🔊
+          Lyd
         </button>
       </div>
     </header>
@@ -74,7 +73,7 @@
         </div>
 
         <div class="imposter-rules-mini">
-          <div class="irm-title">🕵️ Slik spiller dere</div>
+          <div class="irm-title">Slik spiller dere</div>
           <ul class="irm-list">
             <li>Alle tegner <strong>én sammenhengende strek</strong> hver per runde.</li>
             <li><strong>Imposteren</strong> har fått et annet ord i samme kategori.</li>
@@ -101,7 +100,7 @@
           <!-- Imposter Last Chance Overlay (when Imposter is voted out) -->
           <div class="last-chance-overlay hidden" id="lastChanceOverlay">
             <div class="lc-card">
-              <div class="lc-badge">🚨 IMPOSTER AVSLØRT!</div>
+              <div class="lc-badge">IMPOSTER AVSLØRT!</div>
               <h2 class="lc-title" id="lcTitle">Imposteren ble tatt!</h2>
               <p class="lc-subtitle" id="lcSubtitle">
                 Imposteren har 20 sekunder og ett siste forsøk på å gjette Crew-ordet for å stjele seieren!
@@ -119,7 +118,7 @@
         <div class="voting-panel hidden" id="votingPanel">
           <div class="vp-header">
             <div>
-              <h3 class="vp-title">🗳️ Hvem er Imposter?</h3>
+              <h3 class="vp-title">Hvem er Imposter?</h3>
               <p class="vp-subtitle">Se på strekene over, diskuter i chatten, og avgi din stemme:</p>
             </div>
             <span class="vp-tally-badge" id="voteProgressBadge">0 / 3 har stemt</span>
@@ -133,7 +132,7 @@
         <div class="drawing-toolbar" id="drawingToolbar">
           <div class="tool-group">
             <span class="stroke-rule-hint" id="strokeRuleHint">
-              ✏️ Tegn <strong>én sammenhengende strek</strong> – når du løfter pennen går turen videre!
+              Tegn <strong>én sammenhengende strek</strong> – når du løfter pennen går turen videre!
             </span>
           </div>
 
@@ -162,7 +161,7 @@
         <!-- Imposter Secret Guess Box (Only shown to the Imposter!) -->
         <div class="imposter-guess-box hidden" id="imposterGuessBox">
           <div class="igb-header">
-            <span class="igb-title">🕵️ Gjett Crew-ordet</span>
+            <span class="igb-title">Gjett Crew-ordet</span>
             <span class="igb-attempts" id="imposterAttemptsBadge">2 forsøk igjen</span>
           </div>
           <p class="igb-desc">
@@ -197,7 +196,7 @@
   <!-- Modal: Round Over / Winner Reveal -->
   <div class="modal-overlay" id="modalRoundOver">
     <div class="modal-card" style="max-width: 560px;">
-      <div class="ro-winner-badge" id="roWinnerBadge">🎉 CREW VANT!</div>
+      <div class="ro-winner-badge" id="roWinnerBadge">CREW VANT!</div>
       <h2 class="modal-title" id="roTitle">Imposteren ble avslørt!</h2>
       <p class="modal-subtitle" id="roReason">Crew stemte ut riktig Imposter!</p>
 

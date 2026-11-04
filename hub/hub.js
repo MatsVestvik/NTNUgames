@@ -123,6 +123,7 @@
   // Category quick filter tabs
   const tabButtons = document.querySelectorAll(".hub-tab-btn[data-filter]");
   const sections = document.querySelectorAll(".game-category-section");
+  const allGameCards = document.querySelectorAll(".game-card");
 
   tabButtons.forEach(btn => {
     btn.addEventListener("click", () => {
@@ -130,9 +131,26 @@
       tabButtons.forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
 
+      // Reset individual game cards
+      allGameCards.forEach(card => card.classList.remove("hidden"));
+
       sections.forEach(sec => {
         const secCat = sec.dataset.sectionCategory;
-        if (filter === "all" || secCat === filter) {
+        if (filter === "pass-and-play") {
+          if (secCat === "party") {
+            sec.classList.remove("hidden");
+            allGameCards.forEach(card => {
+              const hasTag = card.dataset.tags && card.dataset.tags.includes("pass-and-play");
+              if (hasTag) {
+                card.classList.remove("hidden");
+              } else {
+                card.classList.add("hidden");
+              }
+            });
+          } else {
+            sec.classList.add("hidden");
+          }
+        } else if (filter === "all" || secCat === filter) {
           sec.classList.remove("hidden");
           sec.style.opacity = "0";
           sec.style.transform = "translateY(8px)";

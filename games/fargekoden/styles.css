@@ -94,6 +94,47 @@ body {
   font-weight: 700;
 }
 
+/* Mode Bar for Pass & Play / Solo / Lounge */
+.fk-mode-bar {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+.fk-mode-tabs {
+  display: flex;
+  background: rgba(15, 23, 42, 0.7);
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid var(--fk-border);
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.fk-mode-tab {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.fk-mode-tab:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.fk-mode-tab.active {
+  background: #38bdf8;
+  color: #0f172a;
+}
+
 .fk-round-pill {
   background: rgba(56, 189, 248, 0.16);
   border: 1px solid rgba(56, 189, 248, 0.4);
@@ -613,12 +654,6 @@ body {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
   position: relative;
   z-index: 10;
-  animation: markerPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes markerPop {
-  from { transform: scale(0.3); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
 }
 
 .fk-marker-pts {

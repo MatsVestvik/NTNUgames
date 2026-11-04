@@ -753,6 +753,12 @@ body {
   border: 1px solid rgba(239, 71, 111, 0.45);
 }
 
+.tag-pass-and-play {
+  background: rgba(131, 56, 236, 0.16);
+  color: #c084fc;
+  border: 1px solid rgba(192, 132, 252, 0.45);
+}
+
 .card-title {
   font-family: var(--font-heading);
   font-size: 1.35rem;

@@ -156,16 +156,16 @@ class WavelengthRoom:
             # Miss = 0 pts
             if diff <= 0.025:
                 pts = 4
-                feedback = "🎯 BULLSEYE! Perfekt telepatisk klaff!"
+                feedback = "BULLSEYE! Perfekt telepatisk klaff!"
             elif diff <= 0.065:
                 pts = 3
-                feedback = "🌟 3 POENG! Kjempenært!"
+                feedback = "3 POENG! Kjempenært!"
             elif diff <= 0.120:
                 pts = 2
-                feedback = "👍 2 POENG! Godkjent bølgelengde!"
+                feedback = "2 POENG! Godkjent bølgelengde!"
             else:
                 pts = 0
-                feedback = "💨 0 POENG! Bom! Litt støy på frekvensen!"
+                feedback = "0 POENG! Bom! Litt støy på frekvensen!"
 
             self.team_score += pts
             self.last_round_points = pts
@@ -222,27 +222,27 @@ class WavelengthRoom:
         pct = (self.team_score / max_possible) if max_possible > 0 else 0
         if pct >= 0.88:
             return {
-                "title": "🌌 Kosmisk telepati!",
+                "title": "Kosmisk telepati!",
                 "desc": "Dere deler én felles bevissthet! Skremmende samkjørte hjerner."
             }
         elif pct >= 0.70:
             return {
-                "title": "🔮 Telepatiske mestere!",
+                "title": "Telepatiske mestere!",
                 "desc": "Fantastisk intuisjon! Dere leser hverandre som en åpen bok."
             }
         elif pct >= 0.50:
             return {
-                "title": "📻 Klar FM-frekvens!",
+                "title": "Klar FM-frekvens!",
                 "desc": "Stort sett på samme bølgelengde! Et solid og samkjørt lag."
             }
         elif pct >= 0.28:
             return {
-                "title": "⚡ Skurrende signaler!",
+                "title": "Skurrende signaler!",
                 "desc": "Noe statisk støy på linja, men dere fant hverandre innimellom."
             }
         else:
             return {
-                "title": "🛸 To forskjellige galakser!",
+                "title": "To forskjellige galakser!",
                 "desc": "Dere tenker fullstendig ulikt, men herregud så gøy det var å prøve!"
             }
 
