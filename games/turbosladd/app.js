@@ -85,46 +85,48 @@
     return smoothPoints;
   }
 
-  // Circuit 1: Grand Prix Banen - Wide, fast flowing track with sweeping turns
+  // Circuit 1: Grand Prix Banen - Wide, fast flowing track with sweeping turns and 850px starting straight
   const RAW_GP_POINTS = [
-    { x: 500, y: 1500 },  // 0: Start / Finish line straight
-    { x: 1200, y: 1500 }, // 1: Main straight
-    { x: 1900, y: 1500 }, // 2: End of straight
-    { x: 2350, y: 1300 }, // 3: Turn 1 sweep
-    { x: 2450, y: 850 },  // 4: Turn 2 apex
-    { x: 2200, y: 450 },  // 5: Turn 3 exit
-    { x: 1700, y: 350 },  // 6: Back straight
-    { x: 1150, y: 350 },  // 7: Back straight end
-    { x: 750, y: 550 },   // 8: Chicane entry
-    { x: 800, y: 850 },   // 9: Chicane apex
-    { x: 1250, y: 950 },  // 10: Infield drift sweep
-    { x: 1350, y: 1200 }, // 11: Hairpin entry
-    { x: 1050, y: 1250 }, // 12: Hairpin apex
-    { x: 700, y: 1150 },  // 13: Infield exit
-    { x: 400, y: 1050 },  // 14: West curve
-    { x: 200, y: 1250 },  // 15: Final turn entry
-    { x: 250, y: 1450 },  // 16: Final turn exit into straight
+    { x: 1200, y: 1500 }, // 0: Start / Finish line
+    { x: 1900, y: 1500 }, // 1: Main straight end
+    { x: 2350, y: 1300 }, // 2: Turn 1 sweep
+    { x: 2450, y: 850 },  // 3: Turn 2 apex
+    { x: 2200, y: 450 },  // 4: Turn 3 exit
+    { x: 1700, y: 350 },  // 5: Back straight
+    { x: 1150, y: 350 },  // 6: Back straight end
+    { x: 750, y: 550 },   // 7: Chicane entry
+    { x: 800, y: 850 },   // 8: Chicane apex
+    { x: 1250, y: 950 },  // 9: Infield drift sweep
+    { x: 1350, y: 1200 }, // 10: Hairpin entry
+    { x: 1050, y: 1250 }, // 11: Hairpin apex
+    { x: 700, y: 1150 },  // 12: Infield exit
+    { x: 400, y: 1050 },  // 13: West curve
+    { x: 200, y: 1250 },  // 14: Final turn entry
+    { x: 250, y: 1470 },  // 15: Final turn exit
+    { x: 350, y: 1500 },  // 16: Straightaway runway entry (aligned with y:1500)
+    { x: 700, y: 1500 },  // 17: Straightaway runway continuation (spacious 16-car grid)
   ];
 
-  // Circuit 2: Fjordsvingen - Technical continuous drift track
+  // Circuit 2: Fjordsvingen - Technical continuous drift track with 850px starting runway
   const RAW_FJORD_POINTS = [
-    { x: 600, y: 1550 },  // 0: Start straight
-    { x: 1250, y: 1550 }, // 1: Straight
-    { x: 1900, y: 1550 }, // 2: High-speed sweep
-    { x: 2350, y: 1300 }, // 3: Hairpin 1
-    { x: 2100, y: 1000 }, // 4: Drift switch 1
-    { x: 1450, y: 1000 }, // 5: Infield drift
-    { x: 800, y: 1000 },  // 6: Hairpin 2
-    { x: 500, y: 750 },   // 7: Chicane entry
-    { x: 900, y: 550 },   // 8: S-curve
-    { x: 1500, y: 550 },  // 9: Infield technical
-    { x: 2100, y: 400 },  // 10: Hairpin 3
-    { x: 1800, y: 180 },  // 11: Mountain apex
-    { x: 1050, y: 180 },  // 12: High straight
-    { x: 350, y: 220 },   // 13: Hairpin 4
-    { x: 150, y: 650 },   // 14: Downhill sweep
-    { x: 150, y: 1200 },  // 15: Final hairpin
-    { x: 250, y: 1500 },  // 16: Return to main straight
+    { x: 1250, y: 1550 }, // 0: Start / Finish line
+    { x: 1900, y: 1550 }, // 1: High-speed sweep
+    { x: 2350, y: 1300 }, // 2: Hairpin 1
+    { x: 2100, y: 1000 }, // 3: Drift switch 1
+    { x: 1450, y: 1000 }, // 4: Infield drift
+    { x: 800, y: 1000 },  // 5: Hairpin 2
+    { x: 500, y: 750 },   // 6: Chicane entry
+    { x: 900, y: 550 },   // 7: S-curve
+    { x: 1500, y: 550 },  // 8: Infield technical
+    { x: 2100, y: 400 },  // 9: Hairpin 3
+    { x: 1800, y: 180 },  // 10: Mountain apex
+    { x: 1050, y: 180 },  // 11: High straight
+    { x: 350, y: 220 },   // 12: Hairpin 4
+    { x: 150, y: 650 },   // 13: Downhill sweep
+    { x: 150, y: 1200 },  // 14: Final hairpin
+    { x: 250, y: 1520 },  // 15: Return to main straight
+    { x: 400, y: 1550 },  // 16: Straightaway runway entry (aligned with y:1550)
+    { x: 750, y: 1550 },  // 17: Straightaway runway continuation (spacious 16-car grid)
   ];
 
   function createTrack(id, name, rawPoints, roadWidth = 185) {
@@ -145,7 +147,7 @@
     fjord_drift: createTrack("fjord_drift", "Fjordsvingen", RAW_FJORD_POINTS, 180),
   };
 
-  // Staggered starting grid slots on the start straightaway
+  // Staggered starting grid slots on the spacious start straightaway (1–16 players)
   function getStartGridSlots(track, count = 16) {
     const p0 = track.rawPoints[0];
     const p1 = track.rawPoints[1];
@@ -162,8 +164,8 @@
     for (let i = 0; i < count; i++) {
       const row = Math.floor(i / 2);
       const side = (i % 2 === 0) ? -1 : 1;
-      const distBack = 50 + row * 90;
-      const lateralOffset = side * 35;
+      const distBack = 50 + row * 65;
+      const lateralOffset = side * 44;
 
       slots.push({
         x: p0.x - forwardX * distBack + rightX * lateralOffset,
@@ -179,9 +181,10 @@
   // =========================================================================
 
   const state = {
-    mode: "online", // "online" | "solo"
+    mode: "online", // "online" | "solo" | "splitscreen"
     driverName: localStorage.getItem("ts_driver_name") || "Sjåfør 1",
     driverColor: localStorage.getItem("ts_driver_color") || PALETTE[0].color,
+    driverAvatar: "",
 
     roomCode: "",
     playerId: "",
@@ -195,7 +198,7 @@
     players: [],
 
     myCar: {
-      x: 500,
+      x: 1200,
       y: 1500,
       angle: 0,
       vx: 0,
@@ -218,8 +221,26 @@
       raceStartTime: 0,
     },
 
+    // Splitscreen 2-Player Local State
+    splitP1: {
+      name: "Spiller 1",
+      color: "#ef4444",
+    },
+    splitP2: {
+      name: "Spiller 2",
+      color: "#06b6d4",
+    },
+    splitLaps: 3,
+    car1: null,
+    car2: null,
+    cam1: { x: 1200, y: 1500, zoom: 1.15 },
+    cam2: { x: 1200, y: 1500, zoom: 1.15 },
+    keysP1: { up: false, down: false, left: false, right: false, space: false },
+    keysP2: { up: false, down: false, left: false, right: false, space: false },
+    splitFinishTimeout: null,
+
     opponentCars: {},
-    camera: { x: 500, y: 1500, zoom: 1.25 },
+    camera: { x: 1200, y: 1500, zoom: 1.25 },
     skidmarks: [],
     particles: [],
 
@@ -264,11 +285,19 @@
 
     inputDriverName: document.getElementById("inputDriverName"),
     carPreviewCanvas: document.getElementById("carPreviewCanvas"),
-    tsColorPalette: document.getElementById("tsColorPalette"),
+    carColorNameDisplay: document.getElementById("carColorNameDisplay"),
+    btnPreviewAvatarClick: document.getElementById("btnPreviewAvatarClick"),
+    onlineAvatarPreview: document.getElementById("onlineAvatarPreview"),
+    btnOpenCharCreator: document.getElementById("btnOpenCharCreator"),
+    btnQuickRandomChar: document.getElementById("btnQuickRandomChar"),
+    cpwQuickColors: document.getElementById("cpwQuickColors"),
 
     selectTrack: document.getElementById("selectTrack"),
     controlLaps: document.getElementById("controlLaps"),
-    controlMaxPlayers: document.getElementById("controlMaxPlayers"),
+    sliderMaxPlayers: document.getElementById("sliderMaxPlayers"),
+    inputMaxPlayers: document.getElementById("inputMaxPlayers"),
+    btnMaxPlayersDec: document.getElementById("btnMaxPlayersDec"),
+    btnMaxPlayersInc: document.getElementById("btnMaxPlayersInc"),
     btnCreateRace: document.getElementById("btnCreateRace"),
     inputRoomCode: document.getElementById("inputRoomCode"),
     btnJoinRace: document.getElementById("btnJoinRace"),
@@ -276,6 +305,15 @@
     selectSoloTrack: document.getElementById("selectSoloTrack"),
     controlSoloLaps: document.getElementById("controlSoloLaps"),
     btnStartSolo: document.getElementById("btnStartSolo"),
+
+    // Splitscreen Local 2-Player Controls
+    inputSplitP1Name: document.getElementById("inputSplitP1Name"),
+    inputSplitP2Name: document.getElementById("inputSplitP2Name"),
+    splitP1Colors: document.getElementById("splitP1Colors"),
+    splitP2Colors: document.getElementById("splitP2Colors"),
+    selectSplitTrack: document.getElementById("selectSplitTrack"),
+    controlSplitLaps: document.getElementById("controlSplitLaps"),
+    btnStartSplitscreen: document.getElementById("btnStartSplitscreen"),
 
     // Room Lounge
     displayRoomCode: document.getElementById("displayRoomCode"),
@@ -597,6 +635,28 @@
     ctx.restore();
   }
 
+  function extractCharacterColor(avatarId, fallbackColor = "#ef4444") {
+    if (!avatarId) return fallbackColor;
+    if (typeof CharacterCreator !== "undefined" && typeof CharacterCreator.parseConfig === "function") {
+      try {
+        const cfg = CharacterCreator.parseConfig(avatarId);
+        if (cfg && cfg.headColor) return cfg.headColor;
+      } catch (e) {}
+    }
+    const str = String(avatarId).trim();
+    if (str.startsWith("char:")) {
+      for (const part of str.slice(5).split(":")) {
+        if (part.startsWith("c_")) return "#" + part.slice(2).toLowerCase();
+        if (part.startsWith("c") && !part.startsWith("char")) return "#" + part.slice(1).toLowerCase();
+      }
+    }
+    if (str.startsWith("#") && (str.length === 4 || str.length === 7)) return str.toLowerCase();
+    return fallbackColor;
+  }
+
+  let selectedAvatar = null;
+  let selectedAvatarStr = "";
+
   function renderProfileCarPreview() {
     const canvas = el.carPreviewCanvas;
     if (!canvas) return;
@@ -618,62 +678,153 @@
       ctx.stroke();
     }
 
-    // Draw car model facing upwards in preview
+    // Draw car model facing upwards in preview with driver's active tint
     drawCarOnCanvas(ctx, canvas.width / 2, canvas.height / 2, -Math.PI / 2, state.driverColor, 1.25, 0);
   }
 
-  function initColorPalette() {
-    el.tsColorPalette.innerHTML = "";
-    PALETTE.forEach(pal => {
-      const dot = document.createElement("button");
-      dot.type = "button";
-      dot.className = "ts-color-dot" + (pal.color.toLowerCase() === state.driverColor.toLowerCase() ? " active" : "");
-      dot.style.backgroundColor = pal.color;
-      dot.title = pal.name;
-      dot.addEventListener("click", () => {
-        state.driverColor = pal.color;
-        localStorage.setItem("ts_driver_color", pal.color);
-        document.querySelectorAll(".ts-color-dot").forEach(d => d.classList.remove("active"));
-        dot.classList.add("active");
-        renderProfileCarPreview();
+  function updateDriverProfileUI() {
+    // 1. Character avatar circular preview image
+    if (el.onlineAvatarPreview && typeof CharacterCreator !== "undefined") {
+      el.onlineAvatarPreview.src = CharacterCreator.getAvatarImgSrc(selectedAvatarStr);
+    }
+
+    // 2. Refresh car preview canvas
+    renderProfileCarPreview();
+
+    // 3. Update text color display
+    if (el.carColorNameDisplay) {
+      const match = PALETTE.find(p => p.color.toLowerCase() === state.driverColor.toLowerCase());
+      el.carColorNameDisplay.textContent = match ? match.name : "Valgt lakk";
+      el.carColorNameDisplay.style.color = state.driverColor;
+    }
+
+    // 4. Quick color swatches (matching character creator head colors)
+    if (el.cpwQuickColors) {
+      el.cpwQuickColors.innerHTML = "";
+      const colors = (typeof CharacterCreator !== "undefined" && CharacterCreator.HEAD_COLORS)
+        ? CharacterCreator.HEAD_COLORS.slice(0, 10).map(c => ({ color: c.hex, name: c.name }))
+        : PALETTE.slice(0, 10);
+
+      colors.forEach(col => {
+        const sw = document.createElement("button");
+        sw.type = "button";
+        sw.className = "cpw-quick-swatch" + (col.color.toLowerCase() === state.driverColor.toLowerCase() ? " active" : "");
+        sw.style.backgroundColor = col.color;
+        sw.title = col.name;
+        sw.addEventListener("click", () => {
+          state.driverColor = col.color;
+          localStorage.setItem("ts_driver_color", col.color);
+          if (typeof CharacterCreator !== "undefined" && selectedAvatar) {
+            selectedAvatar.headColor = col.color;
+            selectedAvatarStr = CharacterCreator.saveCharacter(selectedAvatar);
+          }
+          updateDriverProfileUI();
+        });
+        el.cpwQuickColors.appendChild(sw);
       });
-      el.tsColorPalette.appendChild(dot);
+    }
+  }
+
+  function openCharCreatorModal() {
+    if (typeof CharacterCreator === "undefined") return;
+    CharacterCreator.openModal({
+      initialConfig: selectedAvatarStr,
+      onSave: (newCfg) => {
+        selectedAvatar = newCfg;
+        selectedAvatarStr = CharacterCreator.encodeConfig(newCfg);
+        if (newCfg.headColor) {
+          state.driverColor = newCfg.headColor;
+          localStorage.setItem("ts_driver_color", newCfg.headColor);
+        }
+        updateDriverProfileUI();
+      },
     });
+  }
+
+  function initCharacterProfile() {
+    if (typeof CharacterCreator !== "undefined") {
+      selectedAvatar = CharacterCreator.getSavedCharacter();
+      selectedAvatarStr = CharacterCreator.encodeConfig(selectedAvatar);
+      if (selectedAvatar && selectedAvatar.headColor) {
+        state.driverColor = selectedAvatar.headColor;
+        localStorage.setItem("ts_driver_color", state.driverColor);
+      }
+    } else {
+      state.driverColor = localStorage.getItem("ts_driver_color") || PALETTE[0].color;
+    }
+    updateDriverProfileUI();
   }
 
   // =========================================================================
   // ENHANCED DRIFT PHYSICS & SIMULATION
   // =========================================================================
 
-  function resetCarToSlot(car, track, slotIndex) {
+  function createCarState(slotIndex, track) {
     const slots = getStartGridSlots(track, 16);
     const slot = slots[slotIndex % slots.length];
-    car.x = slot.x;
-    car.y = slot.y;
-    car.angle = slot.angle;
-    car.vx = 0;
-    car.vy = 0;
-    car.speed = 0;
-    car.accelInput = 0;
-    car.brakeInput = 0;
-    car.steerInput = 0;
-    car.handbrakeInput = 0;
-    car.isDrifting = false;
-    car.driftAngle = 0;
-    car.driftBoostCharge = 0;
-    car.turboTimer = 0;
-    car.lap = 1;
-    car.checkpoint = 0;
-    car.finished = false;
-    car.finishTime = 0;
-    car.bestLap = 0;
-    car.lapStartTime = performance.now();
-    car.raceStartTime = performance.now();
+    return {
+      x: slot.x,
+      y: slot.y,
+      angle: slot.angle,
+      vx: 0,
+      vy: 0,
+      speed: 0,
+      accelInput: 0,
+      brakeInput: 0,
+      steerInput: 0,
+      handbrakeInput: 0,
+      isDrifting: false,
+      driftAngle: 0,
+      driftBoostCharge: 0,
+      turboTimer: 0,
+      lap: 1,
+      checkpoint: 0,
+      finished: false,
+      finishTime: 0,
+      bestLap: 0,
+      lapStartTime: performance.now(),
+      raceStartTime: performance.now(),
+    };
+  }
+
+  function resetCarToSlot(car, track, slotIndex) {
+    const fresh = createCarState(slotIndex, track);
+    Object.assign(car, fresh);
 
     // Immediately snap camera to the car
-    state.camera.x = slot.x;
-    state.camera.y = slot.y;
+    state.camera.x = fresh.x;
+    state.camera.y = fresh.y;
     state.camera.zoom = 1.25;
+  }
+
+  function resolveCarCarCollision(c1, c2) {
+    if (!c1 || !c2) return;
+    const dx = c2.x - c1.x;
+    const dy = c2.y - c1.y;
+    const dist = Math.hypot(dx, dy);
+    const minDist = 36;
+    if (dist < minDist && dist > 0.001) {
+      const nx = dx / dist;
+      const ny = dy / dist;
+      const overlap = 0.5 * (minDist - dist);
+      c1.x -= nx * overlap;
+      c1.y -= ny * overlap;
+      c2.x += nx * overlap;
+      c2.y += ny * overlap;
+
+      const rvx = c1.vx - c2.vx;
+      const rvy = c1.vy - c2.vy;
+      const velAlongNormal = rvx * nx + rvy * ny;
+      if (velAlongNormal > 0) {
+        const impulse = 1.35 * velAlongNormal;
+        c1.vx -= impulse * 0.5 * nx;
+        c1.vy -= impulse * 0.5 * ny;
+        c2.vx += impulse * 0.5 * nx;
+        c2.vy += impulse * 0.5 * ny;
+        addSparkParticles((c1.x + c2.x) * 0.5, (c1.y + c2.y) * 0.5);
+        playTone(180, 0.09, "sawtooth", 0.25);
+      }
+    }
   }
 
   function updateCarPhysics(car, track, dt) {
@@ -1353,6 +1504,90 @@
 
   let lastTime = 0;
 
+  function drawSplitscreenHUD(ctx, vx, vy, vw, vh, car, name, color, playerNum, totalLaps) {
+    ctx.save();
+    // Top-left player badge
+    const badgeX = vx + 16;
+    const badgeY = vy + 14;
+    ctx.fillStyle = "rgba(15, 23, 42, 0.88)";
+    ctx.beginPath();
+    ctx.roundRect(badgeX, badgeY, 185, 42, 8);
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Player name & color dot
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(badgeX + 16, badgeY + 16, 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 13px sans-serif";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText(`P${playerNum}: ${name}`, badgeX + 28, badgeY + 16);
+
+    // Lap badge
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "bold 11px sans-serif";
+    ctx.fillText(`Runde: `, badgeX + 28, badgeY + 31);
+    ctx.fillStyle = "#38bdf8";
+    ctx.fillText(`${car.lap}/${totalLaps}`, badgeX + 72, badgeY + 31);
+
+    // Top-right Speedometer
+    const speedX = vx + vw - 120;
+    const speedY = vy + 14;
+    ctx.fillStyle = "rgba(15, 23, 42, 0.88)";
+    ctx.beginPath();
+    ctx.roundRect(speedX, speedY, 104, 42, 8);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    const kmh = Math.round(car.speed * 0.48);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 18px Courier New, monospace";
+    ctx.textAlign = "right";
+    ctx.fillText(String(kmh), speedX + 64, speedY + 22);
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "bold 10px sans-serif";
+    ctx.fillText("km/t", speedX + 96, speedY + 22);
+
+    // Bottom-center Drift Boost Meter
+    const barW = Math.min(220, Math.max(130, vw * 0.32));
+    const barH = 12;
+    const barX = vx + (vw - barW) / 2;
+    const barY = vy + vh - 22;
+
+    ctx.fillStyle = "rgba(15, 23, 42, 0.88)";
+    ctx.beginPath();
+    ctx.roundRect(barX - 2, barY - 2, barW + 4, barH + 4, 6);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    const pct = Math.max(0, Math.min(1, car.driftBoostCharge));
+    if (pct > 0) {
+      ctx.fillStyle = car.turboTimer > 0
+        ? "#f97316"
+        : (pct > 0.75 ? "#fbbf24" : "#38bdf8");
+      ctx.beginPath();
+      ctx.roundRect(barX, barY, barW * pct, barH, 4);
+      ctx.fill();
+    }
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 9px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(car.turboTimer > 0 ? "TURBO BOOST!" : (car.isDrifting ? "ISSLADD" : "DRIFT BOOST"), barX + barW / 2, barY + 9);
+
+    ctx.restore();
+  }
+
   function gameLoop(timestamp) {
     if (!lastTime) lastTime = timestamp;
     const dt = Math.min(0.08, (timestamp - lastTime) / 1000.0);
@@ -1361,94 +1596,218 @@
     try {
       const track = TRACKS[state.trackId] || TRACKS.grand_prix;
 
-      // In Solo or when racing, full driver control:
-      if (state.mode === "solo" || state.roomStatus === "racing") {
-        state.myCar.accelInput = state.keys.up ? 1 : 0;
-        state.myCar.brakeInput = state.keys.down ? 1 : 0;
-        state.myCar.steerInput = (state.keys.right ? 1 : 0) - (state.keys.left ? 1 : 0);
-        state.myCar.handbrakeInput = state.keys.space ? 1 : 0;
-      } else if (state.roomStatus === "countdown") {
-        // Allow steering & wheel angling before green flag
-        state.myCar.accelInput = 0;
-        state.myCar.brakeInput = 0;
-        state.myCar.steerInput = (state.keys.right ? 1 : 0) - (state.keys.left ? 1 : 0);
-        state.myCar.handbrakeInput = 0;
-      } else {
-        state.myCar.accelInput = 0;
-        state.myCar.brakeInput = 0.5;
-        state.myCar.steerInput = 0;
-        state.myCar.handbrakeInput = 0;
-      }
+      if (state.mode === "splitscreen" && state.car1 && state.car2) {
+        // Player 1 inputs (Arrows + Space)
+        state.car1.accelInput = state.keysP1.up ? 1 : 0;
+        state.car1.brakeInput = state.keysP1.down ? 1 : 0;
+        state.car1.steerInput = (state.keysP1.right ? 1 : 0) - (state.keysP1.left ? 1 : 0);
+        state.car1.handbrakeInput = state.keysP1.space ? 1 : 0;
 
-      updateCarPhysics(state.myCar, track, dt);
-      updateEngineAudio(state.myCar.speed, state.myCar.accelInput);
+        // Player 2 inputs (WASD + Q/E)
+        state.car2.accelInput = state.keysP2.up ? 1 : 0;
+        state.car2.brakeInput = state.keysP2.down ? 1 : 0;
+        state.car2.steerInput = (state.keysP2.right ? 1 : 0) - (state.keysP2.left ? 1 : 0);
+        state.car2.handbrakeInput = state.keysP2.space ? 1 : 0;
 
-      // Opponent interpolation
-      Object.values(state.opponentCars).forEach(opp => {
-        if (opp.targetX !== undefined) {
-          opp.x += (opp.targetX - opp.x) * Math.min(1.0, dt * 14.0);
-          opp.y += (opp.targetY - opp.y) * Math.min(1.0, dt * 14.0);
-          let diff = opp.targetAngle - opp.angle;
-          while (diff < -Math.PI) diff += Math.PI * 2;
-          while (diff > Math.PI) diff -= Math.PI * 2;
-          opp.angle += diff * Math.min(1.0, dt * 14.0);
+        updateCarPhysics(state.car1, track, dt);
+        updateCarPhysics(state.car2, track, dt);
+        resolveCarCarCollision(state.car1, state.car2);
 
-          if (opp.isDrifting) {
-            addIceSprayParticle(opp);
-            addSkidmark(opp);
+        const maxSpd = Math.max(state.car1.speed, state.car2.speed);
+        const maxThrottle = Math.max(state.car1.accelInput, state.car2.accelInput);
+        updateEngineAudio(maxSpd, maxThrottle);
+
+        updateParticles(dt);
+
+        resizeCanvas();
+        const canvas = el.raceCanvas;
+        if (canvas && canvas.width > 0 && canvas.height > 0) {
+          const ctx = canvas.getContext("2d");
+          const w = canvas.width;
+          const h = canvas.height;
+          const halfH = Math.floor(h / 2);
+
+          // P1 camera update
+          const look1 = Math.min(100, state.car1.speed * 0.28);
+          state.cam1.x += (state.car1.x + Math.cos(state.car1.angle) * look1 - state.cam1.x) * 0.16;
+          state.cam1.y += (state.car1.y + Math.sin(state.car1.angle) * look1 - state.cam1.y) * 0.16;
+
+          // P2 camera update
+          const look2 = Math.min(100, state.car2.speed * 0.28);
+          state.cam2.x += (state.car2.x + Math.cos(state.car2.angle) * look2 - state.cam2.x) * 0.16;
+          state.cam2.y += (state.car2.y + Math.sin(state.car2.angle) * look2 - state.cam2.y) * 0.16;
+
+          // --- VIEWPORT 1 (PLAYER 1 - TOP HALF) ---
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(0, 0, w, halfH);
+          ctx.clip();
+          ctx.fillStyle = "#090d16";
+          ctx.fillRect(0, 0, w, halfH);
+
+          ctx.save();
+          ctx.translate(w / 2, halfH / 2);
+          ctx.scale(state.cam1.zoom, state.cam1.zoom);
+          ctx.translate(-state.cam1.x, -state.cam1.y);
+
+          drawTexturedTrack(ctx, track);
+          drawSkidmarks(ctx);
+          drawParticles(ctx); // Under cars!
+
+          drawPlayerCar(ctx, state.car2, state.splitP2.color, state.splitP2.name, false);
+          drawPlayerCar(ctx, state.car1, state.splitP1.color, state.splitP1.name, true);
+          ctx.restore();
+
+          drawSplitscreenHUD(ctx, 0, 0, w, halfH, state.car1, state.splitP1.name, state.splitP1.color, 1, state.laps);
+          ctx.restore();
+
+          // --- VIEWPORT 2 (PLAYER 2 - BOTTOM HALF) ---
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(0, halfH, w, h - halfH);
+          ctx.clip();
+          ctx.fillStyle = "#090d16";
+          ctx.fillRect(0, halfH, w, h - halfH);
+
+          ctx.save();
+          ctx.translate(w / 2, halfH + (h - halfH) / 2);
+          ctx.scale(state.cam2.zoom, state.cam2.zoom);
+          ctx.translate(-state.cam2.x, -state.cam2.y);
+
+          drawTexturedTrack(ctx, track);
+          drawSkidmarks(ctx);
+          drawParticles(ctx); // Under cars!
+
+          drawPlayerCar(ctx, state.car1, state.splitP1.color, state.splitP1.name, false);
+          drawPlayerCar(ctx, state.car2, state.splitP2.color, state.splitP2.name, true);
+          ctx.restore();
+
+          drawSplitscreenHUD(ctx, 0, halfH, w, h - halfH, state.car2, state.splitP2.name, state.splitP2.color, 2, state.laps);
+          ctx.restore();
+
+          // --- CENTER DIVIDER LINE ---
+          ctx.save();
+          ctx.fillStyle = "#38bdf8";
+          ctx.shadowColor = "#38bdf8";
+          ctx.shadowBlur = 10;
+          ctx.fillRect(0, halfH - 2, w, 4);
+          ctx.shadowBlur = 0;
+          ctx.restore();
+        }
+
+        // Splitscreen race finished handling
+        if (state.car1.finished || state.car2.finished) {
+          if (!state.splitFinishTimeout) {
+            state.splitFinishTimeout = performance.now() + 4000;
+          }
+          if ((state.car1.finished && state.car2.finished) || performance.now() >= state.splitFinishTimeout) {
+            state.splitFinishTimeout = null;
+            setTimeout(() => {
+              const racers = [
+                { name: state.splitP1.name, color: state.splitP1.color, finishTime: state.car1.finishTime, bestLap: state.car1.bestLap, lap: state.car1.lap },
+                { name: state.splitP2.name, color: state.splitP2.color, finishTime: state.car2.finishTime, bestLap: state.car2.bestLap, lap: state.car2.lap },
+              ];
+              racers.sort((a, b) => {
+                if (a.finishTime > 0 && b.finishTime > 0) return a.finishTime - b.finishTime;
+                if (a.finishTime > 0) return -1;
+                if (b.finishTime > 0) return 1;
+                return b.lap - a.lap;
+              });
+              showGameOverPodium(racers);
+            }, 500);
+            return;
           }
         }
-      });
+      } else {
+        // Normal Singleplayer / Online Mode
+        if (state.mode === "solo" || state.roomStatus === "racing") {
+          state.myCar.accelInput = state.keys.up ? 1 : 0;
+          state.myCar.brakeInput = state.keys.down ? 1 : 0;
+          state.myCar.steerInput = (state.keys.right ? 1 : 0) - (state.keys.left ? 1 : 0);
+          state.myCar.handbrakeInput = state.keys.space ? 1 : 0;
+        } else if (state.roomStatus === "countdown") {
+          // Allow steering & wheel angling before green flag
+          state.myCar.accelInput = 0;
+          state.myCar.brakeInput = 0;
+          state.myCar.steerInput = (state.keys.right ? 1 : 0) - (state.keys.left ? 1 : 0);
+          state.myCar.handbrakeInput = 0;
+        } else {
+          state.myCar.accelInput = 0;
+          state.myCar.brakeInput = 0.5;
+          state.myCar.steerInput = 0;
+          state.myCar.handbrakeInput = 0;
+        }
 
-      updateParticles(dt);
+        updateCarPhysics(state.myCar, track, dt);
+        updateEngineAudio(state.myCar.speed, state.myCar.accelInput);
 
-      // Render Canvas
-      resizeCanvas();
-      const canvas = el.raceCanvas;
-      if (canvas && canvas.width > 0 && canvas.height > 0) {
-        const ctx = canvas.getContext("2d");
-        ctx.fillStyle = "#090d16";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // Smooth camera follow with look-ahead
-        const lookahead = Math.min(110, state.myCar.speed * 0.3);
-        const targetCamX = state.myCar.x + Math.cos(state.myCar.angle) * lookahead;
-        const targetCamY = state.myCar.y + Math.sin(state.myCar.angle) * lookahead;
-        state.camera.x += (targetCamX - state.camera.x) * 0.16;
-        state.camera.y += (targetCamY - state.camera.y) * 0.16;
-
-        ctx.save();
-        ctx.translate(canvas.width / 2, canvas.height / 2);
-        ctx.scale(state.camera.zoom, state.camera.zoom);
-        ctx.translate(-state.camera.x, -state.camera.y);
-
-        drawTexturedTrack(ctx, track);
-        drawSkidmarks(ctx);
-
-        const allMinimapCars = [];
+        // Opponent interpolation
         Object.values(state.opponentCars).forEach(opp => {
-          drawPlayerCar(ctx, opp, opp.color, opp.name, false);
-          allMinimapCars.push({ x: opp.x, y: opp.y, color: opp.color, isMe: false });
+          if (opp.targetX !== undefined) {
+            opp.x += (opp.targetX - opp.x) * Math.min(1.0, dt * 14.0);
+            opp.y += (opp.targetY - opp.y) * Math.min(1.0, dt * 14.0);
+            let diff = opp.targetAngle - opp.angle;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            opp.angle += diff * Math.min(1.0, dt * 14.0);
+
+            if (opp.isDrifting) {
+              addIceSprayParticle(opp);
+              addSkidmark(opp);
+            }
+          }
         });
 
-        drawPlayerCar(ctx, state.myCar, state.driverColor, state.driverName, true);
-        allMinimapCars.push({ x: state.myCar.x, y: state.myCar.y, color: state.driverColor, isMe: true });
+        updateParticles(dt);
 
-        drawParticles(ctx);
-        ctx.restore();
+        // Render Canvas
+        resizeCanvas();
+        const canvas = el.raceCanvas;
+        if (canvas && canvas.width > 0 && canvas.height > 0) {
+          const ctx = canvas.getContext("2d");
+          ctx.fillStyle = "#090d16";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        drawMinimap(track, allMinimapCars);
-      }
+          // Smooth camera follow with look-ahead
+          const lookahead = Math.min(110, state.myCar.speed * 0.3);
+          const targetCamX = state.myCar.x + Math.cos(state.myCar.angle) * lookahead;
+          const targetCamY = state.myCar.y + Math.sin(state.myCar.angle) * lookahead;
+          state.camera.x += (targetCamX - state.camera.x) * 0.16;
+          state.camera.y += (targetCamY - state.camera.y) * 0.16;
 
-      updateHUD(track);
+          ctx.save();
+          ctx.translate(canvas.width / 2, canvas.height / 2);
+          ctx.scale(state.camera.zoom, state.camera.zoom);
+          ctx.translate(-state.camera.x, -state.camera.y);
 
-      if (state.mode === "solo" && state.myCar.finished) {
-        setTimeout(() => {
-          showGameOverPodium([
-            { name: state.driverName, color: state.driverColor, finishTime: state.myCar.finishTime, bestLap: state.myCar.bestLap },
-          ]);
-        }, 700);
-        return;
+          drawTexturedTrack(ctx, track);
+          drawSkidmarks(ctx);
+          drawParticles(ctx); // EFFECTS STRICTLY UNDER CARS!
+
+          const allMinimapCars = [];
+          Object.values(state.opponentCars).forEach(opp => {
+            drawPlayerCar(ctx, opp, opp.color, opp.name, false);
+            allMinimapCars.push({ x: opp.x, y: opp.y, color: opp.color, isMe: false });
+          });
+
+          drawPlayerCar(ctx, state.myCar, state.driverColor, state.driverName, true);
+          allMinimapCars.push({ x: state.myCar.x, y: state.myCar.y, color: state.driverColor, isMe: true });
+
+          ctx.restore();
+
+          drawMinimap(track, allMinimapCars);
+        }
+
+        updateHUD(track);
+
+        if (state.mode === "solo" && state.myCar.finished) {
+          setTimeout(() => {
+            showGameOverPodium([
+              { name: state.driverName, color: state.driverColor, finishTime: state.myCar.finishTime, bestLap: state.myCar.bestLap },
+            ]);
+          }, 700);
+          return;
+        }
       }
     } catch (err) {
       console.error("Game loop error:", err);
@@ -1530,11 +1889,12 @@
 
     (data.players || []).forEach(p => {
       if (p.id !== state.playerId) {
+        const color = p.color || (p.avatar ? extractCharacterColor(p.avatar) : "#ef4444");
         if (!state.opponentCars[p.id]) {
           state.opponentCars[p.id] = {
             id: p.id,
             name: p.name,
-            color: p.color,
+            color: color,
             x: p.x,
             y: p.y,
             angle: p.angle,
@@ -1550,6 +1910,7 @@
           };
         } else {
           const opp = state.opponentCars[p.id];
+          opp.color = color;
           opp.targetX = p.x;
           opp.targetY = p.y;
           opp.targetAngle = p.angle;
@@ -1621,13 +1982,23 @@
     players.forEach((p, idx) => {
       const card = document.createElement("div");
       card.className = "racer-slot-card occupied" + (p.id === state.playerId ? " is-me" : "");
+      const avatarSrc = (typeof CharacterCreator !== "undefined" && p.avatar)
+        ? CharacterCreator.getAvatarImgSrc(p.avatar)
+        : "";
+      const color = p.color || (p.avatar ? extractCharacterColor(p.avatar) : "#ef4444");
+
+      const avatarHtml = avatarSrc
+        ? `<div class="avatar-circle-preview" style="width:38px;height:38px;"><img src="${avatarSrc}" alt="${escapeHtml(p.name)}" /></div>`
+        : `<div class="racer-car-icon-wrap" style="background:${color};"><span style="font-size:1.1rem;">🏎️</span></div>`;
+
       card.innerHTML = `
         <div class="racer-slot-num">${idx + 1}</div>
-        <div class="racer-car-icon-wrap" style="background:${p.color};">
-          <span style="font-size:1.1rem;">🏎️</span>
-        </div>
+        ${avatarHtml}
         <div class="racer-info-wrap">
-          <div class="racer-name">${escapeHtml(p.name)}${p.isHost ? " (Vert 👑)" : ""}</div>
+          <div class="racer-name" style="display:flex;align-items:center;gap:0.4rem;">
+            <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};box-shadow:0 0 6px ${color};"></span>
+            <span>${escapeHtml(p.name)}${p.isHost ? " (Vert 👑)" : ""}</span>
+          </div>
           <div class="racer-subtext">Klar for sladd 🏁</div>
         </div>
         <span class="racer-ready-tag ${p.isReady ? "ready" : "waiting"}">
@@ -1642,7 +2013,7 @@
       emptyCard.className = "racer-slot-card empty";
       emptyCard.innerHTML = `
         <div class="racer-slot-num">${i + 1}</div>
-        <div class="racer-subtext" style="color:#64748b;">Ledig plass...</div>
+        <div class="racer-subtext" style="color:#64748b;">Ledig startspor...</div>
       `;
       el.racersGrid.appendChild(emptyCard);
     }
@@ -1652,6 +2023,34 @@
     } else {
       el.btnHostStartRace.classList.add("hidden");
     }
+  }
+
+  function launchSplitscreenRace() {
+    state.mode = "splitscreen";
+    state.roomStatus = "racing";
+    state.skidmarks = [];
+    state.particles = [];
+    state.laps = state.splitLaps || 3;
+    state.splitFinishTimeout = null;
+    state.keysP1 = { up: false, down: false, left: false, right: false, space: false };
+    state.keysP2 = { up: false, down: false, left: false, right: false, space: false };
+
+    const track = TRACKS[state.trackId] || TRACKS.grand_prix;
+    state.car1 = createCarState(0, track);
+    state.car2 = createCarState(1, track);
+    state.cam1 = { x: state.car1.x, y: state.car1.y, zoom: 1.15 };
+    state.cam2 = { x: state.car2.x, y: state.car2.y, zoom: 1.15 };
+
+    showView("game");
+    resizeCanvas();
+    if (el.raceCanvas) el.raceCanvas.focus();
+
+    el.countdownOverlay.classList.remove("hidden");
+    el.countdownText.textContent = "KJØR! 🏁";
+    playTone(880, 0.4, "triangle", 0.3);
+    setTimeout(() => el.countdownOverlay.classList.add("hidden"), 700);
+
+    startSimulation();
   }
 
   function launchOnlineRace(data) {
@@ -1665,6 +2064,9 @@
     const track = TRACKS[state.trackId] || TRACKS.grand_prix;
     const myPlayer = (data.players || []).find(p => p.id === state.playerId);
     const mySlot = myPlayer ? myPlayer.slot : 0;
+    if (myPlayer && myPlayer.color) {
+      state.driverColor = myPlayer.color;
+    }
 
     resetCarToSlot(state.myCar, track, mySlot);
 
@@ -1732,7 +2134,7 @@
           <span class="podium-color-dot" style="background:${r.color || '#38bdf8'};"></span>
           <span class="podium-name">${escapeHtml(r.name)}</span>
         </div>
-        <div class="podium-time">${r.finishTime > 0 ? formatTime(r.finishTime) : "Fullførte"}</div>
+        <div class="podium-time">${r.finishTime > 0 ? formatTime(r.finishTime) : (r.lap ? `Runde ${r.lap}` : "Fullførte")}</div>
       `;
       el.podiumStandings.appendChild(row);
     });
@@ -1748,31 +2150,52 @@
     function handleKey(e, isDown) {
       const k = e.key;
       const c = e.code;
-      let matched = false;
 
-      if (k === "ArrowUp" || c === "ArrowUp" || k === "w" || k === "W" || c === "KeyW" || k === "Up") {
-        state.keys.up = isDown;
-        matched = true;
-      }
-      if (k === "ArrowDown" || c === "ArrowDown" || k === "s" || k === "S" || c === "KeyS" || k === "Down") {
-        state.keys.down = isDown;
-        matched = true;
-      }
-      if (k === "ArrowLeft" || c === "ArrowLeft" || k === "a" || k === "A" || c === "KeyA" || k === "Left") {
-        state.keys.left = isDown;
-        matched = true;
-      }
-      if (k === "ArrowRight" || c === "ArrowRight" || k === "d" || k === "D" || c === "KeyD" || k === "Right") {
-        state.keys.right = isDown;
-        matched = true;
-      }
-      if (k === " " || c === "Space" || k === "Spacebar") {
-        state.keys.space = isDown;
-        matched = true;
-      }
+      if (state.mode === "splitscreen") {
+        let matched = false;
+        // Player 1 controls (Arrow keys + Space/ShiftRight/Enter)
+        if (k === "ArrowUp" || c === "ArrowUp") { state.keysP1.up = isDown; matched = true; }
+        if (k === "ArrowDown" || c === "ArrowDown") { state.keysP1.down = isDown; matched = true; }
+        if (k === "ArrowLeft" || c === "ArrowLeft") { state.keysP1.left = isDown; matched = true; }
+        if (k === "ArrowRight" || c === "ArrowRight") { state.keysP1.right = isDown; matched = true; }
+        if (k === " " || c === "Space" || c === "ShiftRight" || c === "Enter") { state.keysP1.space = isDown; matched = true; }
 
-      if (matched && !el.viewGame.classList.contains("hidden")) {
-        e.preventDefault();
+        // Player 2 controls (WASD + Q/E/ShiftLeft)
+        if (k === "w" || k === "W" || c === "KeyW") { state.keysP2.up = isDown; matched = true; }
+        if (k === "s" || k === "S" || c === "KeyS") { state.keysP2.down = isDown; matched = true; }
+        if (k === "a" || k === "A" || c === "KeyA") { state.keysP2.left = isDown; matched = true; }
+        if (k === "d" || k === "D" || c === "KeyD") { state.keysP2.right = isDown; matched = true; }
+        if (k === "q" || k === "Q" || c === "KeyQ" || k === "e" || k === "E" || c === "KeyE" || c === "ShiftLeft") { state.keysP2.space = isDown; matched = true; }
+
+        if (matched && !el.viewGame.classList.contains("hidden")) {
+          e.preventDefault();
+        }
+      } else {
+        let matched = false;
+        if (k === "ArrowUp" || c === "ArrowUp" || k === "w" || k === "W" || c === "KeyW" || k === "Up") {
+          state.keys.up = isDown;
+          matched = true;
+        }
+        if (k === "ArrowDown" || c === "ArrowDown" || k === "s" || k === "S" || c === "KeyS" || k === "Down") {
+          state.keys.down = isDown;
+          matched = true;
+        }
+        if (k === "ArrowLeft" || c === "ArrowLeft" || k === "a" || k === "A" || c === "KeyA" || k === "Left") {
+          state.keys.left = isDown;
+          matched = true;
+        }
+        if (k === "ArrowRight" || c === "ArrowRight" || k === "d" || k === "D" || c === "KeyD" || k === "Right") {
+          state.keys.right = isDown;
+          matched = true;
+        }
+        if (k === " " || c === "Space" || k === "Spacebar") {
+          state.keys.space = isDown;
+          matched = true;
+        }
+
+        if (matched && !el.viewGame.classList.contains("hidden")) {
+          e.preventDefault();
+        }
       }
     }
 
@@ -1786,6 +2209,8 @@
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) {
         state.keys = { up: false, down: false, left: false, right: false, space: false };
+        state.keysP1 = { up: false, down: false, left: false, right: false, space: false };
+        state.keysP2 = { up: false, down: false, left: false, right: false, space: false };
       }
     });
 
@@ -1810,6 +2235,27 @@
       state.driverName = el.inputDriverName.value.trim() || "Sjåfør 1";
       localStorage.setItem("ts_driver_name", state.driverName);
     });
+
+    if (el.btnOpenCharCreator) {
+      el.btnOpenCharCreator.addEventListener("click", () => openCharCreatorModal());
+    }
+    if (el.btnPreviewAvatarClick) {
+      el.btnPreviewAvatarClick.addEventListener("click", () => openCharCreatorModal());
+    }
+    if (el.btnQuickRandomChar) {
+      el.btnQuickRandomChar.addEventListener("click", () => {
+        if (typeof CharacterCreator !== "undefined") {
+          const rnd = CharacterCreator.getRandomConfig();
+          selectedAvatar = rnd;
+          selectedAvatarStr = CharacterCreator.saveCharacter(rnd);
+          if (rnd.headColor) {
+            state.driverColor = rnd.headColor;
+            localStorage.setItem("ts_driver_color", rnd.headColor);
+          }
+          updateDriverProfileUI();
+        }
+      });
+    }
 
     // Lobby tabs
     const tabs = [
@@ -1850,13 +2296,54 @@
       });
     });
 
-    el.controlMaxPlayers.querySelectorAll(".seg-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        el.controlMaxPlayers.querySelectorAll(".seg-btn").forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        state.maxPlayers = parseInt(btn.dataset.max || "4", 10);
+    // Max players picker (1-16)
+    function setMaxPlayers(n) {
+      n = Math.max(1, Math.min(16, parseInt(n, 10) || 4));
+      state.maxPlayers = n;
+      if (el.sliderMaxPlayers) el.sliderMaxPlayers.value = n;
+      if (el.inputMaxPlayers) el.inputMaxPlayers.value = n;
+    }
+    if (el.sliderMaxPlayers) el.sliderMaxPlayers.addEventListener("input", () => setMaxPlayers(el.sliderMaxPlayers.value));
+    if (el.inputMaxPlayers) el.inputMaxPlayers.addEventListener("change", () => setMaxPlayers(el.inputMaxPlayers.value));
+    if (el.btnMaxPlayersDec) el.btnMaxPlayersDec.addEventListener("click", () => setMaxPlayers(state.maxPlayers - 1));
+    if (el.btnMaxPlayersInc) el.btnMaxPlayersInc.addEventListener("click", () => setMaxPlayers(state.maxPlayers + 1));
+
+    // Splitscreen Local Setup
+    if (el.splitP1Colors) {
+      el.splitP1Colors.querySelectorAll(".spc-color-dot").forEach(dot => {
+        dot.addEventListener("click", () => {
+          el.splitP1Colors.querySelectorAll(".spc-color-dot").forEach(d => d.classList.remove("active"));
+          dot.classList.add("active");
+          state.splitP1.color = dot.dataset.color;
+        });
       });
-    });
+    }
+    if (el.splitP2Colors) {
+      el.splitP2Colors.querySelectorAll(".spc-color-dot").forEach(dot => {
+        dot.addEventListener("click", () => {
+          el.splitP2Colors.querySelectorAll(".spc-color-dot").forEach(d => d.classList.remove("active"));
+          dot.classList.add("active");
+          state.splitP2.color = dot.dataset.color;
+        });
+      });
+    }
+    if (el.controlSplitLaps) {
+      el.controlSplitLaps.querySelectorAll(".seg-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          el.controlSplitLaps.querySelectorAll(".seg-btn").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          state.splitLaps = parseInt(btn.dataset.laps || "3", 10);
+        });
+      });
+    }
+    if (el.btnStartSplitscreen) {
+      el.btnStartSplitscreen.addEventListener("click", () => {
+        state.splitP1.name = (el.inputSplitP1Name && el.inputSplitP1Name.value.trim()) || "Spiller 1";
+        state.splitP2.name = (el.inputSplitP2Name && el.inputSplitP2Name.value.trim()) || "Spiller 2";
+        if (el.selectSplitTrack) state.trackId = el.selectSplitTrack.value;
+        launchSplitscreenRace();
+      });
+    }
 
     el.selectTrack.addEventListener("change", () => { state.trackId = el.selectTrack.value; });
     el.selectSoloTrack.addEventListener("change", () => { state.trackId = el.selectSoloTrack.value; });
@@ -1870,6 +2357,7 @@
           body: JSON.stringify({
             hostName: state.driverName,
             color: state.driverColor,
+            avatar: selectedAvatarStr,
             trackId: state.trackId,
             laps: state.laps,
             maxPlayers: state.maxPlayers,
@@ -1909,6 +2397,7 @@
             roomCode: code,
             playerName: state.driverName,
             color: state.driverColor,
+            avatar: selectedAvatarStr,
           }),
         });
         const data = await resp.json();
@@ -2033,7 +2522,9 @@
     // Podium
     el.btnPodiumPlayAgain.addEventListener("click", async () => {
       el.modalPodium.classList.add("hidden");
-      if (state.mode === "solo") {
+      if (state.mode === "splitscreen") {
+        launchSplitscreenRace();
+      } else if (state.mode === "solo") {
         launchSoloTimeTrial();
       } else if (state.isHost) {
         try {
@@ -2072,7 +2563,7 @@
   // =========================================================================
 
   async function init() {
-    initColorPalette();
+    initCharacterProfile();
     renderProfileCarPreview();
     initInputHandlers();
 

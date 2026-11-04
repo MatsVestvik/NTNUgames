@@ -69,10 +69,11 @@ class TurbosladdRoom:
         code: str,
         host_name: str,
         host_color: str,
-        host_car: str,
+        host_car: str = "gt",
         track_id: str = "grand_prix",
         laps: int = 3,
-        max_players: int = 4,  # Configured for 2-4 now, extensible up to 16
+        max_players: int = 4,  # Configured for 1-16 players
+        host_avatar: str = "",
     ):
         self.code = code
         self.created_at = time.time()
@@ -82,7 +83,7 @@ class TurbosladdRoom:
 
         self.track_id = track_id if track_id in TRACK_CONFIGS else "grand_prix"
         self.laps = max(1, min(10, laps))
-        self.max_players = max(2, min(16, max_players))
+        self.max_players = max(1, min(16, max_players))
 
         # Status: "lobby" -> "countdown" -> "racing" -> "finished"
         self.status = "lobby"
@@ -99,7 +100,8 @@ class TurbosladdRoom:
             "id": self.host_id,
             "name": host_name[:18].strip() or "Sjåfør 1",
             "color": host_color or PLAYER_PALETTE[0]["color"],
-            "carModel": host_car or "sport",
+            "avatar": host_avatar or "",
+            "carModel": "gt",
             "isHost": True,
             "isReady": True,
             "slot": 0,
@@ -146,7 +148,7 @@ class TurbosladdRoom:
                     self.status = "finished"
                     self.bump()
 
-    def add_player(self, name: str, color: str, car_model: str) -> Optional[Dict[str, Any]]:
+    def add_player(self, name: str, color: str, car_model: str = "gt", avatar: str = "") -> Optional[Dict[str, Any]]:
         with self.lock:
             active_count = len([p for p in self.players.values() if not p.get("left")])
             if active_count >= self.max_players:
@@ -175,7 +177,8 @@ class TurbosladdRoom:
                 "id": pid,
                 "name": name[:18].strip() or f"Sjåfør {slot + 1}",
                 "color": assigned_color,
-                "carModel": car_model or "sport",
+                "avatar": avatar or "",
+                "carModel": "gt",
                 "isHost": False,
                 "isReady": False,
                 "slot": slot,
@@ -314,7 +317,8 @@ class TurbosladdRoom:
                     "id": p["id"],
                     "name": p["name"],
                     "color": p["color"],
-                    "carModel": p["carModel"],
+                    "avatar": p.get("avatar", ""),
+                    "carModel": p.get("carModel", "gt"),
                     "isHost": p["isHost"],
                     "isReady": p["isReady"],
                     "slot": p["slot"],
@@ -416,7 +420,7 @@ class TurbosladdAPI:
         if path == "/api/turbosladd/create":
             host_name = str(body.get("hostName", "Sjåfør 1")).strip()[:18] or "Sjåfør 1"
             host_color = str(body.get("color", "")).strip()
-            host_car = str(body.get("carModel", "sport")).strip()
+            host_avatar = str(body.get("avatar", "")).strip()
             track_id = str(body.get("trackId", "grand_prix")).strip()
             laps = int(body.get("laps", 3))
             max_players = int(body.get("maxPlayers", 4))
@@ -426,10 +430,11 @@ class TurbosladdAPI:
                 code=code,
                 host_name=host_name,
                 host_color=host_color,
-                host_car=host_car,
+                host_car="gt",
                 track_id=track_id,
                 laps=laps,
                 max_players=max_players,
+                host_avatar=host_avatar,
             )
 
             with _rooms_lock:
@@ -450,14 +455,14 @@ class TurbosladdAPI:
             code = str(body.get("roomCode", "")).strip().upper()
             player_name = str(body.get("playerName", "Sjåfør")).strip()[:18] or "Sjåfør"
             color = str(body.get("color", "")).strip()
-            car_model = str(body.get("carModel", "sport")).strip()
+            avatar = str(body.get("avatar", "")).strip()
 
             with _rooms_lock:
                 room = _rooms.get(code)
             if not room:
                 return 404, {"error": "Fant ikke løpet. Sjekk koden og prøv igjen."}
 
-            player = room.add_player(player_name, color, car_model)
+            player = room.add_player(player_name, color, car_model="gt", avatar=avatar)
             if not player:
                 return 400, {"error": "Løpet er fullt (maks spillere nådd) eller allerede startet."}
 

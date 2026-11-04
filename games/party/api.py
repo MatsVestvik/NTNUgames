@@ -2341,14 +2341,16 @@ class PartyAPI:
                             host_player = room.players.get(room.host_id, {})
                             laps = int(settings.get("laps", 3))
                             track_id = str(settings.get("trackId", "grand_prix"))
+                            max_p = max(len(room.players), 4)
                             t_room = TurbosladdRoom(
                                 code=code,
                                 host_name=host_player.get("name", "Sjåfør 1"),
                                 host_color=host_player.get("color") or PLAYER_PALETTE[0]["color"],
-                                host_car="sport",
+                                host_car="gt",
                                 track_id=track_id,
                                 laps=laps,
-                                max_players=4
+                                max_players=max_p,
+                                host_avatar=host_player.get("avatar", ""),
                             )
                             t_room.host_id = room.host_id
                             t_room.status = "countdown"
@@ -2359,7 +2361,8 @@ class PartyAPI:
                                 "id": room.host_id,
                                 "name": host_player.get("name", "Sjåfør 1"),
                                 "color": host_player.get("color") or PLAYER_PALETTE[0]["color"],
-                                "carModel": "sport",
+                                "avatar": host_player.get("avatar", ""),
+                                "carModel": "gt",
                                 "isHost": True,
                                 "isReady": True,
                                 "slot": 0,
@@ -2379,13 +2382,14 @@ class PartyAPI:
                             }
                             slot = 1
                             for pid, pdata in room.players.items():
-                                if pid != room.host_id and len(t_room.players) < 4:
+                                if pid != room.host_id and len(t_room.players) < t_room.max_players:
                                     pal = PLAYER_PALETTE[slot % len(PLAYER_PALETTE)]
                                     t_room.players[pid] = {
                                         "id": pid,
                                         "name": pdata.get("name", f"Sjåfør {slot + 1}"),
                                         "color": pdata.get("color") or pal["color"],
-                                        "carModel": "drift" if slot % 2 == 1 else "sport",
+                                        "avatar": pdata.get("avatar", ""),
+                                        "carModel": "gt",
                                         "isHost": False,
                                         "isReady": True,
                                         "slot": slot,
