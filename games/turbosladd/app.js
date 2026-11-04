@@ -37,13 +37,13 @@
     { color: "#22c55e", name: "Smaragd" },
   ];
 
-  // Single Standardized Drift Car Spec: Responsive, fast & drifty
+  // Single Standardized Drift Car Spec: Responsive, fast & drifty on ice
   const CAR_SPEC = {
     name: "Turbosladd GT",
-    accel: 760,
-    maxSpeed: 520,
-    reverseSpeed: 190,
-    turnSpeed: 4.4,
+    accel: 850,
+    maxSpeed: 530,
+    reverseSpeed: 210,
+    turnSpeed: 3.9,
   };
 
   // =========================================================================
@@ -392,16 +392,54 @@
     try {
       initAudio();
       if (!state.audioCtx) return;
+      const now = state.audioCtx.currentTime;
       const osc = state.audioCtx.createOscillator();
       const gain = state.audioCtx.createGain();
-      osc.type = "sawtooth";
-      osc.frequency.setValueAtTime(260 + Math.random() * 80, state.audioCtx.currentTime);
-      gain.gain.setValueAtTime(0.025, state.audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, state.audioCtx.currentTime + 0.08);
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(320 + Math.random() * 120, now);
+      osc.frequency.exponentialRampToValueAtTime(180, now + 0.1);
+      gain.gain.setValueAtTime(0.045, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
       osc.connect(gain);
       gain.connect(state.audioCtx.destination);
-      osc.start();
-      osc.stop(state.audioCtx.currentTime + 0.08);
+      osc.start(now);
+      osc.stop(now + 0.1);
+    } catch (e) {}
+  }
+
+  function playBoostSound() {
+    if (!state.soundEnabled) return;
+    try {
+      initAudio();
+      if (!state.audioCtx) return;
+      if (state.audioCtx.state === "suspended") state.audioCtx.resume();
+      const now = state.audioCtx.currentTime;
+
+      // Rocket whoosh tone (rising sawtooth ramp)
+      const osc1 = state.audioCtx.createOscillator();
+      const gain1 = state.audioCtx.createGain();
+      osc1.type = "sawtooth";
+      osc1.frequency.setValueAtTime(260, now);
+      osc1.frequency.exponentialRampToValueAtTime(740, now + 0.22);
+      gain1.gain.setValueAtTime(0.22, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      osc1.connect(gain1);
+      gain1.connect(state.audioCtx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.3);
+
+      // Bright harmonic chime (high triangle)
+      const osc2 = state.audioCtx.createOscillator();
+      const gain2 = state.audioCtx.createGain();
+      osc2.type = "triangle";
+      osc2.frequency.setValueAtTime(587.33, now + 0.04);
+      osc2.frequency.exponentialRampToValueAtTime(1174.66, now + 0.24);
+      gain2.gain.setValueAtTime(0.20, now + 0.04);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+      osc2.connect(gain2);
+      gain2.connect(state.audioCtx.destination);
+      osc2.start(now + 0.04);
+      osc2.stop(now + 0.32);
     } catch (e) {}
   }
 
@@ -640,10 +678,11 @@
     let enginePower = CAR_SPEC.accel;
     let maxSpeed = CAR_SPEC.maxSpeed;
 
+    // Active Turbo Boost state
     if (car.turboTimer > 0) {
       car.turboTimer -= dt;
-      enginePower *= 1.45;
-      maxSpeed *= 1.25;
+      enginePower *= 1.5;
+      maxSpeed *= 1.28;
       addBoostParticle(car);
     }
 
@@ -652,87 +691,115 @@
     const rightX = -Math.sin(car.angle);
     const rightY = Math.cos(car.angle);
 
-    const vForward = car.vx * forwardX + car.vy * forwardY;
-    const vLateral = car.vx * rightX + car.vy * rightY;
+    let vForward = car.vx * forwardX + car.vy * forwardY;
+    let vLateral = car.vx * rightX + car.vy * rightY;
     const speed = Math.hypot(car.vx, car.vy);
     car.speed = speed;
 
-    // Slip angle between heading and actual travel vector
+    // Steering yaw rotation: agile and responsive ice rotation
+    const steerDir = vForward >= -15 ? 1 : -1;
+    car.angle += steer * CAR_SPEC.turnSpeed * steerDir * dt;
+
+    // Slip angle between heading and travel velocity vector
     let slip = 0;
-    if (speed > 20) {
-      const velAngle = Math.atan2(car.vy, car.vx);
-      let diff = car.angle - velAngle;
+    if (speed > 25) {
+      const travelAngle = Math.atan2(car.vy, car.vx);
+      let diff = car.angle - travelAngle;
       while (diff < -Math.PI) diff += Math.PI * 2;
       while (diff > Math.PI) diff -= Math.PI * 2;
       slip = diff;
     }
+    const absSlip = Math.abs(slip);
 
-    // Drifting is EASY and NATURAL to trigger:
-    // 1. Handbrake (Space)
-    // 2. Tapping brake while steering (Down + Left/Right)
-    // 3. Turning into any corner at speed (|steer| > 0.32 and speed > 65)
-    // 4. Continued slip momentum (|slip| > 0.10)
-    const wantsDrift = Boolean(handbrake) ||
-      (brake > 0 && Math.abs(steer) > 0.15 && speed > 40) ||
-      (Math.abs(steer) > 0.32 && speed > 65) ||
-      (car.isDrifting && Math.abs(slip) > 0.10 && speed > 45);
+    // Drifting on ice:
+    // 1. Sliding sideways when heading diverges from travel vector (absSlip > 0.18 & speed > 35)
+    // 2. Handbrake held (Space)
+    // 3. Tapping brake while steering at speed
+    const isSlidingOnIce = (absSlip > 0.18 && speed > 35) ||
+      Boolean(handbrake && speed > 25) ||
+      Boolean(brake > 0 && Math.abs(steer) > 0.15 && speed > 40);
 
-    if (wantsDrift && speed > 45) {
+    if (isSlidingOnIce) {
       car.isDrifting = true;
-      car.driftAngle = Math.abs(slip);
-      car.driftBoostCharge = Math.min(1.0, car.driftBoostCharge + dt * 0.55);
+      car.driftAngle = absSlip;
+      // Drift meter charges up smoothly during the slide
+      car.driftBoostCharge = Math.min(1.0, car.driftBoostCharge + dt * 0.82);
 
       addSkidmark(car);
-      addSmokeParticle(car);
-      if (Math.random() < 0.25) playDriftChirp();
+      addIceSprayParticle(car);
+      if (Math.random() < 0.28) playDriftChirp();
     } else {
-      if (car.isDrifting && car.driftBoostCharge > 0.28) {
-        // Boost fires on drift exit!
-        car.turboTimer = Math.min(1.6, car.driftBoostCharge * 1.5);
-        playTone(659.25, 0.18, "triangle", 0.3);
+      // DRIFT EXIT BOOST TRIGGER:
+      // When straightening the car back to the road vector (counter-steering or wheel centering)
+      if (car.isDrifting) {
+        if (car.driftBoostCharge >= 0.22 && speed > 40) {
+          const boostLevel = car.driftBoostCharge;
+          // 1. Instant forward rocket impulse
+          const forwardKick = 160 + 190 * boostLevel;
+          car.vx += forwardX * forwardKick;
+          car.vy += forwardY * forwardKick;
+
+          // 2. Turbo boost duration with extra power and top speed
+          car.turboTimer = 0.85 + boostLevel * 1.35;
+
+          // 3. Turbo pop sound effect
+          playBoostSound();
+
+          // 4. Boost exhaust flames
+          for (let i = 0; i < 14; i++) {
+            addBoostParticle(car);
+          }
+        }
+        car.isDrifting = false;
       }
-      car.isDrifting = false;
-      car.driftBoostCharge = Math.max(0, car.driftBoostCharge - dt * 1.5);
+      // Decay charge when straightened out and not boosting
+      car.driftBoostCharge = Math.max(0, car.driftBoostCharge - dt * 2.2);
       car.driftAngle = 0;
     }
 
-    // Steering: agile rotation for deep drifts, counter-steering balances the slide
-    const driftSteerBonus = car.isDrifting ? 1.35 : 1.0;
-    const steerFactor = Math.min(1.0, Math.max(0.75, speed / 65.0));
-    const steerDir = vForward >= -10 ? 1 : -1;
-    car.angle += steer * CAR_SPEC.turnSpeed * driftSteerBonus * steerFactor * steerDir * dt;
+    // Ice Surface Physics:
+    // - Low lateral friction while sliding (0.976 retention per 60Hz frame = smooth glide!)
+    // - Handbrake frees lateral slip even further (0.985 retention)
+    // - Once straightened out, studded tire grip bites into the track (0.88 retention)
+    let latRetention;
+    if (handbrake) {
+      latRetention = 0.985;
+    } else if (isSlidingOnIce) {
+      latRetention = 0.976;
+    } else {
+      latRetention = 0.88;
+    }
 
-    // Longitudinal drive & brake forces
-    let fForward = 0;
-    if (throttle > 0 && vForward < maxSpeed) {
-      fForward += throttle * enginePower;
+    let newVLateral = vLateral * Math.pow(latRetention, dt * 60);
+
+    // Forward drive & slide braking on ice
+    let newVForward = vForward;
+    if (throttle > 0 && newVForward < maxSpeed) {
+      newVForward += throttle * enginePower * dt;
     }
     if (brake > 0) {
-      if (vForward > 12) {
-        fForward -= brake * enginePower * 1.6;
-      } else if (vForward > -CAR_SPEC.reverseSpeed) {
-        fForward -= brake * enginePower * 0.9;
+      if (newVForward > 15) {
+        // Sliding brake: on ice, wheels lock up and car slides gradually to a stop
+        newVForward *= Math.pow(0.965, dt * 60);
+        newVLateral *= Math.pow(0.965, dt * 60);
+        newVForward -= brake * enginePower * 0.35 * dt;
+      } else if (newVForward > -CAR_SPEC.reverseSpeed) {
+        newVForward -= brake * enginePower * 0.7 * dt;
       }
     }
 
-    // Natural drag
-    fForward -= vForward * 1.5;
-    fForward -= vForward * Math.abs(vForward) * 0.0012;
-
-    // Lateral grip: loose when drifting (powerslide!), tight when gripping
-    const gripRate = car.isDrifting ? 1.8 : 9.5;
-    const newVLateral = vLateral * Math.max(0, 1 - gripRate * dt * 8.0);
-    const newVForward = vForward + fForward * dt;
+    // Very low rolling drag on ice
+    newVForward *= Math.pow(0.996, dt * 60);
 
     car.vx = newVForward * forwardX + newVLateral * rightX;
     car.vy = newVForward * forwardY + newVLateral * rightY;
 
-    // Track surface check (asphalt vs kerb vs grass vs barrier)
+    // Track surface check (asphalt vs snowbank / grass vs barrier)
     const trackDist = getDistanceToTrackSpine(car.x, car.y, track);
     const halfRoad = track.roadWidth * 0.5;
 
     if (trackDist > halfRoad + 45) {
-      // Off-road Grass / Sand
+      // Off-road Deep Snowbank
       car.vx *= Math.pow(0.88, dt * 60);
       car.vy *= Math.pow(0.88, dt * 60);
     }
@@ -840,41 +907,60 @@
     const backX = -Math.cos(car.angle) * 16;
     const backY = -Math.sin(car.angle) * 16;
 
-    state.skidmarks.push({ x: car.x + backX - rightX * 11, y: car.y + backY - rightY * 11, alpha: 0.7 });
-    state.skidmarks.push({ x: car.x + backX + rightX * 11, y: car.y + backY + rightY * 11, alpha: 0.7 });
+    state.skidmarks.push({ x: car.x + backX - rightX * 11, y: car.y + backY - rightY * 11, alpha: 0.65, isIce: true });
+    state.skidmarks.push({ x: car.x + backX + rightX * 11, y: car.y + backY + rightY * 11, alpha: 0.65, isIce: true });
 
-    if (state.skidmarks.length > 550) {
+    if (state.skidmarks.length > 600) {
       state.skidmarks.splice(0, 50);
     }
   }
 
-  function addSmokeParticle(car) {
-    const backX = -Math.cos(car.angle) * 18;
-    const backY = -Math.sin(car.angle) * 18;
-    state.particles.push({
-      x: car.x + backX + (Math.random() - 0.5) * 12,
-      y: car.y + backY + (Math.random() - 0.5) * 12,
-      vx: (Math.random() - 0.5) * 24 - car.vx * 0.1,
-      vy: (Math.random() - 0.5) * 24 - car.vy * 0.1,
-      size: 5 + Math.random() * 7,
-      alpha: 0.65,
-      decay: 0.75,
-      color: "rgba(226, 232, 240,",
+  function addIceSprayParticle(car) {
+    const rightX = -Math.sin(car.angle);
+    const rightY = Math.cos(car.angle);
+    const backX = -Math.cos(car.angle) * 16;
+    const backY = -Math.sin(car.angle) * 16;
+
+    // Both left and right rear tires throw up ice crystals & snow spray
+    [-10, 10].forEach(sideOffset => {
+      const startX = car.x + backX + rightX * sideOffset;
+      const startY = car.y + backY + rightY * sideOffset;
+      const sprayAngle = Math.atan2(car.vy || 1, car.vx || 1) + Math.PI + (Math.random() - 0.5) * 0.8;
+      const spraySpeed = (car.speed * 0.25) + 20 + Math.random() * 45;
+
+      state.particles.push({
+        x: startX + (Math.random() - 0.5) * 4,
+        y: startY + (Math.random() - 0.5) * 4,
+        vx: Math.cos(sprayAngle) * spraySpeed + (Math.random() - 0.5) * 15,
+        vy: Math.sin(sprayAngle) * spraySpeed + (Math.random() - 0.5) * 15,
+        size: 3.5 + Math.random() * 5.5,
+        alpha: 0.85,
+        decay: 1.3,
+        color: Math.random() > 0.35 ? "rgba(240, 249, 255," : "rgba(186, 230, 253,",
+      });
     });
   }
 
+  const addSmokeParticle = addIceSprayParticle;
+
   function addBoostParticle(car) {
-    const backX = -Math.cos(car.angle) * 22;
-    const backY = -Math.sin(car.angle) * 22;
-    state.particles.push({
-      x: car.x + backX + (Math.random() - 0.5) * 6,
-      y: car.y + backY + (Math.random() - 0.5) * 6,
-      vx: -Math.cos(car.angle) * 140 + (Math.random() - 0.5) * 30,
-      vy: -Math.sin(car.angle) * 140 + (Math.random() - 0.5) * 30,
-      size: 6 + Math.random() * 6,
-      alpha: 0.9,
-      decay: 1.8,
-      color: Math.random() > 0.4 ? "rgba(56, 189, 248," : "rgba(249, 115, 22,",
+    const backX = -Math.cos(car.angle) * 23;
+    const backY = -Math.sin(car.angle) * 23;
+    const rightX = -Math.sin(car.angle);
+    const rightY = Math.cos(car.angle);
+
+    // Twin rocket exhaust flame jets
+    [-7, 7].forEach(exhaustOffset => {
+      state.particles.push({
+        x: car.x + backX + rightX * exhaustOffset + (Math.random() - 0.5) * 4,
+        y: car.y + backY + rightY * exhaustOffset + (Math.random() - 0.5) * 4,
+        vx: -Math.cos(car.angle) * (180 + Math.random() * 80) + (Math.random() - 0.5) * 25,
+        vy: -Math.sin(car.angle) * (180 + Math.random() * 80) + (Math.random() - 0.5) * 25,
+        size: 5.5 + Math.random() * 6.5,
+        alpha: 0.95,
+        decay: 2.1,
+        color: Math.random() > 0.35 ? "rgba(56, 189, 248," : "rgba(251, 191, 36,",
+      });
     });
   }
 
@@ -1089,10 +1175,10 @@
 
   function drawSkidmarks(ctx) {
     if (!state.skidmarks.length) return;
-    ctx.fillStyle = "#020617";
     for (let i = 0; i < state.skidmarks.length; i++) {
       const sm = state.skidmarks[i];
-      ctx.globalAlpha = sm.alpha * 0.55;
+      ctx.fillStyle = sm.isIce ? "rgba(224, 242, 254, 0.45)" : "rgba(15, 23, 42, 0.55)";
+      ctx.globalAlpha = (sm.alpha || 0.6) * 0.65;
       ctx.beginPath();
       ctx.arc(sm.x, sm.y, 3.2, 0, Math.PI * 2);
       ctx.fill();
@@ -1192,17 +1278,27 @@
     if (el.hudLapText) el.hudLapText.textContent = `${state.myCar.lap}/${state.laps}`;
 
     const pct = Math.round(state.myCar.driftBoostCharge * 100);
-    if (el.driftMeterBar) el.driftMeterBar.style.width = pct + "%";
+    if (el.driftMeterBar) {
+      el.driftMeterBar.style.width = pct + "%";
+      if (pct > 75) {
+        el.driftMeterBar.style.background = "linear-gradient(90deg, #38bdf8 0%, #3b82f6 40%, #fbbf24 100%)";
+      } else {
+        el.driftMeterBar.style.background = "linear-gradient(90deg, #38bdf8 0%, #06b6d4 60%, #3b82f6 100%)";
+      }
+    }
 
     if (el.driftMeterWrap && el.driftMeterLabel) {
       if (state.myCar.turboTimer > 0) {
-        el.driftMeterLabel.textContent = "🔥 TURBO BOOST!";
-        el.driftMeterWrap.style.boxShadow = "0 0 15px rgba(56, 189, 248, 0.9)";
+        el.driftMeterLabel.textContent = "🚀 TURBO BOOST!";
+        el.driftMeterWrap.style.boxShadow = "0 0 16px rgba(56, 189, 248, 0.95)";
+      } else if (state.myCar.driftBoostCharge > 0.75) {
+        el.driftMeterLabel.textContent = "⚡ BOOST KLAR! (RETT OPP)";
+        el.driftMeterWrap.style.boxShadow = "0 0 14px rgba(251, 191, 36, 0.9)";
       } else if (state.myCar.isDrifting) {
-        el.driftMeterLabel.textContent = "🔥 SLADDER...";
-        el.driftMeterWrap.style.boxShadow = "0 0 12px rgba(249, 115, 22, 0.8)";
+        el.driftMeterLabel.textContent = `❄️ ISSLADD! ${pct}%`;
+        el.driftMeterWrap.style.boxShadow = "0 0 12px rgba(56, 189, 248, 0.8)";
       } else {
-        el.driftMeterLabel.textContent = "DRIFT BOOST";
+        el.driftMeterLabel.textContent = "IS-SLADD BOOST";
         el.driftMeterWrap.style.boxShadow = "none";
       }
     }
@@ -1269,7 +1365,10 @@
           while (diff > Math.PI) diff -= Math.PI * 2;
           opp.angle += diff * Math.min(1.0, dt * 14.0);
 
-          if (opp.isDrifting) addSmokeParticle(opp);
+          if (opp.isDrifting) {
+            addIceSprayParticle(opp);
+            addSkidmark(opp);
+          }
         }
       });
 
