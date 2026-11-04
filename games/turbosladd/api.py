@@ -141,9 +141,9 @@ class TurbosladdRoom:
                 self.status = "finished"
                 self.bump()
             elif any(p.get("finished") for p in active_racers):
-                # 30 second grace period for remaining racers after first finisher
+                # Generous 75 second grace period for remaining racers after first finisher to finish their laps
                 if not self.finish_timeout:
-                    self.finish_timeout = now + 30.0
+                    self.finish_timeout = now + 75.0
                 elif now >= self.finish_timeout:
                     self.status = "finished"
                     self.bump()

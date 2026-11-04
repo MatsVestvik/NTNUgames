@@ -237,6 +237,7 @@
     keysP1: { up: false, down: false, left: false, right: false },
     keysP2: { up: false, down: false, left: false, right: false },
     splitFinishTimeout: null,
+    soloFinishTimer: null,
 
     opponentCars: {},
     camera: { x: 1200, y: 1500, zoom: 1.25 },
@@ -1105,31 +1106,60 @@
     if (car.finished) return;
     const cps = track.checkpoints;
     const nextIdx = (car.checkpoint + 1) % cps.length;
-    const nextCp = cps[nextIdx];
 
-    const dist = Math.hypot(car.x - nextCp.x, car.y - nextCp.y);
-    if (dist < track.roadWidth * 0.95) {
-      if (nextIdx === 0 && car.checkpoint === cps.length - 1) {
-        // Completed Lap!
-        const now = performance.now();
-        const lapDuration = (now - car.lapStartTime) / 1000.0;
-        if (car.bestLap === 0 || lapDuration < car.bestLap) {
-          car.bestLap = lapDuration;
-        }
-        car.lapStartTime = now;
+    if (nextIdx === 0) {
+      // Crossing Finish Line (checkpoint 0)
+      // Car MUST have passed all preceding checkpoints (car.checkpoint === cps.length - 1)
+      if (car.checkpoint === cps.length - 1) {
+        const p0 = cps[0];
+        const p1 = cps[1];
+        const dx = p1.x - p0.x;
+        const dy = p1.y - p0.y;
+        const len = Math.hypot(dx, dy) || 1;
+        const forwardX = dx / len;
+        const forwardY = dy / len;
+        const rightX = -forwardY;
+        const rightY = forwardX;
 
-        if (car.lap >= state.laps) {
-          car.finished = true;
-          car.finishTime = (now - car.raceStartTime) / 1000.0;
-          playTone(523.25, 0.25, "triangle", 0.3);
-          setTimeout(() => playTone(659.25, 0.35, "triangle", 0.3), 150);
-        } else {
-          car.lap++;
-          car.checkpoint = 0;
-          playTone(587.33, 0.15, "triangle", 0.25);
+        // Position relative to start/finish line center p0
+        const toCarX = car.x - p0.x;
+        const toCarY = car.y - p0.y;
+        const forwardDist = toCarX * forwardX + toCarY * forwardY;
+        const lateralDist = Math.abs(toCarX * rightX + toCarY * rightY);
+
+        // Check if car actually reaches or crosses the checkered line:
+        // forwardDist >= -12: front bumper reaches the checkered line
+        // forwardDist <= 130: within reasonable window past the finish line
+        // lateralDist <= track.roadWidth * 0.6: within track barrier boundaries
+        if (forwardDist >= -12 && forwardDist <= 130 && lateralDist <= track.roadWidth * 0.6) {
+          // Completed Lap!
+          const now = performance.now();
+          const lapDuration = (now - car.lapStartTime) / 1000.0;
+          if (car.bestLap === 0 || lapDuration < car.bestLap) {
+            car.bestLap = lapDuration;
+          }
+          car.lapStartTime = now;
+
+          if (car.lap >= state.laps) {
+            car.finished = true;
+            car.finishTime = (now - car.raceStartTime) / 1000.0;
+            playTone(523.25, 0.25, "triangle", 0.3);
+            setTimeout(() => playTone(659.25, 0.35, "triangle", 0.3), 150);
+          } else {
+            car.lap++;
+            car.checkpoint = 0;
+            playTone(587.33, 0.15, "triangle", 0.25);
+          }
         }
-      } else if (nextIdx === car.checkpoint + 1) {
-        car.checkpoint = nextIdx;
+      }
+    } else {
+      // Intermediate checkpoints
+      const nextCp = cps[nextIdx];
+      const dist = Math.hypot(car.x - nextCp.x, car.y - nextCp.y);
+      if (dist < track.roadWidth * 0.90) {
+        if (nextIdx === car.checkpoint + 1) {
+          car.checkpoint = nextIdx;
+        }
       }
     }
   }
@@ -1515,7 +1545,9 @@
 
     const kmh = Math.round(state.myCar.speed * 0.48);
     if (el.hudSpeedNum) el.hudSpeedNum.textContent = String(kmh);
-    if (el.hudLapText) el.hudLapText.textContent = `${state.myCar.lap}/${state.laps}`;
+    if (el.hudLapText) {
+      el.hudLapText.textContent = state.myCar.finished ? "MÅL! 🏁" : `${state.myCar.lap}/${state.laps}`;
+    }
 
     const pct = Math.round(state.myCar.driftBoostCharge * 100);
     if (el.driftMeterBar) {
@@ -1591,12 +1623,18 @@
     ctx.textBaseline = "middle";
     ctx.fillText(`P${playerNum} (${ctrlLabel}): ${name}`, badgeX + 28, badgeY + 16);
 
-    // Lap badge
-    ctx.fillStyle = "#94a3b8";
-    ctx.font = "bold 11px sans-serif";
-    ctx.fillText(`Runde: `, badgeX + 28, badgeY + 31);
-    ctx.fillStyle = "#38bdf8";
-    ctx.fillText(`${car.lap}/${totalLaps}`, badgeX + 72, badgeY + 31);
+    // Lap badge or finish status
+    if (car.finished) {
+      ctx.fillStyle = "#22c55e";
+      ctx.font = "bold 11px sans-serif";
+      ctx.fillText(`MÅL! 🏁 ${formatTime(car.finishTime)}`, badgeX + 28, badgeY + 31);
+    } else {
+      ctx.fillStyle = "#94a3b8";
+      ctx.font = "bold 11px sans-serif";
+      ctx.fillText(`Runde: `, badgeX + 28, badgeY + 31);
+      ctx.fillStyle = "#38bdf8";
+      ctx.fillText(`${car.lap}/${totalLaps}`, badgeX + 72, badgeY + 31);
+    }
 
     // Top-right Speedometer
     const speedX = vx + vw - 120;
@@ -1647,6 +1685,29 @@
     ctx.textAlign = "center";
     ctx.fillText(car.turboTimer > 0 ? "TURBO BOOST!" : (car.isDrifting ? "ISSLADD" : "DRIFT BOOST"), barX + barW / 2, barY + 9);
 
+    // Splitscreen Winner / Finish Banner Overlay
+    if (car.finished) {
+      ctx.save();
+      const bannerH = 74;
+      const bannerY = vy + (vh - bannerH) / 2;
+      ctx.fillStyle = "rgba(15, 23, 42, 0.82)";
+      ctx.fillRect(vx, bannerY, vw, bannerH);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(vx, bannerY, vw, bannerH);
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "900 22px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("🏁 FULLFØRT!", vx + vw / 2, bannerY + 24);
+
+      ctx.font = "bold 13px sans-serif";
+      ctx.fillStyle = "#38bdf8";
+      ctx.fillText(`Tid: ${formatTime(car.finishTime)}  •  Beste: ${formatTime(car.bestLap)}`, vx + vw / 2, bannerY + 52);
+      ctx.restore();
+    }
+
     ctx.restore();
   }
 
@@ -1660,14 +1721,26 @@
 
       if (state.mode === "splitscreen" && state.car1 && state.car2) {
         // Player 1 inputs (WASD for LEFT screen)
-        state.car1.accelInput = state.keysP1.up ? 1 : 0;
-        state.car1.brakeInput = state.keysP1.down ? 1 : 0;
-        state.car1.steerInput = (state.keysP1.right ? 1 : 0) - (state.keysP1.left ? 1 : 0);
+        if (state.car1.finished) {
+          state.car1.accelInput = 0;
+          state.car1.brakeInput = 0.3;
+          state.car1.steerInput = 0;
+        } else {
+          state.car1.accelInput = state.keysP1.up ? 1 : 0;
+          state.car1.brakeInput = state.keysP1.down ? 1 : 0;
+          state.car1.steerInput = (state.keysP1.right ? 1 : 0) - (state.keysP1.left ? 1 : 0);
+        }
 
         // Player 2 inputs (Arrows for RIGHT screen)
-        state.car2.accelInput = state.keysP2.up ? 1 : 0;
-        state.car2.brakeInput = state.keysP2.down ? 1 : 0;
-        state.car2.steerInput = (state.keysP2.right ? 1 : 0) - (state.keysP2.left ? 1 : 0);
+        if (state.car2.finished) {
+          state.car2.accelInput = 0;
+          state.car2.brakeInput = 0.3;
+          state.car2.steerInput = 0;
+        } else {
+          state.car2.accelInput = state.keysP2.up ? 1 : 0;
+          state.car2.brakeInput = state.keysP2.down ? 1 : 0;
+          state.car2.steerInput = (state.keysP2.right ? 1 : 0) - (state.keysP2.left ? 1 : 0);
+        }
 
         updateCarPhysics(state.car1, track, dt);
         updateCarPhysics(state.car2, track, dt);
@@ -1756,31 +1829,38 @@
         }
 
         // Splitscreen race finished handling
+        const bothFinished = state.car1.finished && state.car2.finished;
         if (state.car1.finished || state.car2.finished) {
           if (!state.splitFinishTimeout) {
-            state.splitFinishTimeout = performance.now() + 4000;
+            // Generous 60-second grace period for trailing racer to complete all laps
+            state.splitFinishTimeout = performance.now() + 60000;
           }
-          if ((state.car1.finished && state.car2.finished) || performance.now() >= state.splitFinishTimeout) {
+          if (bothFinished || performance.now() >= state.splitFinishTimeout) {
             state.splitFinishTimeout = null;
             setTimeout(() => {
               const racers = [
-                { name: state.splitP1.name, color: state.splitP1.color, finishTime: state.car1.finishTime, bestLap: state.car1.bestLap, lap: state.car1.lap },
-                { name: state.splitP2.name, color: state.splitP2.color, finishTime: state.car2.finishTime, bestLap: state.car2.bestLap, lap: state.car2.lap },
+                { name: state.splitP1.name, color: state.splitP1.color, finishTime: state.car1.finishTime, bestLap: state.car1.bestLap, lap: state.car1.lap, finished: state.car1.finished },
+                { name: state.splitP2.name, color: state.splitP2.color, finishTime: state.car2.finishTime, bestLap: state.car2.bestLap, lap: state.car2.lap, finished: state.car2.finished },
               ];
               racers.sort((a, b) => {
-                if (a.finishTime > 0 && b.finishTime > 0) return a.finishTime - b.finishTime;
-                if (a.finishTime > 0) return -1;
-                if (b.finishTime > 0) return 1;
-                return b.lap - a.lap;
+                if (a.finished && b.finished) return a.finishTime - b.finishTime;
+                if (a.finished) return -1;
+                if (b.finished) return 1;
+                if (a.lap !== b.lap) return b.lap - a.lap;
+                return (a.finishTime || 9999) - (b.finishTime || 9999);
               });
               showGameOverPodium(racers);
-            }, 500);
+            }, bothFinished ? 1200 : 500);
             return;
           }
         }
       } else {
         // Normal Singleplayer / Online Mode
-        if (state.mode === "solo" || state.roomStatus === "racing") {
+        if (state.myCar.finished) {
+          state.myCar.accelInput = 0;
+          state.myCar.brakeInput = 0.25;
+          state.myCar.steerInput = 0;
+        } else if (state.mode === "solo" || state.roomStatus === "racing") {
           state.myCar.accelInput = state.keys.up ? 1 : 0;
           state.myCar.brakeInput = state.keys.down ? 1 : 0;
           state.myCar.steerInput = (state.keys.right ? 1 : 0) - (state.keys.left ? 1 : 0);
@@ -1853,17 +1933,42 @@
           ctx.restore();
 
           drawMinimap(track, allMinimapCars);
+
+          // Finish banner overlay for Solo / Online mode
+          if (state.myCar.finished) {
+            ctx.save();
+            const bannerH = 76;
+            const bannerY = (canvas.height - bannerH) / 2;
+            ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
+            ctx.fillRect(0, bannerY, canvas.width, bannerH);
+            ctx.strokeStyle = state.driverColor || "#38bdf8";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(0, bannerY, canvas.width, bannerH);
+
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "900 24px sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("🏁 FULLFØRT!", canvas.width / 2, bannerY + 26);
+
+            ctx.font = "bold 13px sans-serif";
+            ctx.fillStyle = "#38bdf8";
+            ctx.fillText(`Tid: ${formatTime(state.myCar.finishTime)}  •  Beste runde: ${formatTime(state.myCar.bestLap)}`, canvas.width / 2, bannerY + 54);
+            ctx.restore();
+          }
         }
 
         updateHUD(track);
 
         if (state.mode === "solo" && state.myCar.finished) {
-          setTimeout(() => {
-            showGameOverPodium([
-              { name: state.driverName, color: state.driverColor, finishTime: state.myCar.finishTime, bestLap: state.myCar.bestLap },
-            ]);
-          }, 700);
-          return;
+          if (!state.soloFinishTimer) {
+            state.soloFinishTimer = setTimeout(() => {
+              state.soloFinishTimer = null;
+              showGameOverPodium([
+                { name: state.driverName, color: state.driverColor, finishTime: state.myCar.finishTime, bestLap: state.myCar.bestLap, lap: state.myCar.lap, finished: true },
+              ]);
+            }, 1200);
+          }
         }
       }
     } catch (err) {
@@ -1940,7 +2045,13 @@
       }
     } else if (data.status === "finished") {
       stopRoomSync();
-      const standings = (data.players || []).slice().sort((a, b) => (a.finishTime || 9999) - (b.finishTime || 9999));
+      const standings = (data.players || []).slice().sort((a, b) => {
+        if (a.finished && b.finished) return (a.finishTime || 0) - (b.finishTime || 0);
+        if (a.finished) return -1;
+        if (b.finished) return 1;
+        if ((a.lap || 1) !== (b.lap || 1)) return (b.lap || 1) - (a.lap || 1);
+        return (b.checkpoint || 0) - (a.checkpoint || 0);
+      });
       showGameOverPodium(standings);
     }
 
@@ -2098,10 +2209,21 @@
     state.roomStatus = "racing";
     state.skidmarks = [];
     state.particles = [];
-    state.laps = state.splitLaps || 3;
     state.splitFinishTimeout = null;
     state.keysP1 = { up: false, down: false, left: false, right: false };
     state.keysP2 = { up: false, down: false, left: false, right: false };
+
+    // Explicitly synchronize track and laps from Splitscreen UI
+    if (el.selectSplitTrack) {
+      state.trackId = el.selectSplitTrack.value || state.trackId || "grand_prix";
+    }
+    if (el.controlSplitLaps) {
+      const activeBtn = el.controlSplitLaps.querySelector(".seg-btn.active");
+      if (activeBtn && activeBtn.dataset.laps) {
+        state.splitLaps = parseInt(activeBtn.dataset.laps, 10) || 3;
+      }
+    }
+    state.laps = state.splitLaps || 3;
 
     const track = TRACKS[state.trackId] || TRACKS.grand_prix;
     state.car1 = createCarState(0, track);
@@ -2128,6 +2250,9 @@
     state.skidmarks = [];
     state.particles = [];
     state.keys = { up: false, down: false, left: false, right: false };
+
+    if (data.trackId) state.trackId = data.trackId;
+    if (data.laps) state.laps = Number(data.laps) || state.laps || 3;
 
     const track = TRACKS[state.trackId] || TRACKS.grand_prix;
     const myPlayer = (data.players || []).find(p => p.id === state.playerId);
@@ -2170,6 +2295,22 @@
     state.skidmarks = [];
     state.particles = [];
     state.keys = { up: false, down: false, left: false, right: false };
+
+    if (state.soloFinishTimer) {
+      clearTimeout(state.soloFinishTimer);
+      state.soloFinishTimer = null;
+    }
+
+    // Explicitly synchronize track and laps from Solo UI
+    if (el.selectSoloTrack) {
+      state.trackId = el.selectSoloTrack.value || state.trackId || "grand_prix";
+    }
+    if (el.controlSoloLaps) {
+      const activeBtn = el.controlSoloLaps.querySelector(".seg-btn.active");
+      if (activeBtn && activeBtn.dataset.laps) {
+        state.laps = parseInt(activeBtn.dataset.laps, 10) || 3;
+      }
+    }
 
     const track = TRACKS[state.trackId] || TRACKS.grand_prix;
     resetCarToSlot(state.myCar, track, 0);
