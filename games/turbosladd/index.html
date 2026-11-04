@@ -15,8 +15,15 @@
 </head>
 
 <body class="turbosladd-page">
-  <!-- Parallax Background -->
-  <div class="dynamic-parallax-bg" id="dynamicParallaxBg" aria-hidden="true"></div>
+  <!-- Dynamic Multilayered Parallax Background (Same as all other NTNU games) -->
+  <div class="dynamic-parallax-bg" id="dynamicParallaxBg" aria-hidden="true">
+    <div class="parallax-layer layer-1-sky" id="plSky" data-depth="0.04"></div>
+    <div class="parallax-layer layer-2-fjord" id="plFjord" data-depth="0.10"></div>
+    <div class="parallax-layer layer-3-campus" id="plCampus" data-depth="0.22"></div>
+    <div class="parallax-layer layer-4-lawn" id="plLawn" data-depth="0.50"></div>
+    <canvas class="ambient-sparkles-canvas" id="ambientSparklesCanvas"></canvas>
+    <div class="parallax-vignette-overlay"></div>
+  </div>
 
   <div class="ts-app-shell">
     <!-- Top Sticky Header (Standard NTNUgames Navbar) -->
@@ -107,57 +114,6 @@
           <!-- TAB 1: Online Multiplayer Panel -->
           <div class="tab-panel active" id="panelOnline">
             <div class="online-lobby-deck">
-              <!-- Driver Profile Box (Nickname & Avatar) -->
-              <div class="online-profile-card">
-                <div class="opc-header">
-                  <div class="opc-title-group">
-                    <span class="opc-badge">Sjåførprofil</span>
-                    <h3 class="opc-title">Ditt kallenavn &amp; figur</h3>
-                  </div>
-                  <span class="opc-hint">Bilfarge velges når du kommer inn i lobbyen (maks 1 av hver farge per løp).</span>
-                </div>
-
-                <div class="opc-grid">
-                  <div class="form-group opc-name-col">
-                    <label for="inputDriverName">Ditt kallenavn</label>
-                    <div class="avatar-input-combo">
-                      <div class="avatar-circle-preview clickable" id="btnPreviewAvatarClick" title="Klikk for å tilpasse figuren din">
-                        <img src="" id="onlineAvatarPreview" alt="Valgt figur" />
-                        <span class="avatar-edit-badge" aria-hidden="true">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                        </span>
-                      </div>
-                      <input type="text" id="inputDriverName" class="text-input" maxlength="18"
-                        placeholder="Skriv inn navn..." value="Sjåfør 1" required />
-                    </div>
-
-                    <div class="character-preview-widget" style="margin-top: 0.85rem;">
-                      <div class="cpw-actions">
-                        <button type="button" class="btn-customize-char" id="btnOpenCharCreator">
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.992 6.648 17.5 2 12 2z"></path></svg>
-                          <span>Tilpass figur</span>
-                        </button>
-                        <button type="button" class="btn-random-char" id="btnQuickRandomChar" title="Generer tilfeldig figur">
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"></circle><circle cx="15.5" cy="15.5" r="1.5" fill="currentColor"></circle><circle cx="15.5" cy="8.5" r="1.5" fill="currentColor"></circle><circle cx="8.5" cy="15.5" r="1.5" fill="currentColor"></circle><circle cx="12" cy="12" r="1.5" fill="currentColor"></circle></svg>
-                          <span>Tilfeldig figur</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="form-group opc-sprites-col">
-                    <label>Driftekontroller</label>
-                    <div class="race-controls-hint" style="width: 100%; margin: 0; padding: 0.85rem;">
-                      <span class="hint-title">Styring med piltaster:</span>
-                      <span class="hint-keys" style="display:flex; flex-direction:column; gap:0.45rem; margin-top:0.35rem;">
-                        <span><kbd>↑</kbd> Gass &nbsp; <kbd>↓</kbd> Brems</span>
-                        <span><kbd>←</kbd> <kbd>→</kbd> Sving og legg inn sladd</span>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
               <!-- Action Cards: Create vs Join -->
               <div class="online-split">
                 <!-- Create Race Card -->
@@ -171,6 +127,12 @@
                   </div>
 
                   <div class="action-box-content">
+                    <div class="form-group">
+                      <label for="inputHostName">Ditt kallenavn</label>
+                      <input type="text" id="inputHostName" class="text-input" maxlength="18"
+                        placeholder="F.eks. Sjåfør 1" value="Sjåfør 1" required />
+                    </div>
+
                     <div class="form-group">
                       <label for="selectTrack">Bane</label>
                       <select id="selectTrack" class="text-input select-input">
@@ -219,18 +181,15 @@
 
                   <div class="action-box-content">
                     <div class="form-group">
+                      <label for="inputJoinName">Ditt kallenavn</label>
+                      <input type="text" id="inputJoinName" class="text-input" maxlength="18"
+                        placeholder="F.eks. Sjåfør 2" value="Sjåfør 2" required />
+                    </div>
+
+                    <div class="form-group">
                       <label for="inputRoomCode">Romkode (4 bokstaver)</label>
                       <input type="text" id="inputRoomCode" class="text-input code-input" maxlength="6"
                         placeholder="F.EKS. TURBO" autocomplete="off" autocorrect="off" autocapitalize="characters" />
-                    </div>
-
-                    <div class="race-controls-hint">
-                      <span class="hint-title">Styring:</span>
-                      <span class="hint-keys">
-                        <kbd>↑</kbd> Gass &nbsp;
-                        <kbd>↓</kbd> Brems &nbsp;
-                        <kbd>←</kbd> <kbd>→</kbd> Sving / Sladd
-                      </span>
                     </div>
                   </div>
 
@@ -305,10 +264,10 @@
 
               <div class="action-box-content">
                 <div class="splitscreen-setup-grid">
-                  <!-- Player 1 Card -->
+                  <!-- Player 1 Card (Left - WASD) -->
                   <div class="split-player-card card-p1">
                     <div class="spc-header">
-                      <span class="spc-badge badge-orange">Spiller 1 (Piltaster)</span>
+                      <span class="spc-badge badge-orange">Spiller 1 (WASD – Venstre)</span>
                       <input type="text" id="inputSplitP1Name" class="text-input" value="Spiller 1" maxlength="14" placeholder="Navn Spiller 1" />
                     </div>
                     <div class="spc-color-row">
@@ -324,17 +283,17 @@
                     <div class="spc-controls">
                       <span class="spc-controls-title">Styring:</span>
                       <div class="spc-key-tags">
-                        <span><kbd>↑</kbd> Gass</span>
-                        <span><kbd>↓</kbd> Brems</span>
-                        <span><kbd>←</kbd><kbd>→</kbd> Sving</span>
+                        <span><kbd>W</kbd> Gass</span>
+                        <span><kbd>S</kbd> Brems</span>
+                        <span><kbd>A</kbd><kbd>D</kbd> Sving</span>
                       </div>
                     </div>
                   </div>
 
-                  <!-- Player 2 Card -->
+                  <!-- Player 2 Card (Right - Piltaster) -->
                   <div class="split-player-card card-p2">
                     <div class="spc-header">
-                      <span class="spc-badge badge-cyan">Spiller 2 (WASD)</span>
+                      <span class="spc-badge badge-cyan">Spiller 2 (Piltaster – Høyre)</span>
                       <input type="text" id="inputSplitP2Name" class="text-input" value="Spiller 2" maxlength="14" placeholder="Navn Spiller 2" />
                     </div>
                     <div class="spc-color-row">
@@ -350,9 +309,9 @@
                     <div class="spc-controls">
                       <span class="spc-controls-title">Styring:</span>
                       <div class="spc-key-tags">
-                        <span><kbd>W</kbd> Gass</span>
-                        <span><kbd>S</kbd> Brems</span>
-                        <span><kbd>A</kbd><kbd>D</kbd> Sving</span>
+                        <span><kbd>↑</kbd> Gass</span>
+                        <span><kbd>↓</kbd> Brems</span>
+                        <span><kbd>←</kbd><kbd>→</kbd> Sving</span>
                       </div>
                     </div>
                   </div>

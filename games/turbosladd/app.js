@@ -282,14 +282,8 @@
     panelSplitscreen: document.getElementById("panelSplitscreen"),
     btnGoToOnlineTab: document.getElementById("btnGoToOnlineTab"),
 
-    inputDriverName: document.getElementById("inputDriverName"),
-    carPreviewCanvas: document.getElementById("carPreviewCanvas"),
-    carColorNameDisplay: document.getElementById("carColorNameDisplay"),
-    btnPreviewAvatarClick: document.getElementById("btnPreviewAvatarClick"),
-    onlineAvatarPreview: document.getElementById("onlineAvatarPreview"),
-    btnOpenCharCreator: document.getElementById("btnOpenCharCreator"),
-    btnQuickRandomChar: document.getElementById("btnQuickRandomChar"),
-    cpwQuickColors: document.getElementById("cpwQuickColors"),
+    inputHostName: document.getElementById("inputHostName"),
+    inputJoinName: document.getElementById("inputJoinName"),
 
     selectTrack: document.getElementById("selectTrack"),
     controlLaps: document.getElementById("controlLaps"),
@@ -855,6 +849,10 @@
     } else {
       state.driverColor = localStorage.getItem("ts_driver_color") || PALETTE[0].color;
     }
+    const savedName = localStorage.getItem("ts_driver_name") || "Sjåfør 1";
+    state.driverName = savedName;
+    if (el.inputHostName) el.inputHostName.value = savedName;
+    if (el.inputJoinName) el.inputJoinName.value = savedName === "Sjåfør 1" ? "Sjåfør 2" : savedName;
     updateDriverProfileUI();
   }
 
@@ -1258,37 +1256,18 @@
     canvas.height = 2000;
     const ctx = canvas.getContext("2d");
 
-    // 1. Lush Green Turf with Diagonal Stripes
-    ctx.fillStyle = "#0c1a12";
+    // 1. Normal clean dark blue background (standard NTNU games theme)
+    ctx.fillStyle = "#090d16";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.fillStyle = "#102217";
-    for (let x = -2000; x < 4000; x += 140) {
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x + 1000, 2000);
-      ctx.lineTo(x + 1070, 2000);
-      ctx.lineTo(x + 70, 0);
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    // 2. Sand / Gravel Runoff Bed (wide sand base beyond walls)
+    // 2. Heavy 3D Crash Barrier Walls (Solid Outer & Inner Bounds)
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.beginPath();
     ctx.moveTo(pts[0].x, pts[0].y);
     for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
     ctx.closePath();
-    ctx.lineWidth = rw + 86;
-    ctx.strokeStyle = "#785a3a";
-    ctx.stroke();
 
-    ctx.lineWidth = rw + 76;
-    ctx.strokeStyle = "#8c6b45";
-    ctx.stroke();
-
-    // 3. Heavy 3D Crash Barrier Walls (Solid Outer & Inner Bounds)
     // Wall Drop Shadow
     ctx.lineWidth = rw + 66;
     ctx.strokeStyle = "rgba(0, 0, 0, 0.7)";
@@ -1600,9 +1579,10 @@
     // Top-left player badge
     const badgeX = vx + 16;
     const badgeY = vy + 14;
+    const ctrlLabel = playerNum === 1 ? "WASD" : "Piltaster";
     ctx.fillStyle = "rgba(15, 23, 42, 0.88)";
     ctx.beginPath();
-    ctx.roundRect(badgeX, badgeY, 185, 42, 8);
+    ctx.roundRect(badgeX, badgeY, 220, 42, 8);
     ctx.fill();
     ctx.strokeStyle = color;
     ctx.lineWidth = 2;
@@ -1618,7 +1598,7 @@
     ctx.font = "bold 13px sans-serif";
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    ctx.fillText(`P${playerNum}: ${name}`, badgeX + 28, badgeY + 16);
+    ctx.fillText(`P${playerNum} (${ctrlLabel}): ${name}`, badgeX + 28, badgeY + 16);
 
     // Lap badge
     ctx.fillStyle = "#94a3b8";
@@ -1688,12 +1668,12 @@
       const track = TRACKS[state.trackId] || TRACKS.grand_prix;
 
       if (state.mode === "splitscreen" && state.car1 && state.car2) {
-        // Player 1 inputs (Arrows)
+        // Player 1 inputs (WASD for LEFT screen)
         state.car1.accelInput = state.keysP1.up ? 1 : 0;
         state.car1.brakeInput = state.keysP1.down ? 1 : 0;
         state.car1.steerInput = (state.keysP1.right ? 1 : 0) - (state.keysP1.left ? 1 : 0);
 
-        // Player 2 inputs (WASD)
+        // Player 2 inputs (Arrows for RIGHT screen)
         state.car2.accelInput = state.keysP2.up ? 1 : 0;
         state.car2.brakeInput = state.keysP2.down ? 1 : 0;
         state.car2.steerInput = (state.keysP2.right ? 1 : 0) - (state.keysP2.left ? 1 : 0);
@@ -2249,17 +2229,17 @@
 
       if (state.mode === "splitscreen") {
         let matched = false;
-        // Player 1 controls (Arrow keys)
-        if (k === "ArrowUp" || c === "ArrowUp") { state.keysP1.up = isDown; matched = true; }
-        if (k === "ArrowDown" || c === "ArrowDown") { state.keysP1.down = isDown; matched = true; }
-        if (k === "ArrowLeft" || c === "ArrowLeft") { state.keysP1.left = isDown; matched = true; }
-        if (k === "ArrowRight" || c === "ArrowRight") { state.keysP1.right = isDown; matched = true; }
+        // Player 1 controls (WASD keys for LEFT screen)
+        if (k === "w" || k === "W" || c === "KeyW") { state.keysP1.up = isDown; matched = true; }
+        if (k === "s" || k === "S" || c === "KeyS") { state.keysP1.down = isDown; matched = true; }
+        if (k === "a" || k === "A" || c === "KeyA") { state.keysP1.left = isDown; matched = true; }
+        if (k === "d" || k === "D" || c === "KeyD") { state.keysP1.right = isDown; matched = true; }
 
-        // Player 2 controls (WASD keys)
-        if (k === "w" || k === "W" || c === "KeyW") { state.keysP2.up = isDown; matched = true; }
-        if (k === "s" || k === "S" || c === "KeyS") { state.keysP2.down = isDown; matched = true; }
-        if (k === "a" || k === "A" || c === "KeyA") { state.keysP2.left = isDown; matched = true; }
-        if (k === "d" || k === "D" || c === "KeyD") { state.keysP2.right = isDown; matched = true; }
+        // Player 2 controls (Arrow keys for RIGHT screen)
+        if (k === "ArrowUp" || c === "ArrowUp") { state.keysP2.up = isDown; matched = true; }
+        if (k === "ArrowDown" || c === "ArrowDown") { state.keysP2.down = isDown; matched = true; }
+        if (k === "ArrowLeft" || c === "ArrowLeft") { state.keysP2.left = isDown; matched = true; }
+        if (k === "ArrowRight" || c === "ArrowRight") { state.keysP2.right = isDown; matched = true; }
 
         if (matched && !el.viewGame.classList.contains("hidden")) {
           e.preventDefault();
@@ -2441,11 +2421,15 @@
     // Create Race (Host)
     el.btnCreateRace.addEventListener("click", async () => {
       try {
+        const hostName = (el.inputHostName && el.inputHostName.value.trim()) || state.driverName || "Sjåfør 1";
+        state.driverName = hostName;
+        localStorage.setItem("ts_driver_name", hostName);
+
         const resp = await fetch("/api/turbosladd/create", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            hostName: state.driverName,
+            hostName: hostName,
             color: state.driverColor,
             avatar: selectedAvatarStr,
             trackId: state.trackId,
@@ -2483,13 +2467,17 @@
         alert("Skriv inn en romkode.");
         return;
       }
+      const playerName = (el.inputJoinName && el.inputJoinName.value.trim()) || state.driverName || "Sjåfør 2";
+      state.driverName = playerName;
+      localStorage.setItem("ts_driver_name", playerName);
+
       try {
         const resp = await fetch("/api/turbosladd/join", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             roomCode: code,
-            playerName: state.driverName,
+            playerName: playerName,
             color: state.driverColor,
             avatar: selectedAvatarStr,
           }),
