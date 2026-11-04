@@ -90,10 +90,6 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
             <span>Pass &amp; Play</span>
           </button>
-          <button type="button" class="lobby-tab-btn" id="tabLobbySolo" role="tab" aria-selected="false">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-            <span>Solo (1 spiller)</span>
-          </button>
           <button type="button" class="lobby-tab-btn" id="tabLobbyRoom" role="tab" aria-selected="false">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
             <span>Nettspill</span>
@@ -107,19 +103,37 @@
               <div class="box-badge-row">
                 <span class="action-card-badge badge-spectrum">Pass &amp; Play</span>
               </div>
-              <h3 class="box-title">2 spillere på 1 enhet</h3>
+              <h3 class="box-title">Spill på samme enhet (2–16 spillere)</h3>
               <p class="box-desc">
-                Dere bytter på å være hintgiver og gjette! Den ene velger hemmelig farge og gir 1–2 ord – den andre plasserer brikkene på spekteret.
+                Dere bytter på å være hintgiver og gjette! Hintgiveren velger en hemmelig farge og gir 1–2 ord – de andre spillerne plasserer brikkene sine på spekteret etter tur.
               </p>
             </div>
 
             <div class="action-box-content">
               <div class="form-group">
+                <label for="inputFkPlayerCount">Antall spillere (2–16)</label>
+                <div class="player-count-picker" id="controlFkPlayerCount">
+                  <button type="button" class="pcp-step-btn" data-step="-1" aria-label="Færre spillere">−</button>
+                  <input type="range" class="pcp-slider" id="sliderFkPlayerCount" min="2" max="16" value="3" />
+                  <button type="button" class="pcp-step-btn" data-step="1" aria-label="Flere spillere">+</button>
+                  <div class="pcp-number-wrap">
+                    <input type="number" class="pcp-number-input" id="inputFkPlayerCount" min="2" max="16" value="3" />
+                    <span class="pcp-unit">spillere</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Spillernavn (valgfritt)</label>
+                <div class="fk-local-names-grid" id="localPlayersNamesGrid"></div>
+              </div>
+
+              <div class="form-group">
                 <label>Antall runder</label>
                 <div class="segmented-control" id="controlFkRounds">
-                  <button type="button" class="seg-btn" data-rounds="2">2 runder (Kjapp duell)</button>
-                  <button type="button" class="seg-btn active" data-rounds="4">4 runder (Standard)</button>
-                  <button type="button" class="seg-btn" data-rounds="6">6 runder (Lang)</button>
+                  <button type="button" class="seg-btn" data-rounds="1_per_player">1 per spiller</button>
+                  <button type="button" class="seg-btn active" data-rounds="2_per_player">2 per spiller (Anbefalt)</button>
+                  <button type="button" class="seg-btn" data-rounds="custom_4">4 runder fast</button>
                 </div>
               </div>
             </div>
@@ -130,39 +144,7 @@
           </div>
         </div>
 
-        <!-- TAB 2: Solo Practice Panel -->
-        <div class="tab-panel hidden" id="panelLobbySolo">
-          <div class="action-box single-box card-theme-cyan">
-            <div class="action-box-header">
-              <div class="box-badge-row">
-                <span class="action-card-badge badge-cyan">Solotrening</span>
-              </div>
-              <h3 class="box-title">Solo mot datamaskinens hint</h3>
-              <p class="box-desc">
-                Tren opp fargesynet ditt! Du får 1–2 hint og plasserer brikker nærmest mulig målet. Sjekk poengsummen din etter hver oppgave!
-              </p>
-            </div>
-
-            <div class="action-box-content">
-              <div class="stat-pills-row">
-                <div class="stat-pill">
-                  <span class="stat-pill-label">Oppgaver</span>
-                  <strong class="stat-pill-val">12 unike nøtter</strong>
-                </div>
-                <div class="stat-pill">
-                  <span class="stat-pill-label">Poengskala</span>
-                  <strong class="stat-pill-val">3x3 ramme (1–3p)</strong>
-                </div>
-              </div>
-            </div>
-
-            <button type="button" class="primary-btn pulse-glow" id="btnStartFkSolo">
-              Start solotrening
-            </button>
-          </div>
-        </div>
-
-        <!-- TAB 3: Party Lounge Multiplayer Panel -->
+        <!-- TAB 2: Party Lounge Multiplayer Panel -->
         <div class="tab-panel hidden" id="panelLobbyRoom">
           <div class="online-lobby-deck">
             <div class="online-split">
@@ -220,15 +202,6 @@
     <!-- VIEW 2: ACTIVE GAMEPLAY                        -->
     <!-- ============================================== -->
     <section class="view-panel hidden" id="viewGame">
-      <!-- Mode Selector for Pass & Play / Solo / Lounge -->
-      <div class="fk-mode-bar" id="fkModeBar">
-        <div class="fk-mode-tabs">
-          <button type="button" class="fk-mode-tab active" id="tabPassAndPlay">Pass &amp; Play (2 spillere)</button>
-          <button type="button" class="fk-mode-tab" id="tabSolo">Solo (1 spiller)</button>
-          <a href="/party/" class="fk-mode-tab" id="tabPartyLounge">Party Lounge</a>
-        </div>
-      </div>
-
     <!-- Main Workspace -->
     <main class="fk-main">
       <!-- Left Sidebar: Players & Scoring Legend -->
@@ -353,7 +326,7 @@
 
   <script src="/parallax-bg.js?v=2.1"></script>
   <script src="/character/character-creator.js"></script>
-  <script src="/fargekoden/app.js?v=1.1"></script>
+  <script src="/fargekoden/app.js?v=1.2"></script>
 </body>
 
 </html>

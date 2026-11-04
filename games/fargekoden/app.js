@@ -16,19 +16,23 @@
   const playerIdParam = (urlParams.get("player") || urlParams.get("playerId") || (roomCodeParam ? sessionStorage.getItem("party_player_id") : "") || "").trim();
   const hostTokenParam = (roomCodeParam ? (localStorage.getItem("party_host_token") || "") : "").trim();
 
-  const SOLO_CHALLENGES = [
-    { clue1: "Jordbær", clue2: "Modent bær", r: 7, c: 29 },
-    { clue1: "Solsikke", clue2: "Sommerblomst", r: 6, c: 4 },
-    { clue1: "Furu", clue2: "Mørk skog", r: 12, c: 11 },
-    { clue1: "Lavendel", clue2: "Fransk duft", r: 3, c: 22 },
-    { clue1: "Flamingo", clue2: "Tropisk fugl", r: 4, c: 27 },
-    { clue1: "Isbre", clue2: "Kaldt vann", r: 3, c: 16 },
-    { clue1: "Gresskar", clue2: "Halloween-lykt", r: 7, c: 2 },
-    { clue1: "Midnatt", clue2: "Dyp nattehimmel", r: 13, c: 20 },
-    { clue1: "osean", clue2: "Dypt hav", r: 10, c: 18 },
-    { clue1: "Lime", clue2: "Sur sitrus", r: 6, c: 8 },
-    { clue1: "Plomme", clue2: "Mørk frukt", r: 12, c: 24 },
-    { clue1: "Fersken", clue2: "Myk frukt", r: 3, c: 2 },
+  const PASS_AND_PLAY_PALETTE = [
+    { color: "#38bdf8", avatar: "charbear" },     // Cyan
+    { color: "#f43f5e", avatar: "pixiu" },        // Rose / Red
+    { color: "#10b981", avatar: "fenrir" },       // Emerald
+    { color: "#fbbf24", avatar: "jormundgandr" }, // Amber / Gold
+    { color: "#a855f7", avatar: "sleipnir" },     // Purple
+    { color: "#f97316", avatar: "kraken" },       // Orange
+    { color: "#06b6d4", avatar: "nattmare" },     // Teal
+    { color: "#ec4899", avatar: "troll" },        // Pink
+    { color: "#84cc16", avatar: "charbear" },     // Lime
+    { color: "#6366f1", avatar: "pixiu" },        // Indigo
+    { color: "#e11d48", avatar: "fenrir" },       // Crimson
+    { color: "#14b8a6", avatar: "jormundgandr" }, // Turquoise
+    { color: "#d946ef", avatar: "sleipnir" },     // Fuchsia
+    { color: "#eab308", avatar: "kraken" },       // Yellow
+    { color: "#3b82f6", avatar: "nattmare" },     // Blue
+    { color: "#22c55e", avatar: "troll" },        // Green
   ];
 
   const state = {
@@ -55,15 +59,15 @@
     markers: [],
     players: [],
 
-    // Solo state
-    soloScore: 0,
-    soloRound: 1,
-    soloStep: 1,
-    soloTarget: [7, 29],
+    // Multi-player Pass & Play
+    localSubMode: "pass_and_play",
+    passAndPlayPlayerCount: 3,
+    passAndPlayRoundRule: "2_per_player",
+    guesserQueue: [],
+    currentGuesserIndex: 0,
 
     soundEnabled: localStorage.getItem("tegn_sound") !== "false",
     audioCtx: null,
-    selectedLocalRounds: 4,
   };
 
   const el = {
@@ -72,15 +76,14 @@
     btnExitToLobby: document.getElementById("btnExitToLobby"),
 
     tabLobbyLocal: document.getElementById("tabLobbyLocal"),
-    tabLobbySolo: document.getElementById("tabLobbySolo"),
     tabLobbyRoom: document.getElementById("tabLobbyRoom"),
     panelLobbyLocal: document.getElementById("panelLobbyLocal"),
-    panelLobbySolo: document.getElementById("panelLobbySolo"),
     panelLobbyRoom: document.getElementById("panelLobbyRoom"),
 
+    controlFkPlayerCount: document.getElementById("controlFkPlayerCount"),
+    localPlayersNamesGrid: document.getElementById("localPlayersNamesGrid"),
     controlFkRounds: document.getElementById("controlFkRounds"),
     btnStartFkLocal: document.getElementById("btnStartFkLocal"),
-    btnStartFkSolo: document.getElementById("btnStartFkSolo"),
     inputFkRoomCode: document.getElementById("inputFkRoomCode"),
     btnSubmitJoinFkRoom: document.getElementById("btnSubmitJoinFkRoom"),
 
@@ -123,10 +126,6 @@
     podiumContainer: document.getElementById("podiumContainer"),
     btnPlayAgain: document.getElementById("btnPlayAgain"),
     btnReturnLobby: document.getElementById("btnReturnLobby"),
-
-    fkModeBar: document.getElementById("fkModeBar"),
-    tabPassAndPlay: document.getElementById("tabPassAndPlay"),
-    tabSolo: document.getElementById("tabSolo"),
   };
 
   // =========================================================================
@@ -258,23 +257,26 @@
     el.magCoord.textContent = getCoordLabel(r, c);
 
     // If Cue Giver clicks any square during giving_clue_1, let them pick that square as target!
-    if (!state.isSolo && state.isGiver && state.turnState === "giving_clue_1" && r >= 1 && r <= 14 && c >= 1 && c <= 28) {
+    if (state.isGiver && state.turnState === "giving_clue_1" && r >= 1 && r <= 14 && c >= 1 && c <= 28) {
       state.targetPos = [r, c];
       playTone(587.33, 0.1, "triangle", 0.14);
+      renderCandidateButtons();
       renderBoardHighlightsAndMarkers();
-      try {
-        await fetch("/api/fargekoden/action", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            roomCode: state.roomCode,
-            playerId: state.playerId,
-            action: "select_candidate",
-            r,
-            c,
-          }),
-        });
-      } catch (e) {}
+      if (!state.isSolo) {
+        try {
+          await fetch("/api/fargekoden/action", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              roomCode: state.roomCode,
+              playerId: state.playerId,
+              action: "select_candidate",
+              r,
+              c,
+            }),
+          });
+        } catch (e) {}
+      }
       return;
     }
 
@@ -289,11 +291,7 @@
     playTone(659.25, 0.12, "triangle", 0.16);
 
     if (state.isSolo) {
-      if (state.localSubMode === "pass_and_play") {
-        handlePassAndPlayPlaceMarker(r, c);
-      } else {
-        handleSoloPlaceMarker(r, c);
-      }
+      handlePassAndPlayPlaceMarker(r, c);
       return;
     }
 
@@ -529,7 +527,7 @@
   el.btnPlayAgain.addEventListener("click", async () => {
     if (state.isSolo) {
       el.modalGameOver.classList.add("hidden");
-      startSoloRound();
+      initPassAndPlayMode();
       return;
     }
     try {
@@ -670,10 +668,15 @@
   function renderSidebarPlayers() {
     el.playersCountBadge.textContent = String(state.players.length);
     el.playersList.innerHTML = "";
+    const activeGuesser = (state.localSubMode === "pass_and_play" && (state.turnState === "guessing_1" || state.turnState === "guessing_2"))
+      ? state.guesserQueue[state.currentGuesserIndex]
+      : null;
+
     state.players.forEach(p => {
       const isGiver = p.id === state.activeGiverId;
+      const isTurn = activeGuesser && activeGuesser.id === p.id;
       const row = document.createElement("div");
-      row.className = `fk-player-row ${isGiver ? "active-giver" : ""}`;
+      row.className = `fk-player-row ${isGiver ? "active-giver" : ""} ${isTurn ? "active-turn" : ""}`;
       row.innerHTML = `
         <img src="${getAvatarSrc(p.avatar)}" class="fk-player-avatar" alt="" />
         <div class="fk-player-info">
@@ -683,7 +686,7 @@
           </div>
           <div class="fk-player-score">${p.score || 0} poeng</div>
         </div>
-        <span class="fk-player-tag">${isGiver ? "Hintgiver" : ""}</span>
+        <span class="fk-player-tag ${isTurn ? "active-turn" : ""}">${isGiver ? "Hintgiver" : (isTurn ? "Gjett nå!" : "")}</span>
       `;
       el.playersList.appendChild(row);
     });
@@ -726,29 +729,111 @@
   }
 
   // =========================================================================
-  // Standalone Pass & Play (2 spillere på 1 enhet) & Solo Mode
+  // Standalone Pass & Play (2–16 spillere på 1 enhet)
   // =========================================================================
+  function renderLocalPlayersNamesGrid(count) {
+    if (!el.localPlayersNamesGrid) return;
+    const existing = [];
+    el.localPlayersNamesGrid.querySelectorAll(".fk-name-field").forEach((inp) => {
+      existing.push(inp.value.trim());
+    });
+
+    el.localPlayersNamesGrid.innerHTML = "";
+    for (let i = 0; i < count; i++) {
+      const pal = PASS_AND_PLAY_PALETTE[i % PASS_AND_PLAY_PALETTE.length];
+      const prev = existing[i];
+      const defaultVal = `Spiller ${i + 1}`;
+      const val = prev && prev.length ? prev : defaultVal;
+      const item = document.createElement("div");
+      item.className = "fk-name-input-item";
+      item.innerHTML = `
+        <span class="fk-name-color-dot" style="background:${pal.color};"></span>
+        <input type="text" class="fk-name-field" id="fkPlayerName_${i}" maxlength="16" placeholder="${defaultVal}" value="${escapeHtml(val)}" />
+      `;
+      el.localPlayersNamesGrid.appendChild(item);
+    }
+  }
+
+  function bindPlayerCountPicker(container, initialVal, onChange) {
+    if (!container) return;
+    const slider = container.querySelector(".pcp-slider");
+    const numInput = container.querySelector(".pcp-number-input");
+    const stepBtns = container.querySelectorAll(".pcp-step-btn");
+
+    function applyCount(rawVal, commitInput = true) {
+      const parsed = parseInt(rawVal, 10);
+      if (Number.isNaN(parsed)) return;
+      const clamped = Math.max(2, Math.min(16, parsed));
+      if (slider) slider.value = String(clamped);
+      if (numInput && commitInput) numInput.value = String(clamped);
+      onChange(clamped);
+    }
+
+    if (slider) {
+      slider.value = String(initialVal);
+      slider.addEventListener("input", () => applyCount(slider.value, true));
+    }
+    if (numInput) {
+      numInput.value = String(initialVal);
+      numInput.addEventListener("input", () => {
+        const v = parseInt(numInput.value, 10);
+        if (!Number.isNaN(v) && v >= 2 && v <= 16) {
+          if (slider) slider.value = String(v);
+          onChange(v);
+        }
+      });
+      numInput.addEventListener("change", () => applyCount(numInput.value, true));
+      numInput.addEventListener("blur", () => applyCount(numInput.value || initialVal, true));
+    }
+    stepBtns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const step = parseInt(btn.dataset.step || "0", 10);
+        const current = parseInt((numInput && numInput.value) || (slider && slider.value) || initialVal, 10) || initialVal;
+        applyCount(current + step, true);
+      });
+    });
+  }
+
   function initPassAndPlayMode() {
     state.localSubMode = "pass_and_play";
-    if (el.tabPassAndPlay) el.tabPassAndPlay.classList.add("active");
-    if (el.tabSolo) el.tabSolo.classList.remove("active");
     el.backBtnText.textContent = "Hub";
     el.timerBubble.classList.add("hidden");
 
-    state.players = [
-      { id: "p1", name: "Spiller 1", color: "#38bdf8", avatar: "charbear", score: 0 },
-      { id: "p2", name: "Spiller 2", color: "#f43f5e", avatar: "pixiu", score: 0 },
-    ];
+    const count = state.passAndPlayPlayerCount || 3;
+    state.players = [];
+    for (let i = 0; i < count; i++) {
+      const inputEl = document.getElementById(`fkPlayerName_${i}`);
+      const name = (inputEl ? inputEl.value.trim() : "") || `Spiller ${i + 1}`;
+      const pal = PASS_AND_PLAY_PALETTE[i % PASS_AND_PLAY_PALETTE.length];
+      state.players.push({
+        id: `p${i + 1}`,
+        name,
+        color: pal.color,
+        avatar: pal.avatar,
+        score: 0,
+      });
+    }
+
+    if (state.passAndPlayRoundRule === "1_per_player") {
+      state.totalRounds = state.players.length * 1;
+    } else if (state.passAndPlayRoundRule === "2_per_player") {
+      state.totalRounds = state.players.length * 2;
+    } else {
+      state.totalRounds = 4;
+    }
+
     state.currentRound = 1;
-    state.totalRounds = state.selectedLocalRounds || state.totalRounds || 4;
     startPassAndPlayRound();
   }
 
   function startPassAndPlayRound() {
-    const giverIdx = (state.currentRound - 1) % 2;
-    state.activeGiverId = state.players[giverIdx].id;
-    state.activeGiverName = state.players[giverIdx].name;
+    const giverIdx = (state.currentRound - 1) % state.players.length;
+    const giver = state.players[giverIdx];
+    state.activeGiverId = giver.id;
+    state.activeGiverName = giver.name;
     state.isGiver = true;
+    state.guesserQueue = state.players.filter((_, idx) => idx !== giverIdx);
+    state.currentGuesserIndex = 0;
 
     // Pick 4 random candidate colors
     const colBuckets = [
@@ -771,7 +856,7 @@
     el.clue1Text.textContent = "Venter på hint…";
     el.clue2Chip.classList.add("muted");
     el.clue2Text.textContent = "—";
-    el.statusText.textContent = `${state.activeGiverName}: Velg en målfarge under og tast inn 1 ord som hint!`;
+    el.statusText.textContent = `Send enheten til ${state.activeGiverName}! Velg hemmelig målfarge og skriv inn 1 ord som hint!`;
 
     el.giverDock.classList.remove("hidden");
     el.giverStep1.classList.remove("hidden");
@@ -789,11 +874,10 @@
     el.giverDock.classList.add("hidden");
     el.clue1Text.textContent = `«${clue.toUpperCase()}»`;
 
-    const giverIdx = (state.currentRound - 1) % 2;
-    const guesserIdx = 1 - giverIdx;
-    const guesserName = state.players[guesserIdx].name;
-
-    el.statusText.textContent = `Send enheten til ${guesserName}! Klikk på fargebrettet for å plassere 1. brikke for «${clue.toUpperCase()}».`;
+    state.currentGuesserIndex = 0;
+    const currentGuesser = state.guesserQueue[0];
+    el.statusText.textContent = `Send enheten til ${currentGuesser.name}! Plasser 1. brikke for «${clue.toUpperCase()}».`;
+    renderSidebarPlayers();
     renderBoardHighlightsAndMarkers();
   }
 
@@ -805,11 +889,10 @@
     el.clue2Chip.classList.remove("muted");
     el.clue2Text.textContent = `«${clue.toUpperCase()}»`;
 
-    const giverIdx = (state.currentRound - 1) % 2;
-    const guesserIdx = 1 - giverIdx;
-    const guesserName = state.players[guesserIdx].name;
-
-    el.statusText.textContent = `Send enheten til ${guesserName}! Klikk på fargebrettet for å plassere 2. brikke.`;
+    state.currentGuesserIndex = 0;
+    const currentGuesser = state.guesserQueue[0];
+    el.statusText.textContent = `Send enheten til ${currentGuesser.name}! Plasser 2. brikke for «${clue.toUpperCase()}».`;
+    renderSidebarPlayers();
     renderBoardHighlightsAndMarkers();
   }
 
@@ -818,49 +901,68 @@
   }
 
   function handlePassAndPlayPlaceMarker(r, c) {
-    const giverIdx = (state.currentRound - 1) % 2;
-    const guesserIdx = 1 - giverIdx;
-    const guesser = state.players[guesserIdx];
+    const currentGuesser = state.guesserQueue[state.currentGuesserIndex];
+    if (!currentGuesser) return;
 
     if (state.turnState === "guessing_1") {
       state.markers.push({
-        playerId: guesser.id,
-        playerName: guesser.name,
-        playerColor: guesser.color,
+        playerId: currentGuesser.id,
+        playerName: currentGuesser.name,
+        playerColor: currentGuesser.color,
         r,
         c,
         guessRound: 1,
         points: 0,
       });
 
-      state.turnState = "giving_clue_2";
-      state.isGiver = true;
-      el.giverDock.classList.remove("hidden");
-      el.giverStep1.classList.add("hidden");
-      el.giverStep2.classList.remove("hidden");
-      el.statusText.textContent = `Send enheten tilbake til ${state.activeGiverName}! Gi et 2. hint (maks 2 ord) – eller vis fasit nå.`;
-      renderBoardHighlightsAndMarkers();
+      state.currentGuesserIndex++;
+      if (state.currentGuesserIndex < state.guesserQueue.length) {
+        const nextGuesser = state.guesserQueue[state.currentGuesserIndex];
+        el.statusText.textContent = `Send enheten til ${nextGuesser.name}! Plasser 1. brikke for «${state.clue1.toUpperCase()}».`;
+        renderSidebarPlayers();
+        renderBoardHighlightsAndMarkers();
+      } else {
+        // All guessers placed 1st marker! Hand back to Hintgiver for Clue 2
+        state.turnState = "giving_clue_2";
+        state.isGiver = true;
+        el.giverDock.classList.remove("hidden");
+        el.giverStep1.classList.add("hidden");
+        el.giverStep2.classList.remove("hidden");
+        el.statusText.textContent = `Send enheten tilbake til ${state.activeGiverName}! Gi et 2. hint (maks 2 ord) – eller vis fasit nå.`;
+        renderSidebarPlayers();
+        renderBoardHighlightsAndMarkers();
+      }
     } else if (state.turnState === "guessing_2") {
       state.markers.push({
-        playerId: guesser.id,
-        playerName: guesser.name,
-        playerColor: guesser.color,
+        playerId: currentGuesser.id,
+        playerName: currentGuesser.name,
+        playerColor: currentGuesser.color,
         r,
         c,
         guessRound: 2,
         points: 0,
       });
-      scorePassAndPlayTurn();
+
+      state.currentGuesserIndex++;
+      if (state.currentGuesserIndex < state.guesserQueue.length) {
+        const nextGuesser = state.guesserQueue[state.currentGuesserIndex];
+        el.statusText.textContent = `Send enheten til ${nextGuesser.name}! Plasser 2. brikke for «${state.clue2.toUpperCase()}».`;
+        renderSidebarPlayers();
+        renderBoardHighlightsAndMarkers();
+      } else {
+        scorePassAndPlayTurn();
+      }
     }
   }
 
   function scorePassAndPlayTurn() {
-    const giverIdx = (state.currentRound - 1) % 2;
-    const guesserIdx = 1 - giverIdx;
+    const giverIdx = (state.currentRound - 1) % state.players.length;
+    const giver = state.players[giverIdx];
     const [tr, tc] = state.targetPos;
 
-    let guesserPts = 0;
     let giverBonus = 0;
+    const pointsMap = {};
+    state.players.forEach(p => { pointsMap[p.id] = 0; });
 
     state.markers.forEach(m => {
       const dist = Math.max(Math.abs(m.r - tr), Math.abs(m.c - tc));
@@ -875,100 +977,21 @@
         pts = 1;
       }
       m.points = pts;
-      guesserPts += pts;
+      pointsMap[m.playerId] = (pointsMap[m.playerId] || 0) + pts;
     });
 
-    state.players[guesserIdx].score += guesserPts;
-    state.players[giverIdx].score += giverBonus;
-    state.turnState = "turn_recap";
+    state.players.forEach(p => {
+      p.score += (pointsMap[p.id] || 0);
+    });
+    giver.score += giverBonus;
 
+    state.turnState = "turn_recap";
     el.giverDock.classList.add("hidden");
-    el.statusText.textContent = `Blinken var ${getCoordLabel(tr, tc)}! ${state.players[guesserIdx].name} fikk +${guesserPts}p, ${state.activeGiverName} fikk +${giverBonus}p som hintgiver!`;
-    el.btnSoloNext.textContent = state.currentRound < state.totalRounds ? "Neste runde →" : "Se resultat!";
+    el.statusText.textContent = `Blinken var ${getCoordLabel(tr, tc)}! Hintgiver ${giver.name} fikk +${giverBonus}p i bonus.`;
+    el.btnSoloNext.textContent = state.currentRound < state.totalRounds ? "Neste runde →" : "Se sluttresultat! 🏆";
     el.btnSoloNext.classList.remove("hidden");
     renderSidebarPlayers();
     renderBoardHighlightsAndMarkers();
-  }
-
-  function initSoloMode() {
-    state.localSubMode = "solo";
-    if (el.tabSolo) el.tabSolo.classList.add("active");
-    if (el.tabPassAndPlay) el.tabPassAndPlay.classList.remove("active");
-    el.backBtnText.textContent = "Hub";
-    el.timerBubble.classList.add("hidden");
-    state.players = [
-      { id: "solo", name: localStorage.getItem("party_player_name") || "Spiller 1", color: "#38bdf8", avatar: localStorage.getItem("ntnu_char_config") || "charbear", score: 0 }
-    ];
-    startSoloRound();
-  }
-
-  function startSoloRound() {
-    const ch = SOLO_CHALLENGES[(state.soloRound - 1) % SOLO_CHALLENGES.length];
-    state.soloTarget = [ch.r, ch.c];
-    state.targetPos = [ch.r, ch.c];
-    state.clue1 = ch.clue1;
-    state.clue2 = "";
-    state.markers = [];
-    state.turnState = "guessing_1";
-    state.isGiver = false;
-
-    el.btnSoloNext.classList.add("hidden");
-    el.btnSoloNext.textContent = "Neste oppgave →";
-    el.roundIndicator.textContent = `Oppgave ${state.soloRound}`;
-    el.clue1Text.textContent = `«${state.clue1.toUpperCase()}»`;
-    el.clue2Chip.classList.add("muted");
-    el.clue2Text.textContent = "—";
-    el.statusText.textContent = `Solo-modus: Klikk på fargebrettet for å plassere din 1. brikke for hintet «${state.clue1.toUpperCase()}»!`;
-
-    renderSidebarPlayers();
-    renderBoardHighlightsAndMarkers();
-  }
-
-  function handleSoloPlaceMarker(r, c) {
-    const ch = SOLO_CHALLENGES[(state.soloRound - 1) % SOLO_CHALLENGES.length];
-    if (state.turnState === "guessing_1") {
-      state.markers.push({
-        playerId: "solo",
-        playerName: state.players[0].name,
-        playerColor: "#38bdf8",
-        r,
-        c,
-        guessRound: 1,
-        points: 0,
-      });
-      state.clue2 = ch.clue2;
-      state.turnState = "guessing_2";
-      el.clue2Chip.classList.remove("muted");
-      el.clue2Text.textContent = `«${state.clue2.toUpperCase()}»`;
-      el.statusText.textContent = `2. hint er «${state.clue2.toUpperCase()}»! Plasser din 2. brikke på fargebrettet.`;
-      renderBoardHighlightsAndMarkers();
-    } else if (state.turnState === "guessing_2") {
-      state.markers.push({
-        playerId: "solo",
-        playerName: state.players[0].name,
-        playerColor: "#38bdf8",
-        r,
-        c,
-        guessRound: 2,
-        points: 0,
-      });
-
-      const [tr, tc] = state.soloTarget;
-      let turnPts = 0;
-      state.markers.forEach(m => {
-        const dist = Math.max(Math.abs(m.r - tr), Math.abs(m.c - tc));
-        const pts = dist === 0 ? 3 : dist === 1 ? 2 : dist === 2 ? 1 : 0;
-        m.points = pts;
-        turnPts += pts;
-      });
-      state.players[0].score += turnPts;
-      state.turnState = "turn_recap";
-      el.statusText.textContent = `Blinken var ${getCoordLabel(tr, tc)}! Du fikk +${turnPts} poeng denne runden!`;
-      el.btnSoloNext.textContent = "Neste oppgave →";
-      el.btnSoloNext.classList.remove("hidden");
-      renderSidebarPlayers();
-      renderBoardHighlightsAndMarkers();
-    }
   }
 
   el.btnSoloNext.addEventListener("click", () => {
@@ -977,24 +1000,11 @@
         state.currentRound++;
         startPassAndPlayRound();
       } else {
-        showGameOverModal(state.players.slice().sort((a, b) => b.score - a.score));
+        const podium = state.players.slice().sort((a, b) => b.score - a.score);
+        showGameOverModal(podium);
       }
-    } else {
-      state.soloRound++;
-      startSoloRound();
     }
   });
-
-  if (el.tabPassAndPlay) {
-    el.tabPassAndPlay.addEventListener("click", () => {
-      initPassAndPlayMode();
-    });
-  }
-  if (el.tabSolo) {
-    el.tabSolo.addEventListener("click", () => {
-      initSoloMode();
-    });
-  }
 
   function showView(viewName) {
     if (!el.viewLobby || !el.viewGame) return;
@@ -1016,7 +1026,6 @@
   function initLobbyTabs() {
     const tabs = [
       { btn: el.tabLobbyLocal, panel: el.panelLobbyLocal },
-      { btn: el.tabLobbySolo, panel: el.panelLobbySolo },
       { btn: el.tabLobbyRoom, panel: el.panelLobbyRoom },
     ];
 
@@ -1036,27 +1045,26 @@
       });
     });
 
+    // Wire up player count picker and initial player names grid
+    bindPlayerCountPicker(el.controlFkPlayerCount, state.passAndPlayPlayerCount, val => {
+      state.passAndPlayPlayerCount = val;
+      renderLocalPlayersNamesGrid(val);
+    });
+    renderLocalPlayersNamesGrid(state.passAndPlayPlayerCount);
+
     if (el.controlFkRounds) {
       el.controlFkRounds.querySelectorAll(".seg-btn").forEach((btn) => {
         btn.addEventListener("click", () => {
           el.controlFkRounds.querySelectorAll(".seg-btn").forEach((b) => b.classList.remove("active"));
           btn.classList.add("active");
-          state.selectedLocalRounds = parseInt(btn.dataset.rounds, 10) || 4;
+          state.passAndPlayRoundRule = btn.dataset.rounds || "2_per_player";
         });
       });
     }
 
     if (el.btnStartFkLocal) {
       el.btnStartFkLocal.addEventListener("click", () => {
-        state.totalRounds = state.selectedLocalRounds || 4;
         initPassAndPlayMode();
-        showView("game");
-      });
-    }
-
-    if (el.btnStartFkSolo) {
-      el.btnStartFkSolo.addEventListener("click", () => {
-        initSoloMode();
         showView("game");
       });
     }
