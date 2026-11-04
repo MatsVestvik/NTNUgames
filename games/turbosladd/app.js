@@ -2299,31 +2299,19 @@
       if (state.soundEnabled) playTone(440, 0.1);
     });
 
-    // Profile settings
-    el.inputDriverName.value = state.driverName;
-    el.inputDriverName.addEventListener("input", () => {
-      state.driverName = el.inputDriverName.value.trim() || "Sjåfør 1";
-      localStorage.setItem("ts_driver_name", state.driverName);
-    });
-
-    if (el.btnOpenCharCreator) {
-      el.btnOpenCharCreator.addEventListener("click", () => openCharCreatorModal());
+    // Name inputs
+    if (el.inputHostName) {
+      el.inputHostName.value = state.driverName;
+      el.inputHostName.addEventListener("input", () => {
+        state.driverName = el.inputHostName.value.trim() || "Sjåfør 1";
+        localStorage.setItem("ts_driver_name", state.driverName);
+      });
     }
-    if (el.btnPreviewAvatarClick) {
-      el.btnPreviewAvatarClick.addEventListener("click", () => openCharCreatorModal());
-    }
-    if (el.btnQuickRandomChar) {
-      el.btnQuickRandomChar.addEventListener("click", () => {
-        if (typeof CharacterCreator !== "undefined") {
-          const rnd = CharacterCreator.getRandomConfig();
-          selectedAvatar = rnd;
-          selectedAvatarStr = CharacterCreator.saveCharacter(rnd);
-          if (rnd.headColor) {
-            state.driverColor = rnd.headColor;
-            localStorage.setItem("ts_driver_color", rnd.headColor);
-          }
-          updateDriverProfileUI();
-        }
+    if (el.inputJoinName) {
+      el.inputJoinName.value = state.driverName === "Sjåfør 1" ? "Sjåfør 2" : state.driverName;
+      el.inputJoinName.addEventListener("input", () => {
+        state.driverName = el.inputJoinName.value.trim() || "Sjåfør 2";
+        localStorage.setItem("ts_driver_name", state.driverName);
       });
     }
 
