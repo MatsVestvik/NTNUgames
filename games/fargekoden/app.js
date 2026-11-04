@@ -12,9 +12,9 @@
   const ROW_LETTERS = "ABCDEFGHIJKLMNOP";
 
   const urlParams = new URLSearchParams(window.location.search);
-  const roomCodeParam = (urlParams.get("room") || urlParams.get("code") || sessionStorage.getItem("party_room_code") || "").trim().toUpperCase();
-  const playerIdParam = (urlParams.get("player") || urlParams.get("playerId") || sessionStorage.getItem("party_player_id") || "").trim();
-  const hostTokenParam = (localStorage.getItem("party_host_token") || "").trim();
+  const roomCodeParam = (urlParams.get("room") || urlParams.get("code") || "").trim().toUpperCase();
+  const playerIdParam = (urlParams.get("player") || urlParams.get("playerId") || (roomCodeParam ? sessionStorage.getItem("party_player_id") : "") || "").trim();
+  const hostTokenParam = (roomCodeParam ? (localStorage.getItem("party_host_token") || "") : "").trim();
 
   const SOLO_CHALLENGES = [
     { clue1: "Jordbær", clue2: "Modent bær", r: 7, c: 29 },
@@ -327,7 +327,8 @@
   function renderBoardHighlightsAndMarkers() {
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
-        const cell = cellElements[r][c];
+        const cell = cellElements[r] ? cellElements[r][c] : null;
+        if (!cell) continue;
         cell.classList.remove("target-bullseye", "frame-3x3", "frame-5x5");
         cell.innerHTML = "";
       }
@@ -739,7 +740,7 @@
       { id: "p2", name: "Spiller 2", color: "#f43f5e", avatar: "pixiu", score: 0 },
     ];
     state.currentRound = 1;
-    state.totalRounds = 4;
+    state.totalRounds = state.selectedLocalRounds || state.totalRounds || 4;
     startPassAndPlayRound();
   }
 
@@ -1086,6 +1087,10 @@
     showView("game");
     pollRoomState();
     state.pollTimer = setInterval(pollRoomState, 750);
+  } else if (roomCodeParam) {
+    if (el.inputFkRoomCode) el.inputFkRoomCode.value = roomCodeParam;
+    if (el.tabLobbyRoom) el.tabLobbyRoom.click();
+    showView("lobby");
   } else {
     showView("lobby");
   }
