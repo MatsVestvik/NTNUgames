@@ -72,7 +72,7 @@ class TurbosladdRoom:
         host_car: str = "gt",
         track_id: str = "grand_prix",
         laps: int = 3,
-        max_players: int = 4,  # Configured for 1-16 players
+        max_players: int = 16,  # Configured for 1-16 players
         host_avatar: str = "",
     ):
         self.code = code
@@ -244,6 +244,24 @@ class TurbosladdRoom:
             self.players[player_id]["color"] = new_color.strip()
             self.bump()
             return True, "Farge oppdatert."
+
+    def update_settings(self, player_id: str, track_id: Optional[str] = None, laps: Optional[int] = None) -> Tuple[bool, str]:
+        with self.lock:
+            if player_id != self.host_id:
+                return False, "Bare verten kan endre løpsinnstillinger."
+            if self.status != "lobby":
+                return False, "Kan ikke endre innstillinger etter at løpet har startet."
+            if track_id and track_id in TRACK_CONFIGS:
+                self.track_id = track_id
+            if laps is not None:
+                try:
+                    num_laps = int(laps)
+                    if 1 <= num_laps <= 20:
+                        self.laps = num_laps
+                except (ValueError, TypeError):
+                    pass
+            self.bump()
+            return True, "Innstillinger oppdatert."
 
     def start_race(self, player_id: str) -> Tuple[bool, str]:
         with self.lock:
@@ -444,7 +462,7 @@ class TurbosladdAPI:
             host_avatar = str(body.get("avatar", "")).strip()
             track_id = str(body.get("trackId", "grand_prix")).strip()
             laps = int(body.get("laps", 3))
-            max_players = int(body.get("maxPlayers", 4))
+            max_players = int(body.get("maxPlayers", 16))
 
             code = TurbosladdAPI._generate_room_code()
             room = TurbosladdRoom(
@@ -528,6 +546,29 @@ class TurbosladdAPI:
                 return 400, {"error": msg}
 
             return 200, {"ok": True, "color": color, "message": msg}
+
+        # 3c. Update Settings (Host only: track and laps)
+        if path == "/api/turbosladd/settings":
+            code = str(body.get("roomCode", "")).strip().upper()
+            player_id = str(body.get("playerId", "")).strip()
+            track_id = body.get("trackId")
+            laps = body.get("laps")
+
+            with _rooms_lock:
+                room = _rooms.get(code)
+            if not room:
+                return 404, {"error": "Fant ikke løpet."}
+
+            ok, msg = room.update_settings(player_id, track_id=track_id, laps=laps)
+            if not ok:
+                return 400, {"error": msg}
+
+            return 200, {
+                "ok": True,
+                "trackId": room.track_id,
+                "laps": room.laps,
+                "message": msg,
+            }
 
         # 4. Start Race (Host only)
         if path == "/api/turbosladd/start":

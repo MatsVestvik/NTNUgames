@@ -284,13 +284,6 @@
 
     inputHostName: document.getElementById("inputHostName"),
     inputJoinName: document.getElementById("inputJoinName"),
-
-    selectTrack: document.getElementById("selectTrack"),
-    controlLaps: document.getElementById("controlLaps"),
-    sliderMaxPlayers: document.getElementById("sliderMaxPlayers"),
-    inputMaxPlayers: document.getElementById("inputMaxPlayers"),
-    btnMaxPlayersDec: document.getElementById("btnMaxPlayersDec"),
-    btnMaxPlayersInc: document.getElementById("btnMaxPlayersInc"),
     btnCreateRace: document.getElementById("btnCreateRace"),
     inputRoomCode: document.getElementById("inputRoomCode"),
     btnJoinRace: document.getElementById("btnJoinRace"),
@@ -313,6 +306,9 @@
     btnCopyCode: document.getElementById("btnCopyCode"),
     loungeTrackName: document.getElementById("loungeTrackName"),
     loungeLapsBadge: document.getElementById("loungeLapsBadge"),
+    loungeSelectTrack: document.getElementById("loungeSelectTrack"),
+    loungeControlLaps: document.getElementById("loungeControlLaps"),
+    loungeHostOnlyHint: document.getElementById("loungeHostOnlyHint"),
     loungeCarPreviewCanvas: document.getElementById("loungeCarPreviewCanvas"),
     loungeCarColorName: document.getElementById("loungeCarColorName"),
     loungeColorPalette: document.getElementById("loungeColorPalette"),
@@ -502,6 +498,7 @@
       el.btnHeaderLeave.classList.remove("hidden");
       renderLoungeCarPreview();
       renderLoungeColorPalette(state.players || []);
+      updateLoungeSettingsUI();
       stopEngineSound();
       stopSimulation();
     } else if (viewName === "game") {
@@ -602,12 +599,6 @@
     // Rotate 90 deg so the sprite's nose points along car.angle.
     ctx.rotate(angle + Math.PI / 2);
     ctx.scale(scale, scale);
-
-    // Dynamic drop shadow underneath the car
-    ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
-    ctx.beginPath();
-    ctx.roundRect(-18, -26, 36, 54, 8);
-    ctx.fill();
 
     const sprite = getTintedCarCanvas(color);
     if (sprite) {
@@ -2029,6 +2020,7 @@
         renderLoungeRacers(data.players);
         renderLoungeColorPalette(data.players);
         renderLoungeCarPreview();
+        updateLoungeSettingsUI();
 
         if (data.status === "countdown" || data.status === "racing") {
           stopLobbyPolling();
@@ -2219,6 +2211,75 @@
   }
 
   // =========================================================================
+  // LOUNGE SETTINGS (Decided in lobby by host, synced to all players)
+  // =========================================================================
+
+  function updateLoungeSettingsUI() {
+    const trackNames = {
+      grand_prix: "Grand Prix Banen",
+      fjord_drift: "Fjordsvingen",
+    };
+    if (el.loungeTrackName) {
+      el.loungeTrackName.textContent = trackNames[state.trackId] || state.trackId;
+    }
+    if (el.loungeLapsBadge) {
+      el.loungeLapsBadge.textContent = `${state.laps} runder`;
+    }
+
+    if (el.loungeSelectTrack) {
+      el.loungeSelectTrack.value = state.trackId;
+      el.loungeSelectTrack.disabled = !state.isHost;
+      el.loungeSelectTrack.style.cursor = state.isHost ? "pointer" : "not-allowed";
+      el.loungeSelectTrack.style.opacity = state.isHost ? "1" : "0.75";
+    }
+
+    if (el.loungeControlLaps) {
+      const lapBtns = el.loungeControlLaps.querySelectorAll(".seg-btn");
+      lapBtns.forEach(btn => {
+        const btnLaps = parseInt(btn.dataset.laps, 10);
+        btn.classList.toggle("active", btnLaps === state.laps);
+        btn.disabled = !state.isHost;
+        btn.style.opacity = state.isHost ? "1" : (btnLaps === state.laps ? "1" : "0.45");
+        btn.style.cursor = state.isHost ? "pointer" : "not-allowed";
+      });
+    }
+
+    if (el.loungeHostOnlyHint) {
+      if (state.isHost) {
+        el.loungeHostOnlyHint.textContent = "Du er romvert (du bestemmer bane & runder)";
+        el.loungeHostOnlyHint.classList.add("is-host");
+      } else {
+        el.loungeHostOnlyHint.textContent = "Venter på romvertens valg";
+        el.loungeHostOnlyHint.classList.remove("is-host");
+      }
+    }
+  }
+
+  async function sendLoungeSettingsUpdate(trackId, laps) {
+    if (!state.isHost || !state.roomCode) return;
+    try {
+      const resp = await fetch("/api/turbosladd/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roomCode: state.roomCode,
+          playerId: state.playerId,
+          trackId: trackId !== undefined ? trackId : state.trackId,
+          laps: laps !== undefined ? laps : state.laps,
+        }),
+      });
+      const data = await resp.json();
+      if (data && data.ok) {
+        if (data.trackId) state.trackId = data.trackId;
+        if (data.laps) state.laps = data.laps;
+        updateLoungeSettingsUI();
+      }
+    } catch (err) {
+      console.warn("Failed to update settings:", err);
+    }
+  }
+
+  // =========================================================================
   // INPUT HANDLERS (Keys & Buttons)
   // =========================================================================
 
@@ -2337,34 +2398,33 @@
 
     if (el.btnGoToOnlineTab) el.btnGoToOnlineTab.addEventListener("click", () => el.tabOnline.click());
 
-    // Lap buttons
-    el.controlLaps.querySelectorAll(".seg-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        el.controlLaps.querySelectorAll(".seg-btn").forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        state.laps = parseInt(btn.dataset.laps || "3", 10);
+    // In-Lobby Lounge Race Settings (Controlled by host, synced to all guests)
+    if (el.loungeSelectTrack) {
+      el.loungeSelectTrack.addEventListener("change", () => {
+        sendLoungeSettingsUpdate(el.loungeSelectTrack.value, undefined);
       });
-    });
-
-    el.controlSoloLaps.querySelectorAll(".seg-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        el.controlSoloLaps.querySelectorAll(".seg-btn").forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        state.laps = parseInt(btn.dataset.laps || "3", 10);
-      });
-    });
-
-    // Max players picker (1-16)
-    function setMaxPlayers(n) {
-      n = Math.max(1, Math.min(16, parseInt(n, 10) || 4));
-      state.maxPlayers = n;
-      if (el.sliderMaxPlayers) el.sliderMaxPlayers.value = n;
-      if (el.inputMaxPlayers) el.inputMaxPlayers.value = n;
     }
-    if (el.sliderMaxPlayers) el.sliderMaxPlayers.addEventListener("input", () => setMaxPlayers(el.sliderMaxPlayers.value));
-    if (el.inputMaxPlayers) el.inputMaxPlayers.addEventListener("change", () => setMaxPlayers(el.inputMaxPlayers.value));
-    if (el.btnMaxPlayersDec) el.btnMaxPlayersDec.addEventListener("click", () => setMaxPlayers(state.maxPlayers - 1));
-    if (el.btnMaxPlayersInc) el.btnMaxPlayersInc.addEventListener("click", () => setMaxPlayers(state.maxPlayers + 1));
+
+    if (el.loungeControlLaps) {
+      el.loungeControlLaps.querySelectorAll(".seg-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          if (!state.isHost) return;
+          const laps = parseInt(btn.dataset.laps || "3", 10);
+          sendLoungeSettingsUpdate(undefined, laps);
+        });
+      });
+    }
+
+    // Solo lap buttons
+    if (el.controlSoloLaps) {
+      el.controlSoloLaps.querySelectorAll(".seg-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          el.controlSoloLaps.querySelectorAll(".seg-btn").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          state.laps = parseInt(btn.dataset.laps || "3", 10);
+        });
+      });
+    }
 
     // Splitscreen Local Setup
     if (el.splitP1Colors) {
@@ -2403,8 +2463,11 @@
       });
     }
 
-    el.selectTrack.addEventListener("change", () => { state.trackId = el.selectTrack.value; });
-    el.selectSoloTrack.addEventListener("change", () => { state.trackId = el.selectSoloTrack.value; });
+    if (el.selectSoloTrack) {
+      el.selectSoloTrack.addEventListener("change", () => {
+        state.trackId = el.selectSoloTrack.value;
+      });
+    }
 
     // Create Race (Host)
     el.btnCreateRace.addEventListener("click", async () => {
@@ -2420,9 +2483,9 @@
             hostName: hostName,
             color: state.driverColor,
             avatar: selectedAvatarStr,
-            trackId: state.trackId,
-            laps: state.laps,
-            maxPlayers: state.maxPlayers,
+            trackId: state.trackId || "grand_prix",
+            laps: state.laps || 3,
+            maxPlayers: 16,
           }),
         });
         const data = await resp.json();
@@ -2436,9 +2499,8 @@
             localStorage.setItem("ts_driver_color", data.color);
           }
           el.displayRoomCode.textContent = data.roomCode;
-          el.loungeTrackName.textContent = TRACKS[state.trackId].name;
-          el.loungeLapsBadge.textContent = `${state.laps} runder`;
           showView("room");
+          updateLoungeSettingsUI();
           startLobbyPolling();
         } else {
           alert(data.error || "Kunne ikke opprette rom.");
@@ -2482,9 +2544,8 @@
             localStorage.setItem("ts_driver_color", data.color);
           }
           el.displayRoomCode.textContent = data.roomCode;
-          el.loungeTrackName.textContent = TRACKS[state.trackId].name;
-          el.loungeLapsBadge.textContent = `${state.laps} runder`;
           showView("room");
+          updateLoungeSettingsUI();
           startLobbyPolling();
         } else {
           alert(data.error || "Kunne ikke koble til rom.");
@@ -2660,10 +2721,8 @@
           state.isHost = Boolean(data.isHost);
           state.trackId = data.trackId || "grand_prix";
           state.laps = data.laps || 3;
-          state.maxPlayers = data.maxPlayers || 4;
+          state.maxPlayers = data.maxPlayers || 16;
           state.players = data.players || [];
-          el.loungeTrackName.textContent = TRACKS[state.trackId].name;
-          el.loungeLapsBadge.textContent = `${state.laps} runder`;
 
           // If coming from Party Lounge, link Back button to party lounge
           el.btnHeaderBack.href = `/party/?room=${encodeURIComponent(roomParam)}`;
@@ -2673,6 +2732,7 @@
             launchOnlineRace(data);
           } else {
             showView("room");
+            updateLoungeSettingsUI();
             startLobbyPolling();
           }
           return;

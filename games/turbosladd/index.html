@@ -132,36 +132,6 @@
                       <input type="text" id="inputHostName" class="text-input" maxlength="18"
                         placeholder="F.eks. Sjåfør 1" value="Sjåfør 1" required />
                     </div>
-
-                    <div class="form-group">
-                      <label for="selectTrack">Bane</label>
-                      <select id="selectTrack" class="text-input select-input">
-                        <option value="grand_prix">Grand Prix Banen (Middels)</option>
-                        <option value="fjord_drift">Fjordsvingen (Teknisk drift)</option>
-                      </select>
-                    </div>
-
-                    <div class="form-group">
-                      <label>Antall runder</label>
-                      <div class="segmented-control" id="controlLaps">
-                        <button type="button" class="seg-btn active" data-laps="3">3 runder</button>
-                        <button type="button" class="seg-btn" data-laps="5">5 runder</button>
-                        <button type="button" class="seg-btn" data-laps="8">8 runder</button>
-                      </div>
-                    </div>
-
-                    <div class="form-group">
-                      <label>Maks antall spillere (1–16)</label>
-                      <div class="player-count-picker" id="controlMaxPlayersWrap">
-                        <button type="button" class="pcp-step-btn" id="btnMaxPlayersDec">−</button>
-                        <input type="range" class="pcp-slider" id="sliderMaxPlayers" min="1" max="16" value="4" />
-                        <button type="button" class="pcp-step-btn" id="btnMaxPlayersInc">+</button>
-                        <div class="pcp-number-wrap">
-                          <input type="number" class="pcp-number-input" id="inputMaxPlayers" min="1" max="16" value="4" />
-                          <span class="pcp-unit">spillere</span>
-                        </div>
-                      </div>
-                    </div>
                   </div>
 
                   <button type="button" class="primary-btn pulse-glow" id="btnCreateRace">
@@ -369,6 +339,36 @@
               <div class="track-badge-pill" id="loungeTrackBadge">
                 <span class="tb-name" id="loungeTrackName">Grand Prix Banen</span>
                 <span class="tb-laps" id="loungeLapsBadge">3 runder</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Løpsinnstillinger (Styres i lobbyen av romvert) -->
+          <div class="lounge-options-card" id="loungeOptionsCard">
+            <div class="loc-header">
+              <div class="loc-title-group">
+                <span class="opc-badge badge-orange">Løpsinnstillinger</span>
+                <h4 class="loc-title">Bane &amp; Runder</h4>
+              </div>
+              <span class="loc-host-badge" id="loungeHostOnlyHint">Romvert bestemmer innstillinger</span>
+            </div>
+
+            <div class="loc-grid">
+              <div class="form-group loc-field">
+                <label for="loungeSelectTrack">Valgt bane</label>
+                <select id="loungeSelectTrack" class="text-input select-input">
+                  <option value="grand_prix">Grand Prix Banen (Middels)</option>
+                  <option value="fjord_drift">Fjordsvingen (Teknisk drift)</option>
+                </select>
+              </div>
+
+              <div class="form-group loc-field">
+                <label>Antall runder</label>
+                <div class="segmented-control" id="loungeControlLaps">
+                  <button type="button" class="seg-btn active" data-laps="3">3 runder</button>
+                  <button type="button" class="seg-btn" data-laps="5">5 runder</button>
+                  <button type="button" class="seg-btn" data-laps="8">8 runder</button>
+                </div>
               </div>
             </div>
           </div>
