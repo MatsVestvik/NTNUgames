@@ -180,7 +180,8 @@
         const btn = card.querySelector(".card-btn");
         const tagsGroup = card.querySelector(".card-tags-group");
 
-        const isDisabled = (count !== "all" && parseInt(count, 10) < min);
+        const isPassAndPlay = Boolean(card.dataset.tags && card.dataset.tags.includes("pass-and-play"));
+        const isDisabled = !isPassAndPlay && (count !== "all" && parseInt(count, 10) < min);
 
         if (isDisabled) {
           card.classList.add("card-disabled-players");
