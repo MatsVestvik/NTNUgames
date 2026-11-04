@@ -1,12 +1,13 @@
 /**
  * Turbosladd - Top-down 2D Racing & Drifting Game Engine
  * Features:
- * - Smooth Catmull-Rom spline racetracks with textured asphalt, curbs, barriers & runoff
+ * - Single standardized high-performance drift car with custom paint
+ * - Addictive, responsive drift physics: slide easily around every corner
+ * - Counter-steering stabilization, tire smoke, rubber skid marks & drift turbo boost
  * - High-performance pre-rendered offscreen track caching for solid 60 FPS
- * - Realistic arcade drift physics with counter-steering, skid marks & smoke
  * - Multi-device synchronization over /api/turbosladd/sync and Party Lounge bridge
  * - Immediate camera centering with forward look-ahead
- * - Highly responsive keyboard (Arrows + WASD + Space) & touch controls
+ * - Highly responsive keyboard controls (Arrows, WASD, Space for handbrake)
  * - Web Audio procedural sound synthesizer (engine rev, drift screech, turbo burst)
  */
 
@@ -36,65 +37,19 @@
     { color: "#22c55e", name: "Smaragd" },
   ];
 
-  const CAR_SPECS = {
-    sport: {
-      name: "Sport Coupe",
-      accel: 720,
-      maxSpeed: 500,
-      reverseSpeed: 180,
-      turnSpeed: 3.8,
-      grip: 6.6,
-      driftThreshold: 100,
-    },
-    drift: {
-      name: "Drift Spec",
-      accel: 700,
-      maxSpeed: 480,
-      reverseSpeed: 170,
-      turnSpeed: 4.2,
-      grip: 5.2,
-      driftThreshold: 80,
-    },
-    formula: {
-      name: "Formula Racer",
-      accel: 820,
-      maxSpeed: 540,
-      reverseSpeed: 170,
-      turnSpeed: 4.0,
-      grip: 7.6,
-      driftThreshold: 130,
-    },
-    muscle: {
-      name: "Muscle Car",
-      accel: 750,
-      maxSpeed: 510,
-      reverseSpeed: 180,
-      turnSpeed: 3.4,
-      grip: 5.8,
-      driftThreshold: 95,
-    },
+  // Single Standardized Drift Car Spec: Responsive, fast & drifty
+  const CAR_SPEC = {
+    name: "Turbosladd GT",
+    accel: 760,
+    maxSpeed: 520,
+    reverseSpeed: 190,
+    turnSpeed: 4.4,
   };
 
   // =========================================================================
   // CATMULL-ROM SPLINE SMOOTH TRACK GENERATOR
   // =========================================================================
 
-  function catmullRomPoint(p0, p1, p2, p3, t) {
-    const t2 = t * t;
-    const t3 = t2 * t;
-    return {
-      x: 0.5 * ((2 * p1.x) +
-        (-p0.x + p2.x) * t +
-        (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 +
-        (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3),
-      y: 0.5 * ((2 * p1.y) +
-        (-p0.y + p2.y) * t +
-        (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
-        (-p0.y + 3 * p1.x - 3 * p2.y + p3.y) * t3),
-    };
-  }
-
-  // Exact Catmull-Rom point computation
   function evalSplinePoint(p0, p1, p2, p3, t) {
     const t2 = t * t;
     const t3 = t2 * t;
@@ -130,7 +85,7 @@
     return smoothPoints;
   }
 
-  // Circuit 1: Grand Prix Banen - Wide, fast flowing track with distinct turns
+  // Circuit 1: Grand Prix Banen - Wide, fast flowing track with sweeping turns
   const RAW_GP_POINTS = [
     { x: 500, y: 1500 },  // 0: Start / Finish line straight
     { x: 1200, y: 1500 }, // 1: Main straight
@@ -180,7 +135,7 @@
       roadWidth,
       rawPoints,
       points: smoothPoints,
-      checkpoints: rawPoints, // Use waypoints as checkpoint gates
+      checkpoints: rawPoints,
       totalPoints: smoothPoints.length,
     };
   }
@@ -227,7 +182,6 @@
     mode: "online", // "online" | "solo"
     driverName: localStorage.getItem("ts_driver_name") || "Sjåfør 1",
     driverColor: localStorage.getItem("ts_driver_color") || PALETTE[0].color,
-    carModel: localStorage.getItem("ts_car_model") || "sport",
 
     roomCode: "",
     playerId: "",
@@ -309,7 +263,6 @@
     btnGoToOnlineTab: document.getElementById("btnGoToOnlineTab"),
 
     inputDriverName: document.getElementById("inputDriverName"),
-    controlCarModel: document.getElementById("controlCarModel"),
     carPreviewCanvas: document.getElementById("carPreviewCanvas"),
     tsColorPalette: document.getElementById("tsColorPalette"),
 
@@ -350,13 +303,6 @@
     btnQuitRace: document.getElementById("btnQuitRace"),
     countdownOverlay: document.getElementById("countdownOverlay"),
     countdownText: document.getElementById("countdownText"),
-
-    // Touch
-    touchControlsLayer: document.getElementById("touchControlsLayer"),
-    btnTouchLeft: document.getElementById("btnTouchLeft"),
-    btnTouchRight: document.getElementById("btnTouchRight"),
-    btnTouchGas: document.getElementById("btnTouchGas"),
-    btnTouchBrake: document.getElementById("btnTouchBrake"),
 
     // Podium Modal
     modalPodium: document.getElementById("modalPodium"),
@@ -441,6 +387,24 @@
     } catch (e) {}
   }
 
+  function playDriftChirp() {
+    if (!state.soundEnabled) return;
+    try {
+      initAudio();
+      if (!state.audioCtx) return;
+      const osc = state.audioCtx.createOscillator();
+      const gain = state.audioCtx.createGain();
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(260 + Math.random() * 80, state.audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.025, state.audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, state.audioCtx.currentTime + 0.08);
+      osc.connect(gain);
+      gain.connect(state.audioCtx.destination);
+      osc.start();
+      osc.stop(state.audioCtx.currentTime + 0.08);
+    } catch (e) {}
+  }
+
   // =========================================================================
   // VIEW NAVIGATION
   // =========================================================================
@@ -476,10 +440,10 @@
   }
 
   // =========================================================================
-  // CAR DRAWING ROUTINES
+  // SINGLE STANDARDIZED DRIFT CAR DRAWING
   // =========================================================================
 
-  function drawCarOnCanvas(ctx, cx, cy, angle, color, model, scale = 1.0, steerInput = 0, isBraking = false) {
+  function drawCarOnCanvas(ctx, cx, cy, angle, color, scale = 1.0, steerInput = 0, isBraking = false) {
     ctx.save();
     ctx.translate(cx, cy);
     ctx.rotate(angle);
@@ -488,84 +452,88 @@
     // Drop Shadow
     ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
     ctx.beginPath();
-    ctx.roundRect(-22, -12, 44, 24, 6);
+    ctx.roundRect(-23, -13, 46, 26, 6);
     ctx.fill();
 
-    // 4 Black Tires with dynamic front steering angle
-    const steerRad = (steerInput || 0) * 0.35;
+    // 4 Wide Performance Tires
+    const steerRad = (steerInput || 0) * 0.45;
     ctx.fillStyle = "#090d16";
 
     // Front Left Tire (steerable)
     ctx.save();
-    ctx.translate(16, -12);
+    ctx.translate(15, -13);
     ctx.rotate(steerRad);
-    ctx.fillRect(-6, -3, 12, 6);
+    ctx.fillRect(-6, -3, 13, 7);
+    ctx.fillStyle = "#64748b";
+    ctx.fillRect(-2, -1, 5, 3);
     ctx.restore();
 
     // Front Right Tire (steerable)
     ctx.save();
-    ctx.translate(16, 12);
+    ctx.translate(15, 13);
     ctx.rotate(steerRad);
-    ctx.fillRect(-6, -3, 12, 6);
+    ctx.fillStyle = "#090d16";
+    ctx.fillRect(-6, -4, 13, 7);
+    ctx.fillStyle = "#64748b";
+    ctx.fillRect(-2, -2, 5, 3);
     ctx.restore();
 
-    // Rear tires (fixed)
-    ctx.fillRect(-22, -15, 12, 6);
-    ctx.fillRect(-22, 9, 12, 6);
+    // Rear tires (fixed wide rubber)
+    ctx.fillStyle = "#090d16";
+    ctx.fillRect(-21, -16, 13, 7);
+    ctx.fillRect(-21, 9, 13, 7);
+    ctx.fillStyle = "#64748b";
+    ctx.fillRect(-17, -14, 5, 3);
+    ctx.fillRect(-17, 11, 5, 3);
+
+    // Front aero splitter
+    ctx.fillStyle = "#0f172a";
+    ctx.beginPath();
+    ctx.roundRect(16, -11, 8, 22, 3);
+    ctx.fill();
 
     // Car Body Base
     ctx.fillStyle = color;
     ctx.beginPath();
-    if (model === "formula") {
-      ctx.moveTo(25, 0);
-      ctx.lineTo(8, -9);
-      ctx.lineTo(-20, -10);
-      ctx.lineTo(-24, 0);
-      ctx.lineTo(-20, 10);
-      ctx.lineTo(8, 9);
-      ctx.closePath();
-    } else if (model === "muscle") {
-      ctx.roundRect(-22, -13, 44, 26, 4);
-    } else {
-      ctx.roundRect(-20, -12, 40, 24, 6);
-    }
+    ctx.roundRect(-21, -13, 42, 26, 6);
     ctx.fill();
 
-    // Outline / Bevel
+    // Body bevel outline
     ctx.strokeStyle = "rgba(255, 255, 255, 0.45)";
     ctx.lineWidth = 1.4;
     ctx.stroke();
 
     // Dark Cockpit & Windshield
-    ctx.fillStyle = "rgba(11, 15, 25, 0.88)";
+    ctx.fillStyle = "rgba(11, 15, 25, 0.9)";
     ctx.beginPath();
-    ctx.roundRect(-7, -8, 17, 16, 3);
+    ctx.roundRect(-7, -9, 17, 18, 4);
     ctx.fill();
 
     // Windshield Cyan Glint
-    ctx.fillStyle = "rgba(56, 189, 248, 0.7)";
+    ctx.fillStyle = "rgba(56, 189, 248, 0.75)";
     ctx.beginPath();
-    ctx.moveTo(3, -7);
-    ctx.lineTo(9, -7);
-    ctx.lineTo(9, 7);
-    ctx.lineTo(3, 7);
+    ctx.moveTo(3, -8);
+    ctx.lineTo(9, -8);
+    ctx.lineTo(9, 8);
+    ctx.lineTo(3, 8);
     ctx.closePath();
     ctx.fill();
 
-    // Racing Stripes
-    ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
-    ctx.fillRect(-18, -2, 36, 4);
+    // Dual Racing Stripes
+    ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+    ctx.fillRect(-19, -3, 38, 2);
+    ctx.fillRect(-19, 1, 38, 2);
 
     // Front Headlights
     ctx.fillStyle = "#fef08a";
-    ctx.fillRect(17, -10, 3, 4);
-    ctx.fillRect(17, 6, 3, 4);
+    ctx.fillRect(18, -10, 3, 4);
+    ctx.fillRect(18, 6, 3, 4);
 
     // Rear Brake Lights (Red, glowing bright when braking)
     if (isBraking) {
       ctx.fillStyle = "#ff2222";
       ctx.shadowColor = "#ef4444";
-      ctx.shadowBlur = 8;
+      ctx.shadowBlur = 10;
       ctx.fillRect(-22, -10, 3, 5);
       ctx.fillRect(-22, 5, 3, 5);
       ctx.shadowBlur = 0;
@@ -575,11 +543,12 @@
       ctx.fillRect(-21, 6, 3, 4);
     }
 
-    // Rear Spoiler
-    if (model === "drift" || model === "sport") {
-      ctx.fillStyle = "#090d16";
-      ctx.fillRect(-23, -13, 3, 26);
-    }
+    // Rear Aerodynamic Drift Spoiler
+    ctx.fillStyle = "#090d16";
+    ctx.fillRect(-24, -14, 4, 28);
+    ctx.fillStyle = color;
+    ctx.fillRect(-24, -14, 4, 3);
+    ctx.fillRect(-24, 11, 4, 3);
 
     ctx.restore();
   }
@@ -590,7 +559,6 @@
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Subtle grid
     ctx.strokeStyle = "rgba(255, 255, 255, 0.06)";
     ctx.lineWidth = 1;
     for (let x = 0; x < canvas.width; x += 15) {
@@ -606,7 +574,7 @@
       ctx.stroke();
     }
 
-    drawCarOnCanvas(ctx, canvas.width / 2, canvas.height / 2, -0.15, state.driverColor, state.carModel, 1.45);
+    drawCarOnCanvas(ctx, canvas.width / 2, canvas.height / 2, -0.15, state.driverColor, 1.45, 0.3);
   }
 
   function initColorPalette() {
@@ -629,7 +597,7 @@
   }
 
   // =========================================================================
-  // CAR PHYSICS & DRIFT SIMULATION
+  // ENHANCED DRIFT PHYSICS & SIMULATION
   // =========================================================================
 
   function resetCarToSlot(car, track, slotIndex) {
@@ -657,24 +625,25 @@
     car.lapStartTime = performance.now();
     car.raceStartTime = performance.now();
 
-    // Immediately snap camera to the car!
+    // Immediately snap camera to the car
     state.camera.x = slot.x;
     state.camera.y = slot.y;
     state.camera.zoom = 1.25;
   }
 
-  function updateCarPhysics(car, spec, track, dt) {
+  function updateCarPhysics(car, track, dt) {
     const throttle = car.accelInput;
     const brake = car.brakeInput;
     const steer = car.steerInput;
+    const handbrake = car.handbrakeInput;
 
-    let enginePower = spec.accel;
-    let maxSpeed = spec.maxSpeed;
+    let enginePower = CAR_SPEC.accel;
+    let maxSpeed = CAR_SPEC.maxSpeed;
 
     if (car.turboTimer > 0) {
       car.turboTimer -= dt;
-      enginePower *= 1.5;
-      maxSpeed *= 1.3;
+      enginePower *= 1.45;
+      maxSpeed *= 1.25;
       addBoostParticle(car);
     }
 
@@ -688,52 +657,71 @@
     const speed = Math.hypot(car.vx, car.vy);
     car.speed = speed;
 
-    // Responsive steering: even at low/zero speeds, the car can easily turn
-    const steerFactor = Math.min(1.0, Math.max(0.75, speed / 80.0));
-    const steerDir = vForward >= -10 ? 1 : -1;
-    car.angle += steer * spec.turnSpeed * steerFactor * steerDir * dt;
-
-    // Acceleration & Braking Forces
-    let fForward = 0;
-    if (throttle > 0) {
-      if (vForward < maxSpeed) fForward += throttle * enginePower;
-    }
-    if (brake > 0) {
-      if (vForward > 12) {
-        fForward -= brake * enginePower * 1.8;
-      } else if (vForward > -spec.reverseSpeed) {
-        fForward -= brake * enginePower * 0.9;
-      }
+    // Slip angle between heading and actual travel vector
+    let slip = 0;
+    if (speed > 20) {
+      const velAngle = Math.atan2(car.vy, car.vx);
+      let diff = car.angle - velAngle;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      slip = diff;
     }
 
-    // Natural rolling drag
-    fForward -= vForward * 1.8;
-    fForward -= vForward * Math.abs(vForward) * 0.0016;
+    // Drifting is EASY and NATURAL to trigger:
+    // 1. Handbrake (Space)
+    // 2. Tapping brake while steering (Down + Left/Right)
+    // 3. Turning into any corner at speed (|steer| > 0.32 and speed > 65)
+    // 4. Continued slip momentum (|slip| > 0.10)
+    const wantsDrift = Boolean(handbrake) ||
+      (brake > 0 && Math.abs(steer) > 0.15 && speed > 40) ||
+      (Math.abs(steer) > 0.32 && speed > 65) ||
+      (car.isDrifting && Math.abs(slip) > 0.10 && speed > 45);
 
-    // Drifting & Lateral Grip
-    const lateralSpeed = Math.abs(vLateral);
-    const wantsDrift = Boolean(car.handbrakeInput) || lateralSpeed > spec.driftThreshold || (brake > 0 && Math.abs(steer) > 0.25 && speed > 80);
-
-    let lateralGripFactor = spec.grip;
-    if (wantsDrift && speed > 70) {
+    if (wantsDrift && speed > 45) {
       car.isDrifting = true;
-      lateralGripFactor = spec.grip * 0.22; // Break traction!
-      car.driftAngle = lateralSpeed / (speed + 0.1);
-      car.driftBoostCharge = Math.min(1.0, car.driftBoostCharge + dt * 0.45);
+      car.driftAngle = Math.abs(slip);
+      car.driftBoostCharge = Math.min(1.0, car.driftBoostCharge + dt * 0.55);
 
       addSkidmark(car);
       addSmokeParticle(car);
+      if (Math.random() < 0.25) playDriftChirp();
     } else {
-      if (car.isDrifting && car.driftBoostCharge > 0.35) {
-        car.turboTimer = Math.min(1.5, car.driftBoostCharge * 1.4);
-        playTone(659.25, 0.15, "triangle", 0.3);
+      if (car.isDrifting && car.driftBoostCharge > 0.28) {
+        // Boost fires on drift exit!
+        car.turboTimer = Math.min(1.6, car.driftBoostCharge * 1.5);
+        playTone(659.25, 0.18, "triangle", 0.3);
       }
       car.isDrifting = false;
       car.driftBoostCharge = Math.max(0, car.driftBoostCharge - dt * 1.5);
       car.driftAngle = 0;
     }
 
-    const newVLateral = vLateral * Math.max(0, 1 - lateralGripFactor * dt * 14.0);
+    // Steering: agile rotation for deep drifts, counter-steering balances the slide
+    const driftSteerBonus = car.isDrifting ? 1.35 : 1.0;
+    const steerFactor = Math.min(1.0, Math.max(0.75, speed / 65.0));
+    const steerDir = vForward >= -10 ? 1 : -1;
+    car.angle += steer * CAR_SPEC.turnSpeed * driftSteerBonus * steerFactor * steerDir * dt;
+
+    // Longitudinal drive & brake forces
+    let fForward = 0;
+    if (throttle > 0 && vForward < maxSpeed) {
+      fForward += throttle * enginePower;
+    }
+    if (brake > 0) {
+      if (vForward > 12) {
+        fForward -= brake * enginePower * 1.6;
+      } else if (vForward > -CAR_SPEC.reverseSpeed) {
+        fForward -= brake * enginePower * 0.9;
+      }
+    }
+
+    // Natural drag
+    fForward -= vForward * 1.5;
+    fForward -= vForward * Math.abs(vForward) * 0.0012;
+
+    // Lateral grip: loose when drifting (powerslide!), tight when gripping
+    const gripRate = car.isDrifting ? 1.8 : 9.5;
+    const newVLateral = vLateral * Math.max(0, 1 - gripRate * dt * 8.0);
     const newVForward = vForward + fForward * dt;
 
     car.vx = newVForward * forwardX + newVLateral * rightX;
@@ -744,7 +732,7 @@
     const halfRoad = track.roadWidth * 0.5;
 
     if (trackDist > halfRoad + 45) {
-      // Off-road Grass / Sand: apply rolling resistance
+      // Off-road Grass / Sand
       car.vx *= Math.pow(0.88, dt * 60);
       car.vy *= Math.pow(0.88, dt * 60);
     }
@@ -852,10 +840,10 @@
     const backX = -Math.cos(car.angle) * 16;
     const backY = -Math.sin(car.angle) * 16;
 
-    state.skidmarks.push({ x: car.x + backX - rightX * 10, y: car.y + backY - rightY * 10, alpha: 0.65 });
-    state.skidmarks.push({ x: car.x + backX + rightX * 10, y: car.y + backY + rightY * 10, alpha: 0.65 });
+    state.skidmarks.push({ x: car.x + backX - rightX * 11, y: car.y + backY - rightY * 11, alpha: 0.7 });
+    state.skidmarks.push({ x: car.x + backX + rightX * 11, y: car.y + backY + rightY * 11, alpha: 0.7 });
 
-    if (state.skidmarks.length > 500) {
+    if (state.skidmarks.length > 550) {
       state.skidmarks.splice(0, 50);
     }
   }
@@ -864,13 +852,13 @@
     const backX = -Math.cos(car.angle) * 18;
     const backY = -Math.sin(car.angle) * 18;
     state.particles.push({
-      x: car.x + backX + (Math.random() - 0.5) * 10,
-      y: car.y + backY + (Math.random() - 0.5) * 10,
-      vx: (Math.random() - 0.5) * 20 - car.vx * 0.1,
-      vy: (Math.random() - 0.5) * 20 - car.vy * 0.1,
-      size: 4 + Math.random() * 6,
-      alpha: 0.6,
-      decay: 0.8,
+      x: car.x + backX + (Math.random() - 0.5) * 12,
+      y: car.y + backY + (Math.random() - 0.5) * 12,
+      vx: (Math.random() - 0.5) * 24 - car.vx * 0.1,
+      vy: (Math.random() - 0.5) * 24 - car.vy * 0.1,
+      size: 5 + Math.random() * 7,
+      alpha: 0.65,
+      decay: 0.75,
       color: "rgba(226, 232, 240,",
     });
   }
@@ -968,21 +956,21 @@
 
     // 3. 3D Tire Wall Barriers
     ctx.lineWidth = rw + 54;
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.55)"; // Drop shadow under barrier
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.55)";
     ctx.stroke();
 
     ctx.lineWidth = rw + 44;
-    ctx.strokeStyle = "#dc2626"; // Red barrier
+    ctx.strokeStyle = "#dc2626";
     ctx.stroke();
 
     ctx.lineWidth = rw + 44;
     ctx.setLineDash([28, 28]);
-    ctx.strokeStyle = "#ffffff"; // White alternating barrier blocks
+    ctx.strokeStyle = "#ffffff";
     ctx.stroke();
     ctx.setLineDash([]);
 
     ctx.lineWidth = rw + 40;
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.35)"; // Barrier top bevel
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.35)";
     ctx.stroke();
 
     // 4. Red & White Apex Rumble Strips (Curbs)
@@ -1122,10 +1110,10 @@
     }
   }
 
-  function drawPlayerCar(ctx, car, color, model, name, isLocal = false) {
+  function drawPlayerCar(ctx, car, color, name, isLocal = false) {
     const isBraking = car.brakeInput > 0;
     const steer = car.steerInput || 0;
-    drawCarOnCanvas(ctx, car.x, car.y, car.angle, color, model, 1.4, steer, isBraking);
+    drawCarOnCanvas(ctx, car.x, car.y, car.angle, color, 1.4, steer, isBraking);
 
     // Floating Name Tag (for opponents)
     if (!isLocal) {
@@ -1211,8 +1199,8 @@
         el.driftMeterLabel.textContent = "🔥 TURBO BOOST!";
         el.driftMeterWrap.style.boxShadow = "0 0 15px rgba(56, 189, 248, 0.9)";
       } else if (state.myCar.isDrifting) {
-        el.driftMeterLabel.textContent = "SLADDER...";
-        el.driftMeterWrap.style.boxShadow = "0 0 12px rgba(249, 115, 22, 0.7)";
+        el.driftMeterLabel.textContent = "🔥 SLADDER...";
+        el.driftMeterWrap.style.boxShadow = "0 0 12px rgba(249, 115, 22, 0.8)";
       } else {
         el.driftMeterLabel.textContent = "DRIFT BOOST";
         el.driftMeterWrap.style.boxShadow = "none";
@@ -1248,7 +1236,6 @@
 
     try {
       const track = TRACKS[state.trackId] || TRACKS.grand_prix;
-      const spec = CAR_SPECS[state.carModel] || CAR_SPECS.sport;
 
       // In Solo or when racing, full driver control:
       if (state.mode === "solo" || state.roomStatus === "racing") {
@@ -1257,7 +1244,7 @@
         state.myCar.steerInput = (state.keys.right ? 1 : 0) - (state.keys.left ? 1 : 0);
         state.myCar.handbrakeInput = state.keys.space ? 1 : 0;
       } else if (state.roomStatus === "countdown") {
-        // Allow steering & throttle revving before green flag
+        // Allow steering & wheel angling before green flag
         state.myCar.accelInput = 0;
         state.myCar.brakeInput = 0;
         state.myCar.steerInput = (state.keys.right ? 1 : 0) - (state.keys.left ? 1 : 0);
@@ -1269,7 +1256,7 @@
         state.myCar.handbrakeInput = 0;
       }
 
-      updateCarPhysics(state.myCar, spec, track, dt);
+      updateCarPhysics(state.myCar, track, dt);
       updateEngineAudio(state.myCar.speed, state.myCar.accelInput);
 
       // Opponent interpolation
@@ -1313,11 +1300,11 @@
 
         const allMinimapCars = [];
         Object.values(state.opponentCars).forEach(opp => {
-          drawPlayerCar(ctx, opp, opp.color, opp.carModel, opp.name, false);
+          drawPlayerCar(ctx, opp, opp.color, opp.name, false);
           allMinimapCars.push({ x: opp.x, y: opp.y, color: opp.color, isMe: false });
         });
 
-        drawPlayerCar(ctx, state.myCar, state.driverColor, state.carModel, state.driverName, true);
+        drawPlayerCar(ctx, state.myCar, state.driverColor, state.driverName, true);
         allMinimapCars.push({ x: state.myCar.x, y: state.myCar.y, color: state.driverColor, isMe: true });
 
         drawParticles(ctx);
@@ -1421,7 +1408,6 @@
             id: p.id,
             name: p.name,
             color: p.color,
-            carModel: p.carModel,
             x: p.x,
             y: p.y,
             angle: p.angle,
@@ -1515,7 +1501,7 @@
         </div>
         <div class="racer-info-wrap">
           <div class="racer-name">${escapeHtml(p.name)}${p.isHost ? " (Vert 👑)" : ""}</div>
-          <div class="racer-subtext">${p.carModel ? p.carModel.toUpperCase() : "SPORT"}</div>
+          <div class="racer-subtext">Klar for sladd 🏁</div>
         </div>
         <span class="racer-ready-tag ${p.isReady ? "ready" : "waiting"}">
           ${p.isReady ? "KLAR" : "VENTER..."}
@@ -1628,7 +1614,7 @@
   }
 
   // =========================================================================
-  // INPUT HANDLERS (Keys, Touch, Buttons)
+  // INPUT HANDLERS (Keys & Buttons)
   // =========================================================================
 
   function initInputHandlers() {
@@ -1682,28 +1668,6 @@
       });
     }
 
-    // Touch controls
-    function bindTouchBtn(btn, keyName) {
-      if (!btn) return;
-      const setKey = val => {
-        state.keys[keyName] = val;
-        btn.classList.toggle("active", val);
-      };
-      btn.addEventListener("pointerdown", e => { e.preventDefault(); setKey(true); });
-      btn.addEventListener("pointerup", e => { e.preventDefault(); setKey(false); });
-      btn.addEventListener("pointercancel", e => { e.preventDefault(); setKey(false); });
-      btn.addEventListener("touchstart", e => { e.preventDefault(); setKey(true); }, { passive: false });
-      btn.addEventListener("touchend", e => { e.preventDefault(); setKey(false); }, { passive: false });
-      btn.addEventListener("mousedown", () => setKey(true));
-      btn.addEventListener("mouseup", () => setKey(false));
-      btn.addEventListener("mouseleave", () => setKey(false));
-    }
-
-    bindTouchBtn(el.btnTouchGas, "up");
-    bindTouchBtn(el.btnTouchBrake, "down");
-    bindTouchBtn(el.btnTouchLeft, "left");
-    bindTouchBtn(el.btnTouchRight, "right");
-
     // Audio toggle
     el.btnAudioToggle.addEventListener("click", () => {
       state.soundEnabled = !state.soundEnabled;
@@ -1718,16 +1682,6 @@
     el.inputDriverName.addEventListener("input", () => {
       state.driverName = el.inputDriverName.value.trim() || "Sjåfør 1";
       localStorage.setItem("ts_driver_name", state.driverName);
-    });
-
-    el.controlCarModel.querySelectorAll(".seg-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        el.controlCarModel.querySelectorAll(".seg-btn").forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        state.carModel = btn.dataset.car || "sport";
-        localStorage.setItem("ts_car_model", state.carModel);
-        renderProfileCarPreview();
-      });
     });
 
     // Lobby tabs
@@ -1789,7 +1743,6 @@
           body: JSON.stringify({
             hostName: state.driverName,
             color: state.driverColor,
-            carModel: state.carModel,
             trackId: state.trackId,
             laps: state.laps,
             maxPlayers: state.maxPlayers,
@@ -1829,7 +1782,6 @@
             roomCode: code,
             playerName: state.driverName,
             color: state.driverColor,
-            carModel: state.carModel,
           }),
         });
         const data = await resp.json();

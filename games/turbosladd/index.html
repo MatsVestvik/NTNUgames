@@ -114,7 +114,7 @@
                     <span class="opc-badge">Sjåførprofil</span>
                     <h3 class="opc-title">Ditt navn &amp; biloppsett</h3>
                   </div>
-                  <span class="opc-hint">Velg din lakkfarge og bilmodell for løpet</span>
+                  <span class="opc-hint">Velg din lakkfarge for løpet</span>
                 </div>
 
                 <div class="opc-grid">
@@ -123,12 +123,14 @@
                     <input type="text" id="inputDriverName" class="text-input" maxlength="18"
                       placeholder="F.eks. Petter Solberg" value="Sjåfør 1" required />
 
-                    <label style="margin-top: 0.75rem;">Bilmodell</label>
-                    <div class="segmented-control" id="controlCarModel">
-                      <button type="button" class="seg-btn active" data-car="sport">🏎️ Sport</button>
-                      <button type="button" class="seg-btn" data-car="drift">🏁 Drift Spec</button>
-                      <button type="button" class="seg-btn" data-car="formula">🚀 Formula</button>
-                      <button type="button" class="seg-btn" data-car="muscle">🚙 Muscle</button>
+                    <div class="race-controls-hint" style="margin-top: 1rem;">
+                      <span class="hint-title">Driftekontroller:</span>
+                      <span class="hint-keys">
+                        <kbd>↑</kbd> Gass &nbsp;
+                        <kbd>↓</kbd> Brems &nbsp;
+                        <kbd>←</kbd> <kbd>→</kbd> Sving / Kontrasladd &nbsp;
+                        <kbd>Mellomrom</kbd> Brekkjern
+                      </span>
                     </div>
                   </div>
 
@@ -422,26 +424,6 @@
           <div class="race-countdown-overlay hidden" id="countdownOverlay">
             <div class="countdown-circle" id="countdownCircle">
               <span class="countdown-text" id="countdownText">3</span>
-            </div>
-          </div>
-
-          <!-- Touch Controls for Mobile / Tablets -->
-          <div class="touch-controls-layer" id="touchControlsLayer">
-            <div class="touch-cluster-left">
-              <button type="button" class="touch-btn touch-btn-steer" id="btnTouchLeft" aria-label="Sving venstre">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-              </button>
-              <button type="button" class="touch-btn touch-btn-steer" id="btnTouchRight" aria-label="Sving høyre">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-              </button>
-            </div>
-            <div class="touch-cluster-right">
-              <button type="button" class="touch-btn touch-btn-brake" id="btnTouchBrake" aria-label="Brems / Revers">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
-              </button>
-              <button type="button" class="touch-btn touch-btn-gas" id="btnTouchGas" aria-label="Gass">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
-              </button>
             </div>
           </div>
         </div>
