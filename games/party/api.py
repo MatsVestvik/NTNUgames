@@ -2351,6 +2351,8 @@ class PartyAPI:
                                 max_players=4
                             )
                             t_room.host_id = room.host_id
+                            t_room.status = "countdown"
+                            t_room.countdown_start = time.time()
                             t_room.players = {}
                             # Host
                             t_room.players[room.host_id] = {

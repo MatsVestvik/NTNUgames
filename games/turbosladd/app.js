@@ -2,10 +2,11 @@
  * Turbosladd - Top-down 2D Racing & Drifting Game Engine
  * Features:
  * - Smooth Catmull-Rom spline racetracks with textured asphalt, curbs, barriers & runoff
+ * - High-performance pre-rendered offscreen track caching for solid 60 FPS
  * - Realistic arcade drift physics with counter-steering, skid marks & smoke
  * - Multi-device synchronization over /api/turbosladd/sync and Party Lounge bridge
  * - Immediate camera centering with forward look-ahead
- * - Responsive keyboard (Arrows + WASD) & touch controls
+ * - Highly responsive keyboard (Arrows + WASD + Space) & touch controls
  * - Web Audio procedural sound synthesizer (engine rev, drift screech, turbo burst)
  */
 
@@ -38,39 +39,39 @@
   const CAR_SPECS = {
     sport: {
       name: "Sport Coupe",
-      accel: 620,
-      maxSpeed: 480,
-      reverseSpeed: 160,
-      turnSpeed: 3.5,
-      grip: 6.5,
-      driftThreshold: 110,
+      accel: 720,
+      maxSpeed: 500,
+      reverseSpeed: 180,
+      turnSpeed: 3.8,
+      grip: 6.6,
+      driftThreshold: 100,
     },
     drift: {
       name: "Drift Spec",
-      accel: 590,
-      maxSpeed: 460,
-      reverseSpeed: 150,
-      turnSpeed: 3.9,
-      grip: 5.0,
-      driftThreshold: 90,
+      accel: 700,
+      maxSpeed: 480,
+      reverseSpeed: 170,
+      turnSpeed: 4.2,
+      grip: 5.2,
+      driftThreshold: 80,
     },
     formula: {
       name: "Formula Racer",
-      accel: 720,
-      maxSpeed: 520,
-      reverseSpeed: 150,
-      turnSpeed: 3.7,
-      grip: 7.5,
-      driftThreshold: 140,
+      accel: 820,
+      maxSpeed: 540,
+      reverseSpeed: 170,
+      turnSpeed: 4.0,
+      grip: 7.6,
+      driftThreshold: 130,
     },
     muscle: {
       name: "Muscle Car",
-      accel: 640,
-      maxSpeed: 490,
-      reverseSpeed: 160,
-      turnSpeed: 3.2,
-      grip: 5.6,
-      driftThreshold: 105,
+      accel: 750,
+      maxSpeed: 510,
+      reverseSpeed: 180,
+      turnSpeed: 3.4,
+      grip: 5.8,
+      driftThreshold: 95,
     },
   };
 
@@ -89,7 +90,27 @@
       y: 0.5 * ((2 * p1.y) +
         (-p0.y + p2.y) * t +
         (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
-        (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3),
+        (-p0.y + 3 * p1.x - 3 * p2.y + p3.y) * t3),
+    };
+  }
+
+  // Exact Catmull-Rom point computation
+  function evalSplinePoint(p0, p1, p2, p3, t) {
+    const t2 = t * t;
+    const t3 = t2 * t;
+    return {
+      x: 0.5 * (
+        (2 * p1.x) +
+        (-p0.x + p2.x) * t +
+        (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 +
+        (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3
+      ),
+      y: 0.5 * (
+        (2 * p1.y) +
+        (-p0.y + p2.y) * t +
+        (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
+        (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3
+      ),
     };
   }
 
@@ -103,58 +124,55 @@
       const p3 = rawPoints[(i + 2) % n];
       for (let s = 0; s < samplesPerSegment; s++) {
         const t = s / samplesPerSegment;
-        smoothPoints.push(catmullRomPoint(p0, p1, p2, p3, t));
+        smoothPoints.push(evalSplinePoint(p0, p1, p2, p3, t));
       }
     }
     return smoothPoints;
   }
 
-  // Raw Waypoints for Circuit 1: Grand Prix
+  // Circuit 1: Grand Prix Banen - Wide, fast flowing track with distinct turns
   const RAW_GP_POINTS = [
-    { x: 500, y: 1500 },  // 0: Start / Finish Straight
-    { x: 1100, y: 1500 }, // 1: Full gas straight
-    { x: 1750, y: 1500 }, // 2: Straight end
-    { x: 2200, y: 1300 }, // 3: Turn 1 sweep
-    { x: 2350, y: 850 },  // 4: Turn 2 apex
-    { x: 2150, y: 450 },  // 5: Turn 2 exit
-    { x: 1650, y: 350 },  // 6: Top straight
-    { x: 1200, y: 400 },  // 7: Chicane entry
-    { x: 950, y: 650 },   // 8: Chicane flick
-    { x: 1250, y: 900 },  // 9: Chicane exit
-    { x: 1450, y: 1100 }, // 10: Hairpin entry
-    { x: 1150, y: 1250 }, // 11: Hairpin apex
-    { x: 800, y: 1100 },  // 12: Infield sweep
-    { x: 450, y: 1000 },  // 13: West hairpin
-    { x: 300, y: 700 },   // 14: North-west straight
-    { x: 400, y: 350 },   // 15: North apex
-    { x: 750, y: 250 },   // 16: Top loop
-    { x: 350, y: 150 },   // 17: Outer loop
-    { x: 150, y: 500 },   // 18: Far west edge
-    { x: 150, y: 1100 },  // 19: Final corner entry
-    { x: 250, y: 1450 },  // 20: Final turn exit into start straight
+    { x: 500, y: 1500 },  // 0: Start / Finish line straight
+    { x: 1200, y: 1500 }, // 1: Main straight
+    { x: 1900, y: 1500 }, // 2: End of straight
+    { x: 2350, y: 1300 }, // 3: Turn 1 sweep
+    { x: 2450, y: 850 },  // 4: Turn 2 apex
+    { x: 2200, y: 450 },  // 5: Turn 3 exit
+    { x: 1700, y: 350 },  // 6: Back straight
+    { x: 1150, y: 350 },  // 7: Back straight end
+    { x: 750, y: 550 },   // 8: Chicane entry
+    { x: 800, y: 850 },   // 9: Chicane apex
+    { x: 1250, y: 950 },  // 10: Infield drift sweep
+    { x: 1350, y: 1200 }, // 11: Hairpin entry
+    { x: 1050, y: 1250 }, // 12: Hairpin apex
+    { x: 700, y: 1150 },  // 13: Infield exit
+    { x: 400, y: 1050 },  // 14: West curve
+    { x: 200, y: 1250 },  // 15: Final turn entry
+    { x: 250, y: 1450 },  // 16: Final turn exit into straight
   ];
 
-  // Raw Waypoints for Circuit 2: Fjordsvingen (Continuous drift technical track)
+  // Circuit 2: Fjordsvingen - Technical continuous drift track
   const RAW_FJORD_POINTS = [
-    { x: 500, y: 1450 },  // 0: Start straight
-    { x: 1150, y: 1450 }, // 1: Straight
-    { x: 1750, y: 1450 }, // 2: High-speed sweep
-    { x: 2150, y: 1250 }, // 3: Hairpin 1
-    { x: 1950, y: 950 },  // 4: Drift switch 1
-    { x: 1350, y: 950 },  // 5: Infield drift
-    { x: 750, y: 950 },   // 6: Hairpin 2
-    { x: 400, y: 750 },   // 7
-    { x: 750, y: 550 },   // 8: S-curve
-    { x: 1350, y: 550 },  // 9
-    { x: 1950, y: 450 },  // 10: Hairpin 3
-    { x: 1700, y: 200 },  // 11
-    { x: 1050, y: 200 },  // 12
-    { x: 400, y: 300 },   // 13: Hairpin 4
-    { x: 250, y: 700 },   // 14
-    { x: 200, y: 1150 },  // 15: Final turn into straight
+    { x: 600, y: 1550 },  // 0: Start straight
+    { x: 1250, y: 1550 }, // 1: Straight
+    { x: 1900, y: 1550 }, // 2: High-speed sweep
+    { x: 2350, y: 1300 }, // 3: Hairpin 1
+    { x: 2100, y: 1000 }, // 4: Drift switch 1
+    { x: 1450, y: 1000 }, // 5: Infield drift
+    { x: 800, y: 1000 },  // 6: Hairpin 2
+    { x: 500, y: 750 },   // 7: Chicane entry
+    { x: 900, y: 550 },   // 8: S-curve
+    { x: 1500, y: 550 },  // 9: Infield technical
+    { x: 2100, y: 400 },  // 10: Hairpin 3
+    { x: 1800, y: 180 },  // 11: Mountain apex
+    { x: 1050, y: 180 },  // 12: High straight
+    { x: 350, y: 220 },   // 13: Hairpin 4
+    { x: 150, y: 650 },   // 14: Downhill sweep
+    { x: 150, y: 1200 },  // 15: Final hairpin
+    { x: 250, y: 1500 },  // 16: Return to main straight
   ];
 
-  function createTrack(id, name, rawPoints, roadWidth = 180) {
+  function createTrack(id, name, rawPoints, roadWidth = 185) {
     const smoothPoints = generateSmoothTrack(rawPoints, 16);
     return {
       id,
@@ -162,14 +180,14 @@
       roadWidth,
       rawPoints,
       points: smoothPoints,
-      checkpoints: rawPoints, // Use key waypoints as checkpoint gates
+      checkpoints: rawPoints, // Use waypoints as checkpoint gates
       totalPoints: smoothPoints.length,
     };
   }
 
   const TRACKS = {
-    grand_prix: createTrack("grand_prix", "Grand Prix Banen", RAW_GP_POINTS, 180),
-    fjord_drift: createTrack("fjord_drift", "Fjordsvingen", RAW_FJORD_POINTS, 175),
+    grand_prix: createTrack("grand_prix", "Grand Prix Banen", RAW_GP_POINTS, 185),
+    fjord_drift: createTrack("fjord_drift", "Fjordsvingen", RAW_FJORD_POINTS, 180),
   };
 
   // Staggered starting grid slots on the start straightaway
@@ -189,7 +207,7 @@
     for (let i = 0; i < count; i++) {
       const row = Math.floor(i / 2);
       const side = (i % 2 === 0) ? -1 : 1;
-      const distBack = 50 + row * 95;
+      const distBack = 50 + row * 90;
       const lateralOffset = side * 35;
 
       slots.push({
@@ -232,6 +250,7 @@
       accelInput: 0,
       brakeInput: 0,
       steerInput: 0,
+      handbrakeInput: 0,
       isDrifting: false,
       driftAngle: 0,
       driftBoostCharge: 0,
@@ -250,7 +269,7 @@
     skidmarks: [],
     particles: [],
 
-    keys: { up: false, down: false, left: false, right: false },
+    keys: { up: false, down: false, left: false, right: false, space: false },
 
     animFrameId: null,
     syncTimerId: null,
@@ -322,6 +341,7 @@
     hudPosNum: document.getElementById("hudPosNum"),
     hudPosSuffix: document.getElementById("hudPosSuffix"),
     hudLapText: document.getElementById("hudLapText"),
+    driftMeterWrap: document.getElementById("driftMeterWrap"),
     driftMeterBar: document.getElementById("driftMeterBar"),
     driftMeterLabel: document.getElementById("driftMeterLabel"),
     hudCurrentTime: document.getElementById("hudCurrentTime"),
@@ -450,6 +470,7 @@
       el.viewGame.classList.remove("hidden");
       el.backBtnText.textContent = "Lobby";
       el.btnHeaderLeave.classList.remove("hidden");
+      resizeCanvas();
       startEngineSound();
     }
   }
@@ -458,7 +479,7 @@
   // CAR DRAWING ROUTINES
   // =========================================================================
 
-  function drawCarOnCanvas(ctx, cx, cy, angle, color, model, scale = 1.0) {
+  function drawCarOnCanvas(ctx, cx, cy, angle, color, model, scale = 1.0, steerInput = 0, isBraking = false) {
     ctx.save();
     ctx.translate(cx, cy);
     ctx.rotate(angle);
@@ -470,20 +491,33 @@
     ctx.roundRect(-22, -12, 44, 24, 6);
     ctx.fill();
 
-    // Wheels (4 Black Tires with rim caps)
+    // 4 Black Tires with dynamic front steering angle
+    const steerRad = (steerInput || 0) * 0.35;
     ctx.fillStyle = "#090d16";
-    // Front tires
-    ctx.fillRect(11, -15, 11, 6);
-    ctx.fillRect(11, 9, 11, 6);
-    // Rear tires
-    ctx.fillRect(-19, -15, 12, 6);
-    ctx.fillRect(-19, 9, 12, 6);
+
+    // Front Left Tire (steerable)
+    ctx.save();
+    ctx.translate(16, -12);
+    ctx.rotate(steerRad);
+    ctx.fillRect(-6, -3, 12, 6);
+    ctx.restore();
+
+    // Front Right Tire (steerable)
+    ctx.save();
+    ctx.translate(16, 12);
+    ctx.rotate(steerRad);
+    ctx.fillRect(-6, -3, 12, 6);
+    ctx.restore();
+
+    // Rear tires (fixed)
+    ctx.fillRect(-22, -15, 12, 6);
+    ctx.fillRect(-22, 9, 12, 6);
 
     // Car Body Base
     ctx.fillStyle = color;
     ctx.beginPath();
     if (model === "formula") {
-      ctx.moveTo(24, 0);
+      ctx.moveTo(25, 0);
       ctx.lineTo(8, -9);
       ctx.lineTo(-20, -10);
       ctx.lineTo(-24, 0);
@@ -498,7 +532,7 @@
     ctx.fill();
 
     // Outline / Bevel
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.45)";
     ctx.lineWidth = 1.4;
     ctx.stroke();
 
@@ -509,7 +543,7 @@
     ctx.fill();
 
     // Windshield Cyan Glint
-    ctx.fillStyle = "rgba(56, 189, 248, 0.65)";
+    ctx.fillStyle = "rgba(56, 189, 248, 0.7)";
     ctx.beginPath();
     ctx.moveTo(3, -7);
     ctx.lineTo(9, -7);
@@ -527,10 +561,19 @@
     ctx.fillRect(17, -10, 3, 4);
     ctx.fillRect(17, 6, 3, 4);
 
-    // Rear Brake Lights (Red)
-    ctx.fillStyle = "#ef4444";
-    ctx.fillRect(-21, -10, 3, 4);
-    ctx.fillRect(-21, 6, 3, 4);
+    // Rear Brake Lights (Red, glowing bright when braking)
+    if (isBraking) {
+      ctx.fillStyle = "#ff2222";
+      ctx.shadowColor = "#ef4444";
+      ctx.shadowBlur = 8;
+      ctx.fillRect(-22, -10, 3, 5);
+      ctx.fillRect(-22, 5, 3, 5);
+      ctx.shadowBlur = 0;
+    } else {
+      ctx.fillStyle = "#b91c1c";
+      ctx.fillRect(-21, -10, 3, 4);
+      ctx.fillRect(-21, 6, 3, 4);
+    }
 
     // Rear Spoiler
     if (model === "drift" || model === "sport") {
@@ -547,7 +590,7 @@
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw subtle grid
+    // Subtle grid
     ctx.strokeStyle = "rgba(255, 255, 255, 0.06)";
     ctx.lineWidth = 1;
     for (let x = 0; x < canvas.width; x += 15) {
@@ -601,6 +644,7 @@
     car.accelInput = 0;
     car.brakeInput = 0;
     car.steerInput = 0;
+    car.handbrakeInput = 0;
     car.isDrifting = false;
     car.driftAngle = 0;
     car.driftBoostCharge = 0;
@@ -644,8 +688,8 @@
     const speed = Math.hypot(car.vx, car.vy);
     car.speed = speed;
 
-    // Responsive steering: even at low speeds, the car can turn easily
-    const steerFactor = Math.min(1.0, Math.max(0.4, speed / 110.0));
+    // Responsive steering: even at low/zero speeds, the car can easily turn
+    const steerFactor = Math.min(1.0, Math.max(0.75, speed / 80.0));
     const steerDir = vForward >= -10 ? 1 : -1;
     car.angle += steer * spec.turnSpeed * steerFactor * steerDir * dt;
 
@@ -655,10 +699,10 @@
       if (vForward < maxSpeed) fForward += throttle * enginePower;
     }
     if (brake > 0) {
-      if (vForward > 15) {
-        fForward -= brake * enginePower * 1.6;
+      if (vForward > 12) {
+        fForward -= brake * enginePower * 1.8;
       } else if (vForward > -spec.reverseSpeed) {
-        fForward -= brake * enginePower * 0.75;
+        fForward -= brake * enginePower * 0.9;
       }
     }
 
@@ -668,12 +712,12 @@
 
     // Drifting & Lateral Grip
     const lateralSpeed = Math.abs(vLateral);
-    const wantsDrift = lateralSpeed > spec.driftThreshold || (brake > 0 && Math.abs(steer) > 0.25 && speed > 110);
+    const wantsDrift = Boolean(car.handbrakeInput) || lateralSpeed > spec.driftThreshold || (brake > 0 && Math.abs(steer) > 0.25 && speed > 80);
 
     let lateralGripFactor = spec.grip;
-    if (wantsDrift && speed > 90) {
+    if (wantsDrift && speed > 70) {
       car.isDrifting = true;
-      lateralGripFactor = spec.grip * 0.24; // Break traction!
+      lateralGripFactor = spec.grip * 0.22; // Break traction!
       car.driftAngle = lateralSpeed / (speed + 0.1);
       car.driftBoostCharge = Math.min(1.0, car.driftBoostCharge + dt * 0.45);
 
@@ -700,7 +744,7 @@
     const halfRoad = track.roadWidth * 0.5;
 
     if (trackDist > halfRoad + 45) {
-      // Off-road Grass / Sand
+      // Off-road Grass / Sand: apply rolling resistance
       car.vx *= Math.pow(0.88, dt * 60);
       car.vy *= Math.pow(0.88, dt * 60);
     }
@@ -877,133 +921,131 @@
   }
 
   // =========================================================================
-  // GORGEOUS TRACK RENDERER
+  // PRE-RENDERED OFFSCREEN TRACK CACHING (Solid 60 FPS)
   // =========================================================================
 
-  function resizeCanvas() {
-    const canvas = el.raceCanvas;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    if (canvas.width !== rect.width || canvas.height !== rect.height) {
-      canvas.width = rect.width;
-      canvas.height = rect.height;
-    }
-  }
+  let cachedTrackId = null;
+  let cachedTrackCanvas = null;
 
-  function drawTexturedTrack(ctx, track) {
+  function renderTrackToOffscreen(track) {
     const pts = track.points;
     const rw = track.roadWidth;
 
-    // 1. Infield / Outfield Grass Lawn with stripes
-    ctx.fillStyle = "#0f2016";
-    ctx.fillRect(-1000, -1000, 5000, 4000);
+    const canvas = document.createElement("canvas");
+    canvas.width = 3000;
+    canvas.height = 2000;
+    const ctx = canvas.getContext("2d");
 
-    // Subtle lawn mower stripes
-    ctx.fillStyle = "#12261b";
-    for (let y = -1000; y < 4000; y += 120) {
-      ctx.fillRect(-1000, y, 5000, 60);
+    // 1. Lush Green Turf with Diagonal Stripes
+    ctx.fillStyle = "#0c1a12";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "#102217";
+    for (let x = -2000; x < 4000; x += 140) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x + 1000, 2000);
+      ctx.lineTo(x + 1070, 2000);
+      ctx.lineTo(x + 70, 0);
+      ctx.closePath();
+      ctx.fill();
     }
 
-    // 2. Sand / Gravel Runoff Areas on outside of tight corners
+    // 2. Sand / Gravel Runoff Bed (wide beige/sand base)
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.beginPath();
     ctx.moveTo(pts[0].x, pts[0].y);
     for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
     ctx.closePath();
-    ctx.lineWidth = rw + 80;
-    ctx.strokeStyle = "#856a4b";
+    ctx.lineWidth = rw + 84;
+    ctx.strokeStyle = "#927757";
     ctx.stroke();
 
-    // 3. 3D Tire Wall Barriers (Thick striped red/white outer boundary)
-    ctx.beginPath();
-    ctx.moveTo(pts[0].x, pts[0].y);
-    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-    ctx.closePath();
-    ctx.lineWidth = rw + 50;
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.45)"; // Drop shadow under barrier
+    ctx.lineWidth = rw + 76;
+    ctx.strokeStyle = "#a18462";
     ctx.stroke();
 
-    ctx.lineWidth = rw + 42;
-    ctx.strokeStyle = "#b91c1c";
+    // 3. 3D Tire Wall Barriers
+    ctx.lineWidth = rw + 54;
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.55)"; // Drop shadow under barrier
     ctx.stroke();
 
-    ctx.lineWidth = rw + 42;
-    ctx.setLineDash([26, 26]);
-    ctx.strokeStyle = "#f8fafc";
+    ctx.lineWidth = rw + 44;
+    ctx.strokeStyle = "#dc2626"; // Red barrier
+    ctx.stroke();
+
+    ctx.lineWidth = rw + 44;
+    ctx.setLineDash([28, 28]);
+    ctx.strokeStyle = "#ffffff"; // White alternating barrier blocks
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // 4. Red & White Curbs (Apex Rumble Strips)
-    ctx.beginPath();
-    ctx.moveTo(pts[0].x, pts[0].y);
-    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-    ctx.closePath();
-    ctx.lineWidth = rw + 22;
+    ctx.lineWidth = rw + 40;
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.35)"; // Barrier top bevel
+    ctx.stroke();
+
+    // 4. Red & White Apex Rumble Strips (Curbs)
+    ctx.lineWidth = rw + 24;
     ctx.strokeStyle = "#ef4444";
     ctx.stroke();
 
-    ctx.lineWidth = rw + 22;
+    ctx.lineWidth = rw + 24;
     ctx.setLineDash([16, 16]);
     ctx.strokeStyle = "#ffffff";
     ctx.stroke();
     ctx.setLineDash([]);
 
     // 5. Dark Asphalt Surface
-    ctx.beginPath();
-    ctx.moveTo(pts[0].x, pts[0].y);
-    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-    ctx.closePath();
     ctx.lineWidth = rw;
-    ctx.strokeStyle = "#1a202c";
+    ctx.strokeStyle = "#171d26";
     ctx.stroke();
 
-    // 6. Crisp White Outer Edge Lines
-    ctx.beginPath();
-    ctx.moveTo(pts[0].x, pts[0].y);
-    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-    ctx.closePath();
+    // 6. Rubbered Racing Line (Subtle darker grip groove where cars drive)
+    ctx.lineWidth = rw * 0.42;
+    ctx.strokeStyle = "#0f141c";
+    ctx.stroke();
+
+    // 7. Crisp White Outer Edge Lines
     ctx.lineWidth = rw - 6;
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.85)";
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
     ctx.stroke();
 
-    // Re-fill inner road so edge lines are sharp 3px wide borders
-    ctx.beginPath();
-    ctx.moveTo(pts[0].x, pts[0].y);
-    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-    ctx.closePath();
+    // Re-fill inner road between edge lines
     ctx.lineWidth = rw - 14;
-    ctx.strokeStyle = "#1a202c";
+    ctx.strokeStyle = "#171d26";
     ctx.stroke();
 
-    // 7. Yellow Dashed Centerline
-    ctx.beginPath();
-    ctx.moveTo(pts[0].x, pts[0].y);
-    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-    ctx.closePath();
+    // Re-touch racing groove
+    ctx.lineWidth = rw * 0.38;
+    ctx.strokeStyle = "#0f141c";
+    ctx.stroke();
+
+    // 8. Yellow Dashed Centerline
     ctx.lineWidth = 4;
     ctx.setLineDash([24, 24]);
-    ctx.strokeStyle = "#fbbf24";
+    ctx.strokeStyle = "#facc15";
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // 8. Starting Grid Boxes (Slots 1..4 painted on track)
-    const slots = getStartGridSlots(track, 4);
+    // 9. Starting Grid Boxes (Slots 1..16 painted on track)
+    const slots = getStartGridSlots(track, 16);
     slots.forEach((s, idx) => {
       ctx.save();
       ctx.translate(s.x, s.y);
       ctx.rotate(s.angle);
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
       ctx.lineWidth = 2.5;
       ctx.strokeRect(-26, -18, 52, 36);
-      ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+      ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
       ctx.font = "900 13px sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText(String(idx + 1), -18, 5);
+      ctx.textBaseline = "middle";
+      ctx.fillText(String(idx + 1), -18, 0);
       ctx.restore();
     });
 
-    // 9. Checkered Start / Finish Line
+    // 10. Checkered Start / Finish Line
     const p0 = track.rawPoints[0];
     const p1 = track.rawPoints[1];
     const angle = Math.atan2(p1.y - p0.y, p1.x - p0.x);
@@ -1013,22 +1055,48 @@
     ctx.rotate(angle);
 
     const halfW = rw * 0.5;
-    const boxSize = 12;
-    const cols = 3;
+    const boxSize = 14;
+    const cols = 4;
     const rows = Math.floor(rw / boxSize);
 
     for (let c = 0; c < cols; c++) {
       for (let r = 0; r < rows; r++) {
         ctx.fillStyle = (c + r) % 2 === 0 ? "#ffffff" : "#090d16";
-        ctx.fillRect(-18 + c * boxSize, -halfW + r * boxSize, boxSize, boxSize);
+        ctx.fillRect(-28 + c * boxSize, -halfW + r * boxSize, boxSize, boxSize);
       }
     }
 
-    // Overhead gantry banner shadow
-    ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
-    ctx.fillRect(-22, -halfW - 20, 44, rw + 40);
+    // Overhead gantry shadow & pillars
+    ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+    ctx.fillRect(-22, -halfW - 24, 44, rw + 48);
+
+    ctx.fillStyle = "#334155";
+    ctx.fillRect(-20, -halfW - 22, 40, 18);
+    ctx.fillRect(-20, halfW + 4, 40, 18);
 
     ctx.restore();
+
+    return canvas;
+  }
+
+  function resizeCanvas() {
+    const canvas = el.raceCanvas;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      if (canvas.width !== rect.width || canvas.height !== rect.height) {
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+      }
+    }
+  }
+
+  function drawTexturedTrack(ctx, track) {
+    if (cachedTrackId !== track.id || !cachedTrackCanvas) {
+      cachedTrackCanvas = renderTrackToOffscreen(track);
+      cachedTrackId = track.id;
+    }
+    ctx.drawImage(cachedTrackCanvas, 0, 0);
   }
 
   function drawSkidmarks(ctx) {
@@ -1055,7 +1123,9 @@
   }
 
   function drawPlayerCar(ctx, car, color, model, name, isLocal = false) {
-    drawCarOnCanvas(ctx, car.x, car.y, car.angle, color, model, 1.4);
+    const isBraking = car.brakeInput > 0;
+    const steer = car.steerInput || 0;
+    drawCarOnCanvas(ctx, car.x, car.y, car.angle, color, model, 1.4, steer, isBraking);
 
     // Floating Name Tag (for opponents)
     if (!isLocal) {
@@ -1085,9 +1155,9 @@
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const pts = track.points;
-    const scale = Math.min((canvas.width - 24) / 2400, (canvas.height - 24) / 1600);
-    const offsetX = (canvas.width - 2400 * scale) / 2;
-    const offsetY = (canvas.height - 1600 * scale) / 2;
+    const scale = Math.min((canvas.width - 24) / 2600, (canvas.height - 24) / 1800);
+    const offsetX = (canvas.width - 2600 * scale) / 2;
+    const offsetY = (canvas.height - 1800 * scale) / 2;
 
     ctx.beginPath();
     ctx.moveTo(offsetX + pts[0].x * scale, offsetY + pts[0].y * scale);
@@ -1106,11 +1176,11 @@
     allCars.forEach(c => {
       ctx.fillStyle = c.color || "#38bdf8";
       ctx.beginPath();
-      ctx.arc(offsetX + c.x * scale, offsetY + c.y * scale, c.isMe ? 5 : 3.5, 0, Math.PI * 2);
+      ctx.arc(offsetX + c.x * scale, offsetY + c.y * scale, c.isMe ? 5.5 : 4, 0, Math.PI * 2);
       ctx.fill();
       if (c.isMe) {
         ctx.strokeStyle = "#ffffff";
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 2;
         ctx.stroke();
       }
     });
@@ -1126,24 +1196,27 @@
   function updateHUD(track) {
     const now = performance.now();
     const curLapSecs = (now - state.myCar.lapStartTime) / 1000.0;
-    el.hudCurrentTime.textContent = formatTime(curLapSecs);
-    el.hudBestLap.textContent = formatTime(state.myCar.bestLap);
+    if (el.hudCurrentTime) el.hudCurrentTime.textContent = formatTime(curLapSecs);
+    if (el.hudBestLap) el.hudBestLap.textContent = formatTime(state.myCar.bestLap);
 
     const kmh = Math.round(state.myCar.speed * 0.48);
-    el.hudSpeedNum.textContent = String(kmh);
-    el.hudLapText.textContent = `${state.myCar.lap}/${state.laps}`;
+    if (el.hudSpeedNum) el.hudSpeedNum.textContent = String(kmh);
+    if (el.hudLapText) el.hudLapText.textContent = `${state.myCar.lap}/${state.laps}`;
 
     const pct = Math.round(state.myCar.driftBoostCharge * 100);
-    el.driftMeterBar.style.width = pct + "%";
-    if (state.myCar.turboTimer > 0) {
-      el.driftMeterLabel.textContent = "🔥 TURBO BOOST!";
-      el.driftMeterWrap.style.boxShadow = "0 0 15px rgba(56, 189, 248, 0.9)";
-    } else if (state.myCar.isDrifting) {
-      el.driftMeterLabel.textContent = "SLADDER...";
-      el.driftMeterWrap.style.boxShadow = "0 0 12px rgba(249, 115, 22, 0.7)";
-    } else {
-      el.driftMeterLabel.textContent = "DRIFT BOOST";
-      el.driftMeterWrap.style.boxShadow = "none";
+    if (el.driftMeterBar) el.driftMeterBar.style.width = pct + "%";
+
+    if (el.driftMeterWrap && el.driftMeterLabel) {
+      if (state.myCar.turboTimer > 0) {
+        el.driftMeterLabel.textContent = "🔥 TURBO BOOST!";
+        el.driftMeterWrap.style.boxShadow = "0 0 15px rgba(56, 189, 248, 0.9)";
+      } else if (state.myCar.isDrifting) {
+        el.driftMeterLabel.textContent = "SLADDER...";
+        el.driftMeterWrap.style.boxShadow = "0 0 12px rgba(249, 115, 22, 0.7)";
+      } else {
+        el.driftMeterLabel.textContent = "DRIFT BOOST";
+        el.driftMeterWrap.style.boxShadow = "none";
+      }
     }
 
     // Dynamic rank
@@ -1159,7 +1232,7 @@
       return b.checkpoint - a.checkpoint;
     });
     const rank = allRacers.findIndex(r => r.id === (state.playerId || "local")) + 1;
-    el.hudPosNum.textContent = String(rank > 0 ? rank : 1);
+    if (el.hudPosNum) el.hudPosNum.textContent = String(rank > 0 ? rank : 1);
   }
 
   // =========================================================================
@@ -1173,86 +1246,98 @@
     const dt = Math.min(0.08, (timestamp - lastTime) / 1000.0);
     lastTime = timestamp;
 
-    const track = TRACKS[state.trackId] || TRACKS.grand_prix;
-    const spec = CAR_SPECS[state.carModel] || CAR_SPECS.sport;
+    try {
+      const track = TRACKS[state.trackId] || TRACKS.grand_prix;
+      const spec = CAR_SPECS[state.carModel] || CAR_SPECS.sport;
 
-    // Handle inputs
-    if (state.roomStatus === "racing") {
-      state.myCar.accelInput = state.keys.up ? 1 : 0;
-      state.myCar.brakeInput = state.keys.down ? 1 : 0;
-      state.myCar.steerInput = (state.keys.right ? 1 : 0) - (state.keys.left ? 1 : 0);
-    } else {
-      state.myCar.accelInput = 0;
-      state.myCar.brakeInput = 1;
-      state.myCar.steerInput = 0;
-    }
-
-    updateCarPhysics(state.myCar, spec, track, dt);
-    updateEngineAudio(state.myCar.speed, state.myCar.accelInput);
-
-    // Opponent interpolation
-    Object.values(state.opponentCars).forEach(opp => {
-      if (opp.targetX !== undefined) {
-        opp.x += (opp.targetX - opp.x) * Math.min(1.0, dt * 14.0);
-        opp.y += (opp.targetY - opp.y) * Math.min(1.0, dt * 14.0);
-        let diff = opp.targetAngle - opp.angle;
-        while (diff < -Math.PI) diff += Math.PI * 2;
-        while (diff > Math.PI) diff -= Math.PI * 2;
-        opp.angle += diff * Math.min(1.0, dt * 14.0);
-
-        if (opp.isDrifting) addSmokeParticle(opp);
+      // In Solo or when racing, full driver control:
+      if (state.mode === "solo" || state.roomStatus === "racing") {
+        state.myCar.accelInput = state.keys.up ? 1 : 0;
+        state.myCar.brakeInput = state.keys.down ? 1 : 0;
+        state.myCar.steerInput = (state.keys.right ? 1 : 0) - (state.keys.left ? 1 : 0);
+        state.myCar.handbrakeInput = state.keys.space ? 1 : 0;
+      } else if (state.roomStatus === "countdown") {
+        // Allow steering & throttle revving before green flag
+        state.myCar.accelInput = 0;
+        state.myCar.brakeInput = 0;
+        state.myCar.steerInput = (state.keys.right ? 1 : 0) - (state.keys.left ? 1 : 0);
+        state.myCar.handbrakeInput = 0;
+      } else {
+        state.myCar.accelInput = 0;
+        state.myCar.brakeInput = 0.5;
+        state.myCar.steerInput = 0;
+        state.myCar.handbrakeInput = 0;
       }
-    });
 
-    updateParticles(dt);
+      updateCarPhysics(state.myCar, spec, track, dt);
+      updateEngineAudio(state.myCar.speed, state.myCar.accelInput);
 
-    // Render Canvas
-    resizeCanvas();
-    const canvas = el.raceCanvas;
-    if (canvas) {
-      const ctx = canvas.getContext("2d");
-      ctx.fillStyle = "#090d16";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Smooth camera follow with look-ahead
-      const lookahead = Math.min(130, state.myCar.speed * 0.35);
-      const targetCamX = state.myCar.x + Math.cos(state.myCar.angle) * lookahead;
-      const targetCamY = state.myCar.y + Math.sin(state.myCar.angle) * lookahead;
-      state.camera.x += (targetCamX - state.camera.x) * 0.14;
-      state.camera.y += (targetCamY - state.camera.y) * 0.14;
-
-      ctx.save();
-      ctx.translate(canvas.width / 2, canvas.height / 2);
-      ctx.scale(state.camera.zoom, state.camera.zoom);
-      ctx.translate(-state.camera.x, -state.camera.y);
-
-      drawTexturedTrack(ctx, track);
-      drawSkidmarks(ctx);
-
-      const allMinimapCars = [];
+      // Opponent interpolation
       Object.values(state.opponentCars).forEach(opp => {
-        drawPlayerCar(ctx, opp, opp.color, opp.carModel, opp.name, false);
-        allMinimapCars.push({ x: opp.x, y: opp.y, color: opp.color, isMe: false });
+        if (opp.targetX !== undefined) {
+          opp.x += (opp.targetX - opp.x) * Math.min(1.0, dt * 14.0);
+          opp.y += (opp.targetY - opp.y) * Math.min(1.0, dt * 14.0);
+          let diff = opp.targetAngle - opp.angle;
+          while (diff < -Math.PI) diff += Math.PI * 2;
+          while (diff > Math.PI) diff -= Math.PI * 2;
+          opp.angle += diff * Math.min(1.0, dt * 14.0);
+
+          if (opp.isDrifting) addSmokeParticle(opp);
+        }
       });
 
-      drawPlayerCar(ctx, state.myCar, state.driverColor, state.carModel, state.driverName, true);
-      allMinimapCars.push({ x: state.myCar.x, y: state.myCar.y, color: state.driverColor, isMe: true });
+      updateParticles(dt);
 
-      drawParticles(ctx);
-      ctx.restore();
+      // Render Canvas
+      resizeCanvas();
+      const canvas = el.raceCanvas;
+      if (canvas && canvas.width > 0 && canvas.height > 0) {
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#090d16";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      drawMinimap(track, allMinimapCars);
-    }
+        // Smooth camera follow with look-ahead
+        const lookahead = Math.min(110, state.myCar.speed * 0.3);
+        const targetCamX = state.myCar.x + Math.cos(state.myCar.angle) * lookahead;
+        const targetCamY = state.myCar.y + Math.sin(state.myCar.angle) * lookahead;
+        state.camera.x += (targetCamX - state.camera.x) * 0.16;
+        state.camera.y += (targetCamY - state.camera.y) * 0.16;
 
-    updateHUD(track);
+        ctx.save();
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.scale(state.camera.zoom, state.camera.zoom);
+        ctx.translate(-state.camera.x, -state.camera.y);
 
-    if (state.mode === "solo" && state.myCar.finished) {
-      setTimeout(() => {
-        showGameOverPodium([
-          { name: state.driverName, color: state.driverColor, finishTime: state.myCar.finishTime, bestLap: state.myCar.bestLap },
-        ]);
-      }, 700);
-      return;
+        drawTexturedTrack(ctx, track);
+        drawSkidmarks(ctx);
+
+        const allMinimapCars = [];
+        Object.values(state.opponentCars).forEach(opp => {
+          drawPlayerCar(ctx, opp, opp.color, opp.carModel, opp.name, false);
+          allMinimapCars.push({ x: opp.x, y: opp.y, color: opp.color, isMe: false });
+        });
+
+        drawPlayerCar(ctx, state.myCar, state.driverColor, state.carModel, state.driverName, true);
+        allMinimapCars.push({ x: state.myCar.x, y: state.myCar.y, color: state.driverColor, isMe: true });
+
+        drawParticles(ctx);
+        ctx.restore();
+
+        drawMinimap(track, allMinimapCars);
+      }
+
+      updateHUD(track);
+
+      if (state.mode === "solo" && state.myCar.finished) {
+        setTimeout(() => {
+          showGameOverPodium([
+            { name: state.driverName, color: state.driverColor, finishTime: state.myCar.finishTime, bestLap: state.myCar.bestLap },
+          ]);
+        }, 700);
+        return;
+      }
+    } catch (err) {
+      console.error("Game loop error:", err);
     }
 
     state.animFrameId = requestAnimationFrame(gameLoop);
@@ -1462,7 +1547,7 @@
     state.opponentCars = {};
     state.skidmarks = [];
     state.particles = [];
-    state.keys = { up: false, down: false, left: false, right: false };
+    state.keys = { up: false, down: false, left: false, right: false, space: false };
 
     const track = TRACKS[state.trackId] || TRACKS.grand_prix;
     const myPlayer = (data.players || []).find(p => p.id === state.playerId);
@@ -1471,8 +1556,25 @@
     resetCarToSlot(state.myCar, track, mySlot);
 
     showView("game");
+    resizeCanvas();
     if (el.raceCanvas) el.raceCanvas.focus();
-    window.focus();
+
+    if (state.roomStatus === "countdown") {
+      el.countdownOverlay.classList.remove("hidden");
+      const rem = Math.ceil(data.countdownRemaining || 3);
+      el.countdownText.textContent = rem > 0 ? String(rem) : "KJØR!";
+
+      // Fallback timer ensures car is unlocked even on network hiccup
+      const waitMs = Math.max(1000, ((data.countdownRemaining || 3) * 1000) + 200);
+      setTimeout(() => {
+        if (state.roomStatus === "countdown") {
+          state.roomStatus = "racing";
+          el.countdownText.textContent = "KJØR! 🏁";
+          playTone(880, 0.4, "triangle", 0.3);
+          setTimeout(() => el.countdownOverlay.classList.add("hidden"), 700);
+        }
+      }, waitMs);
+    }
 
     startSimulation();
     startRoomSync();
@@ -1484,14 +1586,14 @@
     state.opponentCars = {};
     state.skidmarks = [];
     state.particles = [];
-    state.keys = { up: false, down: false, left: false, right: false };
+    state.keys = { up: false, down: false, left: false, right: false, space: false };
 
     const track = TRACKS[state.trackId] || TRACKS.grand_prix;
     resetCarToSlot(state.myCar, track, 0);
 
     showView("game");
+    resizeCanvas();
     if (el.raceCanvas) el.raceCanvas.focus();
-    window.focus();
 
     el.countdownOverlay.classList.remove("hidden");
     el.countdownText.textContent = "KJØR! 🏁";
@@ -1535,38 +1637,48 @@
       const c = e.code;
       let matched = false;
 
-      if (k === "ArrowUp" || c === "ArrowUp" || k === "w" || k === "W" || c === "KeyW") {
+      if (k === "ArrowUp" || c === "ArrowUp" || k === "w" || k === "W" || c === "KeyW" || k === "Up") {
         state.keys.up = isDown;
         matched = true;
       }
-      if (k === "ArrowDown" || c === "ArrowDown" || k === "s" || k === "S" || c === "KeyS") {
+      if (k === "ArrowDown" || c === "ArrowDown" || k === "s" || k === "S" || c === "KeyS" || k === "Down") {
         state.keys.down = isDown;
         matched = true;
       }
-      if (k === "ArrowLeft" || c === "ArrowLeft" || k === "a" || k === "A" || c === "KeyA") {
+      if (k === "ArrowLeft" || c === "ArrowLeft" || k === "a" || k === "A" || c === "KeyA" || k === "Left") {
         state.keys.left = isDown;
         matched = true;
       }
-      if (k === "ArrowRight" || c === "ArrowRight" || k === "d" || k === "D" || c === "KeyD") {
+      if (k === "ArrowRight" || c === "ArrowRight" || k === "d" || k === "D" || c === "KeyD" || k === "Right") {
         state.keys.right = isDown;
         matched = true;
       }
+      if (k === " " || c === "Space" || k === "Spacebar") {
+        state.keys.space = isDown;
+        matched = true;
+      }
 
-      if (matched && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(c)) {
+      if (matched && !el.viewGame.classList.contains("hidden")) {
         e.preventDefault();
       }
     }
 
+    // Attach to both window and document so focus is never lost
     window.addEventListener("keydown", e => handleKey(e, true));
     window.addEventListener("keyup", e => handleKey(e, false));
-    window.addEventListener("blur", () => {
-      state.keys = { up: false, down: false, left: false, right: false };
+    document.addEventListener("keydown", e => handleKey(e, true));
+    document.addEventListener("keyup", e => handleKey(e, false));
+
+    // Reset keys only when tab is actually hidden, not on internal DOM blurs
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        state.keys = { up: false, down: false, left: false, right: false, space: false };
+      }
     });
 
     if (el.raceCanvas) {
       el.raceCanvas.addEventListener("pointerdown", () => {
         el.raceCanvas.focus();
-        window.focus();
       });
     }
 
@@ -1577,9 +1689,11 @@
         state.keys[keyName] = val;
         btn.classList.toggle("active", val);
       };
+      btn.addEventListener("pointerdown", e => { e.preventDefault(); setKey(true); });
+      btn.addEventListener("pointerup", e => { e.preventDefault(); setKey(false); });
+      btn.addEventListener("pointercancel", e => { e.preventDefault(); setKey(false); });
       btn.addEventListener("touchstart", e => { e.preventDefault(); setKey(true); }, { passive: false });
       btn.addEventListener("touchend", e => { e.preventDefault(); setKey(false); }, { passive: false });
-      btn.addEventListener("touchcancel", e => { e.preventDefault(); setKey(false); }, { passive: false });
       btn.addEventListener("mousedown", () => setKey(true));
       btn.addEventListener("mouseup", () => setKey(false));
       btn.addEventListener("mouseleave", () => setKey(false));
@@ -1798,7 +1912,34 @@
     }
 
     el.btnLeaveRoom.addEventListener("click", handleLeaveRoom);
-    el.btnHeaderLeave.addEventListener("click", handleLeaveRoom);
+
+    // Navbar Back Button
+    if (el.btnHeaderBack) {
+      el.btnHeaderBack.addEventListener("click", (e) => {
+        if (!el.viewGame.classList.contains("hidden")) {
+          e.preventDefault();
+          if (confirm("Vil du avslutte løpet og gå tilbake til lobbyen?")) {
+            showView("lobby");
+          }
+        } else if (!el.viewRoomLounge.classList.contains("hidden")) {
+          e.preventDefault();
+          handleLeaveRoom();
+        }
+      });
+    }
+
+    if (el.btnHeaderLeave) {
+      el.btnHeaderLeave.addEventListener("click", () => {
+        if (!el.viewGame.classList.contains("hidden")) {
+          if (confirm("Vil du avslutte løpet og gå tilbake til lobbyen?")) {
+            showView("lobby");
+          }
+        } else {
+          handleLeaveRoom();
+        }
+      });
+    }
+
     el.btnQuitRace.addEventListener("click", () => {
       if (confirm("Vil du avslutte løpet og gå tilbake til lobbyen?")) {
         showView("lobby");
