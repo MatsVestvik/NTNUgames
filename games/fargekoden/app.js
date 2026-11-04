@@ -63,9 +63,27 @@
 
     soundEnabled: localStorage.getItem("tegn_sound") !== "false",
     audioCtx: null,
+    selectedLocalRounds: 4,
   };
 
   const el = {
+    viewLobby: document.getElementById("viewLobby"),
+    viewGame: document.getElementById("viewGame"),
+    btnExitToLobby: document.getElementById("btnExitToLobby"),
+
+    tabLobbyLocal: document.getElementById("tabLobbyLocal"),
+    tabLobbySolo: document.getElementById("tabLobbySolo"),
+    tabLobbyRoom: document.getElementById("tabLobbyRoom"),
+    panelLobbyLocal: document.getElementById("panelLobbyLocal"),
+    panelLobbySolo: document.getElementById("panelLobbySolo"),
+    panelLobbyRoom: document.getElementById("panelLobbyRoom"),
+
+    controlFkRounds: document.getElementById("controlFkRounds"),
+    btnStartFkLocal: document.getElementById("btnStartFkLocal"),
+    btnStartFkSolo: document.getElementById("btnStartFkSolo"),
+    inputFkRoomCode: document.getElementById("inputFkRoomCode"),
+    btnSubmitJoinFkRoom: document.getElementById("btnSubmitJoinFkRoom"),
+
     btnBack: document.getElementById("btnBack"),
     backBtnText: document.getElementById("backBtnText"),
     roundIndicator: document.getElementById("roundIndicator"),
@@ -977,13 +995,99 @@
     });
   }
 
+  function showView(viewName) {
+    if (!el.viewLobby || !el.viewGame) return;
+    if (viewName === "lobby") {
+      el.viewLobby.classList.remove("hidden");
+      el.viewGame.classList.add("hidden");
+      if (el.btnExitToLobby) el.btnExitToLobby.classList.add("hidden");
+      if (state.pollTimer) {
+        clearInterval(state.pollTimer);
+        state.pollTimer = null;
+      }
+    } else if (viewName === "game") {
+      el.viewLobby.classList.add("hidden");
+      el.viewGame.classList.remove("hidden");
+      if (el.btnExitToLobby) el.btnExitToLobby.classList.remove("hidden");
+    }
+  }
+
+  function initLobbyTabs() {
+    const tabs = [
+      { btn: el.tabLobbyLocal, panel: el.panelLobbyLocal },
+      { btn: el.tabLobbySolo, panel: el.panelLobbySolo },
+      { btn: el.tabLobbyRoom, panel: el.panelLobbyRoom },
+    ];
+
+    tabs.forEach(({ btn, panel }) => {
+      if (!btn || !panel) return;
+      btn.addEventListener("click", () => {
+        tabs.forEach((t) => {
+          if (t.btn) {
+            t.btn.classList.remove("active");
+            t.btn.setAttribute("aria-selected", "false");
+          }
+          if (t.panel) t.panel.classList.add("hidden");
+        });
+        btn.classList.add("active");
+        btn.setAttribute("aria-selected", "true");
+        panel.classList.remove("hidden");
+      });
+    });
+
+    if (el.controlFkRounds) {
+      el.controlFkRounds.querySelectorAll(".seg-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          el.controlFkRounds.querySelectorAll(".seg-btn").forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          state.selectedLocalRounds = parseInt(btn.dataset.rounds, 10) || 4;
+        });
+      });
+    }
+
+    if (el.btnStartFkLocal) {
+      el.btnStartFkLocal.addEventListener("click", () => {
+        state.totalRounds = state.selectedLocalRounds || 4;
+        initPassAndPlayMode();
+        showView("game");
+      });
+    }
+
+    if (el.btnStartFkSolo) {
+      el.btnStartFkSolo.addEventListener("click", () => {
+        initSoloMode();
+        showView("game");
+      });
+    }
+
+    if (el.btnSubmitJoinFkRoom) {
+      el.btnSubmitJoinFkRoom.addEventListener("click", () => {
+        const code = (el.inputFkRoomCode ? el.inputFkRoomCode.value : "").trim().toUpperCase();
+        if (!code) {
+          alert("Skriv inn en romkode.");
+          return;
+        }
+        window.location.href = `/party/?room=${encodeURIComponent(code)}`;
+      });
+    }
+
+    if (el.btnExitToLobby) {
+      el.btnExitToLobby.addEventListener("click", () => {
+        showView("lobby");
+      });
+    }
+  }
+
   buildBoardDOM();
-  if (state.isSolo) {
-    initPassAndPlayMode();
-  } else {
+  initLobbyTabs();
+
+  if (roomCodeParam && playerIdParam) {
     if (el.fkModeBar) el.fkModeBar.style.display = "none";
+    showView("game");
     pollRoomState();
     state.pollTimer = setInterval(pollRoomState, 750);
+  } else {
+    showView("lobby");
   }
 })();
 

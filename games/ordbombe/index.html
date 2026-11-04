@@ -9,6 +9,7 @@
   <link rel="icon" type="image/png" href="assets/icon.png?v=2.0" />
   <link rel="apple-touch-icon" href="assets/icon.png?v=2.0" />
   <link rel="stylesheet" href="/ordbombe/styles.css?v=2.2" />
+  <link rel="stylesheet" href="/game-lobby.css" />
   <link rel="stylesheet" href="/character/character-creator.css" />
   <link rel="stylesheet" href="/parallax-bg.css?v=2.1" />
 </head>
@@ -39,6 +40,9 @@
       </div>
 
       <div class="header-right">
+        <button type="button" class="btn-lobby-exit hidden" id="btnExitToLobby" title="Bytt spillmodus">
+          ‹ Bytte modus
+        </button>
         <button type="button" class="header-btn" id="btnSoundToggle" title="Slå lyd av eller på" aria-label="Lyd">
           <span id="soundIcon">🔊</span>
         </button>
@@ -47,64 +51,139 @@
     </header>
 
     <main class="game-main">
-      <!-- 1. SETUP CARD (Shown before starting game) -->
-      <section class="card setup-card" id="setupCard" aria-labelledby="setupHeading">
-        <div class="setup-hero">
-          <img src="assets/icon.png?v=2.0" alt="Ordbombe logo" class="setup-bomb-icon" />
-          <h2 class="setup-title" id="setupHeading">Ordbombe</h2>
-          <p class="setup-subtitle">Lynraskt norsk ordspill inspirert av <em>Word Bomb</em>. Tast inn et gyldig norsk
-            ord som inneholder bokstavene før lunta brenner ut!</p>
-        </div>
+      <!-- ============================================== -->
+      <!-- VIEW 1: LOBBY & MODE SELECTION                 -->
+      <!-- ============================================== -->
+      <section class="view-panel" id="viewLobby">
+        <div class="lobby-card theme-orange">
+          <div class="lobby-hero">
+            <div class="hero-icon-wrap">
+              <img src="/hub/assets/icons/ordbombe.png" alt="Ordbombe logo" class="hero-icon" />
+            </div>
+            <h2 class="hero-title">Ordbombe</h2>
+            <p class="hero-desc">
+              Lynrask ordkrig med tikkende lunte! Finn et norsk ord med stavelsen før bomben eksploderer på skjermen din.
+            </p>
+          </div>
 
-        <!-- Multi-device Party Room banner -->
-        <div class="lobby-banner-cta" id="lobbyBannerCta">
-          <div class="lobby-cta-content">
-            <img src="/assets/icons/party.png" class="badge-icon-inline" alt="" />
-            <div>
-              <strong>Vil alle spille på hver sin mobil?</strong>
-              <p>Opprett et Party-rom i loungen! Da kan alle koble til med mobilen og bytte mellom spill.</p>
+          <!-- Mode Navigation Tabs -->
+          <div class="lobby-tabs" role="tablist">
+            <button type="button" class="lobby-tab-btn active" id="tabLobbySolo" role="tab" aria-selected="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              <span>Solomodus</span>
+            </button>
+            <button type="button" class="lobby-tab-btn" id="tabLobbyRoom" role="tab" aria-selected="false">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+              <span>Nettspill</span>
+            </button>
+          </div>
+
+          <!-- TAB 1: Solo Survival Panel -->
+          <div class="tab-panel active" id="panelLobbySolo">
+            <div class="action-box single-box card-theme-orange">
+              <div class="action-box-header">
+                <div class="box-badge-row">
+                  <span class="action-card-badge badge-orange">Solo Overlevelse</span>
+                </div>
+                <h3 class="box-title">Overlev mot den tikkende bomben</h3>
+                <p class="box-desc">
+                  Timeren starter på 10 sekunder og blir raskere for hvert ord du mestrer! Du har 3 liv.
+                </p>
+              </div>
+
+              <div class="action-box-content">
+                <div class="stat-pills-row">
+                  <div class="stat-pill">
+                    <span class="stat-pill-label">Personlig rekord:</span>
+                    <strong class="stat-pill-val" id="soloBestScore">0 poeng</strong>
+                  </div>
+                  <div class="stat-pill">
+                    <span class="stat-pill-label">Beste streak:</span>
+                    <strong class="stat-pill-val" id="soloBestStreak">0 ord</strong>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="inputSoloName">Ditt navn / kallenavn</label>
+                  <input type="text" class="text-input" id="inputSoloName" placeholder="Ditt spillernavn..." maxlength="20"
+                    value="Spiller 1" />
+                </div>
+
+                <div class="form-group">
+                  <label for="selectSoloDifficulty">Start-vanskelighetsgrad</label>
+                  <select class="select-input" id="selectSoloDifficulty">
+                    <option value="easy">Lett (Mye tid og enkle stavelser)</option>
+                    <option value="medium" selected>Middels (Klassisk Word Bomb-flyt)</option>
+                    <option value="hard">Ekspert (Korte tidsfrister og tøffe bokstaver)</option>
+                  </select>
+                </div>
+              </div>
+
+              <button type="button" class="primary-btn pulse-glow" id="btnStartGame">
+                Start Ordbombe
+              </button>
             </div>
           </div>
-          <a href="/party/" class="lobby-cta-btn">Åpne Party Lounge →</a>
-        </div>
 
-        <!-- SOLO MODE SETTINGS -->
-        <div class="mode-settings-block" id="soloSettingsBlock">
-          <div class="solo-intro-box">
-            <div class="solo-stat-pill">
-              <span class="solo-stat-label">Personlig rekord:</span>
-              <strong class="solo-stat-val" id="soloBestScore">0 poeng</strong>
+          <!-- TAB 2: Party Lounge Multiplayer Panel -->
+          <div class="tab-panel hidden" id="panelLobbyRoom">
+            <div class="online-lobby-deck">
+              <div class="online-split">
+                <!-- Host Lounge Card -->
+                <div class="action-box card-theme-orange">
+                  <div class="action-box-header">
+                    <div class="box-badge-row">
+                      <span class="action-card-badge badge-orange">Party Lounge</span>
+                    </div>
+                    <h3 class="box-title">Spill sammen i fellesrom</h3>
+                    <p class="box-desc">2–16 spillere på hver sin mobil! Bomben kastes fra spiller til spiller.</p>
+                  </div>
+
+                  <div class="action-box-content">
+                    <p style="font-size: 0.9rem; color: #cbd5e1; margin: 0;">
+                      I Party Lounge kobler alle til med 4-bokstavs kode og verten bytter sømløst mellom Ordbombe, Sjakk og Fargekoden.
+                    </p>
+                  </div>
+
+                  <a href="/party/" class="primary-btn btn-orange-accent">
+                    Åpne Party Lounge →
+                  </a>
+                </div>
+
+                <!-- Join Room Card -->
+                <div class="action-box card-theme-purple">
+                  <div class="action-box-header">
+                    <div class="box-badge-row">
+                      <span class="action-card-badge badge-purple">Bli med</span>
+                    </div>
+                    <h3 class="box-title">Har du en romkode?</h3>
+                    <p class="box-desc">Tast inn 4-bokstavs kode fra loungen eller verten.</p>
+                  </div>
+
+                  <div class="action-box-content">
+                    <div class="form-group">
+                      <label for="inputOrdbombeRoomCode">Romkode</label>
+                      <input type="text" id="inputOrdbombeRoomCode" class="text-input code-input" maxlength="6"
+                        placeholder="BOMBE" autocomplete="off" autocorrect="off" autocapitalize="characters" />
+                    </div>
+                  </div>
+
+                  <button type="button" class="btn-cyan-accent" id="btnSubmitJoinOrdbombeRoom">
+                    Koble til rom
+                  </button>
+                </div>
+              </div>
             </div>
-            <div class="solo-stat-pill">
-              <span class="solo-stat-label">Beste streak:</span>
-              <strong class="solo-stat-val" id="soloBestStreak">0 ord</strong>
-            </div>
           </div>
 
-          <div class="setting-group">
-            <label class="setting-label" for="inputSoloName">Ditt navn / kallenavn:</label>
-            <input type="text" class="custom-input" id="inputSoloName" placeholder="Ditt spillernavn..." maxlength="20"
-              value="Spiller 1" />
-          </div>
-
-          <div class="setting-group">
-            <label class="setting-label" for="selectSoloDifficulty">Start-vanskelighetsgrad:</label>
-            <select class="custom-select" id="selectSoloDifficulty">
-              <option value="easy">Lett (Mye tid og enkle stavelser)</option>
-              <option value="medium" selected>Middels (Klassisk Word Bomb-flyt)</option>
-              <option value="hard">Ekspert (Korte tidsfrister og tøffe bokstaver)</option>
-            </select>
-          </div>
-          <p class="solo-tip-text"><em>I solomodus starter timeren på 10 sekunder og blir gradvis kortere jo høyere
-              streak du bygger! Du har 3 liv.</em></p>
         </div>
-
-        <button type="button" class="btn-start-game" id="btnStartGame">
-          Start Ordbombe
-        </button>
       </section>
 
-      <!-- 2. GAMEPLAY ARENA (Active Bomb Stage) -->
+      <!-- ============================================== -->
+      <!-- VIEW 2: ACTIVE GAMEPLAY                        -->
+      <!-- ============================================== -->
+      <section class="view-panel hidden" id="viewGame">
+        <!-- 2. GAMEPLAY ARENA (Active Bomb Stage) -->
       <section class="card game-arena hidden" id="gameArena" aria-live="polite">
         <!-- Arena Top Status Bar -->
         <div class="arena-top-bar">
@@ -245,6 +324,7 @@
             Tilbake til NTNU Games ‹
           </a>
         </div>
+      </section>
       </section>
     </main>
 

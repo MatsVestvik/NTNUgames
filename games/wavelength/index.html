@@ -12,6 +12,7 @@
   <link rel="apple-touch-icon" href="assets/icon.svg" />
 
   <link rel="stylesheet" href="/wavelength/styles.css?v=1.0" />
+  <link rel="stylesheet" href="/game-lobby.css" />
   <link rel="stylesheet" href="/character/character-creator.css" />
   <link rel="stylesheet" href="/parallax-bg.css?v=2.1" />
 </head>
@@ -47,6 +48,9 @@
       </div>
 
       <div class="header-controls">
+        <button type="button" class="btn-lobby-exit hidden" id="btnExitToLobby" title="Bytt spillmodus">
+          ‹ Bytte modus
+        </button>
         <button type="button" class="btn-icon" id="btnSoundToggle" title="Lydeffekter på/av">
           <span id="soundIcon">Lyd</span>
         </button>
@@ -56,20 +60,152 @@
       </div>
     </header>
 
-    <!-- Mode Selector & Party Room Bar -->
-    <div class="mode-bar">
-      <div class="mode-tabs">
-        <button type="button" class="mode-tab active" id="tabLocal">1 Enhet (Pass &amp; Play)</button>
-        <button type="button" class="mode-tab" id="tabRoom">Party Rom (2 Enheter)</button>
-      </div>
+    <!-- ============================================== -->
+    <!-- VIEW 1: LOBBY & MODE SELECTION                 -->
+    <!-- ============================================== -->
+    <section class="view-panel" id="viewLobby">
+      <div class="lobby-card theme-cyan">
+        <div class="lobby-hero">
+          <div class="hero-icon-wrap">
+            <img src="/hub/assets/icons/wavelength.svg" alt="Wavelength logo" class="hero-icon" />
+          </div>
+          <h2 class="hero-title">Telepatisk Duell</h2>
+          <p class="hero-desc">
+            Klarer dere å lese tankene til hverandre? Samarbeid om å treffe blinken over hele spekteret!
+          </p>
+        </div>
 
+        <!-- Mode Navigation Tabs -->
+        <div class="lobby-tabs" role="tablist">
+          <button type="button" class="lobby-tab-btn active" id="tabLobbyLocal" role="tab" aria-selected="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+            <span>Samme skjerm</span>
+          </button>
+          <button type="button" class="lobby-tab-btn" id="tabLobbyRoom" role="tab" aria-selected="false">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+            <span>Nettspill</span>
+          </button>
+        </div>
+
+        <!-- TAB 1: Pass & Play Panel -->
+        <div class="tab-panel active" id="panelLobbyLocal">
+          <div class="action-box single-box card-theme-cyan">
+            <div class="action-box-header">
+              <div class="box-badge-row">
+                <span class="action-card-badge badge-cyan">Pass &amp; Play</span>
+              </div>
+              <h3 class="box-title">2 spillere på 1 enhet</h3>
+              <p class="box-desc">
+                Send telefonen mellom dere. Telepaten ser det hemmelige målet og gir et hint – gjetteren vrir pekeren!
+              </p>
+            </div>
+
+            <div class="action-box-content">
+              <div class="form-group">
+                <label>Antall runder</label>
+                <div class="segmented-control" id="controlLocalRounds">
+                  <button type="button" class="seg-btn" data-rounds="5">5 runder (Kjapp)</button>
+                  <button type="button" class="seg-btn active" data-rounds="7">7 runder (Standard)</button>
+                  <button type="button" class="seg-btn" data-rounds="10">10 runder (Lang)</button>
+                </div>
+              </div>
+            </div>
+
+            <button type="button" class="primary-btn pulse-glow" id="btnStartLocalMatch">
+              Start Wavelength
+            </button>
+          </div>
+        </div>
+
+        <!-- TAB 2: Online Multiplayer Panel -->
+        <div class="tab-panel hidden" id="panelLobbyRoom">
+          <div class="online-lobby-deck">
+            <div class="online-split">
+              <!-- Create Room Card -->
+              <div class="action-box card-theme-cyan">
+                <div class="action-box-header">
+                  <div class="box-badge-row">
+                    <span class="action-card-badge badge-cyan">Romvert</span>
+                  </div>
+                  <h3 class="box-title">Opprett nytt parti</h3>
+                  <p class="box-desc">Start et parti og inviter medspilleren med 4-bokstavskode.</p>
+                </div>
+
+                <div class="action-box-content">
+                  <div class="form-group">
+                    <label for="inputHostNameLobby">Ditt navn</label>
+                    <input type="text" id="inputHostNameLobby" class="text-input" maxlength="16" placeholder="F.eks. Sara" value="Spiller 1" />
+                  </div>
+                  <div class="form-group">
+                    <label>Antall runder</label>
+                    <div class="segmented-control" id="controlOnlineRounds">
+                      <button type="button" class="seg-btn" data-rounds="5">5 runder</button>
+                      <button type="button" class="seg-btn active" data-rounds="7">7 runder</button>
+                      <button type="button" class="seg-btn" data-rounds="10">10 runder</button>
+                    </div>
+                  </div>
+                </div>
+
+                <button type="button" class="primary-btn" id="btnSubmitCreateLobby">
+                  Opprett Wavelength-rom
+                </button>
+              </div>
+
+              <!-- Join Room Card -->
+              <div class="action-box card-theme-purple">
+                <div class="action-box-header">
+                  <div class="box-badge-row">
+                    <span class="action-card-badge badge-purple">Bli med</span>
+                  </div>
+                  <h3 class="box-title">Bli med med kode</h3>
+                  <p class="box-desc">Tast inn koden du har fått fra medspilleren eller Party Lounge.</p>
+                </div>
+
+                <div class="action-box-content">
+                  <div class="form-group">
+                    <label for="inputRoomCodeLobby">Romkode</label>
+                    <input type="text" id="inputRoomCodeLobby" class="text-input code-input" maxlength="6"
+                      placeholder="BØLGE" autocomplete="off" autocorrect="off" autocapitalize="characters" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="inputJoinNameLobby">Ditt navn</label>
+                    <input type="text" id="inputJoinNameLobby" class="text-input" maxlength="16" placeholder="F.eks. Jonas" value="Spiller 2" />
+                  </div>
+                </div>
+
+                <button type="button" class="btn-cyan-accent" id="btnSubmitJoinLobby">
+                  Koble til rom
+                </button>
+              </div>
+            </div>
+
+            <!-- Party Lounge Callout -->
+            <div class="lounge-cta-banner">
+              <div class="lounge-cta-left">
+                <img src="/hub/assets/icons/party.png" alt="" class="lounge-cta-icon" />
+                <div class="lounge-cta-text">
+                  <h4>Vil dere spille i Party Lounge?</h4>
+                  <p>I felles lounge kan verten starte Wavelength, Sjakk, Korridorer og Ordbombe for alle samlet.</p>
+                </div>
+              </div>
+              <a href="/party/" class="lounge-cta-btn">Gå til Party Lounge →</a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- VIEW 2: ACTIVE GAMEPLAY                        -->
+    <!-- ============================================== -->
+    <section class="view-panel hidden" id="viewGame">
       <!-- Room status pill (visible in room mode) -->
       <div class="room-pill hidden" id="roomPill">
         <span class="room-pill-label">ROM:</span>
         <strong class="room-pill-code" id="roomPillCode">----</strong>
         <button type="button" class="room-copy-btn" id="btnCopyRoomLink" title="Kopier lenke">Kopier</button>
       </div>
-    </div>
 
     <!-- Round & Team Score Ribbon -->
     <div class="round-ribbon">
@@ -281,6 +417,7 @@
     <div class="history-card hidden" id="historyCard">
       <div id="historyList"></div>
     </div>
+    </section>
   </div>
 
   <!-- Rules / Help Modal -->

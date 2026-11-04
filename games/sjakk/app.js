@@ -848,10 +848,40 @@
     customGameOverReason: null,
     manuallyFlipped: false,
     partyRoomCode: null,
+    botDifficulty: "hard",
+    botColor: "b",
+    userColorChoice: "w",
   };
 
   // DOM Elements
   const el = {
+    viewLobby: document.getElementById("viewLobby"),
+    viewGame: document.getElementById("viewGame"),
+    btnExitToLobby: document.getElementById("btnExitToLobby"),
+
+    tabLobbyLocal: document.getElementById("tabLobbyLocal"),
+    tabLobbyRoom: document.getElementById("tabLobbyRoom"),
+    tabLobbyBot: document.getElementById("tabLobbyBot"),
+    panelLobbyLocal: document.getElementById("panelLobbyLocal"),
+    panelLobbyRoom: document.getElementById("panelLobbyRoom"),
+    panelLobbyBot: document.getElementById("panelLobbyBot"),
+
+    btnStartLocalMatch: document.getElementById("btnStartLocalMatch"),
+    selectLocalTime: document.getElementById("selectLocalTime"),
+    checkLocalAutoFlip: document.getElementById("checkLocalAutoFlip"),
+
+    btnSubmitCreateLobby: document.getElementById("btnSubmitCreateLobby"),
+    inputHostNameLobby: document.getElementById("inputHostNameLobby"),
+    selectOnlineTime: document.getElementById("selectOnlineTime"),
+    btnSubmitJoinLobby: document.getElementById("btnSubmitJoinLobby"),
+    inputRoomCodeLobby: document.getElementById("inputRoomCodeLobby"),
+    inputJoinNameLobby: document.getElementById("inputJoinNameLobby"),
+
+    btnStartBotMatch: document.getElementById("btnStartBotMatch"),
+    controlBotColor: document.getElementById("controlBotColor"),
+    controlBotDiff: document.getElementById("controlBotDiff"),
+    selectBotTime: document.getElementById("selectBotTime"),
+
     boardFrame: document.getElementById("boardFrame"),
     chessGrid: document.getElementById("chessGrid"),
     checkBanner: document.getElementById("checkBanner"),
@@ -1156,8 +1186,14 @@
     el.bottomColorDot.className = `player-color-indicator ${bottomColor === "w" ? "white" : "black"}`;
     el.topColorDot.className = `player-color-indicator ${topColor === "w" ? "white" : "black"}`;
 
-    // Names in local vs room mode
-    if (state.mode === "local") {
+    // Names in local, bot, vs room mode
+    if (state.mode === "bot") {
+      const isBottomHuman = bottomColor === state.playerColor;
+      el.bottomPlayerName.textContent = isBottomHuman ? "Deg" : (state.botDifficulty === "easy" ? "Bot (Rekrutt)" : "Bot (Mester)");
+      el.topPlayerName.textContent = !isBottomHuman ? "Deg" : (state.botDifficulty === "easy" ? "Bot (Rekrutt)" : "Bot (Mester)");
+      el.bottomAvatar.innerHTML = renderAvatarHtml(isBottomHuman ? "charbear" : "jormundgandr");
+      el.topAvatar.innerHTML = renderAvatarHtml(!isBottomHuman ? "charbear" : "jormundgandr");
+    } else if (state.mode === "local") {
       el.bottomPlayerName.textContent = bottomColor === "w" ? "Hvit" : "Svart";
       el.topPlayerName.textContent = topColor === "w" ? "Hvit" : "Svart";
       el.bottomAvatar.innerHTML = renderAvatarHtml(bottomColor === "w" ? "charbear" : "jormundgandr");
@@ -1289,6 +1325,10 @@
   // --- Interaction & Move Handling ---
   function handleSquareClick(vRow, vCol) {
     if (state.gameStatus === "finished" || state.game.getGameStatus().over) {
+      return;
+    }
+
+    if (state.mode === "bot" && state.game.turn === state.botColor) {
       return;
     }
 
@@ -1476,6 +1516,11 @@
     }
 
     renderBoard();
+
+    // If playing against Bot, trigger bot calculation if it is bot's turn
+    if (state.mode === "bot" && !status.over && state.game.turn === state.botColor) {
+      setTimeout(playBotTurn, 450);
+    }
 
     // If in multiplayer room mode, sync move to server
     if (state.mode === "room") {
@@ -2137,14 +2182,17 @@
       el.bodyCreateRoom.classList.add("hidden");
     });
 
-    // Submit Create Room
-    el.btnSubmitCreateRoom.addEventListener("click", async () => {
-      const hostName = el.inputHostName.value.trim() || "Hvit";
-      const timeSec = parseInt(el.selectTimeControl.value, 10);
-      const validTime = Number.isNaN(timeSec) ? 300 : timeSec;
-
-      el.btnSubmitCreateRoom.disabled = true;
-      el.btnSubmitCreateRoom.textContent = "Oppretter rom…";
+    // Reusable Create Room Function (Used by both Modal and Lobby Screen)
+    async function createRoomWithName(hostName, timeSec) {
+      const validTime = Number.isNaN(timeSec) || !timeSec ? (state.timeControl || 300) : timeSec;
+      if (el.btnSubmitCreateLobby) {
+        el.btnSubmitCreateLobby.disabled = true;
+        el.btnSubmitCreateLobby.textContent = "Oppretter rom…";
+      }
+      if (el.btnSubmitCreateRoom) {
+        el.btnSubmitCreateRoom.disabled = true;
+        el.btnSubmitCreateRoom.textContent = "Oppretter rom…";
+      }
 
       try {
         const resp = await fetch("/api/sjakk/create", {
@@ -2167,37 +2215,49 @@
           state.perspective = "w";
           state.gameStatus = "waiting";
 
-          el.tabRoom.classList.add("active");
-          el.tabLocal.classList.remove("active");
-          el.roomPill.classList.remove("hidden");
-          el.roomPillCode.textContent = data.roomCode;
-          el.btnUndo.disabled = true;
-          el.labelAutoFlip.classList.add("hidden");
+          if (el.tabRoom) el.tabRoom.classList.add("active");
+          if (el.tabLocal) el.tabLocal.classList.remove("active");
+          if (el.roomPill) el.roomPill.classList.remove("hidden");
+          if (el.roomPillCode) el.roomPillCode.textContent = data.roomCode;
+          if (el.btnUndo) el.btnUndo.disabled = true;
+          if (el.labelAutoFlip) el.labelAutoFlip.classList.add("hidden");
 
-          el.modalRoomSetup.close();
+          if (el.modalRoomSetup && el.modalRoomSetup.open) el.modalRoomSetup.close();
           resetGame();
+          showView("game");
           startRoomPolling();
+        } else {
+          alert(data.error || "Kunne ikke opprette rom.");
         }
       } catch (err) {
         alert("Feil ved opprettelse av rom.");
       } finally {
-        el.btnSubmitCreateRoom.disabled = false;
-        el.btnSubmitCreateRoom.textContent = "Opprett Sjakkrom";
+        if (el.btnSubmitCreateLobby) {
+          el.btnSubmitCreateLobby.disabled = false;
+          el.btnSubmitCreateLobby.textContent = "Opprett sjakkrom";
+        }
+        if (el.btnSubmitCreateRoom) {
+          el.btnSubmitCreateRoom.disabled = false;
+          el.btnSubmitCreateRoom.textContent = "Opprett Sjakkrom";
+        }
       }
-    });
+    }
 
-    // Submit Join Room
-    el.btnSubmitJoinRoom.addEventListener("click", async () => {
-      const code = el.inputRoomCode.value.trim().toUpperCase();
-      const playerName = el.inputJoinName.value.trim() || "Svart";
-
+    // Reusable Join Room Function (Used by both Modal and Lobby Screen)
+    async function joinRoomWithCode(code, playerName) {
       if (!code) {
         alert("Skriv inn en romkode.");
         return;
       }
 
-      el.btnSubmitJoinRoom.disabled = true;
-      el.btnSubmitJoinRoom.textContent = "Kobler til…";
+      if (el.btnSubmitJoinLobby) {
+        el.btnSubmitJoinLobby.disabled = true;
+        el.btnSubmitJoinLobby.textContent = "Kobler til…";
+      }
+      if (el.btnSubmitJoinRoom) {
+        el.btnSubmitJoinRoom.disabled = true;
+        el.btnSubmitJoinRoom.textContent = "Kobler til…";
+      }
 
       try {
         const resp = await fetch("/api/sjakk/join", {
@@ -2220,25 +2280,46 @@
           state.perspective = data.playerColor === "b" ? "b" : "w";
           state.gameStatus = "waiting";
 
-          el.tabRoom.classList.add("active");
-          el.tabLocal.classList.remove("active");
-          el.roomPill.classList.remove("hidden");
-          el.roomPillCode.textContent = data.roomCode;
-          el.btnUndo.disabled = true;
-          el.labelAutoFlip.classList.add("hidden");
+          if (el.tabRoom) el.tabRoom.classList.add("active");
+          if (el.tabLocal) el.tabLocal.classList.remove("active");
+          if (el.roomPill) el.roomPill.classList.remove("hidden");
+          if (el.roomPillCode) el.roomPillCode.textContent = data.roomCode;
+          if (el.btnUndo) el.btnUndo.disabled = true;
+          if (el.labelAutoFlip) el.labelAutoFlip.classList.add("hidden");
 
-          el.modalRoomSetup.close();
+          if (el.modalRoomSetup && el.modalRoomSetup.open) el.modalRoomSetup.close();
           resetGame();
+          showView("game");
           startRoomPolling();
         } else {
           alert(data.error || "Fant ikke rommet.");
         }
       } catch (err) {
-        alert("Feil ved tilkobling.");
+        alert("Feil ved tilkobling til rom.");
       } finally {
-        el.btnSubmitJoinRoom.disabled = false;
-        el.btnSubmitJoinRoom.textContent = "Bli med i partiet";
+        if (el.btnSubmitJoinLobby) {
+          el.btnSubmitJoinLobby.disabled = false;
+          el.btnSubmitJoinLobby.textContent = "Koble til parti";
+        }
+        if (el.btnSubmitJoinRoom) {
+          el.btnSubmitJoinRoom.disabled = false;
+          el.btnSubmitJoinRoom.textContent = "Bli med i partiet";
+        }
       }
+    }
+
+    // Submit Create Room from Modal
+    el.btnSubmitCreateRoom.addEventListener("click", async () => {
+      const hostName = el.inputHostName.value.trim() || "Hvit";
+      const timeSec = parseInt(el.selectTimeControl.value, 10);
+      await createRoomWithName(hostName, timeSec);
+    });
+
+    // Submit Join Room from Modal
+    el.btnSubmitJoinRoom.addEventListener("click", async () => {
+      const code = el.inputRoomCode.value.trim().toUpperCase();
+      const playerName = el.inputJoinName.value.trim() || "Svart";
+      await joinRoomWithCode(code, playerName);
     });
 
     // Copy Room Link
@@ -2431,7 +2512,7 @@
     if (roomParam) {
       const roomUpper = roomParam.toUpperCase();
       el.inputRoomCode.value = roomUpper;
-      el.tabRoom.click();
+      if (el.tabRoom) el.tabRoom.click();
       if (playerParam) {
         state.playerId = playerParam;
         state.roomCode = roomUpper;
@@ -2440,16 +2521,214 @@
         state.mode = "room";
         sessionStorage.setItem("party_room_code", roomUpper);
         sessionStorage.setItem("party_player_id", playerParam);
-        el.tabRoom.classList.add("active");
-        el.tabLocal.classList.remove("active");
-        el.roomPill.classList.remove("hidden");
-        el.roomPillCode.textContent = state.roomCode;
+        if (el.tabRoom) el.tabRoom.classList.add("active");
+        if (el.tabLocal) el.tabLocal.classList.remove("active");
+        if (el.roomPill) el.roomPill.classList.remove("hidden");
+        if (el.roomPillCode) el.roomPillCode.textContent = state.roomCode;
         el.btnUndo.disabled = true;
         el.labelAutoFlip.classList.add("hidden");
         updateExitButtonsLabels();
-        el.modalRoomSetup.close();
+        if (el.modalRoomSetup && el.modalRoomSetup.open) el.modalRoomSetup.close();
+        showView("game");
         startRoomPolling();
+      } else {
+        showView("game");
       }
+    } else {
+      showView("lobby");
+    }
+
+    initLobbyTabs();
+  }
+
+  function showView(viewName) {
+    if (!el.viewLobby || !el.viewGame) return;
+    if (viewName === "lobby") {
+      el.viewLobby.classList.remove("hidden");
+      el.viewGame.classList.add("hidden");
+      if (el.btnExitToLobby) el.btnExitToLobby.classList.add("hidden");
+      stopTimer();
+      stopRoomPolling();
+    } else if (viewName === "game") {
+      el.viewLobby.classList.add("hidden");
+      el.viewGame.classList.remove("hidden");
+      if (el.btnExitToLobby) el.btnExitToLobby.classList.remove("hidden");
+    }
+  }
+
+  function playBotTurn() {
+    if (state.mode !== "bot" || state.gameStatus === "finished" || state.game.turn !== state.botColor) return;
+    const legalMoves = state.game.getLegalMoves();
+    if (!legalMoves.length) return;
+
+    let chosenMove = null;
+    if (state.botDifficulty === "easy") {
+      const captures = legalMoves.filter(
+        (m) => !!state.game.board[m.to.r][m.to.c] || m.isEnPassant
+      );
+      if (captures.length && Math.random() < 0.6) {
+        chosenMove = captures[Math.floor(Math.random() * captures.length)];
+      } else {
+        chosenMove = legalMoves[Math.floor(Math.random() * legalMoves.length)];
+      }
+    } else {
+      let bestScore = -9999;
+      const botColor = state.game.turn;
+      const oppColor = botColor === "w" ? "b" : "w";
+
+      for (const move of legalMoves) {
+        let score = 0;
+        const target = state.game.board[move.to.r][move.to.c];
+        if (target) {
+          score += (PIECE_VALUES[target.toLowerCase()] || 1) * 10;
+        }
+        if (move.isEnPassant) score += 10;
+        if ((move.to.r === 3 || move.to.r === 4) && (move.to.c === 3 || move.to.c === 4)) {
+          score += 3;
+        }
+        const sim = state.game.clone();
+        sim.applyMoveInternal(move);
+        if (sim.isInCheck(oppColor)) score += 6;
+        if (sim.isSquareAttacked(move.to.r, move.to.c, oppColor)) {
+          score -= (PIECE_VALUES[(move.piece || "p").toLowerCase()] || 1) * 7;
+        }
+        score += Math.random() * 2.5;
+        if (score > bestScore) {
+          bestScore = score;
+          chosenMove = move;
+        }
+      }
+    }
+
+    if (chosenMove) {
+      if (
+        chosenMove.piece &&
+        chosenMove.piece.toUpperCase() === "P" &&
+        (chosenMove.to.r === 0 || chosenMove.to.r === 7)
+      ) {
+        chosenMove.promo = "Q";
+      }
+      executeMove(chosenMove);
+    }
+  }
+
+  function initLobbyTabs() {
+    const tabs = [
+      { btn: el.tabLobbyLocal, panel: el.panelLobbyLocal },
+      { btn: el.tabLobbyRoom, panel: el.panelLobbyRoom },
+      { btn: el.tabLobbyBot, panel: el.panelLobbyBot },
+    ];
+
+    tabs.forEach(({ btn, panel }) => {
+      if (!btn || !panel) return;
+      btn.addEventListener("click", () => {
+        tabs.forEach((t) => {
+          if (t.btn) {
+            t.btn.classList.remove("active");
+            t.btn.setAttribute("aria-selected", "false");
+          }
+          if (t.panel) t.panel.classList.add("hidden");
+        });
+        btn.classList.add("active");
+        btn.setAttribute("aria-selected", "true");
+        panel.classList.remove("hidden");
+      });
+    });
+
+    if (el.controlBotColor) {
+      el.controlBotColor.querySelectorAll(".seg-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          el.controlBotColor.querySelectorAll(".seg-btn").forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          state.userColorChoice = btn.dataset.color || "w";
+        });
+      });
+    }
+
+    if (el.controlBotDiff) {
+      el.controlBotDiff.querySelectorAll(".seg-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          el.controlBotDiff.querySelectorAll(".seg-btn").forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          state.botDifficulty = btn.dataset.diff || "hard";
+        });
+      });
+    }
+
+    if (el.btnStartLocalMatch) {
+      el.btnStartLocalMatch.addEventListener("click", () => {
+        state.mode = "local";
+        state.autoFlip = el.checkLocalAutoFlip ? el.checkLocalAutoFlip.checked : false;
+        if (el.checkAutoFlip) el.checkAutoFlip.checked = state.autoFlip;
+        const timeVal = parseInt(el.selectLocalTime.value, 10);
+        state.timeControl = timeVal;
+        state.whiteTime = timeVal;
+        state.blackTime = timeVal;
+        state.perspective = "w";
+        if (el.selectTimeControl) el.selectTimeControl.value = String(timeVal);
+        if (el.labelAutoFlip) el.labelAutoFlip.classList.remove("hidden");
+        if (el.roomPill) el.roomPill.classList.add("hidden");
+        el.btnUndo.disabled = false;
+        resetGame();
+        showView("game");
+      });
+    }
+
+    if (el.btnSubmitCreateLobby) {
+      el.btnSubmitCreateLobby.addEventListener("click", async () => {
+        const name = (el.inputHostNameLobby ? el.inputHostNameLobby.value : "").trim() || "Hvit";
+        const timeVal = parseInt(el.selectOnlineTime ? el.selectOnlineTime.value : "300", 10);
+        state.timeControl = timeVal;
+        state.whiteTime = timeVal;
+        state.blackTime = timeVal;
+        await createRoomWithName(name, timeVal);
+      });
+    }
+
+    if (el.btnSubmitJoinLobby) {
+      el.btnSubmitJoinLobby.addEventListener("click", async () => {
+        const code = (el.inputRoomCodeLobby ? el.inputRoomCodeLobby.value : "").trim().toUpperCase();
+        const name = (el.inputJoinNameLobby ? el.inputJoinNameLobby.value : "").trim() || "Svart";
+        await joinRoomWithCode(code, name);
+      });
+    }
+
+    if (el.btnStartBotMatch) {
+      el.btnStartBotMatch.addEventListener("click", () => {
+        state.mode = "bot";
+        state.autoFlip = false;
+        if (el.labelAutoFlip) el.labelAutoFlip.classList.add("hidden");
+        if (el.roomPill) el.roomPill.classList.add("hidden");
+        el.btnUndo.disabled = false;
+
+        let chosenColor = state.userColorChoice;
+        if (chosenColor === "random") {
+          chosenColor = Math.random() < 0.5 ? "w" : "b";
+        }
+        state.playerColor = chosenColor;
+        state.botColor = chosenColor === "w" ? "b" : "w";
+        state.perspective = chosenColor;
+
+        const timeVal = parseInt(el.selectBotTime ? el.selectBotTime.value : "300", 10);
+        state.timeControl = timeVal;
+        state.whiteTime = timeVal;
+        state.blackTime = timeVal;
+        if (el.selectTimeControl) el.selectTimeControl.value = String(timeVal);
+
+        resetGame();
+        state.gameStatus = "active";
+        showView("game");
+
+        if (state.game.turn !== state.playerColor) {
+          setTimeout(playBotTurn, 600);
+        }
+      });
+    }
+
+    if (el.btnExitToLobby) {
+      el.btnExitToLobby.addEventListener("click", () => {
+        showView("lobby");
+      });
     }
   }
 

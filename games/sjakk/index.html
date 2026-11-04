@@ -12,6 +12,7 @@
   <link rel="apple-touch-icon" href="assets/icon.png" />
 
   <link rel="stylesheet" href="/sjakk/styles.css?v=1.1" />
+  <link rel="stylesheet" href="/game-lobby.css" />
   <link rel="stylesheet" href="/character/character-creator.css" />
   <link rel="stylesheet" href="/parallax-bg.css?v=2.1" />
 </head>
@@ -42,6 +43,9 @@
       </div>
 
       <div class="header-controls">
+        <button type="button" class="btn-lobby-exit hidden" id="btnExitToLobby" title="Bytt spillmodus">
+          ‹ Bytte modus
+        </button>
         <button type="button" class="btn btn-subtle btn-icon" id="btnSoundToggle" title="Lydeffekter på/av">
           <span id="soundIcon">🔊</span>
         </button>
@@ -54,23 +58,216 @@
       </div>
     </header>
 
-    <!-- Mode Selector & Party Banner -->
-    <div class="mode-bar">
-      <div class="mode-tabs">
-        <button type="button" class="mode-tab active" id="tabLocal">1 Enhet (Pass &amp; Play)</button>
-        <button type="button" class="mode-tab" id="tabRoom">Party Rom (2 Enheter)</button>
-      </div>
+    <!-- ============================================== -->
+    <!-- VIEW 1: LOBBY & MODE SELECTION                 -->
+    <!-- ============================================== -->
+    <section class="view-panel" id="viewLobby">
+      <div class="lobby-card theme-purple">
+        <div class="lobby-hero">
+          <div class="hero-icon-wrap">
+            <img src="/hub/assets/icons/sjakk.png" alt="Sjakk ikon" class="hero-icon" />
+          </div>
+          <h2 class="hero-title">Pikselduell i Sjakk</h2>
+          <p class="hero-desc">
+            Klassisk sjakk for 2 spillere. Velg hvordan dere vil spille nedenfor:
+          </p>
+        </div>
 
+        <!-- Mode Navigation Tabs -->
+        <div class="lobby-tabs" role="tablist">
+          <button type="button" class="lobby-tab-btn active" id="tabLobbyLocal" role="tab" aria-selected="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+            <span>Samme skjerm</span>
+          </button>
+          <button type="button" class="lobby-tab-btn" id="tabLobbyRoom" role="tab" aria-selected="false">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+            <span>Nettspill</span>
+          </button>
+          <button type="button" class="lobby-tab-btn" id="tabLobbyBot" role="tab" aria-selected="false">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="9" y="9" width="2" height="2"></rect><rect x="13" y="9" width="2" height="2"></rect><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+            <span>Mot Bot</span>
+          </button>
+        </div>
+
+        <!-- TAB 1: Local Pass & Play Panel -->
+        <div class="tab-panel active" id="panelLobbyLocal">
+          <div class="action-box single-box card-theme-purple">
+            <div class="action-box-header">
+              <div class="box-badge-row">
+                <span class="action-card-badge badge-purple">Pass &amp; Play</span>
+              </div>
+              <h3 class="box-title">2 spillere på samme enhet</h3>
+              <p class="box-desc">
+                Send telefonen mellom dere eller legg laptopen/nettbrettet flatt på bordet!
+              </p>
+            </div>
+
+            <div class="action-box-content">
+              <div class="form-group">
+                <label for="selectLocalTime">Tidskontroll</label>
+                <select id="selectLocalTime" class="select-input">
+                  <option value="180">3 minutter (Lyn)</option>
+                  <option value="300" selected>5 minutter (Blitz)</option>
+                  <option value="600">10 minutter (Hurtig)</option>
+                  <option value="60">1 minutt (Bullet)</option>
+                  <option value="0">Ingen tid (Koseparti)</option>
+                </select>
+              </div>
+
+              <label class="checkbox-row">
+                <input type="checkbox" id="checkLocalAutoFlip" />
+                <span>Snu brettet 180° automatisk etter hvert trekk</span>
+              </label>
+            </div>
+
+            <button type="button" class="primary-btn pulse-glow" id="btnStartLocalMatch">
+              Start sjakkparti
+            </button>
+          </div>
+        </div>
+
+        <!-- TAB 2: Online Multiplayer Panel -->
+        <div class="tab-panel hidden" id="panelLobbyRoom">
+          <div class="online-lobby-deck">
+            <div class="online-split">
+              <!-- Create Room Card -->
+              <div class="action-box card-theme-purple">
+                <div class="action-box-header">
+                  <div class="box-badge-row">
+                    <span class="action-card-badge badge-purple">Romvert</span>
+                  </div>
+                  <h3 class="box-title">Opprett nytt parti</h3>
+                  <p class="box-desc">Start et parti og inviter motstanderen med 4-bokstavs kode.</p>
+                </div>
+
+                <div class="action-box-content">
+                  <div class="form-group">
+                    <label for="inputHostNameLobby">Ditt navn</label>
+                    <input type="text" id="inputHostNameLobby" class="text-input" maxlength="16" placeholder="F.eks. Magnus" value="Hvit" />
+                  </div>
+                  <div class="form-group">
+                    <label for="selectOnlineTime">Tidskontroll</label>
+                    <select id="selectOnlineTime" class="select-input">
+                      <option value="180">3 minutter (Lyn)</option>
+                      <option value="300" selected>5 minutter (Blitz)</option>
+                      <option value="600">10 minutter (Hurtig)</option>
+                      <option value="60">1 minutt (Bullet)</option>
+                      <option value="0">Ingen tid (Koseparti)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <button type="button" class="primary-btn" id="btnSubmitCreateLobby">
+                  Opprett sjakkrom
+                </button>
+              </div>
+
+              <!-- Join Room Card -->
+              <div class="action-box card-theme-cyan">
+                <div class="action-box-header">
+                  <div class="box-badge-row">
+                    <span class="action-card-badge badge-cyan">Bli med</span>
+                  </div>
+                  <h3 class="box-title">Bli med med kode</h3>
+                  <p class="box-desc">Tast inn koden du har fått fra motstanderen eller Party Lounge.</p>
+                </div>
+
+                <div class="action-box-content">
+                  <div class="form-group">
+                    <label for="inputRoomCodeLobby">Romkode</label>
+                    <input type="text" id="inputRoomCodeLobby" class="text-input code-input" maxlength="6"
+                      placeholder="SJAKK" autocomplete="off" autocorrect="off" autocapitalize="characters" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="inputJoinNameLobby">Ditt navn</label>
+                    <input type="text" id="inputJoinNameLobby" class="text-input" maxlength="16" placeholder="F.eks. Hikaru" value="Svart" />
+                  </div>
+                </div>
+
+                <button type="button" class="btn-cyan-accent" id="btnSubmitJoinLobby">
+                  Koble til parti
+                </button>
+              </div>
+            </div>
+
+            <!-- Party Lounge Callout -->
+            <div class="lounge-cta-banner">
+              <div class="lounge-cta-left">
+                <img src="/hub/assets/icons/party.png" alt="" class="lounge-cta-icon" />
+                <div class="lounge-cta-text">
+                  <h4>Vil dere spille i Party Lounge?</h4>
+                  <p>I felles lounge kan verten starte sjakk, korridorer, ordbombe og mer sømløst for hele gjengen.</p>
+                </div>
+              </div>
+              <a href="/party/" class="lounge-cta-btn">Gå til Party Lounge →</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: Solo vs AI Panel -->
+        <div class="tab-panel hidden" id="panelLobbyBot">
+          <div class="action-box single-box card-theme-purple">
+            <div class="action-box-header">
+              <div class="box-badge-row">
+                <span class="action-card-badge badge-purple">Solotrening</span>
+              </div>
+              <h3 class="box-title">Spill mot datamaskinen</h3>
+              <p class="box-desc">
+                Øv på åpninger, taktikk og sluttspill mot en datastyrt motstander på valgfritt nivå.
+              </p>
+            </div>
+
+            <div class="action-box-content">
+              <div class="form-group">
+                <label>Din farge</label>
+                <div class="segmented-control" id="controlBotColor">
+                  <button type="button" class="seg-btn active" data-color="w">Hvit (Trekker først)</button>
+                  <button type="button" class="seg-btn" data-color="random">Tilfeldig</button>
+                  <button type="button" class="seg-btn" data-color="b">Svart</button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Vanskelighetsgrad</label>
+                <div class="segmented-control" id="controlBotDiff">
+                  <button type="button" class="seg-btn" data-diff="easy">Rekrutt (Enkel)</button>
+                  <button type="button" class="seg-btn active" data-diff="hard">Mester (Taktisk)</button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="selectBotTime">Tidskontroll</label>
+                <select id="selectBotTime" class="select-input">
+                  <option value="300" selected>5 minutter</option>
+                  <option value="600">10 minutter</option>
+                  <option value="180">3 minutter</option>
+                  <option value="0">Ubegrenset tid</option>
+                </select>
+              </div>
+            </div>
+
+            <button type="button" class="primary-btn pulse-glow" id="btnStartBotMatch">
+              Start soloduel
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- VIEW 2: ACTIVE GAMEPLAY                        -->
+    <!-- ============================================== -->
+    <section class="view-panel hidden" id="viewGame">
       <!-- Room status pill (visible in room mode) -->
       <div class="room-pill hidden" id="roomPill">
         <span class="room-pill-label">ROM:</span>
         <strong class="room-pill-code" id="roomPillCode">----</strong>
         <button type="button" class="room-copy-btn" id="btnCopyRoomLink" title="Kopier lenke">Kopier</button>
       </div>
-    </div>
 
-    <!-- Main Game Container -->
-    <main class="sjakk-main">
+      <!-- Main Game Container -->
+      <main class="sjakk-main">
       <div class="sjakk-layout">
 
         <!-- Top Player Card (Default Black) -->
@@ -174,6 +371,7 @@
 
       </div>
     </main>
+    </section>
   </div>
 
   <!-- PROMOTION MODAL -->

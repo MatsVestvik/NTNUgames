@@ -575,9 +575,6 @@ body {
   background: radial-gradient(circle at 85% 75%, rgba(251, 133, 0, 0.25) 0%, transparent 65%), rgba(23, 34, 59, 0.94);
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45), 0 0 28px rgba(251, 133, 0, 0.28);
 }
-.game-card.card-orange .card-btn {
-  color: #ffffff;
-}
 
 .game-card.card-purple {
   background: radial-gradient(circle at 85% 75%, rgba(131, 56, 236, 0.14) 0%, transparent 60%), rgba(19, 27, 46, 0.86);
@@ -610,9 +607,6 @@ body {
   background: radial-gradient(circle at 85% 75%, rgba(245, 158, 11, 0.25) 0%, transparent 65%), rgba(23, 34, 59, 0.94);
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45), 0 0 28px rgba(245, 158, 11, 0.28);
 }
-.game-card.card-amber .card-btn {
-  color: #fbbf24;
-}
 
 .game-card.card-crimson {
   background: radial-gradient(circle at 85% 75%, rgba(239, 68, 68, 0.14) 0%, transparent 60%), rgba(19, 27, 46, 0.86);
@@ -622,9 +616,6 @@ body {
   background: radial-gradient(circle at 85% 75%, rgba(239, 68, 68, 0.25) 0%, transparent 65%), rgba(23, 34, 59, 0.94);
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45), 0 0 28px rgba(239, 68, 68, 0.28);
 }
-.game-card.card-crimson .card-btn {
-  color: #f87171;
-}
 
 .game-card.card-spectrum {
   background: radial-gradient(circle at 85% 75%, rgba(6, 214, 160, 0.12), rgba(0, 180, 216, 0.12), rgba(251, 133, 0, 0.1) 0%, transparent 65%), rgba(19, 27, 46, 0.86);
@@ -632,9 +623,6 @@ body {
 .game-card.card-spectrum:hover {
   border-color: #06d6a0;
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45), 0 0 28px rgba(6, 214, 160, 0.25);
-}
-.game-card.card-spectrum .card-btn {
-  color: #06d6a0;
 }
 
 /* Party Lobby Hub Banner */

@@ -249,6 +249,26 @@
 
   // --- DOM ELEMENTS ---
   const el = {
+    viewLobby: document.getElementById("viewLobby"),
+    viewGame: document.getElementById("viewGame"),
+    btnExitToLobby: document.getElementById("btnExitToLobby"),
+
+    tabLobbyLocal: document.getElementById("tabLobbyLocal"),
+    tabLobbyRoom: document.getElementById("tabLobbyRoom"),
+    panelLobbyLocal: document.getElementById("panelLobbyLocal"),
+    panelLobbyRoom: document.getElementById("panelLobbyRoom"),
+
+    controlLocalRounds: document.getElementById("controlLocalRounds"),
+    btnStartLocalMatch: document.getElementById("btnStartLocalMatch"),
+
+    inputHostNameLobby: document.getElementById("inputHostNameLobby"),
+    controlOnlineRounds: document.getElementById("controlOnlineRounds"),
+    btnSubmitCreateLobby: document.getElementById("btnSubmitCreateLobby"),
+
+    inputRoomCodeLobby: document.getElementById("inputRoomCodeLobby"),
+    inputJoinNameLobby: document.getElementById("inputJoinNameLobby"),
+    btnSubmitJoinLobby: document.getElementById("btnSubmitJoinLobby"),
+
     btnBack: document.getElementById("btnBack"),
     btnSoundToggle: document.getElementById("btnSoundToggle"),
     soundIcon: document.getElementById("soundIcon"),
@@ -341,6 +361,8 @@
     pollTimer: null,
 
     // Local match state
+    selectedLocalRounds: 7,
+    selectedOnlineRounds: 7,
     currentRound: 1,
     totalRounds: 7,
     teamScore: 0,
@@ -640,10 +662,10 @@
 
   // --- LOCAL 1-DEVICE PASS & PLAY FLOW ---
 
-  function startLocalMatch() {
+  function startLocalMatch(customRounds) {
     state.mode = "local";
     state.currentRound = 1;
-    state.totalRounds = 7;
+    state.totalRounds = customRounds || state.selectedLocalRounds || 7;
     state.teamScore = 0;
     state.psychicPlayerNum = 1;
     state.roundHistory = [];
@@ -847,7 +869,100 @@
 
   // --- ONLINE PARTY ROOM MULTIPLAYER ---
 
+  function showView(viewName) {
+    if (!el.viewLobby || !el.viewGame) return;
+    if (viewName === "lobby") {
+      el.viewLobby.classList.remove("hidden");
+      el.viewGame.classList.add("hidden");
+      if (el.btnExitToLobby) el.btnExitToLobby.classList.add("hidden");
+      stopPolling();
+    } else if (viewName === "game") {
+      el.viewLobby.classList.add("hidden");
+      el.viewGame.classList.remove("hidden");
+      if (el.btnExitToLobby) el.btnExitToLobby.classList.remove("hidden");
+    }
+  }
+
+  function initLobbyTabs() {
+    const tabs = [
+      { btn: el.tabLobbyLocal, panel: el.panelLobbyLocal },
+      { btn: el.tabLobbyRoom, panel: el.panelLobbyRoom },
+    ];
+
+    tabs.forEach(({ btn, panel }) => {
+      if (!btn || !panel) return;
+      btn.addEventListener("click", () => {
+        tabs.forEach((t) => {
+          if (t.btn) {
+            t.btn.classList.remove("active");
+            t.btn.setAttribute("aria-selected", "false");
+          }
+          if (t.panel) t.panel.classList.add("hidden");
+        });
+        btn.classList.add("active");
+        btn.setAttribute("aria-selected", "true");
+        panel.classList.remove("hidden");
+      });
+    });
+
+    if (el.controlLocalRounds) {
+      el.controlLocalRounds.querySelectorAll(".seg-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          el.controlLocalRounds.querySelectorAll(".seg-btn").forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          state.selectedLocalRounds = parseInt(btn.dataset.rounds, 10) || 7;
+        });
+      });
+    }
+
+    if (el.controlOnlineRounds) {
+      el.controlOnlineRounds.querySelectorAll(".seg-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          el.controlOnlineRounds.querySelectorAll(".seg-btn").forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          state.selectedOnlineRounds = parseInt(btn.dataset.rounds, 10) || 7;
+        });
+      });
+    }
+
+    if (el.btnStartLocalMatch) {
+      el.btnStartLocalMatch.addEventListener("click", () => {
+        setMode("local");
+        startLocalMatch(state.selectedLocalRounds);
+        showView("game");
+      });
+    }
+
+    if (el.btnSubmitCreateLobby) {
+      el.btnSubmitCreateLobby.addEventListener("click", async () => {
+        const hostName = (el.inputHostNameLobby ? el.inputHostNameLobby.value : "").trim() || "Spiller 1";
+        const rounds = state.selectedOnlineRounds || 7;
+        await createRoomOnline(hostName, rounds);
+      });
+    }
+
+    if (el.btnSubmitJoinLobby) {
+      el.btnSubmitJoinLobby.addEventListener("click", async () => {
+        const code = (el.inputRoomCodeLobby ? el.inputRoomCodeLobby.value : "").trim().toUpperCase();
+        const name = (el.inputJoinNameLobby ? el.inputJoinNameLobby.value : "").trim() || "Spiller 2";
+        if (!code) {
+          alert("Skriv inn en romkode.");
+          return;
+        }
+        await joinRoomOnline(code, name);
+      });
+    }
+
+    if (el.btnExitToLobby) {
+      el.btnExitToLobby.addEventListener("click", () => {
+        showView("lobby");
+      });
+    }
+  }
+
   async function checkUrlParamsAndInit() {
+    initLobbyTabs();
+
     const params = new URLSearchParams(window.location.search);
     const code = (params.get("room") || params.get("code") || "").trim().toUpperCase();
     const playerId = (params.get("player") || params.get("playerId") || "").trim();
@@ -859,6 +974,7 @@
       state.playerId = playerId;
       el.roomPillCode.textContent = code;
       el.roomPill.classList.remove("hidden");
+      showView("game");
 
       if (!state.playerId) {
         // Prompt name or auto-join as guest
@@ -868,97 +984,97 @@
         startPolling();
       }
     } else {
-      // Default to 1-device local Pass & Play
-      setMode("local");
-      startLocalMatch();
+      showView("lobby");
     }
   }
 
   function setMode(mode) {
     state.mode = mode;
     if (mode === "local") {
-      el.tabLocal.classList.add("active");
-      el.tabRoom.classList.remove("active");
+      if (el.tabLocal) el.tabLocal.classList.add("active");
+      if (el.tabRoom) el.tabRoom.classList.remove("active");
       el.roomPill.classList.add("hidden");
       stopPolling();
     } else {
-      el.tabRoom.classList.add("active");
-      el.tabLocal.classList.remove("active");
+      if (el.tabRoom) el.tabRoom.classList.add("active");
+      if (el.tabLocal) el.tabLocal.classList.remove("active");
       el.roomPill.classList.remove("hidden");
     }
   }
 
-  el.tabLocal.addEventListener("click", () => {
-    setMode("local");
-    startLocalMatch();
-  });
-
-  el.tabRoom.addEventListener("click", async () => {
-    setMode("room");
-    if (!state.roomCode) {
-      const ask = confirm("Vil du opprette et nytt party-rom for 2 spillere over nett?");
-      if (ask) {
-        await createRoomOnline();
-      } else {
-        const code = prompt("Tast inn 4-bokstavers romkode:");
-        if (code && code.trim()) {
-          state.roomCode = code.trim().toUpperCase();
-          el.roomPillCode.textContent = state.roomCode;
-          await joinRoomOnline(state.roomCode, "Spiller 2");
-        } else {
-          setMode("local");
-        }
-      }
+  async function createRoomOnline(hostName, rounds) {
+    const validHost = hostName || sessionStorage.getItem("player_name") || "Spiller 1";
+    const validRounds = rounds || state.selectedOnlineRounds || 7;
+    if (el.btnSubmitCreateLobby) {
+      el.btnSubmitCreateLobby.disabled = true;
+      el.btnSubmitCreateLobby.textContent = "Oppretter rom…";
     }
-  });
 
-  async function createRoomOnline() {
     try {
-      const hostName = sessionStorage.getItem("player_name") || "Spiller 1";
       const resp = await fetch("/api/wavelength/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hostName, rounds: 7 }),
+        body: JSON.stringify({ hostName: validHost, rounds: validRounds }),
       });
       const data = await resp.json();
       if (data.ok) {
         state.roomCode = data.roomCode;
         state.playerId = data.playerId;
         state.isHost = true;
+        setMode("room");
         el.roomPillCode.textContent = state.roomCode;
         el.roomPill.classList.remove("hidden");
         // Update URL cleanly without reload
         window.history.replaceState({}, "", `/wavelength/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`);
+        showView("game");
         startPolling();
       }
     } catch (e) {
       console.error("Room create error:", e);
       alert("Kunne ikke opprette rom.");
-      setMode("local");
+    } finally {
+      if (el.btnSubmitCreateLobby) {
+        el.btnSubmitCreateLobby.disabled = false;
+        el.btnSubmitCreateLobby.textContent = "Opprett Wavelength-rom";
+      }
     }
   }
 
   async function joinRoomOnline(code, name) {
+    const validName = name || "Spiller 2";
+    if (el.btnSubmitJoinLobby) {
+      el.btnSubmitJoinLobby.disabled = true;
+      el.btnSubmitJoinLobby.textContent = "Kobler til…";
+    }
+
     try {
       const resp = await fetch("/api/wavelength/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roomCode: code, playerName: name }),
+        body: JSON.stringify({ roomCode: code, playerName: validName }),
       });
       const data = await resp.json();
       if (data.ok) {
         state.playerId = data.playerId;
         state.isHost = data.isHost;
+        state.roomCode = code;
+        setMode("room");
+        el.roomPillCode.textContent = code;
+        el.roomPill.classList.remove("hidden");
         window.history.replaceState({}, "", `/wavelength/?room=${encodeURIComponent(code)}&player=${encodeURIComponent(state.playerId)}`);
+        showView("game");
         startPolling();
       } else {
         alert(data.error || "Kunne ikke bli med i rommet.");
-        setMode("local");
       }
     } catch (e) {
       console.error("Room join error:", e);
       alert("Nettverksfeil ved tilkobling til rom.");
-      setMode("local");
+    } finally {
+      if (el.btnSubmitJoinLobby) {
+        el.btnSubmitJoinLobby.disabled = false;
+        el.btnSubmitJoinLobby.textContent = "Koble til rom";
+      }
     }
   }
 

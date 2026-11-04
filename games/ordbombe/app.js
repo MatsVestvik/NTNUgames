@@ -348,8 +348,21 @@
     helpModal: document.getElementById("helpModal"),
     btnCloseHelp: document.getElementById("btnCloseHelp"),
 
-    // Setup Card
-    setupCard: document.getElementById("setupCard"),
+    // Views & Lobby
+    viewLobby: document.getElementById("viewLobby"),
+    viewGame: document.getElementById("viewGame"),
+    btnExitToLobby: document.getElementById("btnExitToLobby"),
+
+    tabLobbySolo: document.getElementById("tabLobbySolo"),
+    tabLobbyRoom: document.getElementById("tabLobbyRoom"),
+    panelLobbySolo: document.getElementById("panelLobbySolo"),
+    panelLobbyRoom: document.getElementById("panelLobbyRoom"),
+
+    inputOrdbombeRoomCode: document.getElementById("inputOrdbombeRoomCode"),
+    btnSubmitJoinOrdbombeRoom: document.getElementById("btnSubmitJoinOrdbombeRoom"),
+
+    // Setup Card (legacy fallback)
+    setupCard: document.getElementById("setupCard") || document.getElementById("viewLobby"),
     soloSettingsBlock: document.getElementById("soloSettingsBlock"),
     inputSoloName: document.getElementById("inputSoloName"),
     selectSoloDifficulty: document.getElementById("selectSoloDifficulty"),
@@ -738,7 +751,7 @@
     el.inputFeedback.className = "input-feedback hidden";
 
     // Switch view
-    el.setupCard.classList.add("hidden");
+    showView("game");
     el.gameOverCard.classList.add("hidden");
     el.gameArena.classList.remove("hidden");
     state.isPlaying = true;
@@ -1291,9 +1304,7 @@
   });
 
   el.btnChangeSettings.addEventListener("click", () => {
-    el.gameOverCard.classList.add("hidden");
-    el.gameArena.classList.add("hidden");
-    el.setupCard.classList.remove("hidden");
+    showView("lobby");
   });
 
   el.btnSoundToggle.addEventListener("click", () => {
@@ -1591,7 +1602,64 @@
     el.btnChangeSettings.classList.add("hidden");
   }
 
+  function showView(viewName) {
+    if (!el.viewLobby || !el.viewGame) return;
+    if (viewName === "lobby") {
+      el.viewLobby.classList.remove("hidden");
+      el.viewGame.classList.add("hidden");
+      if (el.btnExitToLobby) el.btnExitToLobby.classList.add("hidden");
+      state.isPlaying = false;
+      stopTimer();
+    } else if (viewName === "game") {
+      el.viewLobby.classList.add("hidden");
+      el.viewGame.classList.remove("hidden");
+      if (el.btnExitToLobby) el.btnExitToLobby.classList.remove("hidden");
+    }
+  }
+
+  function initLobbyTabs() {
+    const tabs = [
+      { btn: el.tabLobbySolo, panel: el.panelLobbySolo },
+      { btn: el.tabLobbyRoom, panel: el.panelLobbyRoom },
+    ];
+
+    tabs.forEach(({ btn, panel }) => {
+      if (!btn || !panel) return;
+      btn.addEventListener("click", () => {
+        tabs.forEach((t) => {
+          if (t.btn) {
+            t.btn.classList.remove("active");
+            t.btn.setAttribute("aria-selected", "false");
+          }
+          if (t.panel) t.panel.classList.add("hidden");
+        });
+        btn.classList.add("active");
+        btn.setAttribute("aria-selected", "true");
+        panel.classList.remove("hidden");
+      });
+    });
+
+    if (el.btnSubmitJoinOrdbombeRoom) {
+      el.btnSubmitJoinOrdbombeRoom.addEventListener("click", () => {
+        const code = (el.inputOrdbombeRoomCode ? el.inputOrdbombeRoomCode.value : "").trim().toUpperCase();
+        if (!code) {
+          alert("Skriv inn en romkode.");
+          return;
+        }
+        window.location.href = `/party/?code=${encodeURIComponent(code)}`;
+      });
+    }
+
+    if (el.btnExitToLobby) {
+      el.btnExitToLobby.addEventListener("click", () => {
+        showView("lobby");
+      });
+    }
+  }
+
   function initRoomModeIfPresent() {
+    initLobbyTabs();
+
     const params = new URLSearchParams(window.location.search);
     const roomCode = (params.get("room") || "").trim().toUpperCase();
     const playerId = (params.get("player") || sessionStorage.getItem("party_player_id") || "").trim();
@@ -1611,11 +1679,13 @@
         el.headerRoomBadge.textContent = `💣 Rom: ${roomCode}`;
       }
 
-      // Hide local setup, show arena
-      el.setupCard.classList.add("hidden");
+      showView("game");
+      el.gameOverCard.classList.add("hidden");
       el.gameArena.classList.remove("hidden");
 
       pollRoomState();
+    } else {
+      showView("lobby");
     }
   }
 

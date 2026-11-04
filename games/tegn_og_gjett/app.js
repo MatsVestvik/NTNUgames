@@ -90,6 +90,20 @@
 
   // DOM Elements
   const el = {
+    // Views & Lobby
+    viewLobby: document.getElementById("viewLobby"),
+    viewGame: document.getElementById("viewGame"),
+    btnExitToLobby: document.getElementById("btnExitToLobby"),
+
+    tabLobbyRoom: document.getElementById("tabLobbyRoom"),
+    tabLobbySolo: document.getElementById("tabLobbySolo"),
+    panelLobbyRoom: document.getElementById("panelLobbyRoom"),
+    panelLobbySolo: document.getElementById("panelLobbySolo"),
+
+    inputTegnRoomCode: document.getElementById("inputTegnRoomCode"),
+    btnSubmitJoinTegnRoom: document.getElementById("btnSubmitJoinTegnRoom"),
+    btnStartTegnSolo: document.getElementById("btnStartTegnSolo"),
+
     // Header
     btnBack: document.getElementById("btnBack"),
     backBtnText: document.getElementById("backBtnText"),
@@ -1402,15 +1416,81 @@
     return `<span class="avatar-fallback">${avatar || "👤"}</span>`;
   }
 
+  function showView(viewName) {
+    if (!el.viewLobby || !el.viewGame) return;
+    if (viewName === "lobby") {
+      el.viewLobby.classList.remove("hidden");
+      el.viewGame.classList.add("hidden");
+      if (el.btnExitToLobby) el.btnExitToLobby.classList.add("hidden");
+      if (state.pollTimer) {
+        clearInterval(state.pollTimer);
+        state.pollTimer = null;
+      }
+    } else if (viewName === "game") {
+      el.viewLobby.classList.add("hidden");
+      el.viewGame.classList.remove("hidden");
+      if (el.btnExitToLobby) el.btnExitToLobby.classList.remove("hidden");
+    }
+  }
+
+  function initLobbyTabs() {
+    const tabs = [
+      { btn: el.tabLobbyRoom, panel: el.panelLobbyRoom },
+      { btn: el.tabLobbySolo, panel: el.panelLobbySolo },
+    ];
+
+    tabs.forEach(({ btn, panel }) => {
+      if (!btn || !panel) return;
+      btn.addEventListener("click", () => {
+        tabs.forEach((t) => {
+          if (t.btn) {
+            t.btn.classList.remove("active");
+            t.btn.setAttribute("aria-selected", "false");
+          }
+          if (t.panel) t.panel.classList.add("hidden");
+        });
+        btn.classList.add("active");
+        btn.setAttribute("aria-selected", "true");
+        panel.classList.remove("hidden");
+      });
+    });
+
+    if (el.btnStartTegnSolo) {
+      el.btnStartTegnSolo.addEventListener("click", () => {
+        initSoloMode();
+        showView("game");
+      });
+    }
+
+    if (el.btnSubmitJoinTegnRoom) {
+      el.btnSubmitJoinTegnRoom.addEventListener("click", () => {
+        const code = (el.inputTegnRoomCode ? el.inputTegnRoomCode.value : "").trim().toUpperCase();
+        if (!code) {
+          alert("Skriv inn en romkode.");
+          return;
+        }
+        window.location.href = `/party/?room=${encodeURIComponent(code)}`;
+      });
+    }
+
+    if (el.btnExitToLobby) {
+      el.btnExitToLobby.addEventListener("click", () => {
+        showView("lobby");
+      });
+    }
+  }
+
   // =========================================================================
   // Initialize Application
   // =========================================================================
   initPalette();
+  initLobbyTabs();
 
-  if (state.isSolo) {
-    initSoloMode();
-  } else {
+  if (roomCodeParam && playerIdParam) {
+    showView("game");
     initMultiplayer();
+  } else {
+    showView("lobby");
   }
 
 })();
