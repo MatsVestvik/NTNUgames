@@ -305,8 +305,8 @@
             </div>
           </div>
 
-          <!-- Game 5: Imposter (3-16 spillere, Under utvikling) -->
-          <div class="lobby-game-card disabled-playable" id="gameCardImposter">
+          <!-- Game 5: Imposter (3-16 spillere) -->
+          <div class="lobby-game-card active-playable" id="gameCardImposter">
             <div class="lg-card-bg-icon">
               <img src="/assets/icons/imposter.svg" alt="" aria-hidden="true" />
             </div>
@@ -314,7 +314,7 @@
               <div>
                 <div class="lg-card-title-row">
                   <h4 class="lg-card-title">Imposter</h4>
-                  <span class="lg-card-badge badge-soon">Under utvikling 🚧</span>
+                  <span class="lg-card-badge badge-ready">Klar til spill! 🕵️</span>
                 </div>
                 <p class="lg-card-desc">
                   Alle får et hemmelig ord unntatt Imposteren som får et dekkord! Tegn én strek hver på tur – avslør Imposteren før hen gjetter ordet!
@@ -326,14 +326,27 @@
             </div>
 
             <div class="lg-card-right">
-              <button type="button" class="party-btn disabled-btn" disabled>
-                Under utvikling 🚧
+              <div class="lg-settings-inline">
+                <img src="/settings.png" class="party-gear-icon" alt="" />
+                <label>
+                  <span>Strek-tid:</span>
+                  <select id="selectTimerImposter" class="lg-select">
+                    <option value="20">20 sek</option>
+                    <option value="25" selected>25 sek</option>
+                    <option value="35">35 sek</option>
+                  </select>
+                </label>
+              </div>
+
+              <button type="button" class="party-btn start-game-btn" id="btnStartImposter"
+                style="background: linear-gradient(135deg, #ef4444, #b91c1c);">
+                Start Imposter
               </button>
             </div>
           </div>
 
-          <!-- Game 6: Fargekoden / Hues & Cues (3-16 spillere, Under utvikling) -->
-          <div class="lobby-game-card disabled-playable" id="gameCardFargekoden">
+          <!-- Game 6: Fargekoden / Hues & Cues (3-16 spillere) -->
+          <div class="lobby-game-card active-playable" id="gameCardFargekoden">
             <div class="lg-card-bg-icon">
               <img src="/assets/icons/fargekoden.svg" alt="" aria-hidden="true" />
             </div>
@@ -341,7 +354,7 @@
               <div>
                 <div class="lg-card-title-row">
                   <h4 class="lg-card-title">Fargekoden (Hues &amp; Cues)</h4>
-                  <span class="lg-card-badge badge-soon">Under utvikling 🚧</span>
+                  <span class="lg-card-badge badge-ready">Klar til spill! 🎨</span>
                 </div>
                 <p class="lg-card-desc">
                   Én fargemester gir hint med 1 eller 2 ord for en hemmelig farge på et 480-fargers spekter – gjett nærmest mulig farge for å sanke poeng!
@@ -353,8 +366,61 @@
             </div>
 
             <div class="lg-card-right">
-              <button type="button" class="party-btn disabled-btn" disabled>
-                Under utvikling 🚧
+              <div class="lg-settings-inline">
+                <img src="/settings.png" class="party-gear-icon" alt="" />
+                <label>
+                  <span>Runder:</span>
+                  <select id="selectRoundsFargekoden" class="lg-select">
+                    <option value="1">1 runde</option>
+                    <option value="2">2 runder</option>
+                    <option value="3" selected>3 runder</option>
+                  </select>
+                </label>
+              </div>
+
+              <button type="button" class="party-btn start-game-btn" id="btnStartFargekoden"
+                style="background: linear-gradient(135deg, #06d6a0, #00b4d8);">
+                Start Fargekoden
+              </button>
+            </div>
+          </div>
+
+          <!-- Game 7: Wavelength (2 spillere) -->
+          <div class="lobby-game-card active-playable" id="gameCardWavelength">
+            <div class="lg-card-bg-icon">
+              <img src="/assets/icons/wavelength.svg" alt="" aria-hidden="true" />
+            </div>
+            <div class="lg-card-left">
+              <div>
+                <div class="lg-card-title-row">
+                  <h4 class="lg-card-title">Wavelength</h4>
+                  <span class="lg-card-badge badge-ready">Nyhet! 🔮</span>
+                </div>
+                <p class="lg-card-desc">
+                  Er dere på samme bølgelengde? Telepaten ser det hemmelige målet på hjulet og gir én ledetråd – vri nålen dit du tror målet er!
+                </p>
+                <div class="lg-card-meta">
+                  <span>2 spillere</span> • <span>Telepatisk samarbeid</span> • <span>7 runder</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="lg-card-right">
+              <div class="lg-settings-inline">
+                <img src="/settings.png" class="party-gear-icon" alt="" />
+                <label>
+                  <span>Runder:</span>
+                  <select id="selectRoundsWavelength" class="lg-select">
+                    <option value="5">5 runder</option>
+                    <option value="7" selected>7 runder</option>
+                    <option value="10">10 runder</option>
+                  </select>
+                </label>
+              </div>
+
+              <button type="button" class="party-btn start-game-btn" id="btnStartWavelength"
+                style="background: linear-gradient(135deg, #00b4d8, #7209b7);">
+                Start Wavelength
               </button>
             </div>
           </div>

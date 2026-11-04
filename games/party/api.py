@@ -145,6 +145,10 @@ class PartyRoom:
                 self._tick_ordbombe()
             elif self.current_game == "tegn_og_gjett":
                 self._tick_tegn_og_gjett()
+            elif self.current_game == "imposter":
+                self._tick_imposter()
+            elif self.current_game == "fargekoden":
+                self._tick_fargekoden()
 
             players_list = []
             for p in self.players.values():
@@ -165,6 +169,10 @@ class PartyRoom:
 
             if self.current_game == "tegn_og_gjett":
                 effective_game_state = self._get_tegn_og_gjett_public_state(client_player_id)
+            elif self.current_game == "imposter":
+                effective_game_state = self._get_imposter_public_state(client_player_id)
+            elif self.current_game == "fargekoden":
+                effective_game_state = self._get_fargekoden_public_state(client_player_id)
             elif self.current_game == "sjakk":
                 effective_game_state = dict(self.game_state)
                 try:
@@ -198,6 +206,22 @@ class PartyRoom:
                                 self.bump()
                 except Exception as k_err:
                     print("Error checking korridorer room state in party:", k_err)
+            elif self.current_game == "wavelength":
+                effective_game_state = dict(self.game_state)
+                try:
+                    from games.wavelength.api import _rooms as wl_rooms
+                    with _rooms_lock:
+                        wl_room = wl_rooms.get(self.code)
+                    if wl_room:
+                        with wl_room.lock:
+                            effective_game_state["status"] = wl_room.status
+                            effective_game_state["teamScore"] = wl_room.team_score
+                            if wl_room.returned_to_lounge:
+                                self.current_game = None
+                                self.game_state = {}
+                                self.bump()
+                except Exception as w_err:
+                    print("Error checking wavelength room state in party:", w_err)
             else:
                 effective_game_state = self.game_state
 
@@ -939,7 +963,7 @@ class PartyRoom:
 
     def get_draw_actions_since(self, since_id: int) -> Tuple[List[Dict[str, Any]], int]:
         with self.lock:
-            if self.current_game != "tegn_og_gjett":
+            if self.current_game not in ("tegn_og_gjett", "imposter"):
                 return [], 0
             actions = self.game_state.get("draw_actions", [])
             last_id = self.game_state.get("next_action_id", 1) - 1
@@ -1842,13 +1866,13 @@ class PartyAPI:
                 room.touch()
 
             # If polling and client already has current version, short wait (up to 1.5s)
-            if client_v >= 0 and client_v == room.version and room.current_game not in ("ordbombe", "tegn_og_gjett"):
+            if client_v >= 0 and client_v == room.version and room.current_game not in ("ordbombe", "tegn_og_gjett", "imposter", "fargekoden"):
                 time.sleep(0.4)
 
             state = room.get_public_state(player_id)
             return 200, state
 
-        if rel_path == "/api/tegn-og-gjett/draw-sync":
+        if rel_path in ("/api/tegn-og-gjett/draw-sync", "/api/imposter/draw-sync"):
             code = (query.get("code", [""])[0] or "").strip().upper()
             try:
                 since_id = int(query.get("since", [0])[0] or 0)
@@ -1866,6 +1890,12 @@ class PartyAPI:
                 "ok": True,
                 "actions": actions,
                 "lastActionId": last_action_id,
+            }
+
+        if rel_path == "/api/imposter/random-pair":
+            return 200, {
+                "ok": True,
+                "pair": get_random_imposter_pair(),
             }
 
         if rel_path in ("/api/tegn-og-gjett/random-word", "/api/tegn-og-gjett/words"):
@@ -1928,22 +1958,33 @@ class PartyAPI:
                         "title": "Imposter",
                         "subtitle": "Tegn én strek & avslør bedrageren",
                         "desc": "Alle får samme hemmelige ord unntatt Imposteren. Hvem bløffer?",
-                        "status": "dev",
-                        "badge": "Under utvikling 🚧",
+                        "status": "ready",
+                        "badge": "Klar til å spilles! 🕵️",
                         "players": "3–16 spillere",
                         "icon": "/assets/icons/imposter.svg",
-                        "route": None,
+                        "route": "/imposter/",
                     },
                     {
                         "id": "fargekoden",
                         "title": "Fargekoden (Hues & Cues)",
                         "subtitle": "Fargegjettespill på stort fargespekter",
                         "desc": "Beskriv fargen med 1–2 ord og gjett på det enorme fargekartet!",
-                        "status": "dev",
-                        "badge": "Under utvikling 🚧",
+                        "status": "ready",
+                        "badge": "Klar til å spilles! 🎨",
                         "players": "3–16 spillere",
                         "icon": "/assets/icons/fargekoden.svg",
-                        "route": None,
+                        "route": "/fargekoden/",
+                    },
+                    {
+                        "id": "wavelength",
+                        "title": "Wavelength",
+                        "subtitle": "2-spillers telepatisk duell",
+                        "desc": "Er dere på samme bølgelengde? Les medspillerens tanker og still inn hjulet!",
+                        "status": "ready",
+                        "badge": "Klar til å spilles! 🔮",
+                        "players": "2 spillere",
+                        "icon": "/assets/icons/wavelength.svg",
+                        "route": "/wavelength/",
                     },
                 ]
             }
@@ -2152,8 +2193,10 @@ class PartyAPI:
                     room.start_ordbombe(settings)
                 elif game_id == "tegn_og_gjett":
                     room.start_tegn_og_gjett(settings)
-                elif game_id in ("imposter", "fargekoden"):
-                    return 400, {"ok": False, "error": "Dette spillet er deaktivert"}
+                elif game_id == "imposter":
+                    room.start_imposter(settings)
+                elif game_id == "fargekoden":
+                    room.start_fargekoden(settings)
                 elif game_id == "sjakk":
                     room.current_game = "sjakk"
                     room.game_state = {"settings": settings, "status": "active"}
@@ -2226,6 +2269,43 @@ class PartyAPI:
                             korridorer_rooms[code] = k_room
                     except Exception as err:
                         print("Error creating korridorer party room bridge:", err)
+                    room.bump()
+                elif game_id == "wavelength":
+                    room.current_game = "wavelength"
+                    room.game_state = {"settings": settings, "status": "active"}
+                    try:
+                        from games.wavelength.api import _rooms as wl_rooms, WavelengthRoom
+                        with _rooms_lock:
+                            host_player = room.players.get(room.host_id, {})
+                            rounds = int(settings.get("rounds", 7))
+                            wl_room = WavelengthRoom(
+                                code=code,
+                                host_name=host_player.get("name", "Spiller 1"),
+                                host_avatar=host_player.get("avatar", "charbear"),
+                                rounds=rounds
+                            )
+                            wl_room.host_id = room.host_id
+                            wl_room.players[room.host_id] = {
+                                "id": room.host_id,
+                                "name": host_player.get("name", "Spiller 1"),
+                                "avatar": host_player.get("avatar", "charbear"),
+                                "isHost": True,
+                                "lastSeen": time.time(),
+                            }
+                            other_players = [p for pid, p in room.players.items() if pid != room.host_id]
+                            if other_players:
+                                p2 = other_players[0]
+                                wl_room.players[p2["id"]] = {
+                                    "id": p2["id"],
+                                    "name": p2["name"],
+                                    "avatar": p2["avatar"],
+                                    "isHost": False,
+                                    "lastSeen": time.time(),
+                                }
+                                wl_room.start_game_if_ready()
+                            wl_rooms[code] = wl_room
+                    except Exception as err:
+                        print("Error creating wavelength party room bridge:", err)
                     room.bump()
                 elif game_id is None:
                     # Return to lobby
@@ -2300,8 +2380,29 @@ class PartyAPI:
 
             return room.handle_tegn_og_gjett_action(player_id, body)
 
-        if rel_path in ("/api/imposter/action", "/api/fargekoden/action"):
-            return 400, {"ok": False, "error": "Dette spillet er deaktivert"}
+        if rel_path == "/api/imposter/action":
+            code = str(body.get("roomCode") or "").strip().upper()
+            player_id = str(body.get("playerId") or "").strip()
+
+            with _rooms_lock:
+                room = _rooms.get(code)
+
+            if not room:
+                return 404, {"ok": False, "error": "Rommet finnes ikke"}
+
+            return room.handle_imposter_action(player_id, body)
+
+        if rel_path == "/api/fargekoden/action":
+            code = str(body.get("roomCode") or "").strip().upper()
+            player_id = str(body.get("playerId") or "").strip()
+
+            with _rooms_lock:
+                room = _rooms.get(code)
+
+            if not room:
+                return 404, {"ok": False, "error": "Rommet finnes ikke"}
+
+            return room.handle_fargekoden_action(player_id, body)
 
         if rel_path == "/api/kick":
             code = str(body.get("roomCode") or "").strip().upper()
