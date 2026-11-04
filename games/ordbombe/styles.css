@@ -461,7 +461,7 @@ body {
 
 .btn-start-game {
   width: 100%;
-  background: var(--accent-orange);
+  background: #ffffff;
   color: #0a0e17;
   border: none;
   border-radius: 12px;
@@ -470,12 +470,12 @@ body {
   font-weight: 900;
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
-  box-shadow: 0 4px 18px rgba(255, 159, 28, 0.45);
+  box-shadow: 0 4px 18px rgba(255, 255, 255, 0.22);
 }
 
 .btn-start-game:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(255, 159, 28, 0.6);
+  box-shadow: 0 8px 24px rgba(255, 255, 255, 0.42);
 }
 
 /* 2. GAMEPLAY ARENA */

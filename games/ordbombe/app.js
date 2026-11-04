@@ -274,7 +274,7 @@
   // State
   const state = {
     isPlaying: false,
-    mode: "party", // "party" | "solo"
+    mode: "solo", // "solo" (default) | "party" (multiplayer lounge)
     difficulty: "medium", // "easy" | "medium" | "hard"
     turnDuration: 6, // seconds
     players: [],
@@ -350,14 +350,7 @@
 
     // Setup Card
     setupCard: document.getElementById("setupCard"),
-    tabPartyMode: document.getElementById("tabPartyMode"),
-    tabSoloMode: document.getElementById("tabSoloMode"),
-    partySettingsBlock: document.getElementById("partySettingsBlock"),
     soloSettingsBlock: document.getElementById("soloSettingsBlock"),
-    playerCountSelector: document.getElementById("playerCountSelector"),
-    playersInputsList: document.getElementById("playersInputsList"),
-    selectTimerDifficulty: document.getElementById("selectTimerDifficulty"),
-    selectPromptDifficulty: document.getElementById("selectPromptDifficulty"),
     inputSoloName: document.getElementById("inputSoloName"),
     selectSoloDifficulty: document.getElementById("selectSoloDifficulty"),
     soloBestScore: document.getElementById("soloBestScore"),
@@ -419,58 +412,14 @@
   }
   updateSoundIcon();
 
-  // Setup player name inputs in party settings
-  function renderPlayerNameInputs(count) {
-    el.playersInputsList.innerHTML = "";
-    const defaultNames = ["Mats", "Henrik", "Ingrid", "Sander", "Julie", "Emil", "Thea", "Jonas"];
-    for (let i = 0; i < count; i++) {
-      const chip = document.createElement("div");
-      chip.className = "player-input-chip";
-      const name = defaultNames[i] || `Spiller ${i + 1}`;
-      chip.innerHTML = `
-        <span class="player-chip-num">#${i + 1}</span>
-        <input type="text" class="player-name-input" data-index="${i}" value="${name}" maxlength="18" placeholder="Spiller ${i + 1}" />
-      `;
-      el.playersInputsList.appendChild(chip);
-    }
-  }
-  renderPlayerNameInputs(3);
-
   // Load Solo personal best
   function loadSoloBest() {
     const bestScore = localStorage.getItem("ordbombe_solo_best_score") || "0";
     const bestStreak = localStorage.getItem("ordbombe_solo_best_streak") || "0";
-    el.soloBestScore.textContent = `${Number(bestScore).toLocaleString("no-NO")} poeng`;
-    el.soloBestStreak.textContent = `${bestStreak} ord`;
+    if (el.soloBestScore) el.soloBestScore.textContent = `${Number(bestScore).toLocaleString("no-NO")} poeng`;
+    if (el.soloBestStreak) el.soloBestStreak.textContent = `${bestStreak} ord`;
   }
   loadSoloBest();
-
-  // Mode Tabs Switching
-  el.tabPartyMode.addEventListener("click", () => {
-    state.mode = "party";
-    el.tabPartyMode.classList.add("active");
-    el.tabSoloMode.classList.remove("active");
-    el.partySettingsBlock.classList.remove("hidden");
-    el.soloSettingsBlock.classList.add("hidden");
-  });
-
-  el.tabSoloMode.addEventListener("click", () => {
-    state.mode = "solo";
-    el.tabSoloMode.classList.add("active");
-    el.tabPartyMode.classList.remove("active");
-    el.soloSettingsBlock.classList.remove("hidden");
-    el.partySettingsBlock.classList.add("hidden");
-  });
-
-  // Player count button clicks
-  el.playerCountSelector.addEventListener("click", (e) => {
-    const btn = e.target.closest(".count-btn");
-    if (!btn) return;
-    el.playerCountSelector.querySelectorAll(".count-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    const count = parseInt(btn.dataset.count, 10);
-    renderPlayerNameInputs(count);
-  });
 
   // Fetch or get prompt
   async function fetchNewPrompt() {
@@ -760,49 +709,28 @@
   async function startGame() {
     sfx.init();
 
-    // Mode-specific initialization
-    if (state.mode === "party") {
-      state.turnDuration = parseFloat(el.selectTimerDifficulty.value) || 6;
-      state.difficulty = el.selectPromptDifficulty.value || "medium";
+    // Initialize game for Solo mode
+    state.soloName = (el.inputSoloName && el.inputSoloName.value.trim()) || "Spiller 1";
+    state.difficulty = (el.selectSoloDifficulty && el.selectSoloDifficulty.value) || "medium";
+    state.turnDuration = 10;
+    state.soloScore = 0;
+    state.soloStreak = 0;
+    state.soloMaxStreak = 0;
+    state.soloWordsCount = 0;
+    state.soloLongestWord = "";
 
-      const inputs = el.playersInputsList.querySelectorAll(".player-name-input");
-      state.players = [];
-      inputs.forEach((inp, idx) => {
-        const name = inp.value.trim() || `Spiller ${idx + 1}`;
-        state.players.push({
-          name: name,
-          lives: 3,
-          eliminated: false,
-          wordsCount: 0,
-          avatar: DEFAULT_AVATARS[idx % DEFAULT_AVATARS.length],
-        });
-      });
-      state.activePlayerIndex = 0;
-      el.soloScoreDisplay.classList.add("hidden");
-    } else {
-      // Solo mode
-      state.soloName = el.inputSoloName.value.trim() || "Spiller 1";
-      state.difficulty = el.selectSoloDifficulty.value || "medium";
-      state.turnDuration = 10;
-      state.soloScore = 0;
-      state.soloStreak = 0;
-      state.soloMaxStreak = 0;
-      state.soloWordsCount = 0;
-      state.soloLongestWord = "";
+    state.players = [{
+      name: state.soloName,
+      lives: 3,
+      eliminated: false,
+      wordsCount: 0,
+      avatar: getUserDefaultAvatar(),
+    }];
+    state.activePlayerIndex = 0;
 
-      state.players = [{
-        name: state.soloName,
-        lives: 3,
-        eliminated: false,
-        wordsCount: 0,
-        avatar: getUserDefaultAvatar(),
-      }];
-      state.activePlayerIndex = 0;
-
-      el.soloScoreDisplay.classList.remove("hidden");
-      el.arenaScoreNum.textContent = "0";
-      el.arenaStreakBadge.textContent = "x1";
-    }
+    el.soloScoreDisplay.classList.remove("hidden");
+    el.arenaScoreNum.textContent = "0";
+    el.arenaStreakBadge.textContent = "x1";
 
     state.usedWords.clear();
     el.usedWordsCount.textContent = "0";

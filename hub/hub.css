@@ -465,7 +465,7 @@ body {
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45), 0 0 28px rgba(251, 133, 0, 0.28);
 }
 .game-card.card-orange .card-btn {
-  color: #fb8500;
+  color: #ffffff;
 }
 
 .game-card.card-purple {
@@ -802,7 +802,7 @@ body {
   font-family: var(--font-pixel);
   font-size: 0.9rem;
   font-weight: 800;
-  color: var(--accent);
+  color: #ffffff;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;

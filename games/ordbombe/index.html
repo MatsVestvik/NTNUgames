@@ -68,61 +68,8 @@
           <a href="/party/" class="lobby-cta-btn">Åpne Party Lounge →</a>
         </div>
 
-        <!-- Mode selector tabs -->
-        <div class="mode-tabs">
-          <button type="button" class="mode-tab-btn active" id="tabPartyMode">
-            <img src="/assets/icons/party.png" class="tab-icon-inline" alt="" /> Partymodus <span class="tab-sub">(Én enhet)</span>
-          </button>
-          <button type="button" class="mode-tab-btn" id="tabSoloMode">
-            Solomodus <span class="tab-sub">(Overlev mot klokka)</span>
-          </button>
-        </div>
-
-        <!-- PARTY MODE SETTINGS -->
-        <div class="mode-settings-block" id="partySettingsBlock">
-          <div class="setting-group">
-            <label class="setting-label">Antall spillere:</label>
-            <div class="player-count-buttons" id="playerCountSelector">
-              <button type="button" class="count-btn" data-count="2">2</button>
-              <button type="button" class="count-btn active" data-count="3">3</button>
-              <button type="button" class="count-btn" data-count="4">4</button>
-              <button type="button" class="count-btn" data-count="5">5</button>
-              <button type="button" class="count-btn" data-count="6">6</button>
-              <button type="button" class="count-btn" data-count="7">7</button>
-              <button type="button" class="count-btn" data-count="8">8</button>
-            </div>
-          </div>
-
-          <div class="setting-group">
-            <label class="setting-label">Spillernavn (send enheten videre på tur):</label>
-            <div class="players-inputs-list" id="playersInputsList">
-              <!-- Dynamically populated name inputs -->
-            </div>
-          </div>
-
-          <div class="setting-row">
-            <div class="setting-group">
-              <label class="setting-label" for="selectTimerDifficulty">Tid per tur:</label>
-              <select class="custom-select" id="selectTimerDifficulty">
-                <option value="12">Avslappet (12 sekunder)</option>
-                <option value="9">Rolig (9 sekunder)</option>
-                <option value="6" selected>Standard (6 sekunder)</option>
-              </select>
-            </div>
-
-            <div class="setting-group">
-              <label class="setting-label" for="selectPromptDifficulty">Vanskelighetsgrad på bokstaver:</label>
-              <select class="custom-select" id="selectPromptDifficulty">
-                <option value="easy">Lett (2-bokstavs stavelser, f.eks. ST, BIL)</option>
-                <option value="medium" selected>Middels (3-bokstavs ordstammer, f.eks. TAK, FIS)</option>
-                <option value="hard">Kaos (Utfordrende klynger, f.eks. KNU, FRØ)</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
         <!-- SOLO MODE SETTINGS -->
-        <div class="mode-settings-block hidden" id="soloSettingsBlock">
+        <div class="mode-settings-block" id="soloSettingsBlock">
           <div class="solo-intro-box">
             <div class="solo-stat-pill">
               <span class="solo-stat-label">Personlig rekord:</span>
@@ -330,9 +277,8 @@
               kortere og bomben tikker raskere.
             </li>
             <li>
-              <strong>4. Partymodus (Send bomben videre):</strong> Så snart du har tastet et gyldig ord, tilbakestilles
-              lunta og bomben sendes til neste spiller med en ny bokstavkombinasjon! Den som har bomben når den smeller,
-              mister 1 hjerte ❤️. Siste spiller med liv igjen vinner!
+              <strong>4. Party Lounge (Hver sin mobil):</strong> Vil dere spille mot hverandre med venner? Opprett et
+              felles rom i Party Lounge – da kobler alle til med mobilen sin og bomben sendes live over nettet!
             </li>
             <li>
               <strong>5. Solomodus (Overlev mot klokka):</strong> Hvor mange ord klarer du på rad før du mister alle 3
