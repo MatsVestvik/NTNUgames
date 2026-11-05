@@ -477,6 +477,7 @@
     maxPlayers: 16,
 
     roomStatus: "lobby", // "lobby" | "countdown" | "racing" | "finished"
+    isGaragePhase: false,
     players: [],
 
     myCar: {
@@ -496,6 +497,7 @@
       lap: 1,
       checkpoint: 0,
       finished: false,
+      isReady: false,
       finishTime: 0,
       bestLap: 0,
       lapStartTime: 0,
@@ -669,6 +671,32 @@
     podiumDesc: document.getElementById("podiumDesc"),
     podiumStandings: document.getElementById("podiumStandings"),
     btnPodiumReturnLobby: document.getElementById("btnPodiumReturnLobby"),
+
+    // In-game Garage Modal (Single / Online)
+    inGameGarage: document.getElementById("inGameGarage"),
+    inGameRoomCodePill: document.getElementById("inGameRoomCodePill"),
+    inGameRoomCodeText: document.getElementById("inGameRoomCodeText"),
+    inGameCarPreviewCanvas: document.getElementById("inGameCarPreviewCanvas"),
+    inGameBodyOptions: document.getElementById("inGameBodyOptions"),
+    inGameWheelOptions: document.getElementById("inGameWheelOptions"),
+    inGameColorName: document.getElementById("inGameColorName"),
+    inGameColorSwatches: document.getElementById("inGameColorSwatches"),
+    inGameColorPicker: document.getElementById("inGameColorPicker"),
+    btnInGameReady: document.getElementById("btnInGameReady"),
+
+    // In-game Splitscreen Garage Modal
+    inGameSplitGarage: document.getElementById("inGameSplitGarage"),
+    splitP1GarageName: document.getElementById("splitP1GarageName"),
+    splitP2GarageName: document.getElementById("splitP2GarageName"),
+    btnSplitP1Ready: document.getElementById("btnSplitP1Ready"),
+    btnSplitP2Ready: document.getElementById("btnSplitP2Ready"),
+
+    // In-game Standby Banner
+    inGameStandbyBanner: document.getElementById("inGameStandbyBanner"),
+    standbyWaitingText: document.getElementById("standbyWaitingText"),
+    standbyReadyCount: document.getElementById("standbyReadyCount"),
+    btnReopenGarage: document.getElementById("btnReopenGarage"),
+    btnHostForceStart: document.getElementById("btnHostForceStart"),
   };
 
   // =========================================================================
@@ -1183,6 +1211,7 @@
   let splitP1Customizer = null;
   let splitP2Customizer = null;
   let loungeCustomizer = null;
+  let inGameCustomizer = null;
 
   function setupCustomizerUI(config) {
     const {
@@ -1336,9 +1365,18 @@
         color: state.splitP1.color || "#ef4444",
       }),
       setValues: (v) => {
-        if (v.bodyId !== undefined) state.splitP1.bodyId = v.bodyId;
-        if (v.wheelId !== undefined) state.splitP1.wheelId = v.wheelId;
-        if (v.color !== undefined) state.splitP1.color = v.color;
+        if (v.bodyId !== undefined) {
+          state.splitP1.bodyId = v.bodyId;
+          if (state.car1) state.car1.bodyId = v.bodyId;
+        }
+        if (v.wheelId !== undefined) {
+          state.splitP1.wheelId = v.wheelId;
+          if (state.car1) state.car1.wheelId = v.wheelId;
+        }
+        if (v.color !== undefined) {
+          state.splitP1.color = v.color;
+          if (state.car1) state.car1.color = v.color;
+        }
       },
     });
 
@@ -1357,9 +1395,56 @@
         color: state.splitP2.color || "#06b6d4",
       }),
       setValues: (v) => {
-        if (v.bodyId !== undefined) state.splitP2.bodyId = v.bodyId;
-        if (v.wheelId !== undefined) state.splitP2.wheelId = v.wheelId;
-        if (v.color !== undefined) state.splitP2.color = v.color;
+        if (v.bodyId !== undefined) {
+          state.splitP2.bodyId = v.bodyId;
+          if (state.car2) state.car2.bodyId = v.bodyId;
+        }
+        if (v.wheelId !== undefined) {
+          state.splitP2.wheelId = v.wheelId;
+          if (state.car2) state.car2.wheelId = v.wheelId;
+        }
+        if (v.color !== undefined) {
+          state.splitP2.color = v.color;
+          if (state.car2) state.car2.color = v.color;
+        }
+      },
+    });
+
+    // In-game Garage Customizer (Singleplayer & Online)
+    inGameCustomizer = setupCustomizerUI({
+      bodyContainer: el.inGameBodyOptions,
+      wheelContainer: el.inGameWheelOptions,
+      swatchesContainer: el.inGameColorSwatches,
+      colorPicker: el.inGameColorPicker,
+      colorNameEl: el.inGameColorName,
+      previewCanvas: el.inGameCarPreviewCanvas,
+      getValues: () => ({
+        bodyId: state.myCar.bodyId || state.driverBodyId || 1,
+        wheelId: state.myCar.wheelId || state.driverWheelId || 1,
+        color: state.myCar.color || state.driverColor || "#ef4444",
+      }),
+      setValues: (v) => {
+        if (v.bodyId !== undefined) {
+          state.driverBodyId = v.bodyId;
+          state.myCar.bodyId = v.bodyId;
+          localStorage.setItem("ts_driver_body_id", v.bodyId);
+        }
+        if (v.wheelId !== undefined) {
+          state.driverWheelId = v.wheelId;
+          state.myCar.wheelId = v.wheelId;
+          localStorage.setItem("ts_driver_wheel_id", v.wheelId);
+        }
+        if (v.color !== undefined) {
+          state.driverColor = v.color;
+          state.myCar.color = v.color;
+          localStorage.setItem("ts_driver_color", v.color);
+        }
+        if (state.mode === "online") {
+          syncCustomizationToServer();
+        }
+      },
+      onChanged: () => {
+        renderProfileCarPreview();
       },
     });
 
@@ -1398,6 +1483,7 @@
   }
 
   function refreshAllCustomizers() {
+    if (inGameCustomizer) inGameCustomizer.refresh();
     if (soloCustomizer) soloCustomizer.refresh();
     if (splitP1Customizer) splitP1Customizer.refresh();
     if (splitP2Customizer) splitP2Customizer.refresh();
@@ -2367,12 +2453,69 @@
     const wheelId = car.wheelId || 1;
     drawCarOnCanvas(ctx, car.x, car.y, car.angle, color, 1.4, steer, isBraking, bodyId, wheelId);
 
-    // Floating Name Tag (for opponents)
-    if (!isLocal) {
+    const isInPreRacePhase = (state.roomStatus === "lobby" || state.isGaragePhase || state.roomStatus === "countdown");
+
+    if (isInPreRacePhase) {
+      // In-game pre-race garage overhead tags:
+      // Shows "✓ KLAR" over ready cars, and "🛠️ TILPASSER..." over cars still in the garage!
+      ctx.save();
+      const isReady = Boolean(isLocal ? (state.mode === "splitscreen" ? car.isReady : state.myCar.isReady) : car.isReady);
+      const badgeText = isReady ? "✓ KLAR" : "🛠️ TILPASSER...";
+      const badgeBg = isReady ? "rgba(16, 185, 129, 0.94)" : "rgba(249, 115, 22, 0.94)";
+      const badgeBorder = isReady ? "#34d399" : "#fb923c";
+      const displayName = name || (isLocal ? (state.driverName || "Deg") : "Sjåfør");
+
+      ctx.font = "bold 11px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      const nameW = ctx.measureText(displayName).width;
+      ctx.font = "bold 10px sans-serif";
+      const badgeW = ctx.measureText(badgeText).width;
+      const boxW = Math.max(nameW, badgeW) + 20;
+      const boxH = 34;
+      const boxX = car.x - boxW / 2;
+      const boxY = car.y - 54;
+
+      // Dark card container
+      ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
+      ctx.beginPath();
+      ctx.roundRect(boxX, boxY, boxW, boxH, 8);
+      ctx.fill();
+      ctx.strokeStyle = color || "#38bdf8";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Driver Name
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 11px sans-serif";
+      ctx.fillText(displayName, car.x, boxY + 10);
+
+      // Status Badge Pill
+      const pillW = badgeW + 12;
+      const pillH = 15;
+      const pillX = car.x - pillW / 2;
+      const pillY = boxY + 19;
+      ctx.fillStyle = badgeBg;
+      ctx.beginPath();
+      ctx.roundRect(pillX, pillY, pillW, pillH, 9999);
+      ctx.fill();
+      ctx.strokeStyle = badgeBorder;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 9px sans-serif";
+      ctx.fillText(badgeText, car.x, pillY + 8);
+
+      ctx.restore();
+    } else if (!isLocal) {
+      // Normal In-Race Opponent Floating Name Tag
       ctx.save();
       ctx.fillStyle = "rgba(11, 15, 25, 0.88)";
       ctx.font = "bold 12px sans-serif";
       ctx.textAlign = "center";
+      ctx.textBaseline = "alphabetic";
       const txt = name || "Sjåfør";
       const w = ctx.measureText(txt).width + 14;
       ctx.beginPath();
@@ -2633,26 +2776,35 @@
       const track = getTrack(state.trackId, state.trackSeed);
 
       if (state.mode === "splitscreen" && state.car1 && state.car2) {
-        // Player 1 inputs (WASD for LEFT screen)
-        if (state.car1.finished) {
+        if (state.isGaragePhase || state.roomStatus !== "racing") {
           state.car1.accelInput = 0;
-          state.car1.brakeInput = 0.3;
+          state.car1.brakeInput = 0.5;
           state.car1.steerInput = 0;
-        } else {
-          state.car1.accelInput = state.keysP1.up ? 1 : 0;
-          state.car1.brakeInput = state.keysP1.down ? 1 : 0;
-          state.car1.steerInput = (state.keysP1.right ? 1 : 0) - (state.keysP1.left ? 1 : 0);
-        }
-
-        // Player 2 inputs (Arrows for RIGHT screen)
-        if (state.car2.finished) {
           state.car2.accelInput = 0;
-          state.car2.brakeInput = 0.3;
+          state.car2.brakeInput = 0.5;
           state.car2.steerInput = 0;
         } else {
-          state.car2.accelInput = state.keysP2.up ? 1 : 0;
-          state.car2.brakeInput = state.keysP2.down ? 1 : 0;
-          state.car2.steerInput = (state.keysP2.right ? 1 : 0) - (state.keysP2.left ? 1 : 0);
+          // Player 1 inputs (WASD for LEFT screen)
+          if (state.car1.finished) {
+            state.car1.accelInput = 0;
+            state.car1.brakeInput = 0.3;
+            state.car1.steerInput = 0;
+          } else {
+            state.car1.accelInput = state.keysP1.up ? 1 : 0;
+            state.car1.brakeInput = state.keysP1.down ? 1 : 0;
+            state.car1.steerInput = (state.keysP1.right ? 1 : 0) - (state.keysP1.left ? 1 : 0);
+          }
+
+          // Player 2 inputs (Arrows for RIGHT screen)
+          if (state.car2.finished) {
+            state.car2.accelInput = 0;
+            state.car2.brakeInput = 0.3;
+            state.car2.steerInput = 0;
+          } else {
+            state.car2.accelInput = state.keysP2.up ? 1 : 0;
+            state.car2.brakeInput = state.keysP2.down ? 1 : 0;
+            state.car2.steerInput = (state.keysP2.right ? 1 : 0) - (state.keysP2.left ? 1 : 0);
+          }
         }
 
         updateCarPhysics(state.car1, track, dt);
@@ -2770,7 +2922,7 @@
           state.myCar.accelInput = 0;
           state.myCar.brakeInput = 0.25;
           state.myCar.steerInput = 0;
-        } else if (state.mode === "solo" || state.roomStatus === "racing") {
+        } else if (!state.isGaragePhase && state.roomStatus === "racing") {
           state.myCar.accelInput = state.keys.up ? 1 : 0;
           state.myCar.brakeInput = state.keys.down ? 1 : 0;
           state.myCar.steerInput = (state.keys.right ? 1 : 0) - (state.keys.left ? 1 : 0);
@@ -3027,8 +3179,100 @@
   }
 
   // =========================================================================
-  // ROOM LOBBY POLLING
+  // ROOM LOBBY POLLING & PRE-RACE STANDBY
   // =========================================================================
+
+  let countdownTimer = null;
+  function runCountdown(callback) {
+    if (countdownTimer) clearInterval(countdownTimer);
+    state.roomStatus = "countdown";
+    state.isGaragePhase = false;
+
+    if (el.inGameGarage) el.inGameGarage.classList.add("hidden");
+    if (el.inGameSplitGarage) el.inGameSplitGarage.classList.add("hidden");
+    if (el.inGameStandbyBanner) el.inGameStandbyBanner.classList.add("hidden");
+
+    if (el.countdownOverlay) el.countdownOverlay.classList.remove("hidden");
+    let count = 3;
+    if (el.countdownText) el.countdownText.textContent = "3";
+    playTone(440, 0.15, "triangle", 0.3);
+
+    countdownTimer = setInterval(() => {
+      count--;
+      if (count > 0) {
+        if (el.countdownText) el.countdownText.textContent = String(count);
+        playTone(440, 0.15, "triangle", 0.3);
+      } else if (count === 0) {
+        if (el.countdownText) el.countdownText.textContent = "KJØR! 🏁";
+        playTone(880, 0.45, "triangle", 0.4);
+      } else {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+        if (el.countdownOverlay) el.countdownOverlay.classList.add("hidden");
+        state.roomStatus = "racing";
+        if (callback) callback();
+      }
+    }, 900);
+  }
+
+  function updateInGameStandbyUI(players) {
+    if (!el.inGameStandbyBanner) return;
+    const active = (players || []).filter(p => !p.left && !p.forfeit);
+    const readyCount = active.filter(p => p.isReady).length;
+    const totalCount = active.length;
+
+    if (el.standbyReadyCount) {
+      el.standbyReadyCount.textContent = `${readyCount}/${totalCount} klare`;
+    }
+    if (el.standbyWaitingText) {
+      if (readyCount === totalCount && totalCount > 0) {
+        el.standbyWaitingText.textContent = "Alle er klare! Gjør deg klar til start...";
+      } else {
+        const notReady = totalCount - readyCount;
+        el.standbyWaitingText.textContent = `Venter på at ${notReady} sjåfør${notReady > 1 ? 'er' : ''} velger bil...`;
+      }
+    }
+    if (el.btnHostForceStart) {
+      if (state.isHost && totalCount >= 1) {
+        el.btnHostForceStart.classList.remove("hidden");
+      } else {
+        el.btnHostForceStart.classList.add("hidden");
+      }
+    }
+  }
+
+  function handleRaceCountdownStart(data) {
+    if (state.roomStatus === "racing") return;
+    state.roomStatus = data.status || "countdown";
+    state.isGaragePhase = false;
+
+    if (el.inGameGarage) el.inGameGarage.classList.add("hidden");
+    if (el.inGameSplitGarage) el.inGameSplitGarage.classList.add("hidden");
+    if (el.inGameStandbyBanner) el.inGameStandbyBanner.classList.add("hidden");
+
+    if (state.roomStatus === "countdown") {
+      if (el.countdownOverlay) el.countdownOverlay.classList.remove("hidden");
+      const rem = Math.ceil(data.countdownRemaining || 3);
+      if (el.countdownText) el.countdownText.textContent = rem > 0 ? String(rem) : "KJØR!";
+      playTone(440, 0.15, "triangle", 0.3);
+
+      const waitMs = Math.max(800, ((data.countdownRemaining || 3) * 1000) + 150);
+      setTimeout(() => {
+        if (state.roomStatus === "countdown") {
+          state.roomStatus = "racing";
+          if (el.countdownText) el.countdownText.textContent = "KJØR! 🏁";
+          playTone(880, 0.45, "triangle", 0.4);
+          setTimeout(() => {
+            if (el.countdownOverlay) el.countdownOverlay.classList.add("hidden");
+          }, 750);
+        }
+      }, waitMs);
+    } else {
+      if (el.countdownOverlay) el.countdownOverlay.classList.add("hidden");
+    }
+
+    startRoomSync();
+  }
 
   async function pollLobbyState() {
     if (!state.roomCode) return;
@@ -3048,25 +3292,80 @@
         if (me) {
           if (me.color && me.color.toLowerCase() !== (state.driverColor || "").toLowerCase()) {
             state.driverColor = me.color;
+            state.myCar.color = me.color;
             localStorage.setItem("ts_driver_color", me.color);
           }
           if (me.bodyId && me.bodyId !== state.driverBodyId) {
             state.driverBodyId = me.bodyId;
+            state.myCar.bodyId = me.bodyId;
             localStorage.setItem("ts_driver_body_id", me.bodyId);
           }
           if (me.wheelId && me.wheelId !== state.driverWheelId) {
             state.driverWheelId = me.wheelId;
+            state.myCar.wheelId = me.wheelId;
             localStorage.setItem("ts_driver_wheel_id", me.wheelId);
           }
+          state.myCar.isReady = Boolean(me.isReady);
         }
 
+        // Sync opponent cars on startline
+        const track = getTrack(state.trackId, state.trackSeed);
+        const gridSlots = getStartGridSlots(track, 16);
+        (data.players || []).forEach(p => {
+          if (p.id !== state.playerId && !p.left && !p.forfeit) {
+            const pSlot = gridSlots[(p.slot || 0) % 16];
+            const pColor = p.color || (p.avatar ? extractCharacterColor(p.avatar) : "#ef4444");
+            if (!state.opponentCars[p.id]) {
+              state.opponentCars[p.id] = {
+                id: p.id,
+                name: p.name,
+                color: pColor,
+                bodyId: p.bodyId || 1,
+                wheelId: p.wheelId || 1,
+                isReady: Boolean(p.isReady),
+                x: (p.x !== 0 || p.y !== 0) ? p.x : pSlot.x,
+                y: (p.x !== 0 || p.y !== 0) ? p.y : pSlot.y,
+                angle: (p.x !== 0 || p.y !== 0) ? p.angle : pSlot.angle,
+                targetX: (p.x !== 0 || p.y !== 0) ? p.x : pSlot.x,
+                targetY: (p.x !== 0 || p.y !== 0) ? p.y : pSlot.y,
+                targetAngle: (p.x !== 0 || p.y !== 0) ? p.angle : pSlot.angle,
+                speed: p.speed || 0,
+                isDrifting: Boolean(p.isDrifting),
+                lap: p.lap || 1,
+                checkpoint: p.checkpoint || 0,
+                finished: Boolean(p.finished),
+                finishTime: p.finishTime || 0,
+              };
+            } else {
+              const opp = state.opponentCars[p.id];
+              opp.name = p.name;
+              opp.color = pColor;
+              opp.bodyId = p.bodyId || 1;
+              opp.wheelId = p.wheelId || 1;
+              opp.isReady = Boolean(p.isReady);
+              if (state.roomStatus === "lobby") {
+                opp.x = pSlot.x;
+                opp.y = pSlot.y;
+                opp.angle = pSlot.angle;
+                opp.targetX = pSlot.x;
+                opp.targetY = pSlot.y;
+                opp.targetAngle = pSlot.angle;
+              } else {
+                opp.targetX = p.x;
+                opp.targetY = p.y;
+                opp.targetAngle = p.angle;
+              }
+            }
+          }
+        });
+
+        updateInGameStandbyUI(data.players || []);
         renderLoungeRacers(data.players);
         renderLoungeCarPreview();
         updateLoungeSettingsUI();
 
         if (data.status === "countdown" || data.status === "racing") {
-          stopLobbyPolling();
-          launchOnlineRace(data);
+          handleRaceCountdownStart(data);
         }
       }
     } catch (e) {}
@@ -3153,14 +3452,14 @@
 
   function launchSplitscreenRace() {
     state.mode = "splitscreen";
-    state.roomStatus = "racing";
+    state.roomStatus = "lobby";
+    state.isGaragePhase = true;
     state.skidmarks = [];
     state.particles = [];
     state.splitFinishTriggered = false;
     state.keysP1 = { up: false, down: false, left: false, right: false };
     state.keysP2 = { up: false, down: false, left: false, right: false };
 
-    // Explicitly synchronize track and laps from Splitscreen UI
     if (el.selectSplitTrack) {
       state.trackId = el.selectSplitTrack.value || state.trackId || "rally_random";
     }
@@ -3172,27 +3471,49 @@
     }
     state.laps = state.splitLaps || 3;
 
+    const p1Name = (el.inputSplitP1Name && el.inputSplitP1Name.value.trim()) || "Spiller 1";
+    const p2Name = (el.inputSplitP2Name && el.inputSplitP2Name.value.trim()) || "Spiller 2";
+    state.splitP1.name = p1Name;
+    state.splitP2.name = p2Name;
+    if (el.splitP1GarageName) el.splitP1GarageName.textContent = p1Name;
+    if (el.splitP2GarageName) el.splitP2GarageName.textContent = p2Name;
+
     const track = getTrack(state.trackId, state.trackSeed);
     state.car1 = createCarState(0, track, state.splitP1.bodyId || 1, state.splitP1.wheelId || 1, state.splitP1.color || "#ef4444");
     state.car2 = createCarState(1, track, state.splitP2.bodyId || 2, state.splitP2.wheelId || 2, state.splitP2.color || "#06b6d4");
+    state.car1.isReady = false;
+    state.car2.isReady = false;
     state.cam1 = { x: state.car1.x, y: state.car1.y, zoom: 1.15 };
     state.cam2 = { x: state.car2.x, y: state.car2.y, zoom: 1.15 };
+
+    if (el.btnSplitP1Ready) {
+      el.btnSplitP1Ready.textContent = "Spiller 1 Klar! 👍";
+      el.btnSplitP1Ready.classList.remove("ready-active");
+    }
+    if (el.btnSplitP2Ready) {
+      el.btnSplitP2Ready.textContent = "Spiller 2 Klar! 👍";
+      el.btnSplitP2Ready.classList.remove("ready-active");
+    }
 
     showView("game");
     resizeCanvas();
     if (el.raceCanvas) el.raceCanvas.focus();
 
-    el.countdownOverlay.classList.remove("hidden");
-    el.countdownText.textContent = "KJØR! 🏁";
-    playTone(880, 0.4, "triangle", 0.3);
-    setTimeout(() => el.countdownOverlay.classList.add("hidden"), 700);
+    if (el.inGameSplitGarage) el.inGameSplitGarage.classList.remove("hidden");
+    if (el.inGameGarage) el.inGameGarage.classList.add("hidden");
+    if (el.inGameStandbyBanner) el.inGameStandbyBanner.classList.add("hidden");
+    if (el.countdownOverlay) el.countdownOverlay.classList.add("hidden");
+
+    if (splitP1Customizer) splitP1Customizer.refresh();
+    if (splitP2Customizer) splitP2Customizer.refresh();
 
     startSimulation();
   }
 
   function launchOnlineRace(data) {
     state.mode = "online";
-    state.roomStatus = data.status || "countdown";
+    state.roomStatus = data.status || "lobby";
+    state.isGaragePhase = (state.roomStatus === "lobby");
     state.opponentCars = {};
     state.skidmarks = [];
     state.particles = [];
@@ -3224,6 +3545,7 @@
       if (myPlayer.name) {
         state.driverName = myPlayer.name;
       }
+      state.myCar.isReady = Boolean(myPlayer.isReady);
       localStorage.setItem("ts_driver_color", state.driverColor);
       localStorage.setItem("ts_driver_body_id", state.driverBodyId);
       localStorage.setItem("ts_driver_wheel_id", state.driverWheelId);
@@ -3235,29 +3557,62 @@
 
     resetCarToSlot(state.myCar, track, mySlot);
 
+    // Place opponents at starting grid slots
+    const gridSlots = getStartGridSlots(track, 16);
+    (data.players || []).forEach(p => {
+      if (p.id !== state.playerId && !p.left && !p.forfeit) {
+        const pSlot = gridSlots[(p.slot || 0) % 16];
+        const pColor = p.color || (p.avatar ? extractCharacterColor(p.avatar) : "#ef4444");
+        state.opponentCars[p.id] = {
+          id: p.id,
+          name: p.name,
+          color: pColor,
+          bodyId: p.bodyId || 1,
+          wheelId: p.wheelId || 1,
+          isReady: Boolean(p.isReady),
+          x: (p.x !== 0 || p.y !== 0) ? p.x : pSlot.x,
+          y: (p.x !== 0 || p.y !== 0) ? p.y : pSlot.y,
+          angle: (p.x !== 0 || p.y !== 0) ? p.angle : pSlot.angle,
+          targetX: (p.x !== 0 || p.y !== 0) ? p.x : pSlot.x,
+          targetY: (p.x !== 0 || p.y !== 0) ? p.y : pSlot.y,
+          targetAngle: (p.x !== 0 || p.y !== 0) ? p.angle : pSlot.angle,
+          speed: p.speed || 0,
+          isDrifting: Boolean(p.isDrifting),
+          lap: p.lap || 1,
+          checkpoint: p.checkpoint || 0,
+          finished: Boolean(p.finished),
+          finishTime: p.finishTime || 0,
+        };
+      }
+    });
+
     showView("game");
     resizeCanvas();
     if (el.raceCanvas) el.raceCanvas.focus();
 
-    if (state.roomStatus === "countdown") {
-      if (el.countdownOverlay) el.countdownOverlay.classList.remove("hidden");
-      const rem = Math.ceil(data.countdownRemaining || 3);
-      if (el.countdownText) el.countdownText.textContent = rem > 0 ? String(rem) : "KJØR!";
+    if (state.roomStatus === "lobby") {
+      if (state.myCar.isReady) {
+        if (el.inGameGarage) el.inGameGarage.classList.add("hidden");
+        if (el.inGameStandbyBanner) el.inGameStandbyBanner.classList.remove("hidden");
+      } else {
+        if (el.inGameGarage) el.inGameGarage.classList.remove("hidden");
+        if (el.inGameStandbyBanner) el.inGameStandbyBanner.classList.add("hidden");
+      }
+      if (el.inGameSplitGarage) el.inGameSplitGarage.classList.add("hidden");
 
-      // Fallback timer ensures car is unlocked even on network hiccup
-      const waitMs = Math.max(1000, ((data.countdownRemaining || 3) * 1000) + 200);
-      setTimeout(() => {
-        if (state.roomStatus === "countdown") {
-          state.roomStatus = "racing";
-          if (el.countdownText) el.countdownText.textContent = "KJØR! 🏁";
-          playTone(880, 0.4, "triangle", 0.3);
-          setTimeout(() => {
-            if (el.countdownOverlay) el.countdownOverlay.classList.add("hidden");
-          }, 700);
-        }
-      }, waitMs);
-    } else {
-      if (el.countdownOverlay) el.countdownOverlay.classList.add("hidden");
+      if (state.roomCode && el.inGameRoomCodePill && el.inGameRoomCodeText) {
+        el.inGameRoomCodePill.classList.remove("hidden");
+        el.inGameRoomCodeText.textContent = state.roomCode;
+      }
+
+      updateInGameStandbyUI(data.players || []);
+      if (inGameCustomizer) inGameCustomizer.refresh();
+      startLobbyPolling();
+    } else if (state.roomStatus === "countdown" || state.roomStatus === "racing") {
+      if (el.inGameGarage) el.inGameGarage.classList.add("hidden");
+      if (el.inGameSplitGarage) el.inGameSplitGarage.classList.add("hidden");
+      if (el.inGameStandbyBanner) el.inGameStandbyBanner.classList.add("hidden");
+      handleServerStateUpdate(data);
     }
 
     startSimulation();
@@ -3266,7 +3621,8 @@
 
   function launchSoloTimeTrial() {
     state.mode = "solo";
-    state.roomStatus = "racing";
+    state.roomStatus = "lobby";
+    state.isGaragePhase = true;
     state.opponentCars = {};
     state.skidmarks = [];
     state.particles = [];
@@ -3288,9 +3644,17 @@
       }
     }
 
-    state.myCar.bodyId = state.soloBodyId || state.driverBodyId || 1;
-    state.myCar.wheelId = state.soloWheelId || state.driverWheelId || 1;
-    state.myCar.color = state.soloColor || state.driverColor || "#ef4444";
+    state.myCar.isReady = false;
+    state.myCar.finished = false;
+    state.myCar.finishTime = 0;
+    state.myCar.lap = 1;
+    state.myCar.checkpoint = 0;
+    state.myCar.speed = 0;
+    state.myCar.vx = 0;
+    state.myCar.vy = 0;
+    state.myCar.bodyId = state.driverBodyId || 1;
+    state.myCar.wheelId = state.driverWheelId || 1;
+    state.myCar.color = state.driverColor || "#ef4444";
 
     const track = getTrack(state.trackId, state.trackSeed);
     resetCarToSlot(state.myCar, track, 0);
@@ -3299,10 +3663,13 @@
     resizeCanvas();
     if (el.raceCanvas) el.raceCanvas.focus();
 
-    el.countdownOverlay.classList.remove("hidden");
-    el.countdownText.textContent = "KJØR! 🏁";
-    playTone(880, 0.4, "triangle", 0.3);
-    setTimeout(() => el.countdownOverlay.classList.add("hidden"), 700);
+    if (el.inGameGarage) el.inGameGarage.classList.remove("hidden");
+    if (el.inGameSplitGarage) el.inGameSplitGarage.classList.add("hidden");
+    if (el.inGameStandbyBanner) el.inGameStandbyBanner.classList.add("hidden");
+    if (el.inGameRoomCodePill) el.inGameRoomCodePill.classList.add("hidden");
+    if (el.countdownOverlay) el.countdownOverlay.classList.add("hidden");
+
+    if (inGameCustomizer) inGameCustomizer.refresh();
 
     startSimulation();
   }
@@ -3662,10 +4029,22 @@
               localStorage.setItem("ts_driver_color", data.color);
             }
             if (el.displayRoomCode) el.displayRoomCode.textContent = data.roomCode;
-            showView("room");
-            updateLoungeSettingsUI();
-            refreshLoungeCustomizer();
-            startLobbyPolling();
+            launchOnlineRace({
+              status: "lobby",
+              trackId: state.trackId,
+              trackSeed: state.trackSeed,
+              laps: state.laps,
+              players: [{
+                id: data.playerId,
+                name: state.driverName,
+                color: state.driverColor,
+                bodyId: state.driverBodyId || 1,
+                wheelId: state.driverWheelId || 1,
+                slot: 0,
+                isHost: true,
+                isReady: false,
+              }],
+            });
           } else {
             alert(data.error || "Kunne ikke opprette rom.");
           }
@@ -3713,10 +4092,14 @@
               localStorage.setItem("ts_driver_color", data.color);
             }
             if (el.displayRoomCode) el.displayRoomCode.textContent = data.roomCode;
-            showView("room");
-            updateLoungeSettingsUI();
-            refreshLoungeCustomizer();
-            startLobbyPolling();
+            launchOnlineRace({
+              status: "lobby",
+              trackId: state.trackId,
+              trackSeed: state.trackSeed,
+              laps: state.laps,
+              players: [],
+            });
+            pollLobbyState();
           } else {
             alert(data.error || "Kunne ikke koble til rom.");
           }
@@ -3764,7 +4147,7 @@
       });
     }
 
-    // Host Start Race
+    // Host Start Race (from viewRoom if used)
     if (el.btnHostStartRace) {
       el.btnHostStartRace.addEventListener("click", async () => {
         try {
@@ -3780,6 +4163,113 @@
             alert(data.error || "Kunne ikke starte løpet.");
           }
         } catch (e) {}
+      });
+    }
+
+    // In-game Single / Online Ready Confirmation
+    if (el.btnInGameReady) {
+      el.btnInGameReady.addEventListener("click", async () => {
+        if (state.mode === "solo") {
+          state.myCar.isReady = true;
+          if (el.inGameGarage) el.inGameGarage.classList.add("hidden");
+          runCountdown(() => {
+            state.myCar.raceStartTime = performance.now();
+            state.myCar.lapStartTime = performance.now();
+          });
+        } else if (state.mode === "online") {
+          state.myCar.isReady = true;
+          if (el.inGameGarage) el.inGameGarage.classList.add("hidden");
+          if (el.inGameStandbyBanner) el.inGameStandbyBanner.classList.remove("hidden");
+          try {
+            await fetch("/api/turbosladd/ready", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ roomCode: state.roomCode, playerId: state.playerId, ready: true }),
+            });
+            pollLobbyState();
+          } catch (e) {}
+        }
+      });
+    }
+
+    // Reopen In-game Garage from Standby Banner
+    if (el.btnReopenGarage) {
+      el.btnReopenGarage.addEventListener("click", async () => {
+        state.myCar.isReady = false;
+        if (el.inGameGarage) el.inGameGarage.classList.remove("hidden");
+        if (el.inGameStandbyBanner) el.inGameStandbyBanner.classList.add("hidden");
+        if (inGameCustomizer) inGameCustomizer.refresh();
+        if (state.mode === "online") {
+          try {
+            await fetch("/api/turbosladd/ready", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ roomCode: state.roomCode, playerId: state.playerId, ready: false }),
+            });
+            pollLobbyState();
+          } catch (e) {}
+        }
+      });
+    }
+
+    // Host Force Start from In-game Standby Banner
+    if (el.btnHostForceStart) {
+      el.btnHostForceStart.addEventListener("click", async () => {
+        try {
+          const resp = await fetch("/api/turbosladd/start", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ roomCode: state.roomCode, playerId: state.playerId }),
+          });
+          const data = await resp.json();
+          if (data.ok) {
+            pollLobbyState();
+          } else {
+            alert(data.error || "Kunne ikke starte løpet.");
+          }
+        } catch (e) {}
+      });
+    }
+
+    // In-game Splitscreen Ready Buttons
+    function checkSplitscreenBothReady() {
+      if (state.car1 && state.car2 && state.car1.isReady && state.car2.isReady) {
+        if (el.inGameSplitGarage) el.inGameSplitGarage.classList.add("hidden");
+        runCountdown();
+      }
+    }
+
+    if (el.btnSplitP1Ready) {
+      el.btnSplitP1Ready.addEventListener("click", () => {
+        if (!state.car1) return;
+        state.car1.isReady = !state.car1.isReady;
+        el.btnSplitP1Ready.textContent = state.car1.isReady ? "Spiller 1 er klar! ✓" : "Spiller 1 Klar! 👍";
+        el.btnSplitP1Ready.classList.toggle("ready-active", state.car1.isReady);
+        checkSplitscreenBothReady();
+      });
+    }
+
+    if (el.btnSplitP2Ready) {
+      el.btnSplitP2Ready.addEventListener("click", () => {
+        if (!state.car2) return;
+        state.car2.isReady = !state.car2.isReady;
+        el.btnSplitP2Ready.textContent = state.car2.isReady ? "Spiller 2 er klar! ✓" : "Spiller 2 Klar! 👍";
+        el.btnSplitP2Ready.classList.toggle("ready-active", state.car2.isReady);
+        checkSplitscreenBothReady();
+      });
+    }
+
+    // Copy room code pill in in-game garage
+    if (el.inGameRoomCodePill) {
+      el.inGameRoomCodePill.addEventListener("click", () => {
+        if (state.roomCode) {
+          navigator.clipboard.writeText(state.roomCode);
+          if (el.inGameRoomCodeText) {
+            const old = el.inGameRoomCodeText.textContent;
+            el.inGameRoomCodeText.textContent = "KOPIERT!";
+            setTimeout(() => { if (el.inGameRoomCodeText) el.inGameRoomCodeText.textContent = state.roomCode; }, 1000);
+          }
+        }
       });
     }
 
@@ -3970,10 +4460,7 @@
             launchOnlineRace(data);
             return;
           } else if (data.status === "lobby") {
-            showView("room");
-            updateLoungeSettingsUI();
-            refreshLoungeCustomizer();
-            startLobbyPolling();
+            launchOnlineRace(data);
             return;
           } else {
             // Room is in party lounge stage or finished - redirect to central party room!

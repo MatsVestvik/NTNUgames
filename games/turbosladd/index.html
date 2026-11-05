@@ -206,48 +206,14 @@
                   </div>
                 </div>
 
-                <!-- Solo Car Customizer -->
-                <div class="car-customizer-card">
-                  <div class="cc-header">
-                    <div class="cc-title-wrap">
-                      <h4 class="cc-title">🏎️ Tilpass rallybilen</h4>
-                      <p class="cc-desc">Kombiner karosseri, felger og farge før start.</p>
-                    </div>
-                    <div class="cc-preview-wrap">
-                      <canvas id="soloCarPreviewCanvas" width="64" height="64"></canvas>
-                    </div>
-                  </div>
-
-                  <div class="cc-section">
-                    <label class="cc-section-label">1. Karosseri:</label>
-                    <div class="cc-options-grid" id="soloBodyOptions"></div>
-                  </div>
-
-                  <div class="cc-section">
-                    <label class="cc-section-label">2. Felger / Hjul:</label>
-                    <div class="cc-options-grid" id="soloWheelOptions"></div>
-                  </div>
-
-                  <div class="cc-section">
-                    <div class="cc-color-header">
-                      <label class="cc-section-label">3. Lakkfarge:</label>
-                      <span class="cc-color-name" id="soloColorName">Rød</span>
-                    </div>
-                    <div class="cc-color-row">
-                      <div class="cc-color-swatches" id="soloColorSwatches"></div>
-                      <input type="color" id="soloColorPicker" class="cc-color-picker-input" value="#ef4444" title="Velg farge" />
-                    </div>
-                  </div>
-                </div>
-
                 <div class="stat-pills-row">
                   <div class="stat-pill">
                     <span class="stat-pill-label">Styring</span>
                     <strong class="stat-pill-val">Piltaster / WASD</strong>
                   </div>
                   <div class="stat-pill">
-                    <span class="stat-pill-label">Turbo boost</span>
-                    <strong class="stat-pill-val">Lades ved sladd</strong>
+                    <span class="stat-pill-label">Garasje</span>
+                    <strong class="stat-pill-val">Velges på startstreken 🛠️</strong>
                   </div>
                 </div>
               </div>
@@ -276,69 +242,35 @@
                   <!-- Player 1 Card (Left - WASD) -->
                   <div class="split-player-card card-p1">
                     <div class="spc-header">
-                      <span class="spc-badge badge-orange">Spiller 1 (WASD – Venstre)</span>
+                      <span class="spc-badge badge-orange">Spiller 1 (Venstre)</span>
                       <input type="text" id="inputSplitP1Name" class="text-input" value="Spiller 1" maxlength="14" placeholder="Navn Spiller 1" />
                     </div>
-                    <div style="display:flex;align-items:center;gap:0.75rem;margin:0.5rem 0;">
-                      <div class="cc-preview-wrap" style="width:64px;height:64px;">
-                        <canvas id="splitP1CarPreviewCanvas" width="64" height="64" style="width:50px;height:50px;"></canvas>
-                      </div>
-                      <div style="flex:1;">
-                        <label class="cc-section-label" style="font-size:0.75rem;">Karosseri:</label>
-                        <div class="cc-options-grid" id="splitP1BodyOptions" style="grid-template-columns:repeat(4,1fr);gap:0.25rem;"></div>
-                      </div>
-                    </div>
-                    <div style="margin-bottom:0.5rem;">
-                      <label class="cc-section-label" style="font-size:0.75rem;">Felger:</label>
-                      <div class="cc-options-grid" id="splitP1WheelOptions" style="grid-template-columns:repeat(4,1fr);gap:0.25rem;"></div>
-                    </div>
-                    <div class="spc-color-row">
-                      <label>Farge:</label>
-                      <div class="cc-color-swatches" id="splitP1Colors"></div>
-                      <input type="color" id="splitP1ColorPicker" class="cc-color-picker-input" value="#ef4444" style="width:26px;height:26px;" />
-                    </div>
                     <div class="spc-controls">
-                      <span class="spc-controls-title">Styring:</span>
+                      <span class="spc-controls-title">Styring (WASD):</span>
                       <div class="spc-key-tags">
                         <span><kbd>W</kbd> Gass</span>
                         <span><kbd>S</kbd> Brems</span>
                         <span><kbd>A</kbd><kbd>D</kbd> Sving</span>
                       </div>
                     </div>
+                    <p class="spc-subtext" style="margin:0;font-size:0.8rem;color:#94a3b8;">🏎️ Karosseri, felger og farge velges i garasjen ved start.</p>
                   </div>
 
                   <!-- Player 2 Card (Right - Piltaster) -->
                   <div class="split-player-card card-p2">
                     <div class="spc-header">
-                      <span class="spc-badge badge-cyan">Spiller 2 (Piltaster – Høyre)</span>
+                      <span class="spc-badge badge-cyan">Spiller 2 (Høyre)</span>
                       <input type="text" id="inputSplitP2Name" class="text-input" value="Spiller 2" maxlength="14" placeholder="Navn Spiller 2" />
                     </div>
-                    <div style="display:flex;align-items:center;gap:0.75rem;margin:0.5rem 0;">
-                      <div class="cc-preview-wrap" style="width:64px;height:64px;">
-                        <canvas id="splitP2CarPreviewCanvas" width="64" height="64" style="width:50px;height:50px;"></canvas>
-                      </div>
-                      <div style="flex:1;">
-                        <label class="cc-section-label" style="font-size:0.75rem;">Karosseri:</label>
-                        <div class="cc-options-grid" id="splitP2BodyOptions" style="grid-template-columns:repeat(4,1fr);gap:0.25rem;"></div>
-                      </div>
-                    </div>
-                    <div style="margin-bottom:0.5rem;">
-                      <label class="cc-section-label" style="font-size:0.75rem;">Felger:</label>
-                      <div class="cc-options-grid" id="splitP2WheelOptions" style="grid-template-columns:repeat(4,1fr);gap:0.25rem;"></div>
-                    </div>
-                    <div class="spc-color-row">
-                      <label>Farge:</label>
-                      <div class="cc-color-swatches" id="splitP2Colors"></div>
-                      <input type="color" id="splitP2ColorPicker" class="cc-color-picker-input" value="#06b6d4" style="width:26px;height:26px;" />
-                    </div>
                     <div class="spc-controls">
-                      <span class="spc-controls-title">Styring:</span>
+                      <span class="spc-controls-title">Styring (Piltaster):</span>
                       <div class="spc-key-tags">
                         <span><kbd>↑</kbd> Gass</span>
                         <span><kbd>↓</kbd> Brems</span>
                         <span><kbd>←</kbd><kbd>→</kbd> Sving</span>
                       </div>
                     </div>
+                    <p class="spc-subtext" style="margin:0;font-size:0.8rem;color:#94a3b8;">🏎️ Karosseri, felger og farge velges i garasjen ved start.</p>
                   </div>
                 </div>
 
@@ -394,43 +326,6 @@
             <div class="track-badge-pill">
               <span class="tb-name" id="displayTrackName">Tilfeldig Rallyetappe</span>
               <span class="tb-laps" id="displayLapsCount">3 runder</span>
-            </div>
-          </div>
-
-          <!-- CAR CUSTOMIZER SECTION -->
-          <div class="car-customizer-card">
-            <div class="cc-header">
-              <div class="cc-title-wrap">
-                <h3 class="cc-title">🏎️ Tilpass din rallybil</h3>
-                <p class="cc-desc">Velg karosseri, felger og farge før start. Alle sjåfører ser valget ditt!</p>
-              </div>
-              <div class="cc-preview-wrap">
-                <canvas id="loungeCarPreviewCanvas" width="64" height="64"></canvas>
-              </div>
-            </div>
-
-            <!-- Body Selector -->
-            <div class="cc-section">
-              <label class="cc-section-label">1. Velg Karosseri:</label>
-              <div class="cc-options-grid" id="loungeBodyOptions"></div>
-            </div>
-
-            <!-- Wheels Selector -->
-            <div class="cc-section">
-              <label class="cc-section-label">2. Velg Felger / Hjul:</label>
-              <div class="cc-options-grid" id="loungeWheelOptions"></div>
-            </div>
-
-            <!-- Color Selector -->
-            <div class="cc-section">
-              <div class="cc-color-header">
-                <label class="cc-section-label">3. Velg Lakkfarge:</label>
-                <span class="cc-color-name" id="loungeColorNameDisplay">Kongeblå</span>
-              </div>
-              <div class="cc-color-row">
-                <div class="cc-color-swatches" id="loungeColorSwatches"></div>
-                <input type="color" id="loungeColorPicker" class="cc-color-picker-input" value="#3b82f6" title="Egendefinert farge" />
-              </div>
             </div>
           </div>
 
@@ -538,6 +433,138 @@
 
           <!-- Main Racing 2D Canvas -->
           <canvas id="raceCanvas" class="race-canvas" tabindex="0"></canvas>
+
+          <!-- IN-GAME GARAGE MODAL (Single Player & Online) -->
+          <div class="in-game-garage-modal hidden" id="inGameGarage">
+            <div class="igg-card">
+              <div class="igg-header">
+                <div class="igg-title-wrap">
+                  <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;">
+                    <span class="igg-badge">🏎️ Garasje</span>
+                    <span class="hidden" id="inGameRoomCodePill" style="font-size:0.75rem;font-weight:700;background:rgba(56,189,248,0.15);color:#38bdf8;padding:0.2rem 0.55rem;border-radius:9999px;border:1px solid rgba(56,189,248,0.35);cursor:pointer;" title="Klikk for å kopiere romkode">Romkode: <strong id="inGameRoomCodeText">----</strong> 📋</span>
+                  </div>
+                  <h3 class="igg-title">Velg bil på startstreken</h3>
+                  <p class="igg-desc">Velg karosseri, felger og farge. Bilen din oppdateres direkte på banen!</p>
+                </div>
+                <div class="igg-preview-wrap">
+                  <canvas id="inGameCarPreviewCanvas" width="64" height="64"></canvas>
+                </div>
+              </div>
+
+              <!-- Body Selector -->
+              <div class="cc-section">
+                <label class="cc-section-label">1. Karosseri:</label>
+                <div class="cc-options-grid" id="inGameBodyOptions"></div>
+              </div>
+
+              <!-- Wheels Selector -->
+              <div class="cc-section">
+                <label class="cc-section-label">2. Felger / Hjul:</label>
+                <div class="cc-options-grid" id="inGameWheelOptions"></div>
+              </div>
+
+              <!-- Color Selector -->
+              <div class="cc-section">
+                <div class="cc-color-header">
+                  <label class="cc-section-label">3. Lakkfarge:</label>
+                  <span class="cc-color-name" id="inGameColorName">Rød</span>
+                </div>
+                <div class="cc-color-row">
+                  <div class="cc-color-swatches" id="inGameColorSwatches"></div>
+                  <input type="color" id="inGameColorPicker" class="cc-color-picker-input" value="#ef4444" title="Egendefinert farge" />
+                </div>
+              </div>
+
+              <div class="igg-footer">
+                <button type="button" class="igg-btn-ready pulse-glow" id="btnInGameReady">
+                  Klar til start! 🏁
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- IN-GAME SPLITSCREEN GARAGE MODAL -->
+          <div class="in-game-split-garage-modal hidden" id="inGameSplitGarage">
+            <div class="split-garage-columns">
+              <!-- Player 1 Card (WASD) -->
+              <div class="split-garage-col card-p1">
+                <div class="igg-header">
+                  <div class="igg-title-wrap">
+                    <span class="igg-badge" style="background:rgba(249,115,22,0.25);color:#fb923c;border-color:rgba(249,115,22,0.5);">Spiller 1 (WASD)</span>
+                    <h4 class="igg-title" id="splitP1GarageName">Spiller 1</h4>
+                  </div>
+                  <div class="igg-preview-wrap">
+                    <canvas id="splitP1CarPreviewCanvas" width="64" height="64"></canvas>
+                  </div>
+                </div>
+                <div class="cc-section">
+                  <label class="cc-section-label">Karosseri:</label>
+                  <div class="cc-options-grid" id="splitP1BodyOptions"></div>
+                </div>
+                <div class="cc-section">
+                  <label class="cc-section-label">Felger:</label>
+                  <div class="cc-options-grid" id="splitP1WheelOptions"></div>
+                </div>
+                <div class="cc-section">
+                  <label class="cc-section-label">Farge:</label>
+                  <div class="cc-color-row">
+                    <div class="cc-color-swatches" id="splitP1Colors"></div>
+                    <input type="color" id="splitP1ColorPicker" class="cc-color-picker-input" value="#ef4444" />
+                  </div>
+                </div>
+                <button type="button" class="igg-btn-ready" id="btnSplitP1Ready">
+                  Spiller 1 Klar! 👍
+                </button>
+              </div>
+
+              <!-- Player 2 Card (Piltaster) -->
+              <div class="split-garage-col card-p2">
+                <div class="igg-header">
+                  <div class="igg-title-wrap">
+                    <span class="igg-badge" style="background:rgba(6,182,212,0.25);color:#22d3ee;border-color:rgba(6,182,212,0.5);">Spiller 2 (Piltaster)</span>
+                    <h4 class="igg-title" id="splitP2GarageName">Spiller 2</h4>
+                  </div>
+                  <div class="igg-preview-wrap">
+                    <canvas id="splitP2CarPreviewCanvas" width="64" height="64"></canvas>
+                  </div>
+                </div>
+                <div class="cc-section">
+                  <label class="cc-section-label">Karosseri:</label>
+                  <div class="cc-options-grid" id="splitP2BodyOptions"></div>
+                </div>
+                <div class="cc-section">
+                  <label class="cc-section-label">Felger:</label>
+                  <div class="cc-options-grid" id="splitP2WheelOptions"></div>
+                </div>
+                <div class="cc-section">
+                  <label class="cc-section-label">Farge:</label>
+                  <div class="cc-color-row">
+                    <div class="cc-color-swatches" id="splitP2Colors"></div>
+                    <input type="color" id="splitP2ColorPicker" class="cc-color-picker-input" value="#06b6d4" />
+                  </div>
+                </div>
+                <button type="button" class="igg-btn-ready" id="btnSplitP2Ready">
+                  Spiller 2 Klar! 👍
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- IN-GAME STANDBY BANNER (Sitting on startline waiting for others) -->
+          <div class="in-game-standby-banner hidden" id="inGameStandbyBanner">
+            <div class="igsb-left">
+              <span class="igsb-ready-dot"></span>
+              <span class="igsb-status-text">Klar på startstreken</span>
+            </div>
+            <div class="igsb-center">
+              <span id="standbyWaitingText">Venter på andre førere...</span>
+              <span class="igsb-pill" id="standbyReadyCount">1/1</span>
+            </div>
+            <div class="igsb-right">
+              <button type="button" class="igsb-btn-change" id="btnReopenGarage">🛠️ Endre bil</button>
+              <button type="button" class="igsb-btn-start hidden" id="btnHostForceStart">Start nå 🏁</button>
+            </div>
+          </div>
 
           <!-- Big Countdown Overlay: 3.. 2.. 1.. KJØR! -->
           <div class="race-countdown-overlay hidden" id="countdownOverlay">

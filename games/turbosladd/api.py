@@ -145,7 +145,7 @@ class TurbosladdRoom:
             "bodyId": max(1, min(4, int(host_body_id or 1))),
             "wheelId": max(1, min(4, int(host_wheel_id or 1))),
             "isHost": True,
-            "isReady": True,
+            "isReady": False,
             "slot": 0,
             "x": 0.0,
             "y": 0.0,
@@ -313,7 +313,20 @@ class TurbosladdRoom:
     def set_ready(self, player_id: str, ready: bool) -> bool:
         with self.lock:
             if player_id in self.players and not self.players[player_id].get("left"):
-                self.players[player_id]["isReady"] = ready
+                self.players[player_id]["isReady"] = bool(ready)
+                active = [p for p in self.players.values() if not p.get("left") and not p.get("forfeit")]
+                if active and all(p.get("isReady") for p in active):
+                    if self.status == "lobby":
+                        self.status = "countdown"
+                        self.countdown_start = time.time()
+                        self.race_start = None
+                        self.finish_timeout = None
+                        for p in active:
+                            p["lap"] = 1
+                            p["checkpoint"] = 0
+                            p["finished"] = False
+                            p["finishTime"] = 0.0
+                            p["bestLap"] = 0.0
                 self.bump()
                 return True
             return False
@@ -627,7 +640,7 @@ class TurbosladdAPI:
                                 "avatar": pdata.get("avatar", ""),
                                 "carModel": "gt",
                                 "isHost": False,
-                                "isReady": True,
+                                "isReady": False,
                                 "slot": slot,
                                 "x": 0.0, "y": 0.0, "angle": 0.0, "vx": 0.0, "vy": 0.0, "speed": 0.0,
                                 "isDrifting": False, "lap": 1, "checkpoint": 0, "finished": False,

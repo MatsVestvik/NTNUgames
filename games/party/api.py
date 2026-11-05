@@ -2574,7 +2574,7 @@ class PartyAPI:
                                 "bodyId": int(host_player.get("bodyId", 1)),
                                 "wheelId": int(host_player.get("wheelId", 1)),
                                 "isHost": True,
-                                "isReady": True,
+                                "isReady": False,
                                 "slot": 0,
                                 "x": 0.0,
                                 "y": 0.0,
