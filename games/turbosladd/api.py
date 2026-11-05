@@ -135,30 +135,25 @@ class TurbosladdRoom:
                 self.race_start = now
                 self.bump()
         elif self.status == "racing":
-            # Active racers: players currently in race who haven't forfeited or left
-            active_racers = [p for p in self.players.values() if not p.get("left") and not p.get("forfeit")]
-            finished_racers = [p for p in active_racers if p.get("finished")]
-            unfinished_racers = [p for p in active_racers if not p.get("finished")]
+            # Racers who are still actively driving (neither finished, nor left, nor forfeited)
+            still_driving = [p for p in self.players.values() if not p.get("left") and not p.get("forfeit") and not p.get("finished")]
+            total_players = len(self.players)
 
-            # 1. All active racers finished
-            if active_racers and len(unfinished_racers) == 0:
+            # In multiplayer (2+ racers started), if only 1 (or 0) racer is left driving, the race is finished!
+            if total_players >= 2 and len(still_driving) <= 1:
                 self.status = "finished"
                 self.bump()
-            # 2. Sisteplass kommer ikke i mål: in multiplayer (2+ racers), once all except last place have finished
-            elif len(active_racers) >= 2 and len(unfinished_racers) <= 1 and len(finished_racers) >= 1:
+            # If 0 racers are left driving (e.g. 1-player mode and finished)
+            elif len(still_driving) == 0:
                 self.status = "finished"
                 self.bump()
-            # 3. Fallback timeout after first finisher (15s grace period)
-            elif any(p.get("finished") for p in active_racers):
+            # Fallback timeout after first finisher (15s grace period)
+            elif any(p.get("finished") for p in self.players.values() if not p.get("left") and not p.get("forfeit")):
                 if not self.finish_timeout:
                     self.finish_timeout = now + 15.0
                 elif now >= self.finish_timeout:
                     self.status = "finished"
                     self.bump()
-            # 4. If all racers have left / forfeited
-            elif not active_racers and self.players:
-                self.status = "finished"
-                self.bump()
 
     def add_player(self, name: str, color: str, car_model: str = "gt", avatar: str = "") -> Optional[Dict[str, Any]]:
         with self.lock:

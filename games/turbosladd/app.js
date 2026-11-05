@@ -2324,6 +2324,10 @@
     } else if (data.status === "finished") {
       stopRoomSync();
       const standings = (data.players || []).slice().sort((a, b) => {
+        const aForfeit = !!(a.forfeit || a.left);
+        const bForfeit = !!(b.forfeit || b.left);
+        if (aForfeit && !bForfeit) return 1;
+        if (!aForfeit && bForfeit) return -1;
         if (a.finished && b.finished) return (a.finishTime || 0) - (b.finishTime || 0);
         if (a.finished) return -1;
         if (b.finished) return 1;
@@ -2631,6 +2635,15 @@
     stopEngineSound();
 
     el.podiumStandings.innerHTML = "";
+    if (el.podiumDesc) {
+      const allOthersGaveUp = racers.length >= 2 && racers.slice(1).every(r => r.forfeit || r.left);
+      if (allOthersGaveUp) {
+        el.podiumDesc.textContent = "Motstanderen ga opp! Du vant løpet! 🏆";
+      } else {
+        el.podiumDesc.textContent = "Løpet er fullført. Her er resultatlisten:";
+      }
+    }
+
     racers.forEach((r, idx) => {
       const row = document.createElement("div");
       row.className = "podium-row" + (idx === 0 ? " rank-1" : "");
@@ -2640,6 +2653,8 @@
         timeText = "Ga opp";
       } else if (r.finished && r.finishTime > 0) {
         timeText = formatTime(r.finishTime);
+      } else if (idx === 0) {
+        timeText = "Vinner!";
       } else if (r.lap && r.lap > 1) {
         timeText = `Runde ${r.lap}`;
       } else {
