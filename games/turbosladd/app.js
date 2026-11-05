@@ -1506,7 +1506,7 @@
     ctx.strokeStyle = "#5f3c20";
     ctx.stroke();
 
-    // 8. Packed main rally dirt bed
+    // 8. Packed main rally dirt bed (solid, continuous dirt road surface without lanes)
     ctx.lineWidth = rw;
     ctx.strokeStyle = "#7a4c26";
     ctx.stroke();
@@ -1516,21 +1516,12 @@
     ctx.strokeStyle = "#8d5b2f";
     ctx.stroke();
 
-    // 10. Twin carved tire ruts (compacted damp dark channels where tires pack the soil)
-    ctx.lineWidth = rw * 0.62;
-    ctx.strokeStyle = "#543319";
+    // 10. Soft organic dirt gradient across road width (no separate lanes or ruts)
+    ctx.lineWidth = rw - 24;
+    ctx.strokeStyle = "#83532a";
     ctx.stroke();
 
-    ctx.lineWidth = rw * 0.46;
-    ctx.strokeStyle = "#442711";
-    ctx.stroke();
-
-    // 11. Center gravel crown (natural loose dirt/gravel ridge between ruts, NO DOTTED LINE)
-    ctx.lineWidth = rw * 0.22;
-    ctx.strokeStyle = "#8f5e32";
-    ctx.stroke();
-
-    // 12. Organic soil & pebble granules along the dirt path (authentic rally road texture)
+    // 11. Organic soil & pebble granules along the dirt path (authentic rally road texture)
     for (let i = 0; i < pts.length; i += 2) {
       const pt = pts[i];
       for (let s = 0; s < 5; s++) {
