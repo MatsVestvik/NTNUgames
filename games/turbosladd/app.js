@@ -1367,42 +1367,52 @@
       car.driftAngle = 0;
     }
 
-    // Surface detection & driving physics (Asphalt, Kerbs, Grass)
+    // Surface detection & driving physics (Asphalt, Kerbs, Run-off / "The Grey", Grass)
     const closest = getClosestPointOnTrack(car.x, car.y, track);
     const toTrackX = closest.x - car.x;
     const toTrackY = closest.y - car.y;
     const trackDist = Math.hypot(toTrackX, toTrackY);
     const halfRoad = track.roadWidth * 0.5;
     const kerbWidth = track.kerbWidth || 26;
+    const runoffWidth = 90; // The grey asphalt run-off buffer outside kerbs
 
     const onAsphalt = trackDist <= halfRoad;
     const onKerb = !onAsphalt && trackDist <= halfRoad + kerbWidth;
-    const onGrass = trackDist > halfRoad + kerbWidth;
+    const onRunoff = !onAsphalt && !onKerb && trackDist <= halfRoad + kerbWidth + runoffWidth;
+    const onGrass = trackDist > halfRoad + kerbWidth + runoffWidth;
+
+    // Lateral grip retention according to surface
+    const latRetention = onGrass ? 0.91 : (onRunoff ? 0.94 : (isSlidingOnIce ? 0.978 : 0.88));
+    let newVLateral = vLateral * Math.pow(latRetention, dt * 60);
+
+    // Forward drive & slide braking on surface
+    let newVForward = vForward;
 
     if (onKerb) {
       // Drivable at full speed! Tactile rumble vibration & subtle curb tick
       if (car.speed > 35) {
         playKerbRumble();
       }
+    } else if (onRunoff) {
+      // Drivable on the grey run-off area! Slightly looser lateral grip, smooth racing
+      newVLateral *= Math.pow(0.96, dt * 60);
+      if (Math.abs(newVLateral) > 25 && Math.random() < 0.2) {
+        addRallyDustParticle(car);
+      }
     } else if (onGrass) {
       // Drivable on grass! Smooth rolling deceleration & grass particles
-      newVForward *= Math.pow(0.92, dt * 60);
-      newVLateral *= Math.pow(0.94, dt * 60);
-      if (Math.abs(newVForward) > 280) {
-        newVForward -= Math.sign(newVForward) * 360 * dt;
+      newVForward *= Math.pow(0.93, dt * 60);
+      newVLateral *= Math.pow(0.92, dt * 60);
+      if (Math.abs(newVForward) > 270) {
+        newVForward -= Math.sign(newVForward) * 350 * dt;
       }
       if (car.speed > 20) {
         addGrassParticle(car);
       }
     }
 
-    const latRetention = onGrass ? 0.94 : (isSlidingOnIce ? 0.978 : 0.88);
-    let newVLateral = vLateral * Math.pow(latRetention, dt * 60);
-
-    // Forward drive & slide braking on surface
-    let newVForward = vForward;
-    const effectiveEnginePower = onGrass ? (enginePower * 0.55) : enginePower;
-    const effectiveMaxSpeed = onGrass ? Math.min(maxSpeed, 280) : maxSpeed;
+    const effectiveEnginePower = onGrass ? (enginePower * 0.55) : (onRunoff ? enginePower * 0.88 : enginePower);
+    const effectiveMaxSpeed = onGrass ? Math.min(maxSpeed, 270) : maxSpeed;
 
     if (throttle > 0 && newVForward < effectiveMaxSpeed) {
       newVForward += throttle * effectiveEnginePower * dt;
@@ -1417,12 +1427,15 @@
       }
     }
 
-    // Rolling drag: low on asphalt/kerb (0.996), higher on grass (0.92)
-    const rollingDrag = onGrass ? 0.92 : (onKerb ? 0.994 : 0.996);
+    // Rolling drag: low on asphalt/kerb (0.996), mild on grey runoff (0.988), higher on grass (0.93)
+    const rollingDrag = onGrass ? 0.93 : (onRunoff ? 0.988 : (onKerb ? 0.994 : 0.996));
     newVForward *= Math.pow(rollingDrag, dt * 60);
 
     car.vx = newVForward * forwardX + newVLateral * rightX;
     car.vy = newVForward * forwardY + newVLateral * rightY;
+
+    if (!Number.isFinite(car.vx)) car.vx = 0;
+    if (!Number.isFinite(car.vy)) car.vy = 0;
 
     // 1. Solid Outer Runoff Barriers (F1 Armco Crash Barrier)
     const wallCollisionDist = halfRoad + kerbWidth + 140;
@@ -1441,8 +1454,12 @@
       if (dot < 0) {
         car.vx = (car.vx - 1.5 * dot * nx) * 0.72;
         car.vy = (car.vy - 1.5 * dot * ny) * 0.72;
-        playTone(150, 0.12, "sawtooth", 0.32);
-        addSparkParticles(car.x, car.y);
+        const now = performance.now();
+        if (!car.lastWallHit || now - car.lastWallHit > 120) {
+          car.lastWallHit = now;
+          playTone(150, 0.12, "sawtooth", 0.32);
+          addSparkParticles(car.x, car.y);
+        }
       }
     }
 
@@ -1457,9 +1474,15 @@
         const barRadius = 22;
 
         if (barDist < barRadius) {
-          const bd = barDist || 1;
-          const bnx = toBarX / bd;
-          const bny = toBarY / bd;
+          let bnx = toBarX;
+          let bny = toBarY;
+          if (barDist < 0.001) {
+            bnx = 1;
+            bny = 0;
+          } else {
+            bnx /= barDist;
+            bny /= barDist;
+          }
 
           car.x = bcp.x + bnx * barRadius;
           car.y = bcp.y + bny * barRadius;
@@ -1468,8 +1491,12 @@
           if (bDot < 0) {
             car.vx = (car.vx - 1.6 * bDot * bnx) * 0.7;
             car.vy = (car.vy - 1.6 * bDot * bny) * 0.7;
-            playTone(160, 0.14, "sawtooth", 0.35);
-            addSparkParticles(car.x, car.y);
+            const now = performance.now();
+            if (!car.lastBarrierHit || now - car.lastBarrierHit > 120) {
+              car.lastBarrierHit = now;
+              playTone(160, 0.14, "sawtooth", 0.35);
+              addSparkParticles(car.x, car.y);
+            }
           }
         }
       }
@@ -1483,6 +1510,13 @@
 
     car.x += car.vx * dt;
     car.y += car.vy * dt;
+
+    if (!Number.isFinite(car.x) || !Number.isFinite(car.y)) {
+      car.x = track.rawPoints[0].x;
+      car.y = track.rawPoints[0].y;
+      car.vx = 0;
+      car.vy = 0;
+    }
 
     updateCheckpointsAndLap(car, track);
   }
@@ -1730,6 +1764,9 @@
   }
 
   function updateParticles(dt) {
+    if (state.particles.length > 350) {
+      state.particles.splice(0, state.particles.length - 350);
+    }
     for (let i = state.particles.length - 1; i >= 0; i--) {
       const p = state.particles[i];
       p.x += p.vx * dt;
