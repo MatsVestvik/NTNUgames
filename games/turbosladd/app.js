@@ -443,6 +443,13 @@
     podiumStandings: document.getElementById("podiumStandings"),
     btnPodiumPlayAgain: document.getElementById("btnPodiumPlayAgain"),
     btnPodiumReturnLobby: document.getElementById("btnPodiumReturnLobby"),
+
+    // Exit Modal
+    modalExitConfirm: document.getElementById("modalExitConfirm"),
+    exitModalDesc: document.getElementById("exitModalDesc"),
+    btnConfirmExitLounge: document.getElementById("btnConfirmExitLounge"),
+    btnConfirmExitLobby: document.getElementById("btnConfirmExitLobby"),
+    btnCancelExit: document.getElementById("btnCancelExit"),
   };
 
   // =========================================================================
@@ -3049,25 +3056,124 @@
       });
     }
 
-    // Leave room
-    function handleLeaveRoom() {
-      stopLobbyPolling();
-      stopRoomSync();
-      stopEngineSound();
-      if (state.roomCode && state.playerId) {
-        fetch("/api/turbosladd/leave", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ roomCode: state.roomCode, playerId: state.playerId }),
-        }).catch(() => {});
+    // Exit & Leave Race Handlers
+    function promptExitRace() {
+      if (!el.modalExitConfirm) {
+        exitRaceToLobby();
+        return;
       }
-      state.roomCode = "";
-      state.playerId = "";
+
+      if (state.roomCode) {
+        if (el.btnConfirmExitLounge) el.btnConfirmExitLounge.style.display = "block";
+        if (el.exitModalDesc) {
+          el.exitModalDesc.textContent = "Vil du avslutte løpet og gå tilbake til Party Lounge eller spillmenyen?";
+        }
+      } else {
+        if (el.btnConfirmExitLounge) el.btnConfirmExitLounge.style.display = "none";
+        if (el.exitModalDesc) {
+          el.exitModalDesc.textContent = "Vil du avslutte løpet og gå tilbake til menyen?";
+        }
+      }
+
+      el.modalExitConfirm.classList.remove("hidden");
+    }
+
+    function closeExitModal() {
+      if (el.modalExitConfirm) el.modalExitConfirm.classList.add("hidden");
+    }
+
+    async function exitRaceToPartyLounge() {
+      closeExitModal();
+      stopEngineSound();
+      stopSimulation();
+      stopRoomSync();
+      stopLobbyPolling();
+
+      const code = state.roomCode;
+      const pid = state.playerId;
+      const hostToken = state.hostToken || sessionStorage.getItem("party_host_token") || localStorage.getItem("party_host_token") || "";
+
+      if (code) {
+        try {
+          await fetch("/api/party/to-lounge", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ roomCode: code, playerId: pid, hostToken }),
+          });
+        } catch (e) {}
+
+        try {
+          await fetch("/api/turbosladd/leave", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ roomCode: code, playerId: pid }),
+          });
+        } catch (e) {}
+
+        state.roomCode = "";
+        state.playerId = "";
+
+        try {
+          window.history.replaceState({}, document.title, window.location.pathname);
+        } catch (e) {}
+
+        window.location.href = `/party/?room=${encodeURIComponent(code)}`;
+        return;
+      }
+
       showView("lobby");
     }
 
+    async function exitRaceToLobby() {
+      closeExitModal();
+      stopEngineSound();
+      stopSimulation();
+      stopRoomSync();
+      stopLobbyPolling();
+
+      const code = state.roomCode;
+      const pid = state.playerId;
+      const hostToken = state.hostToken || sessionStorage.getItem("party_host_token") || localStorage.getItem("party_host_token") || "";
+
+      if (code) {
+        try {
+          if (state.isHost) {
+            await fetch("/api/party/to-lounge", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ roomCode: code, playerId: pid, hostToken }),
+            });
+          }
+          await fetch("/api/turbosladd/leave", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ roomCode: code, playerId: pid }),
+          });
+        } catch (e) {}
+      }
+
+      state.roomCode = "";
+      state.playerId = "";
+
+      try {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } catch (e) {}
+
+      showView("lobby");
+    }
+
+    if (el.btnConfirmExitLounge) {
+      el.btnConfirmExitLounge.addEventListener("click", exitRaceToPartyLounge);
+    }
+    if (el.btnConfirmExitLobby) {
+      el.btnConfirmExitLobby.addEventListener("click", exitRaceToLobby);
+    }
+    if (el.btnCancelExit) {
+      el.btnCancelExit.addEventListener("click", closeExitModal);
+    }
+
     if (el.btnLeaveRoom) {
-      el.btnLeaveRoom.addEventListener("click", handleLeaveRoom);
+      el.btnLeaveRoom.addEventListener("click", exitRaceToLobby);
     }
 
     // Navbar Back Button
@@ -3075,37 +3181,23 @@
       el.btnHeaderBack.addEventListener("click", (e) => {
         if (el.viewGame && !el.viewGame.classList.contains("hidden")) {
           e.preventDefault();
-          if (confirm("Vil du avslutte løpet og gå tilbake til lobbyen?")) {
-            showView("lobby");
-          }
+          promptExitRace();
         } else if (el.viewRoomLounge && !el.viewRoomLounge.classList.contains("hidden")) {
           e.preventDefault();
-          handleLeaveRoom();
+          exitRaceToLobby();
         }
       });
     }
 
     if (el.btnHeaderLeave) {
       el.btnHeaderLeave.addEventListener("click", () => {
-        if (el.viewGame && !el.viewGame.classList.contains("hidden")) {
-          if (confirm("Vil du avslutte løpet og gå tilbake til lobbyen?")) {
-            showView("lobby");
-          }
-        } else {
-          handleLeaveRoom();
-        }
+        promptExitRace();
       });
     }
 
     if (el.btnQuitRace) {
       el.btnQuitRace.addEventListener("click", () => {
-        if (confirm("Vil du avslutte løpet og gå tilbake til lobbyen?")) {
-          if (state.roomCode) {
-            window.location.href = `/party/?room=${encodeURIComponent(state.roomCode)}`;
-          } else {
-            showView("lobby");
-          }
-        }
+        promptExitRace();
       });
     }
 
@@ -3142,12 +3234,12 @@
     }
 
     if (el.btnPodiumReturnLobby) {
-      el.btnPodiumReturnLobby.addEventListener("click", () => {
+      el.btnPodiumReturnLobby.addEventListener("click", async () => {
         if (el.modalPodium) el.modalPodium.classList.add("hidden");
         if (state.roomCode) {
-          window.location.href = `/party/?room=${encodeURIComponent(state.roomCode)}`;
+          await exitRaceToPartyLounge();
         } else {
-          showView("lobby");
+          await exitRaceToLobby();
         }
       });
     }

@@ -222,6 +222,21 @@ class PartyRoom:
                                 self.bump()
                 except Exception as w_err:
                     print("Error checking wavelength room state in party:", w_err)
+            elif self.current_game == "turbosladd":
+                effective_game_state = dict(self.game_state)
+                try:
+                    from games.turbosladd.api import _rooms as ts_rooms
+                    with _rooms_lock:
+                        ts_room = ts_rooms.get(self.code)
+                    if ts_room:
+                        with ts_room.lock:
+                            effective_game_state["status"] = ts_room.status
+                            if ts_room.status == "finished":
+                                self.current_game = None
+                                self.game_state = {}
+                                self.bump()
+                except Exception as t_err:
+                    print("Error checking turbosladd room state in party:", t_err)
             else:
                 effective_game_state = self.game_state
 

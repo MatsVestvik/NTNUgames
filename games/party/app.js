@@ -457,7 +457,7 @@
             return;
           }
 
-          if (data.currentGame === "turbosladd") {
+          if (data.currentGame === "turbosladd" && data.gameState?.status !== "finished") {
             // Redirect to Turbosladd in room mode!
             const target = `/turbosladd/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
             window.location.href = target;
