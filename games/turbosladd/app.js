@@ -47,11 +47,10 @@
   };
 
   // =========================================================================
-  // =========================================================================
-  // PROCEDURAL FORMEL 1 GRAND PRIX TRACK GENERATOR
+  // DIRT RALLY TRACK SYSTEM & PROCEDURAL GENERATOR
   // =========================================================================
 
-  function createF1Rng(seed) {
+  function createRallyRng(seed) {
     let s = (typeof seed === "number" ? seed : hashString(String(seed))) >>> 0;
     if (s === 0) s = 12345;
     return function() {
@@ -89,7 +88,7 @@
     };
   }
 
-  function generateSmoothTrack(rawPoints, samplesPerSegment = 20) {
+  function generateSmoothTrack(rawPoints, samplesPerSegment = 16) {
     const smoothPoints = [];
     const n = rawPoints.length;
     for (let i = 0; i < n; i++) {
@@ -105,593 +104,245 @@
     return smoothPoints;
   }
 
-  function doLinesIntersect(p1, p2, p3, p4) {
-    function ccw(A, B, C) {
-      return (C.y - A.y) * (B.x - A.x) > (B.y - A.y) * (C.x - A.x);
-    }
-    return (ccw(p1, p3, p4) !== ccw(p2, p3, p4)) && (ccw(p1, p2, p3) !== ccw(p1, p2, p4));
-  }
-
-  function distToSegmentSquared(p, v, w) {
-    const l2 = (v.x - w.x) * (v.x - w.x) + (v.y - w.y) * (v.y - w.y);
-    if (l2 === 0) return (p.x - v.x) * (p.x - v.x) + (p.y - v.y) * (p.y - v.y);
-    let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
-    t = Math.max(0, Math.min(1, t));
-    const projX = v.x + t * (w.x - v.x);
-    const projY = v.y + t * (w.y - v.y);
-    return (p.x - projX) * (p.x - projX) + (p.y - projY) * (p.y - projY);
-  }
-
-  function checkTrackValid(rawPoints, minSeparation = 180) {
-    const n = rawPoints.length;
-    for (let i = 0; i < n; i++) {
-      const a1 = rawPoints[i];
-      const a2 = rawPoints[(i + 1) % n];
-      for (let j = i + 2; j < n; j++) {
-        if ((i === 0 && j === n - 1) || Math.abs(i - j) <= 1) continue;
-        const b1 = rawPoints[j];
-        const b2 = rawPoints[(j + 1) % n];
-        if (doLinesIntersect(a1, a2, b1, b2)) return false;
-      }
-    }
-
-    const minSepSq = minSeparation * minSeparation;
-    for (let i = 0; i < n; i++) {
-      const p = rawPoints[i];
-      for (let j = 0; j < n; j++) {
-        if (j === i || j === (i - 1 + n) % n || j === (i + 1) % n) continue;
-        const v = rawPoints[j];
-        const w = rawPoints[(j + 1) % n];
-        if (distToSegmentSquared(p, v, w) < minSepSq) return false;
-      }
-    }
-
-    return true;
-  }
-
-  // Authentic Circuit Blueprints calibrated for expansive 4600x3000 world
-  // Designed with real racing layout topologies: chicanes, hairpins, long DRS straights, and technical switchbacks
-  const F1_ARCHETYPES = [
-    // 0: Monza Autodromo (Variante del Rettifilo chicane, Curva Grande, Roggia, Lesmo 1 & 2, Ascari, Parabolica)
-    [
-      { x: 1400, y: 2600 }, // Start / Finish line
-      { x: 3100, y: 2600 }, // Rettifilo braking zone
-      { x: 3350, y: 2550, sharp: true }, // Variante del Rettifilo chicane
-      { x: 3500, y: 2400, sharp: true },
-      { x: 3650, y: 2300, sharp: true },
-      { x: 3950, y: 2050 }, // Curva Grande sweeping arc
-      { x: 4150, y: 1650 },
-      { x: 4050, y: 1200 },
-      { x: 3750, y: 1000, sharp: true }, // Variante della Roggia chicane
-      { x: 3600, y: 800, sharp: true },
-      { x: 3200, y: 600, sharp: true }, // Curva di Lesmo 1 (sharp 90° right)
-      { x: 2800, y: 520, sharp: true }, // Curva di Lesmo 2 (sharp 90° right)
-      { x: 2400, y: 580, sharp: true }, // Curva del Serraglio straight
-      { x: 2100, y: 750 },
-      { x: 1700, y: 1100, sharp: true }, // Variante Ascari chicane
-      { x: 1400, y: 1450, sharp: true },
-      { x: 1150, y: 1650, sharp: true },
-      { x: 950, y: 1850 }, // Back straightaway
-      { x: 800, y: 2050 },
-      { x: 650, y: 2250, sharp: true }, // Curva Parabolica
-      { x: 550, y: 2450, sharp: true },
-      { x: 750, y: 2600, sharp: true }, // Main straight entry
-      { x: 1000, y: 2600 }
-    ],
-    // 1: Silverstone Arena (The Loop 180° hairpin, Wellington infield straight, Becketts, Hangar, Stowe, Vale/Club)
-    [
-      { x: 1400, y: 2600 }, // Hamilton straight (Start/Finish)
-      { x: 2800, y: 2600 },
-      { x: 3300, y: 2500, sharp: true }, // Abbey & Farm
-      { x: 3500, y: 2200, sharp: true }, // Village
-      { x: 3600, y: 1800, sharp: true }, // The Loop tight 180° hairpin
-      { x: 3300, y: 1650, sharp: true },
-      { x: 3000, y: 1750, sharp: true }, // Aintree
-      { x: 2900, y: 2000, sharp: true },
-      { x: 3150, y: 2150, sharp: true },
-      { x: 3000, y: 2280, sharp: true }, // Wellington straight cutting across infield
-      { x: 2200, y: 2280 },
-      { x: 1400, y: 2280 },
-      { x: 900, y: 2150, sharp: true }, // Brooklands sharp left
-      { x: 700, y: 1900, sharp: true }, // Luffield sweeping right hairpin
-      { x: 700, y: 1600, sharp: true },
-      { x: 950, y: 1450 }, // Woodcote onto National straight
-      { x: 1300, y: 1450 },
-      { x: 1900, y: 1400 },
-      { x: 2400, y: 1300, sharp: true }, // Copse high-speed 90° right
-      { x: 2700, y: 1050, sharp: true },
-      { x: 2500, y: 850, sharp: true }, // Maggotts & Becketts S-curves
-      { x: 2700, y: 650, sharp: true },
-      { x: 2450, y: 480, sharp: true }, // Chapel onto Hangar straight
-      { x: 2100, y: 400 }, // Hangar straight
-      { x: 1400, y: 400 },
-      { x: 700, y: 400 },
-      { x: 450, y: 550, sharp: true }, // Stowe sharp 90° right
-      { x: 400, y: 850, sharp: true },
-      { x: 450, y: 1450, sharp: true }, // Vale & Club chicane complex
-      { x: 450, y: 1850, sharp: true },
-      { x: 550, y: 2100, sharp: true },
-      { x: 450, y: 2300, sharp: true },
-      { x: 650, y: 2500, sharp: true },
-      { x: 950, y: 2600 }
-    ],
-    // 2: Spa-Francorchamps (La Source hairpin, Eau Rouge/Raidillon, Kemmel straight, Les Combes, Bruxelles, Pouhon, Bus Stop)
-    [
-      { x: 1400, y: 2500 }, // Start / Finish line
-      { x: 3000, y: 2500 }, // La Source braking
-      { x: 3300, y: 2400, sharp: true }, // La Source 150° tight hairpin
-      { x: 3400, y: 2150, sharp: true },
-      { x: 3250, y: 1950, sharp: true }, // Eau Rouge & Raidillon S-flick
-      { x: 3000, y: 1850 },
-      { x: 3080, y: 1600 }, // Kemmel Straight (high speed straight)
-      { x: 3000, y: 1350 },
-      { x: 2850, y: 950 },
-      { x: 2650, y: 550 },
-      { x: 2500, y: 350, sharp: true }, // Les Combes chicane
-      { x: 2250, y: 300, sharp: true },
-      { x: 2000, y: 360, sharp: true }, // Malmedy
-      { x: 1750, y: 320, sharp: true }, // Bruxelles 180° hairpin
-      { x: 1450, y: 450, sharp: true },
-      { x: 1250, y: 600, sharp: true },
-      { x: 1400, y: 800 }, // Pouhon double-apex fast left
-      { x: 1750, y: 950 },
-      { x: 2000, y: 1200 },
-      { x: 2200, y: 1450, sharp: true }, // Campus / Fagnes chicane
-      { x: 1950, y: 1700, sharp: true },
-      { x: 1650, y: 1800 }, // Stavelot & Blanchimont fast sweeps
-      { x: 1350, y: 1950 },
-      { x: 900, y: 2100 },
-      { x: 600, y: 2250, sharp: true }, // Bus Stop chicane (sharp flick)
-      { x: 550, y: 2450, sharp: true },
-      { x: 950, y: 2500 }
-    ],
-    // 3: Red Bull Ring (T1 90°, Uphill straight, T3 Remus hairpin, Downhill straight, T4 Schlossgold 90°, Rauch infield)
-    [
-      { x: 1400, y: 2600 }, // Start / Finish line
-      { x: 2900, y: 2600 }, // T1 braking
-      { x: 3350, y: 2500, sharp: true }, // T1 Niki Lauda 90° uphill right
-      { x: 3500, y: 2250 },
-      { x: 3550, y: 1750 }, // Uphill straight to T3
-      { x: 3550, y: 1050 },
-      { x: 3550, y: 500, sharp: true }, // T3 Remus 140° tight hairpin
-      { x: 3350, y: 420, sharp: true },
-      { x: 3000, y: 600 }, // Downhill straight to T4
-      { x: 2600, y: 850 },
-      { x: 2200, y: 1150, sharp: true }, // T4 Schlossgold 90° right
-      { x: 1900, y: 1350, sharp: true },
-      { x: 1650, y: 1500 }, // Rauch infield sweeps
-      { x: 1800, y: 1750 },
-      { x: 2100, y: 1900 },
-      { x: 2000, y: 2150, sharp: true }, // T9 Rindt 90° right
-      { x: 1650, y: 2300, sharp: true },
-      { x: 1250, y: 2380, sharp: true }, // T10 final 90° right onto straight
-      { x: 950, y: 2500 }
-    ],
-    // 4: Suzuka Circuit (Esses snake, Dunlop, Degner 1 & 2, Hairpin, Spoon Curve, Back Straight, 130R, Casio chicane)
-    [
-      { x: 1400, y: 2500 }, // Start / Finish line
-      { x: 2800, y: 2500 }, // T1 braking
-      { x: 3200, y: 2400, sharp: true }, // T1 & T2 fast rights
-      { x: 3400, y: 2150, sharp: true },
-      { x: 3100, y: 1900, sharp: true }, // S-curves snake (left-right-left-right)
-      { x: 3450, y: 1650, sharp: true },
-      { x: 3050, y: 1400, sharp: true },
-      { x: 3350, y: 1150, sharp: true },
-      { x: 2950, y: 950 }, // Dunlop curve
-      { x: 2500, y: 850 },
-      { x: 2200, y: 700, sharp: true }, // Degner 1 (sharp 90° right)
-      { x: 2400, y: 520, sharp: true }, // Degner 2 (sharp 90° right)
-      { x: 2750, y: 580, sharp: true },
-      { x: 3000, y: 700, sharp: true }, // Hairpin entry
-      { x: 3200, y: 550, sharp: true }, // Hairpin 180° apex
-      { x: 3000, y: 350, sharp: true }, // Hairpin exit
-      { x: 2300, y: 350 }, // 200R sweep
-      { x: 1600, y: 420 },
-      { x: 1000, y: 550, sharp: true }, // Spoon Curve double-apex left
-      { x: 800, y: 800, sharp: true },
-      { x: 1000, y: 1150 }, // Back straight (high-speed DRS straight)
-      { x: 1300, y: 1500 },
-      { x: 1600, y: 1850 },
-      { x: 1800, y: 2150, sharp: true }, // 130R high-speed left sweep
-      { x: 1300, y: 2220, sharp: true }, // Casio chicane (sharp flick)
-      { x: 700, y: 2350, sharp: true },
-      { x: 950, y: 2500 }
-    ],
-    // 5: Fjordsvingen Drift (Legendary 4-tier mountain drift switchback with 3 hairpins and high-speed downhill descent)
-    [
-      { x: 1400, y: 2600 }, // Start / Finish line on bottom tier
-      { x: 3300, y: 2600 }, // Fast drag straight
-      { x: 3900, y: 2400, sharp: true }, // Tier 1 -> Tier 2 Hairpin (180° right)
-      { x: 4000, y: 2100, sharp: true },
-      { x: 3900, y: 1850, sharp: true },
-      { x: 3300, y: 1850 }, // Tier 2 straight (going west)
-      { x: 2300, y: 1850 },
-      { x: 1400, y: 1850 },
-      { x: 800, y: 1700, sharp: true }, // Tier 2 -> Tier 3 Hairpin (180° left)
-      { x: 700, y: 1450, sharp: true },
-      { x: 800, y: 1200, sharp: true },
-      { x: 1400, y: 1200 }, // Tier 3 straight (going east)
-      { x: 2300, y: 1200 },
-      { x: 3300, y: 1200 },
-      { x: 3900, y: 1050, sharp: true }, // Tier 3 -> Tier 4 Hairpin (180° right)
-      { x: 4000, y: 800, sharp: true },
-      { x: 3900, y: 550, sharp: true },
-      { x: 3300, y: 550 }, // Mountain summit straight (going west)
-      { x: 2300, y: 550 },
-      { x: 1400, y: 550 },
-      { x: 800, y: 600, sharp: true }, // High-speed downhill descent entry
-      { x: 550, y: 850, sharp: true },
-      { x: 450, y: 1300 }, // Downhill canyon descent straight
-      { x: 450, y: 1900 },
-      { x: 550, y: 2450, sharp: true }, // Entry onto bottom straight
-      { x: 850, y: 2600 }
-    ],
-    // 6: Grand Prix Skogsrally (Infield chicane & hairpin complex, wide flowing straights and technical drift turns)
-    [
-      { x: 1400, y: 2600 }, // Start / Finish line
-      { x: 3400, y: 2600 }, // Massive main straight
-      { x: 4100, y: 2250, sharp: true }, // Turn 1 90° right
-      { x: 4300, y: 1500 }, // East straight
-      { x: 3900, y: 850, sharp: true }, // North-east sweeper
-      { x: 3000, y: 650 }, // Top straight
-      { x: 2000, y: 650, sharp: true }, // Dive into infield complex
-      { x: 1300, y: 1000, sharp: true }, // Infield chicane entry
-      { x: 1400, y: 1500, sharp: true }, // Infield hairpin apex
-      { x: 2200, y: 1650, sharp: true }, // S-curve exit
-      { x: 2400, y: 2050, sharp: true }, // Infield switchback
-      { x: 1900, y: 2150, sharp: true },
-      { x: 1200, y: 2000 },
-      { x: 700, y: 1850, sharp: true }, // South-west corner
-      { x: 350, y: 2150, sharp: true }, // Final chicane
-      { x: 450, y: 2550, sharp: true }, // Final turn onto start straight
-      { x: 900, y: 2600 }
-    ]
+  // Circuit 1: Grand Prix Skogsrally - Flowing forest rally stage with 850px starting straight
+  const RAW_GP_POINTS = [
+    { x: 1200, y: 1500 }, // 0: Start / Finish line
+    { x: 1900, y: 1500 }, // 1: Main straight end
+    { x: 2350, y: 1300 }, // 2: Turn 1 sweep
+    { x: 2450, y: 850 },  // 3: Turn 2 apex
+    { x: 2200, y: 450 },  // 4: Turn 3 exit
+    { x: 1700, y: 350 },  // 5: Back straight
+    { x: 1150, y: 350 },  // 6: Back straight end
+    { x: 750, y: 550 },   // 7: Chicane entry
+    { x: 800, y: 850 },   // 8: Chicane apex
+    { x: 1250, y: 950 },  // 9: Infield drift sweep
+    { x: 1350, y: 1200 }, // 10: Hairpin entry
+    { x: 1050, y: 1250 }, // 11: Hairpin apex
+    { x: 700, y: 1150 },  // 12: Infield exit
+    { x: 400, y: 1050 },  // 13: West curve
+    { x: 200, y: 1250 },  // 14: Final turn entry
+    { x: 250, y: 1470 },  // 15: Final turn exit
+    { x: 350, y: 1500 },  // 16: Straightaway runway entry (aligned with y:1500)
+    { x: 700, y: 1500 },  // 17: Straightaway runway continuation
   ];
 
-  // Sharp Corner Refinement: Inserts 5-point tangent-clamped shoulder points
-  // so Catmull-Rom spline stays tight and sharp through chicanes, 90° turns, and hairpins
-  function sharpenCorners(rawPoints) {
-    const n = rawPoints.length;
-    const result = [];
-    for (let i = 0; i < n; i++) {
-      const prev = rawPoints[(i - 1 + n) % n];
-      const cur = rawPoints[i];
-      const next = rawPoints[(i + 1) % n];
+  // Circuit 2: Fjordsvingen - Technical mountain drift track with sharp hairpins
+  const RAW_FJORD_POINTS = [
+    { x: 1250, y: 1550 }, // 0: Start / Finish line
+    { x: 1900, y: 1550 }, // 1: High-speed sweep
+    { x: 2350, y: 1300 }, // 2: Hairpin 1
+    { x: 2100, y: 1000 }, // 3: Drift switch 1
+    { x: 1450, y: 1000 }, // 4: Infield drift
+    { x: 800, y: 1000 },  // 5: Hairpin 2
+    { x: 500, y: 750 },   // 6: Chicane entry
+    { x: 900, y: 550 },   // 7: S-curve
+    { x: 1500, y: 550 },  // 8: Infield technical
+    { x: 2100, y: 400 },  // 9: Hairpin 3
+    { x: 1800, y: 180 },  // 10: Mountain apex
+    { x: 1050, y: 180 },  // 11: High straight
+    { x: 350, y: 220 },   // 12: Hairpin 4
+    { x: 150, y: 650 },   // 13: Downhill sweep
+    { x: 150, y: 1200 },  // 14: Final hairpin
+    { x: 250, y: 1520 },  // 15: Return to main straight
+    { x: 400, y: 1550 },  // 16: Straightaway runway entry (aligned with y:1550)
+    { x: 750, y: 1550 },  // 17: Straightaway runway continuation
+  ];
 
-      const d1x = cur.x - prev.x;
-      const d1y = cur.y - prev.y;
-      const len1 = Math.hypot(d1x, d1y) || 1;
+  // Circuit 3: Fjellpasset - Fast mountain rally pass with sharp corners and elevation switchbacks
+  const RAW_FJELL_POINTS = [
+    { x: 1200, y: 1550 }, // 0: Start / Finish line
+    { x: 1950, y: 1550 }, // 1: Start straight launch
+    { x: 2450, y: 1350 }, // 2: Fast uphill curve
+    { x: 2550, y: 800 },  // 3: Valley bend
+    { x: 2350, y: 350 },  // 4: Mountain crest hairpin
+    { x: 1850, y: 250 },  // 5: High ridge straight
+    { x: 1350, y: 250 },  // 6: Ridge straight
+    { x: 950, y: 400 },   // 7: Downhill chicane entry
+    { x: 650, y: 650 },   // 8: Sharp S-turn
+    { x: 1150, y: 800 },  // 9: Infield technical sweep
+    { x: 1500, y: 1050 }, // 10: Switchback hairpin
+    { x: 1200, y: 1250 }, // 11: Switchback exit
+    { x: 600, y: 1200 },  // 12: Forest dip
+    { x: 250, y: 1300 },  // 13: Final hairpin entry
+    { x: 300, y: 1520 },  // 14: Final turn exit
+    { x: 450, y: 1550 },  // 15: Straight runway entry
+    { x: 800, y: 1550 },  // 16: Straight runway continuation
+  ];
 
-      const d2x = next.x - cur.x;
-      const d2y = next.y - cur.y;
-      const len2 = Math.hypot(d2x, d2y) || 1;
+  const RALLY_ARCHETYPES = [
+    RAW_GP_POINTS,
+    RAW_FJORD_POINTS,
+    RAW_FJELL_POINTS,
+  ];
 
-      if (len1 < 50 || len2 < 50) {
-        result.push(cur);
-        continue;
+  function generateRallyRawPoints(seed, worldW = 3000, worldH = 2000) {
+    const rng = createRallyRng(seed);
+    const archIdx = Math.floor(rng() * RALLY_ARCHETYPES.length);
+    const base = RALLY_ARCHETYPES[archIdx];
+    const n = base.length;
+
+    return base.map((p, idx) => {
+      // Keep straightaway runway points aligned along the start straight
+      const isRunway = (idx === 0 || idx === 1 || idx >= n - 2);
+      if (isRunway) {
+        return { x: p.x, y: p.y };
       }
-
-      const u1x = d1x / len1;
-      const u1y = d1y / len1;
-      const u2x = d2x / len2;
-      const u2y = d2y / len2;
-
-      const dot = Math.max(-1, Math.min(1, u1x * u2x + u1y * u2y));
-      const angleTurn = Math.acos(dot);
-      const isSharp = cur.sharp || (angleTurn > 0.60);
-
-      if (isSharp && len1 > 130 && len2 > 130) {
-        const bevel = Math.min(65, Math.min(len1 * 0.28, len2 * 0.28));
-        result.push({
-          x: Math.round(cur.x - u1x * bevel * 1.3),
-          y: Math.round(cur.y - u1y * bevel * 1.3),
-          sharp: false
-        });
-        result.push({
-          x: Math.round(cur.x - u1x * bevel * 0.45),
-          y: Math.round(cur.y - u1y * bevel * 0.45),
-          sharp: false
-        });
-        result.push(cur);
-        result.push({
-          x: Math.round(cur.x + u2x * bevel * 0.45),
-          y: Math.round(cur.y + u2y * bevel * 0.45),
-          sharp: false
-        });
-        result.push({
-          x: Math.round(cur.x + u2x * bevel * 1.3),
-          y: Math.round(cur.y + u2y * bevel * 1.3),
-          sharp: false
-        });
-      } else {
-        result.push(cur);
-      }
-    }
-    return result;
+      const jx = (rng() - 0.5) * 80;
+      const jy = (rng() - 0.5) * 80;
+      return {
+        x: Math.round(Math.max(120, Math.min(worldW - 120, p.x + jx))),
+        y: Math.round(Math.max(120, Math.min(worldH - 120, p.y + jy))),
+      };
+    });
   }
 
-  function generateF1RawPoints(seed, worldW = 4600, worldH = 3000, archetype = null) {
-    const rng = createF1Rng(seed);
-    const archIdx = archetype !== null ? archetype : Math.floor(rng() * F1_ARCHETYPES.length);
-    const base = F1_ARCHETYPES[archIdx % F1_ARCHETYPES.length];
-
-    const scaleX = worldW / 4600;
-    const scaleY = worldH / 3000;
-
-    // Seed-based procedural perturbation on intermediate corners
-    for (let attempt = 0; attempt < 25; attempt++) {
-      const pts = base.map((p, idx) => {
-        // Keep start/finish straight locked and flat
-        const isStartStraight = (idx === 0 || idx === 1 || idx === base.length - 1);
-        const jx = isStartStraight ? 0 : (rng() - 0.5) * 40 * scaleX;
-        const jy = isStartStraight ? 0 : (rng() - 0.5) * 40 * scaleY;
-        return {
-          x: Math.max(120, Math.min(worldW - 120, Math.round(p.x * scaleX + jx))),
-          y: Math.max(120, Math.min(worldH - 120, Math.round(p.y * scaleY + jy))),
-          sharp: Boolean(p.sharp)
-        };
-      });
-
-      if (checkTrackValid(pts, 150 * Math.min(scaleX, scaleY))) {
-        return pts;
-      }
-    }
-
-    // Fallback to pure blueprint coordinates
-    return base.map(p => ({
-      x: Math.round(p.x * scaleX),
-      y: Math.round(p.y * scaleY),
-      sharp: Boolean(p.sharp)
-    }));
-  }
-
-  function generateF1Scenery(track) {
-    const rng = createF1Rng(track.seed || 12345);
+  function generateTrackScenery(track) {
+    const rng = createRallyRng(typeof track.seed === "number" ? track.seed : 4281);
     const pts = track.points;
     const rw = track.roadWidth;
-    const halfRoad = rw * 0.5;
-    const kerbW = 26;
+    const offroadW = track.offroadWidth || 24;
+    const wallDist = (rw * 0.5) + offroadW; // 94px
     const trees = [];
     const rocks = [];
-    const grandstands = [];
-    const distanceBoards = [];
 
-    // 1. Grandstands along the main straight (Start/Finish straightaway)
-    const p0 = track.rawPoints[0];
-    const p1 = track.rawPoints[1];
-    const straightDx = p1.x - p0.x;
-    const straightDy = p1.y - p0.y;
-    const straightLen = Math.hypot(straightDx, straightDy) || 1;
-    const straightNx = -straightDy / straightLen;
-    const straightNy = straightDx / straightLen;
+    // 1. Roadside trees & boulders (Strictly outside timber barrier walls)
+    for (let i = 0; i < pts.length; i += 6) {
+      const p1 = pts[i];
+      const p2 = pts[(i + 1) % pts.length];
+      const dx = p2.x - p1.x;
+      const dy = p2.y - p1.y;
+      const len = Math.hypot(dx, dy) || 1;
+      const nx = -dy / len;
+      const ny = dx / len;
 
-    // Pit Straight Grandstands on outfield (south side of track)
-    for (let offset = -350; offset <= 350; offset += 180) {
-      grandstands.push({
-        x: Math.round(p0.x + (straightDx / straightLen) * offset + straightNx * (halfRoad + kerbW + 75)),
-        y: Math.round(p0.y + (straightDy / straightLen) * offset + straightNy * (halfRoad + kerbW + 75)),
-        angle: Math.atan2(straightDy, straightDx),
-        length: 150,
-        rows: 5,
-      });
-    }
-
-    // 2. 150m, 100m, 50m Brake Marker Boards before heavy braking zones
-    for (let i = 0; i < track.rawPoints.length; i++) {
-      const cpPrev = track.rawPoints[(i - 1 + track.rawPoints.length) % track.rawPoints.length];
-      const cpCur = track.rawPoints[i];
-      const cpNext = track.rawPoints[(i + 1) % track.rawPoints.length];
-      const d1x = cpCur.x - cpPrev.x;
-      const d1y = cpCur.y - cpPrev.y;
-      const d2x = cpNext.x - cpCur.x;
-      const d2y = cpNext.y - cpCur.y;
-      const angleChange = Math.abs(Math.atan2(d1x * d2y - d1y * d2x, d1x * d2x + d1y * d2y));
-
-      if (angleChange > 0.75) {
-        const segLen = Math.hypot(d1x, d1y) || 1;
-        const fwdX = d1x / segLen;
-        const fwdY = d1y / segLen;
-        const nrmX = -fwdY;
-        const nrmY = fwdX;
-
-        [150, 100, 50].forEach(dist => {
-          distanceBoards.push({
-            x: Math.round(cpCur.x - fwdX * (dist * 1.6) + nrmX * (halfRoad + kerbW + 18)),
-            y: Math.round(cpCur.y - fwdY * (dist * 1.6) + nrmY * (halfRoad + kerbW + 18)),
-            angle: Math.atan2(d1y, d1x),
-            distance: dist,
+      for (const side of [-1, 1]) {
+        const roll = rng();
+        if (roll < 0.28) {
+          // Large overhanging pine tree whose canopy reaches over the timber wall above the dirt road
+          const dist = wallDist + 16 + rng() * 24;
+          const size = 100 + Math.floor(rng() * 32);
+          trees.push({
+            x: Math.round(p1.x + nx * side * dist),
+            y: Math.round(p1.y + ny * side * dist),
+            tile: rng() > 0.5 ? 1 : 0,
+            size,
+            overhang: true,
           });
-        });
+        } else if (roll < 0.58) {
+          // Roadside forest pine tree
+          const dist = wallDist + 40 + rng() * 100;
+          const size = 80 + Math.floor(rng() * 40);
+          trees.push({
+            x: Math.round(p1.x + nx * side * dist),
+            y: Math.round(p1.y + ny * side * dist),
+            tile: rng() > 0.5 ? 1 : 0,
+            size,
+            overhang: false,
+          });
+        } else if (roll < 0.78) {
+          // Roadside boulder / mossy rock outside the timber barrier
+          const dist = wallDist + 16 + rng() * 32;
+          const size = 34 + Math.floor(rng() * 24);
+          rocks.push({
+            x: Math.round(p1.x + nx * side * dist),
+            y: Math.round(p1.y + ny * side * dist),
+            tile: rng() > 0.4 ? 1 : 0,
+            size,
+          });
+        }
       }
     }
 
-    // 3. Parkland trees & boulders along outer wilderness perimeter ONLY
-    // (Keeps the entire racing infield / middle of the field completely clean of trees and rocks!)
-    let minTrackX = Infinity, maxTrackX = -Infinity, minTrackY = Infinity, maxTrackY = -Infinity;
-    for (let i = 0; i < pts.length; i++) {
-      if (pts[i].x < minTrackX) minTrackX = pts[i].x;
-      if (pts[i].x > maxTrackX) maxTrackX = pts[i].x;
-      if (pts[i].y < minTrackY) minTrackY = pts[i].y;
-      if (pts[i].y > maxTrackY) maxTrackY = pts[i].y;
-    }
-
-    for (let x = 70; x < track.worldWidth - 70; x += 110) {
-      for (let y = 70; y < track.worldHeight - 70; y += 110) {
+    // 2. Wilderness background forest groves (outer boundary wilderness and deeper infield)
+    for (let x = 60; x < (track.worldWidth || 3000) - 60; x += 150) {
+      for (let y = 60; y < (track.worldHeight || 2000) - 60; y += 150) {
         const rx = x + (rng() - 0.5) * 80;
         const ry = y + (rng() - 0.5) * 80;
-
-        // Strictly outside the racing circuit area (never inside the infield / middle of the field)
-        const isOutsideCircuit = (rx < minTrackX - 40 || rx > maxTrackX + 40 || ry < minTrackY - 40 || ry > maxTrackY + 40);
-        if (!isOutsideCircuit) continue;
-
         let minDist = Infinity;
         for (let i = 0; i < pts.length; i += 4) {
           const d = Math.hypot(rx - pts[i].x, ry - pts[i].y);
           if (d < minDist) minDist = d;
         }
 
-        if (minDist > halfRoad + kerbW + 120) {
-          if (rng() > 0.35) {
+        if (minDist > wallDist + 55 && minDist < 700) {
+          if (rng() > 0.25) {
             trees.push({
               x: Math.round(rx),
               y: Math.round(ry),
               tile: rng() > 0.5 ? 1 : 0,
-              size: 75 + Math.floor(rng() * 45),
+              size: 72 + Math.floor(rng() * 44),
+              overhang: false,
             });
           } else {
             rocks.push({
               x: Math.round(rx),
               y: Math.round(ry),
-              tile: rng() > 0.5 ? 1 : 0,
-              size: 32 + Math.floor(rng() * 26),
+              tile: rng() > 0.4 ? 1 : 0,
+              size: 32 + Math.floor(rng() * 24),
             });
           }
         }
       }
     }
 
-    return { trees, rocks, grandstands, distanceBoards };
+    return { trees, rocks };
   }
 
-  function createF1Track(id, name, seed, archetype = null, roadWidth = 175) {
-    const worldWidth = 4600;
-    const worldHeight = 3000;
-    const rawPoints = generateF1RawPoints(seed, worldWidth, worldHeight, archetype);
-    const sharpenedPoints = sharpenCorners(rawPoints);
-    const smoothPoints = generateSmoothTrack(sharpenedPoints, 12);
-    const n = smoothPoints.length;
-    const halfRoad = roadWidth * 0.5;
-    const kerbWidth = 26;
-
-    // Curvature & Kerb placement
-    const kerbs = [];
-    for (let i = 0; i < n; i++) {
-      const pPrev = smoothPoints[(i - 1 + n) % n];
-      const pCur = smoothPoints[i];
-      const pNext = smoothPoints[(i + 1) % n];
-
-      const dx1 = pCur.x - pPrev.x;
-      const dy1 = pCur.y - pPrev.y;
-      const len1 = Math.hypot(dx1, dy1) || 1;
-
-      const dx2 = pNext.x - pCur.x;
-      const dy2 = pNext.y - pCur.y;
-      const len2 = Math.hypot(dx2, dy2) || 1;
-
-      const nx = -dy2 / len2;
-      const ny = dx2 / len2;
-
-      const cross = (dx1 * dy2 - dy1 * dx2) / (len1 * len2);
-
-      if (Math.abs(cross) > 0.015) {
-        const turnSign = Math.sign(cross);
-        const isRed = Math.floor(i / 2) % 2 === 0;
-
-        // Inside apex kerb
-        kerbs.push({
-          x: pCur.x - nx * turnSign * (halfRoad + kerbWidth * 0.5),
-          y: pCur.y - ny * turnSign * (halfRoad + kerbWidth * 0.5),
-          nx: nx * turnSign,
-          ny: ny * turnSign,
-          isRed,
-          side: "inside",
-        });
-
-        // Outside exit kerb
-        kerbs.push({
-          x: pCur.x + nx * turnSign * (halfRoad + kerbWidth * 0.5),
-          y: pCur.y + ny * turnSign * (halfRoad + kerbWidth * 0.5),
-          nx: -nx * turnSign,
-          ny: -ny * turnSign,
-          isRed: !isRed,
-          side: "outside",
-        });
-      }
-    }
-
-    // Infield Anti-Shortcut Barriers (Guaranteed strictly in grass corridors, never on or under road!)
-    const infieldBarriers = [];
-    const rawN = rawPoints.length;
-    const requiredClearance = halfRoad + kerbWidth + 70; // Guaranteed minimum 183.5px clearance to tarmac
-    const requiredClearanceSq = requiredClearance * requiredClearance;
-
-    for (let i = 0; i < rawN; i++) {
-      const p1 = rawPoints[i];
-      const p2 = rawPoints[(i + 1) % rawN];
-      const mid1 = { x: (p1.x + p2.x) * 0.5, y: (p1.y + p2.y) * 0.5 };
-
-      for (let j = i + 2; j < rawN; j++) {
-        if ((i === 0 && j === rawN - 1) || Math.abs(i - j) <= 1) continue;
-        const q1 = rawPoints[j];
-        const q2 = rawPoints[(j + 1) % rawN];
-        const mid2 = { x: (q1.x + q2.x) * 0.5, y: (q1.y + q2.y) * 0.5 };
-
-        const dist = Math.hypot(mid1.x - mid2.x, mid1.y - mid2.y);
-        if (dist > roadWidth + 140 && dist < 580) {
-          const b1 = { x: Math.round((p1.x + q2.x) * 0.5), y: Math.round((p1.y + q2.y) * 0.5) };
-          const b2 = { x: Math.round((p2.x + q1.x) * 0.5), y: Math.round((p2.y + q1.y) * 0.5) };
-
-          const barLen = Math.hypot(b2.x - b1.x, b2.y - b1.y);
-          if (barLen < 80) continue; // No microscopic stubs
-
-          // CRITICAL: Validate clearance against ALL smooth spline points of the actual curved tarmac!
-          let safe = true;
-          for (let k = 0; k < smoothPoints.length; k += 2) {
-            if (distToSegmentSquared(smoothPoints[k], b1, b2) < requiredClearanceSq) {
-              safe = false;
-              break;
-            }
-          }
-          if (safe) {
-            infieldBarriers.push({ x1: b1.x, y1: b1.y, x2: b2.x, y2: b2.y });
-          }
-        }
-      }
-    }
-
+  function createRallyTrack(id, name, rawPoints, seed = 12345, roadWidth = 140, offroadWidth = 24) {
+    const smoothPoints = generateSmoothTrack(rawPoints, 16);
     const track = {
       id,
       name,
       seed,
-      worldWidth,
-      worldHeight,
+      worldWidth: 3000,
+      worldHeight: 2000,
       roadWidth,
-      kerbWidth,
+      offroadWidth,
       rawPoints,
       points: smoothPoints,
       checkpoints: rawPoints,
       totalPoints: smoothPoints.length,
-      kerbs,
-      infieldBarriers,
     };
-
-    track.scenery = generateF1Scenery(track);
+    track.scenery = generateTrackScenery(track);
     return track;
   }
 
   const TRACK_PRESETS = {
-    f1_random: { name: "Tilfeldig F1 GP 🎲", seed: null, arc: null },
-    f1_monza: { name: "Monza Autodromo (F1)", seed: 1922, arc: 0 },
-    f1_silverstone: { name: "Silverstone Arena (F1)", seed: 1950, arc: 1 },
-    f1_spa: { name: "Spa-Francorchamps (F1)", seed: 1925, arc: 2 },
-    f1_redbull: { name: "Red Bull Ring (F1)", seed: 1970, arc: 3 },
-    f1_suzuka: { name: "Suzuka Figure-Fold (F1)", seed: 1962, arc: 4 },
-    f1_fjordsvingen: { name: "Fjordsvingen Drift (F1)", seed: 2026, arc: 5 },
-    f1_gp_classic: { name: "Grand Prix Skogsrally (F1)", seed: 1994, arc: 6 },
-    grand_prix: { name: "Grand Prix Skogsrally (F1)", seed: 1994, arc: 6 },
-    fjord_drift: { name: "Fjordsvingen Drift (F1)", seed: 2026, arc: 5 },
+    rally_random: { name: "Tilfeldig Rallyetappe 🎲", seed: null, type: "random" },
+    grand_prix: { name: "Skogsrally Grand Prix", seed: 4281, type: "gp" },
+    fjord_drift: { name: "Fjordsvingen Rally", seed: 7719, type: "fjord" },
+    fjellpasset: { name: "Fjellpasset Rally", seed: 9942, type: "fjell" },
+    // Compatibility aliases
+    f1_random: { name: "Tilfeldig Rallyetappe 🎲", seed: null, type: "random" },
+    f1_gp_classic: { name: "Skogsrally Grand Prix", seed: 4281, type: "gp" },
+    f1_fjordsvingen: { name: "Fjordsvingen Rally", seed: 7719, type: "fjord" },
+    f1_monza: { name: "Skogsrally Grand Prix", seed: 4281, type: "gp" },
+    f1_silverstone: { name: "Fjellpasset Rally", seed: 9942, type: "fjell" },
+    f1_spa: { name: "Fjordsvingen Rally", seed: 7719, type: "fjord" },
+    f1_redbull: { name: "Fjellpasset Rally", seed: 9942, type: "fjell" },
+    f1_suzuka: { name: "Fjordsvingen Rally", seed: 7719, type: "fjord" },
   };
 
   const trackCache = {};
 
   function getTrack(trackId, seed = null) {
-    const tid = TRACK_PRESETS[trackId] ? trackId : "f1_random";
-    const preset = TRACK_PRESETS[tid] || TRACK_PRESETS.f1_random;
-    const finalSeed = (tid === "f1_random" && seed) ? seed : (preset.seed || seed || 42819);
+    const tid = TRACK_PRESETS[trackId] ? trackId : "rally_random";
+    const preset = TRACK_PRESETS[tid] || TRACK_PRESETS.rally_random;
+    const finalSeed = (preset.type === "random" && seed) ? seed : (preset.seed || seed || 42819);
     const cacheKey = `${tid}_${finalSeed}`;
 
     if (!trackCache[cacheKey]) {
-      trackCache[cacheKey] = createF1Track(tid, preset.name, finalSeed, preset.arc, 175);
+      let rawPoints;
+      if (preset.type === "random") {
+        rawPoints = generateRallyRawPoints(finalSeed);
+      } else if (preset.type === "fjord") {
+        rawPoints = RAW_FJORD_POINTS;
+      } else if (preset.type === "fjell") {
+        rawPoints = RAW_FJELL_POINTS;
+      } else {
+        rawPoints = RAW_GP_POINTS;
+      }
+      trackCache[cacheKey] = createRallyTrack(tid, preset.name, rawPoints, finalSeed, 140, 24);
     }
     return trackCache[cacheKey];
   }
@@ -700,7 +351,7 @@
     get: (target, prop) => getTrack(prop, state.trackSeed)
   });
 
-  // Staggered starting grid slots on the spacious F1 start straightaway (1–16 players)
+  // Staggered starting grid slots on the spacious dirt start straightaway (1–16 players)
   function getStartGridSlots(track, count = 16) {
     const p0 = track.rawPoints[0];
     const p1 = track.rawPoints[1];
@@ -717,8 +368,8 @@
     for (let i = 0; i < count; i++) {
       const row = Math.floor(i / 2);
       const side = (i % 2 === 0) ? -1 : 1;
-      const distBack = 65 + row * 65;
-      const lateralOffset = side * 38;
+      const distBack = 50 + row * 52;
+      const lateralOffset = side * 22;
 
       slots.push({
         x: p0.x - forwardX * distBack + rightX * lateralOffset,
@@ -743,7 +394,7 @@
     playerId: "",
     hostToken: "",
     isHost: false,
-    trackId: "f1_random",
+    trackId: "rally_random",
     trackSeed: Math.floor(Math.random() * 90000) + 10000,
     laps: 3,
     maxPlayers: 4,
@@ -1615,52 +1266,42 @@
       car.driftAngle = 0;
     }
 
-    // Surface detection & driving physics (Asphalt, Kerbs, Run-off / "The Grey", Grass)
+    // Surface detection & driving physics:
+    // 1. Packed Main Rally Dirt: trackDist <= halfRoad
+    // 2. Offroad Shoulder Verge: halfRoad < trackDist <= wallDist
+    // 3. Constraining Timber Barrier Wall: trackDist > wallDist
     const closest = getClosestPointOnTrack(car.x, car.y, track);
     const toTrackX = closest.x - car.x;
     const toTrackY = closest.y - car.y;
     const trackDist = Math.hypot(toTrackX, toTrackY);
     const halfRoad = track.roadWidth * 0.5;
-    const kerbWidth = track.kerbWidth || 26;
-    const runoffWidth = 36; // The grey asphalt run-off buffer outside kerbs
+    const offroadWidth = track.offroadWidth || 24;
+    const wallDist = halfRoad + offroadWidth;
 
-    const onAsphalt = trackDist <= halfRoad;
-    const onKerb = !onAsphalt && trackDist <= halfRoad + kerbWidth;
-    const onRunoff = !onAsphalt && !onKerb && trackDist <= halfRoad + kerbWidth + runoffWidth;
-    const onGrass = trackDist > halfRoad + kerbWidth + runoffWidth;
+    const onDirt = trackDist <= halfRoad;
+    const onOffroad = !onDirt && trackDist <= wallDist;
 
     // Lateral grip retention according to surface
-    const latRetention = onGrass ? 0.90 : (onRunoff ? 0.94 : (isSlidingOnIce ? 0.978 : 0.88));
+    const latRetention = onOffroad ? 0.92 : (isSlidingOnIce ? 0.978 : 0.88);
     let newVLateral = vLateral * Math.pow(latRetention, dt * 60);
 
     // Forward drive & slide braking on surface
     let newVForward = vForward;
 
-    if (onKerb) {
-      // Drivable at full speed! Tactile rumble vibration & subtle curb tick
-      if (car.speed > 35) {
-        playKerbRumble();
-      }
-    } else if (onRunoff) {
-      // Drivable on the grey run-off area! Slightly looser lateral grip, smooth racing
-      newVLateral *= Math.pow(0.96, dt * 60);
-      if (Math.abs(newVLateral) > 25 && Math.random() < 0.2) {
-        addRallyDustParticle(car);
-      }
-    } else if (onGrass) {
-      // Fully drivable on grass! Smooth rolling deceleration & grass particles
-      newVForward *= Math.pow(0.925, dt * 60);
-      newVLateral *= Math.pow(0.91, dt * 60);
-      if (Math.abs(newVForward) > 250) {
-        newVForward -= Math.sign(newVForward) * 320 * dt;
+    if (onOffroad) {
+      // Offroad shoulder: coarse gravel & dirt verge! Slightly higher drag, kicks up chunky dirt particles
+      newVForward *= Math.pow(0.95, dt * 60);
+      newVLateral *= Math.pow(0.93, dt * 60);
+      if (Math.abs(newVForward) > 260) {
+        newVForward -= Math.sign(newVForward) * 280 * dt;
       }
       if (car.speed > 20) {
-        addGrassParticle(car);
+        addRallyDustParticle(car);
       }
     }
 
-    const effectiveEnginePower = onGrass ? (enginePower * 0.55) : (onRunoff ? enginePower * 0.88 : enginePower);
-    const effectiveMaxSpeed = onGrass ? Math.min(maxSpeed, 260) : maxSpeed;
+    const effectiveEnginePower = onOffroad ? (enginePower * 0.78) : enginePower;
+    const effectiveMaxSpeed = onOffroad ? Math.min(maxSpeed, 270) : maxSpeed;
 
     if (throttle > 0 && newVForward < effectiveMaxSpeed) {
       newVForward += throttle * effectiveEnginePower * dt;
@@ -1675,8 +1316,8 @@
       }
     }
 
-    // Rolling drag: low on asphalt/kerb (0.996), mild on grey runoff (0.988), higher on grass (0.925)
-    const rollingDrag = onGrass ? 0.925 : (onRunoff ? 0.988 : (onKerb ? 0.994 : 0.996));
+    // Rolling drag: low on dirt (0.996), slightly higher on offroad edge (0.95)
+    const rollingDrag = onOffroad ? 0.95 : 0.996;
     newVForward *= Math.pow(rollingDrag, dt * 60);
 
     car.vx = newVForward * forwardX + newVLateral * rightX;
@@ -1688,98 +1329,37 @@
     car.x += car.vx * dt;
     car.y += car.vy * dt;
 
-    // 1. Infield Anti-Shortcut Barriers (Block cutting straight across grass infields!)
-    if (track.infieldBarriers && track.infieldBarriers.length > 0) {
-      for (let b = 0; b < track.infieldBarriers.length; b++) {
-        const bar = track.infieldBarriers[b];
-        const bcp = getClosestPointOnSegment(car.x, car.y, { x: bar.x1, y: bar.y1 }, { x: bar.x2, y: bar.y2 });
-        const toBarX = car.x - bcp.x;
-        const toBarY = car.y - bcp.y;
-        const barDist = Math.hypot(toBarX, toBarY);
-        const barRadius = 22;
+    // Solid Timber Log Barrier Walls (Constrains car strictly to the road circuit!)
+    const currentClosest = getClosestPointOnTrack(car.x, car.y, track);
+    const curToTrackX = currentClosest.x - car.x;
+    const curToTrackY = currentClosest.y - car.y;
+    const curTrackDist = Math.hypot(curToTrackX, curToTrackY);
 
-        if (barDist < barRadius) {
-          let bnx = toBarX;
-          let bny = toBarY;
-          if (barDist < 0.001) {
-            bnx = -1;
-            bny = 0;
-          } else {
-            bnx /= barDist;
-            bny /= barDist;
-          }
+    if (curTrackDist > wallDist) {
+      const d = curTrackDist || 1;
+      const nx = curToTrackX / d; // Inward normal towards centerline
+      const ny = curToTrackY / d;
 
-          // Gentle position push-out by exact penetration depth (No teleporting!)
-          const overlap = barRadius - barDist;
-          car.x += bnx * overlap;
-          car.y += bny * overlap;
+      // Keep car firmly inside wall boundary (cannot penetrate or clip through)
+      car.x = currentClosest.x - nx * wallDist;
+      car.y = currentClosest.y - ny * wallDist;
 
-          // Impact response: absorb shock & grind along barrier (No pinball catapulting!)
-          const vn = car.vx * bnx + car.vy * bny;
-          if (vn < 0) {
-            const vtX = car.vx - vn * bnx;
-            const vtY = car.vy - vn * bny;
-            const bounce = 0.12;       // Absorbs 88% of normal impact energy
-            const wallFriction = 0.65; // Realistic friction sliding along barrier
-            car.vx = vtX * wallFriction - bnx * (vn * bounce);
-            car.vy = vtY * wallFriction - bny * (vn * bounce);
-            car.speed = Math.hypot(car.vx, car.vy);
-
-            const now = performance.now();
-            if (!car.lastBarrierHit || now - car.lastBarrierHit > 120) {
-              car.lastBarrierHit = now;
-              playTone(160, 0.14, "sawtooth", 0.35);
-              addSparkParticles(car.x, car.y);
-            }
-          }
-        }
-      }
-    }
-
-    // 2. World Outer Perimeter Boundary Barrier
-    const wWidth = track.worldWidth || 4600;
-    const wHeight = track.worldHeight || 3000;
-    const margin = 60;
-    let hitBorder = false;
-    let bnx = 0, bny = 0;
-
-    if (car.x < margin) {
-      car.x = margin;
-      bnx = 1;
-      hitBorder = true;
-    } else if (car.x > wWidth - margin) {
-      car.x = wWidth - margin;
-      bnx = -1;
-      hitBorder = true;
-    }
-    if (car.y < margin) {
-      car.y = margin;
-      bny = 1;
-      hitBorder = true;
-    } else if (car.y > wHeight - margin) {
-      car.y = wHeight - margin;
-      bny = -1;
-      hitBorder = true;
-    }
-
-    if (hitBorder) {
-      const bLen = Math.hypot(bnx, bny) || 1;
-      bnx /= bLen;
-      bny /= bLen;
-      const vn = car.vx * bnx + car.vy * bny;
+      // Normal velocity component towards track centerline (inward)
+      const vn = car.vx * nx + car.vy * ny;
       if (vn < 0) {
-        const vtX = car.vx - vn * bnx;
-        const vtY = car.vy - vn * bny;
-        const bounce = 0.12;
-        const wallFriction = 0.65;
-        car.vx = vtX * wallFriction - bnx * (vn * bounce);
-        car.vy = vtY * wallFriction - bny * (vn * bounce);
+        // Moving outward into the barrier wall: absorb 88% of impact, realistic friction slide along wall
+        const vtX = car.vx - vn * nx;
+        const vtY = car.vy - vn * ny;
+        const bounce = 0.12;       // Absorbs 88% of normal impact energy (no pinball catapulting!)
+        const wallFriction = 0.65; // Realistic friction sliding along timber wall
+        car.vx = vtX * wallFriction + nx * (-vn * bounce);
+        car.vy = vtY * wallFriction + ny * (-vn * bounce);
         car.speed = Math.hypot(car.vx, car.vy);
 
         const now = performance.now();
         if (!car.lastWallHit || now - car.lastWallHit > 120) {
           car.lastWallHit = now;
-          playTone(150, 0.12, "sawtooth", 0.32);
+          playTone(150, 0.14, "sawtooth", 0.35);
           addSparkParticles(car.x, car.y);
         }
       }
@@ -2062,47 +1642,41 @@
 
   function renderTrackToOffscreen(track) {
     const pts = track.points;
-    const rw = track.roadWidth || 175;
-    const halfRoad = rw * 0.5;
-    const kerbW = track.kerbWidth || 26;
-    const worldW = track.worldWidth || 4600;
-    const worldH = track.worldHeight || 3000;
+    const rw = track.roadWidth || 140;
+    const offroadW = track.offroadWidth || 24;
+    const totalW = rw + offroadW * 2; // 188px
+    const worldW = track.worldWidth || 3000;
+    const worldH = track.worldHeight || 2000;
 
     const canvas = document.createElement("canvas");
     canvas.width = worldW;
     canvas.height = worldH;
     const ctx = canvas.getContext("2d");
 
-    // 1. Lush Manicured F1 Racecourse Emerald Lawn
-    ctx.fillStyle = "#1b431e";
+    // 1. Deep forest green base ground (dirt rally wilderness)
+    ctx.fillStyle = "#183017";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // 2. Alternating Lawn-Mowing Stripes across outfield & infield
-    for (let x = 0; x < canvas.width; x += 120) {
-      if ((Math.floor(x / 120)) % 2 === 0) {
-        ctx.fillStyle = "rgba(255, 255, 255, 0.035)";
-        ctx.fillRect(x, 0, 120, canvas.height);
-      }
-    }
-
-    // 3. Procedural turf & grass flecks
-    const bgRng = createF1Rng(track.seed || 12345);
+    // 2. Procedural pixel-art terrain tufts & forest loam
+    const bgRng = createRallyRng(typeof track.seed === "number" ? track.seed : 4281);
     for (let i = 0; i < 3000; i++) {
       const px = Math.floor(bgRng() * canvas.width);
       const py = Math.floor(bgRng() * canvas.height);
       const roll = bgRng();
-      if (roll < 0.4) {
-        ctx.fillStyle = "#153818";
-      } else if (roll < 0.75) {
-        ctx.fillStyle = "#225325";
+      if (roll < 0.35) {
+        ctx.fillStyle = "#122511"; // Deep moss
+      } else if (roll < 0.65) {
+        ctx.fillStyle = "#1f3e1d"; // Pine needle grass
+      } else if (roll < 0.85) {
+        ctx.fillStyle = "#274f24"; // Bright fern tuft
       } else {
-        ctx.fillStyle = "#2a632e";
+        ctx.fillStyle = "#22170e"; // Forest dirt patch
       }
-      const sz = Math.floor(bgRng() * 3) * 2 + 2;
+      const sz = Math.floor(bgRng() * 3) * 2 + 2; // 2, 4, or 6 px
       ctx.fillRect(px, py, sz, sz);
     }
 
-    // 4. Closed track loop path
+    // 3. Dirt road path construction
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.beginPath();
@@ -2110,127 +1684,111 @@
     for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
     ctx.closePath();
 
-    // 5. Run-off Area (Dark asphalt run-off buffer outside curves/kerbs)
-    ctx.lineWidth = rw + 2 * (kerbW + 36);
-    ctx.strokeStyle = "#252a32"; // Dark asphalt run-off
+    // 4. Forest road clearance edge / dark soil ditch
+    ctx.lineWidth = totalW + 42;
+    ctx.strokeStyle = "rgba(14, 24, 12, 0.7)";
     ctx.stroke();
 
-    // 6. Red & White Rumble Kerbs ("de røde og hvite delene")
-    if (track.kerbs && track.kerbs.length > 0) {
-      track.kerbs.forEach(k => {
-        ctx.save();
-        ctx.translate(k.x, k.y);
-        ctx.rotate(Math.atan2(k.ny, k.nx));
-        // Alternating red and white curb block
-        ctx.fillStyle = k.isRed ? "#dc2626" : "#f8fafc";
-        ctx.fillRect(-11, -kerbW * 0.5, 22, kerbW);
+    // 5. Timber Log Barriers (Solid wall fence along road boundaries)
+    // Outer drop shadow of timber barrier
+    ctx.lineWidth = totalW + 26;
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.45)";
+    ctx.stroke();
 
-        // 3D rumble strip bevel shadow & highlight
-        ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
-        ctx.fillRect(-11, kerbW * 0.5 - 3, 22, 3);
-        ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
-        ctx.fillRect(-11, -kerbW * 0.5, 22, 3);
-        ctx.restore();
-      });
+    // Heavy timber guardrail beam body
+    ctx.lineWidth = totalW + 18;
+    ctx.strokeStyle = "#25150a"; // Dark rustic log
+    ctx.stroke();
+
+    // Timber top cap rail highlight
+    ctx.lineWidth = totalW + 10;
+    ctx.strokeStyle = "#53341b"; // Weathered timber rail
+    ctx.stroke();
+
+    // 6. Offroad Edges / Shoulder (Rough gravel & mud verge between the wall and dirt road)
+    ctx.lineWidth = totalW;
+    ctx.strokeStyle = "#472c15"; // Dark embankment mud
+    ctx.stroke();
+
+    ctx.lineWidth = totalW - 12;
+    ctx.strokeStyle = "#5a371c"; // Coarse gravel shoulder
+    ctx.stroke();
+
+    // 7. Offroad texture granules (coarse gravel, loose rocks, and mud clumps)
+    for (let i = 0; i < pts.length; i += 3) {
+      const pt = pts[i];
+      for (let s = 0; s < 4; s++) {
+        const side = s % 2 === 0 ? 1 : -1;
+        const dist = (rw * 0.5) + (bgRng() * (offroadW - 2) + 1);
+        const pNext = pts[(i + 1) % pts.length];
+        const dx = pNext.x - pt.x;
+        const dy = pNext.y - pt.y;
+        const len = Math.hypot(dx, dy) || 1;
+        const nx = -dy / len;
+        const ny = dx / len;
+        const gx = pt.x + nx * side * dist + (bgRng() - 0.5) * 8;
+        const gy = pt.y + ny * side * dist + (bgRng() - 0.5) * 8;
+        ctx.fillStyle = bgRng() > 0.4 ? "#341f0f" : "#784b25";
+        ctx.fillRect(Math.round(gx), Math.round(gy), bgRng() > 0.6 ? 3 : 2, bgRng() > 0.6 ? 3 : 2);
+      }
     }
 
-    // 7. Main Circuit Asphalt / Tarmac
+    // 8. Packed Main Rally Dirt Bed (Solid continuous dirt road without 2 lanes)
     ctx.beginPath();
     ctx.moveTo(pts[0].x, pts[0].y);
     for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
     ctx.closePath();
 
-    // Outer White Track Limit Boundary Lines
     ctx.lineWidth = rw;
-    ctx.strokeStyle = "#f8fafc";
+    ctx.strokeStyle = "#7c4e27"; // Warm rally dirt
     ctx.stroke();
 
-    // Dark Smooth Tarmac Surface
-    ctx.lineWidth = rw - 6;
-    ctx.strokeStyle = "#23262d";
+    // 9. Surface loam & fine clay center
+    ctx.lineWidth = rw - 16;
+    ctx.strokeStyle = "#8e5a2e";
     ctx.stroke();
 
-    // Subtle Racing Line Rubber Groove
-    ctx.lineWidth = rw * 0.42;
-    ctx.strokeStyle = "#1b1d24";
+    // 10. Organic soil variation (smooth continuous dirt track)
+    ctx.lineWidth = rw - 36;
+    ctx.strokeStyle = "#845329";
     ctx.stroke();
 
-    // Fine asphalt texture grains
-    for (let i = 0; i < pts.length; i += 3) {
+    // 11. Dirt pebble granules along the main road
+    for (let i = 0; i < pts.length; i += 2) {
       const pt = pts[i];
       for (let s = 0; s < 4; s++) {
-        const offX = (bgRng() - 0.5) * (rw * 0.85);
-        const offY = (bgRng() - 0.5) * (rw * 0.85);
-        ctx.fillStyle = bgRng() > 0.5 ? "#181a20" : "#2f343e";
-        const sz = bgRng() > 0.8 ? 3 : 2;
-        ctx.fillRect(Math.round(pt.x + offX), Math.round(pt.y + offY), sz, sz);
+        const off = (bgRng() - 0.5) * (rw * 0.75);
+        const pNext = pts[(i + 1) % pts.length];
+        const dx = pNext.x - pt.x;
+        const dy = pNext.y - pt.y;
+        const len = Math.hypot(dx, dy) || 1;
+        const nx = -dy / len;
+        const ny = dx / len;
+        const gx = pt.x + nx * off;
+        const gy = pt.y + ny * off;
+        ctx.fillStyle = bgRng() > 0.5 ? "#2c190c" : "#a8713c";
+        ctx.fillRect(Math.round(gx), Math.round(gy), 2, 2);
       }
     }
 
-    // 8. Infield Anti-Shortcut Barriers (Drawn on top of grass, 100% visible, never under road!)
-    if (track.infieldBarriers && track.infieldBarriers.length > 0) {
-      track.infieldBarriers.forEach(b => {
-        // Barrier shadow
-        ctx.lineWidth = 14;
-        ctx.strokeStyle = "rgba(0, 0, 0, 0.45)";
-        ctx.beginPath();
-        ctx.moveTo(b.x1 + 3, b.y1 + 4);
-        ctx.lineTo(b.x2 + 3, b.y2 + 4);
-        ctx.stroke();
-
-        // Steel barrier body
-        ctx.lineWidth = 10;
-        ctx.strokeStyle = "#334155";
-        ctx.beginPath();
-        ctx.moveTo(b.x1, b.y1);
-        ctx.lineTo(b.x2, b.y2);
-        ctx.stroke();
-
-        // Top rail highlight
-        ctx.lineWidth = 6;
-        ctx.strokeStyle = "#94a3b8";
-        ctx.stroke();
-
-        // Warning Hazard Stripes
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = "#ef4444";
-        ctx.setLineDash([16, 16]);
-        ctx.stroke();
-        ctx.setLineDash([]);
-      });
-    }
-
-    // 9. Outer Venue Perimeter Barrier
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.45)";
-    ctx.lineWidth = 16;
-    ctx.strokeRect(52, 52, worldW - 100, worldH - 100);
-
-    ctx.strokeStyle = "#334155";
-    ctx.lineWidth = 12;
-    ctx.strokeRect(50, 50, worldW - 100, worldH - 100);
-
-    ctx.strokeStyle = "#94a3b8";
-    ctx.lineWidth = 4;
-    ctx.strokeRect(50, 50, worldW - 100, worldH - 100);
-
-    // 10. Starting Grid Boxes (Slots 1..16 along the Main Straight)
+    // 12. Starting Grid Boxes (Slots 1..16 along the Straight)
     const slots = getStartGridSlots(track, 16);
     slots.forEach((s, idx) => {
       ctx.save();
       ctx.translate(s.x, s.y);
       ctx.rotate(s.angle);
-      ctx.strokeStyle = "rgba(248, 250, 252, 0.85)";
+      ctx.strokeStyle = "rgba(254, 243, 199, 0.75)";
       ctx.lineWidth = 2.5;
-      ctx.strokeRect(-26, -18, 52, 36);
-      ctx.fillStyle = "#fbbf24";
+      ctx.strokeRect(-24, -16, 48, 32);
+      ctx.fillStyle = "rgba(254, 243, 199, 0.85)";
       ctx.font = "900 13px monospace";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(String(idx + 1), -18, 0);
+      ctx.fillText(String(idx + 1), -16, 0);
       ctx.restore();
     });
 
-    // 11. Checkered Start / Finish Line
+    // 13. Checkered Start / Finish Line
     const p0 = track.rawPoints[0];
     const p1 = track.rawPoints[1];
     const angle = Math.atan2(p1.y - p0.y, p1.x - p0.x);
@@ -2239,124 +1797,20 @@
     ctx.translate(p0.x, p0.y);
     ctx.rotate(angle);
 
-    const halfW = rw * 0.5;
+    const halfW = totalW * 0.5;
     const boxSize = 14;
     const cols = 4;
-    const rows = Math.floor(rw / boxSize);
+    const rows = Math.floor(totalW / boxSize);
 
     for (let c = 0; c < cols; c++) {
       for (let r = 0; r < rows; r++) {
-        ctx.fillStyle = (c + r) % 2 === 0 ? "#ffffff" : "#111827";
+        ctx.fillStyle = (c + r) % 2 === 0 ? "#fef3c7" : "#26150b";
         ctx.fillRect(-28 + c * boxSize, -halfW + r * boxSize, boxSize, boxSize);
       }
     }
-
-    // 12. Formula 1 Overhead Start/Finish Gantry & Pit Wall
-    // Gantry Shadow
-    ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
-    ctx.fillRect(-22, -halfW - 32, 44, rw + 64);
-
-    // Gantry Pillars
-    ctx.fillStyle = "#1e293b";
-    ctx.fillRect(-18, -halfW - 30, 36, 22);
-    ctx.fillRect(-18, halfW + 8, 36, 22);
-
-    ctx.fillStyle = "#475569";
-    ctx.fillRect(-16, -halfW - 28, 32, 18);
-    ctx.fillRect(-16, halfW + 10, 32, 18);
-
-    // Overhead Gantry Span Truss
-    ctx.fillStyle = "#334155";
-    ctx.fillRect(-12, -halfW - 10, 24, rw + 20);
-
-    // 5 Red Starting Lights on Gantry
-    for (let light = 0; light < 5; light++) {
-      const ly = -32 + light * 16;
-      ctx.fillStyle = "#0f172a";
-      ctx.fillRect(-8, ly - 6, 16, 12);
-      ctx.fillStyle = "#ef4444";
-      ctx.beginPath();
-      ctx.arc(0, ly, 4, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
     ctx.restore();
 
-    // 13. Pit Wall along inside of Main Straight with Sponsor Hoardings
-    ctx.save();
-    ctx.translate(p0.x, p0.y);
-    ctx.rotate(angle);
-    const pitWallY = -halfW - 12;
-    ctx.fillStyle = "#475569";
-    ctx.fillRect(-500, pitWallY - 14, 1000, 14);
-    ctx.fillStyle = "#0284c7";
-    ctx.fillRect(-480, pitWallY - 12, 220, 10);
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 8px sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("FORMEL 1 GRAND PRIX", -370, pitWallY - 7);
-
-    ctx.fillStyle = "#ea580c";
-    ctx.fillRect(-220, pitWallY - 12, 200, 10);
-    ctx.fillStyle = "#ffffff";
-    ctx.fillText("TURBOSLADD SPEEDWAY", -120, pitWallY - 7);
-
-    ctx.fillStyle = "#16a34a";
-    ctx.fillRect(20, pitWallY - 12, 220, 10);
-    ctx.fillStyle = "#ffffff";
-    ctx.fillText("NTNU RACING CLUB", 130, pitWallY - 7);
-
-    ctx.fillStyle = "#7c3aed";
-    ctx.fillRect(280, pitWallY - 12, 180, 10);
-    ctx.fillStyle = "#ffffff";
-    ctx.fillText("DEEP DRIFT", 370, pitWallY - 7);
-    ctx.restore();
-
-    // 14. Brake Marker Boards (150m, 100m, 50m)
-    if (track.scenery && track.scenery.distanceBoards) {
-      track.scenery.distanceBoards.forEach(b => {
-        ctx.save();
-        ctx.translate(b.x, b.y);
-        ctx.rotate(b.angle);
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(-12, -7, 24, 14);
-        ctx.strokeStyle = "#0f172a";
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(-12, -7, 24, 14);
-        ctx.fillStyle = "#0f172a";
-        ctx.font = "bold 9px sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(String(b.distance), 0, 1);
-        ctx.restore();
-      });
-    }
-
-    // 15. Grandstands along Main Straight
-    if (track.scenery && track.scenery.grandstands) {
-      track.scenery.grandstands.forEach(g => {
-        ctx.save();
-        ctx.translate(g.x, g.y);
-        ctx.rotate(g.angle);
-        ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
-        ctx.fillRect(-g.length * 0.5 + 4, -20, g.length, 44);
-        ctx.fillStyle = "#334155";
-        ctx.fillRect(-g.length * 0.5, -24, g.length, 42);
-        ctx.fillStyle = "#1e293b";
-        ctx.fillRect(-g.length * 0.5 + 2, -22, g.length - 4, 38);
-        const crowdCols = ["#ef4444", "#38bdf8", "#fbbf24", "#22c55e", "#ffffff", "#f97316"];
-        for (let r = 0; r < 4; r++) {
-          for (let c = -g.length * 0.5 + 8; c < g.length * 0.5 - 8; c += 7) {
-            ctx.fillStyle = crowdCols[(Math.floor(c * 17 + r * 31) >>> 0) % crowdCols.length];
-            ctx.fillRect(c, -20 + r * 9, 4, 4);
-          }
-        }
-        ctx.restore();
-      });
-    }
-
-    // 16. Parkland Trees & Boulders
+    // 14. Scenery: Ground Rocks & Boulders outside the timber walls
     if (tilemapImage.complete && track.scenery && track.scenery.rocks) {
       ctx.save();
       ctx.imageSmoothingEnabled = false;
@@ -2369,6 +1823,7 @@
       ctx.restore();
     }
 
+    // 15. Scenery: Tree Ground Shadows (Cast on ground before overhead foliage)
     if (treeShadowCanvas && track.scenery && track.scenery.trees) {
       ctx.save();
       ctx.imageSmoothingEnabled = false;
@@ -2476,29 +1931,17 @@
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const worldW = track.worldWidth || 4600;
-    const worldH = track.worldHeight || 3000;
+    const worldW = track.worldWidth || 3000;
+    const worldH = track.worldHeight || 2000;
     const scale = Math.min((canvas.width - 16) / worldW, (canvas.height - 16) / worldH);
     const offsetX = (canvas.width - worldW * scale) / 2;
     const offsetY = (canvas.height - worldH * scale) / 2;
 
-    // Grass infield background
-    ctx.fillStyle = "#163417";
+    // Forest background
+    ctx.fillStyle = "#10210f";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Infield anti-shortcut barriers
-    if (track.infieldBarriers && track.infieldBarriers.length > 0) {
-      ctx.strokeStyle = "rgba(239, 68, 68, 0.85)";
-      ctx.lineWidth = 2;
-      track.infieldBarriers.forEach(b => {
-        ctx.beginPath();
-        ctx.moveTo(offsetX + b.x1 * scale, offsetY + b.y1 * scale);
-        ctx.lineTo(offsetX + b.x2 * scale, offsetY + b.y2 * scale);
-        ctx.stroke();
-      });
-    }
-
-    // Asphalt track ribbon
+    // Timber barrier walls outline
     const pts = track.points;
     ctx.beginPath();
     ctx.moveTo(offsetX + pts[0].x * scale, offsetY + pts[0].y * scale);
@@ -2506,18 +1949,20 @@
       ctx.lineTo(offsetX + pts[i].x * scale, offsetY + pts[i].y * scale);
     }
     ctx.closePath();
-    ctx.lineWidth = Math.max(3, Math.round((track.roadWidth || 175) * scale));
-    ctx.strokeStyle = "#374151";
+    const rw = track.roadWidth || 140;
+    const offroadW = track.offroadWidth || 24;
+    ctx.lineWidth = Math.max(5, Math.round((rw + offroadW * 2) * scale));
+    ctx.strokeStyle = "#27170c";
     ctx.stroke();
 
-    // White racing line guide
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.35)";
+    // Dirt road ribbon
+    ctx.lineWidth = Math.max(3, Math.round(rw * scale));
+    ctx.strokeStyle = "#8d5b2f";
     ctx.stroke();
 
     // Start / Finish line marker
     const p0 = track.rawPoints[0];
-    ctx.fillStyle = "#fbbf24";
+    ctx.fillStyle = "#fef3c7";
     ctx.beginPath();
     ctx.arc(offsetX + p0.x * scale, offsetY + p0.y * scale, 3.5, 0, Math.PI * 2);
     ctx.fill();
@@ -3125,7 +2570,7 @@
       const data = await resp.json();
       if (data && data.ok) {
         state.isHost = Boolean(data.isHost);
-        state.trackId = data.trackId || "f1_random";
+        state.trackId = data.trackId || "rally_random";
         if (data.trackSeed) state.trackSeed = data.trackSeed;
         state.laps = data.laps || 3;
         state.maxPlayers = data.maxPlayers || 4;
@@ -3225,7 +2670,7 @@
 
     // Explicitly synchronize track and laps from Splitscreen UI
     if (el.selectSplitTrack) {
-      state.trackId = el.selectSplitTrack.value || state.trackId || "f1_random";
+      state.trackId = el.selectSplitTrack.value || state.trackId || "rally_random";
     }
     if (el.controlSplitLaps) {
       const activeBtn = el.controlSplitLaps.querySelector(".seg-btn.active");
@@ -3334,7 +2779,7 @@
 
     // Explicitly synchronize track and laps from Solo UI
     if (el.selectSoloTrack) {
-      state.trackId = el.selectSoloTrack.value || state.trackId || "f1_random";
+      state.trackId = el.selectSoloTrack.value || state.trackId || "rally_random";
     }
     if (el.controlSoloLaps) {
       const activeBtn = el.controlSoloLaps.querySelector(".seg-btn.active");
@@ -3408,15 +2853,11 @@
   // =========================================================================
 
   function updateLoungeSettingsUI() {
-    const trackNames = {
-      f1_random: "Tilfeldig F1 GP 🎲",
-      f1_monza: "Monza Autodromo (F1)",
-      f1_silverstone: "Silverstone Circuit (F1)",
-      f1_spa: "Spa-Francorchamps (F1)",
-      f1_redbull: "Red Bull Ring (F1)",
-      f1_suzuka: "Suzuka Circuit (F1)",
-      grand_prix: "Monza Autodromo (F1)",
-      fjord_drift: "Spa-Francorchamps (F1)",
+        const trackNames = {
+      rally_random: "Tilfeldig Rallyetappe 🎲",
+      grand_prix: "Skogsrally Grand Prix",
+      fjord_drift: "Fjordsvingen Rally",
+      fjellpasset: "Fjellpasset Rally",
     };
     if (el.loungeTrackName) {
       el.loungeTrackName.textContent = trackNames[state.trackId] || state.trackId;
@@ -3622,8 +3063,8 @@
     if (el.btnRegenSoloTrack) {
       el.btnRegenSoloTrack.addEventListener("click", () => {
         state.trackSeed = Math.floor(Math.random() * 90000) + 10000;
-        state.trackId = "f1_random";
-        if (el.selectSoloTrack) el.selectSoloTrack.value = "f1_random";
+        state.trackId = "rally_random";
+        if (el.selectSoloTrack) el.selectSoloTrack.value = "rally_random";
         playTone(660, 0.1, "triangle", 0.2);
         el.btnRegenSoloTrack.textContent = "✓ Ny bane!";
         setTimeout(() => { if (el.btnRegenSoloTrack) el.btnRegenSoloTrack.textContent = "🎲 Ny bane"; }, 750);
@@ -3633,8 +3074,8 @@
     if (el.btnRegenSplitTrack) {
       el.btnRegenSplitTrack.addEventListener("click", () => {
         state.trackSeed = Math.floor(Math.random() * 90000) + 10000;
-        state.trackId = "f1_random";
-        if (el.selectSplitTrack) el.selectSplitTrack.value = "f1_random";
+        state.trackId = "rally_random";
+        if (el.selectSplitTrack) el.selectSplitTrack.value = "rally_random";
         playTone(660, 0.1, "triangle", 0.2);
         el.btnRegenSplitTrack.textContent = "✓ Ny bane!";
         setTimeout(() => { if (el.btnRegenSplitTrack) el.btnRegenSplitTrack.textContent = "🎲 Ny bane"; }, 750);
@@ -3709,7 +3150,7 @@
               hostName: hostName,
               color: state.driverColor,
               avatar: selectedAvatarStr,
-              trackId: state.trackId || "f1_random",
+              trackId: state.trackId || "rally_random",
               trackSeed: state.trackSeed,
               laps: state.laps || 3,
               maxPlayers: 16,
@@ -3766,7 +3207,7 @@
             state.roomCode = data.roomCode;
             state.playerId = data.playerId;
             state.isHost = false;
-            state.trackId = data.trackId || "f1_random";
+            state.trackId = data.trackId || "rally_random";
             if (data.trackSeed) state.trackSeed = data.trackSeed;
             state.laps = data.laps || 3;
             if (data.color) {
@@ -3976,7 +3417,7 @@
         const data = await resp.json();
         if (data && data.ok) {
           state.isHost = Boolean(data.isHost);
-          state.trackId = data.trackId || "f1_random";
+          state.trackId = data.trackId || "rally_random";
           if (data.trackSeed) state.trackSeed = data.trackSeed;
           state.laps = data.laps || 3;
           state.maxPlayers = data.maxPlayers || 16;

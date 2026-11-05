@@ -42,91 +42,61 @@ PLAYER_PALETTE = [
 ]
 
 TRACK_CONFIGS = {
-    "f1_random": {
-        "id": "f1_random",
-        "name": "Tilfeldig F1 GP 🎲",
-        "desc": "Unik, tilfeldig generert Grand Prix-bane med varierte sjikaner, langstrekker og hårnåler.",
+    "rally_random": {
+        "id": "rally_random",
+        "name": "Tilfeldig Rallyetappe 🎲",
+        "desc": "Unik, tilfeldig generert rallyetappe med grusvei, offroad-skuldre og krevende svinger.",
         "difficulty": "Variert",
         "lapsDefault": 3,
-        "width": 4600,
-        "height": 3000,
+        "width": 3000,
+        "height": 2000,
     },
-    "f1_monza": {
-        "id": "f1_monza",
-        "name": "Monza Autodromo (F1)",
-        "desc": "Legendarisk fartsbane med lange DRS-strekker, Variante del Rettifilo-sjikanen og Parabolica.",
+    "grand_prix": {
+        "id": "grand_prix",
+        "name": "Skogsrally Grand Prix",
+        "desc": "Rask grusetappe gjennom dype barskoger med lange fartsstrekker, tekniske sjikaner og solide tømmervegger.",
         "difficulty": "Middels",
         "lapsDefault": 3,
-        "width": 4600,
-        "height": 3000,
+        "width": 3000,
+        "height": 2000,
     },
-    "f1_silverstone": {
-        "id": "f1_silverstone",
-        "name": "Silverstone Arena (F1)",
-        "desc": "Klassisk britisk GP med The Loop-hårnålen, Becketts-komplekset, Hangar straight og Stowe.",
+    "fjord_drift": {
+        "id": "fjord_drift",
+        "name": "Fjordsvingen Rally",
+        "desc": "Teknisk rallyetappe med krappe hårnåler, kampesteiner og krevende grussladder.",
         "difficulty": "Ekspert",
         "lapsDefault": 3,
-        "width": 4600,
-        "height": 3000,
+        "width": 3000,
+        "height": 2000,
     },
-    "f1_spa": {
-        "id": "f1_spa",
-        "name": "Spa-Francorchamps (F1)",
-        "desc": "Ardennerskogens perle med La Source-hårnålen, Eau Rouge, Kemmel-langstrekka og Bus Stop-sjikanen.",
-        "difficulty": "Ekspert",
+    "fjellpasset": {
+        "id": "fjellpasset",
+        "name": "Fjellpasset Rally",
+        "desc": "Høydemeter, kvasse 90°-svinger og fartsfylte skogsstrekker med offroad-skuldre.",
+        "difficulty": "Vanskelig",
         "lapsDefault": 3,
-        "width": 4600,
-        "height": 3000,
-    },
-    "f1_redbull": {
-        "id": "f1_redbull",
-        "name": "Red Bull Ring (F1)",
-        "desc": "Rask østerriksk bane med tre kraftige bremsesoner, krappe oppoverbakke-svinger og flytende infield.",
-        "difficulty": "Middels",
-        "lapsDefault": 3,
-        "width": 4600,
-        "height": 3000,
-    },
-    "f1_suzuka": {
-        "id": "f1_suzuka",
-        "name": "Suzuka Figure-Fold (F1)",
-        "desc": "Teknisk mesterverk med sammenhengende S-kurver, Degner 90°-svinger, hårnål og 130R.",
-        "difficulty": "Ekspert",
-        "lapsDefault": 3,
-        "width": 4600,
-        "height": 3000,
-    },
-    "f1_fjordsvingen": {
-        "id": "f1_fjordsvingen",
-        "name": "Fjordsvingen Drift (F1)",
-        "desc": "Norsk fjellbane med 4 etasjer med spektakulære hårnålssvinger for ekstreme sladder.",
-        "difficulty": "Ekspert",
-        "lapsDefault": 3,
-        "width": 4600,
-        "height": 3000,
-    },
-    "f1_gp_classic": {
-        "id": "f1_gp_classic",
-        "name": "Grand Prix Skogsrally (F1)",
-        "desc": "Hurtig klassisk bane med dype infield-sjikaner, vidåpne fartsstrekker og tekniske svingkombinasjoner.",
-        "difficulty": "Middels",
-        "lapsDefault": 3,
-        "width": 4600,
-        "height": 3000,
+        "width": 3000,
+        "height": 2000,
     },
 }
 
 # Compatibility aliases for legacy track names
 TRACK_ALIASES = {
-    "grand_prix": "f1_gp_classic",
-    "fjord_drift": "f1_fjordsvingen",
+    "f1_random": "rally_random",
+    "f1_gp_classic": "grand_prix",
+    "f1_fjordsvingen": "fjord_drift",
+    "f1_monza": "grand_prix",
+    "f1_silverstone": "fjellpasset",
+    "f1_spa": "fjord_drift",
+    "f1_redbull": "fjellpasset",
+    "f1_suzuka": "fjord_drift",
 }
 
 def resolve_track_id(tid: Optional[str]) -> str:
     if not tid:
-        return "f1_random"
+        return "rally_random"
     mapped = TRACK_ALIASES.get(tid, tid)
-    return mapped if mapped in TRACK_CONFIGS else "f1_random"
+    return mapped if mapped in TRACK_CONFIGS else "rally_random"
 
 
 class TurbosladdRoom:
@@ -136,7 +106,7 @@ class TurbosladdRoom:
         host_name: str,
         host_color: str,
         host_car: str = "gt",
-        track_id: str = "f1_random",
+        track_id: str = "rally_random",
         track_seed: Optional[int] = None,
         laps: int = 3,
         max_players: int = 16,  # Configured for 1-16 players
@@ -551,7 +521,7 @@ class TurbosladdAPI:
                                 host_name=host_player.get("name", "Sjåfør 1"),
                                 host_color=host_color,
                                 host_car="gt",
-                                track_id="f1_random",
+                                track_id="rally_random",
                                 track_seed=random.randint(10000, 99999),
                                 laps=3,
                                 max_players=max(len(p_room.players), 16),
@@ -642,7 +612,7 @@ class TurbosladdAPI:
             host_name = str(body.get("hostName", "Sjåfør 1")).strip()[:18] or "Sjåfør 1"
             host_color = str(body.get("color", "")).strip()
             host_avatar = str(body.get("avatar", "")).strip()
-            track_id = resolve_track_id(str(body.get("trackId", "f1_random")).strip())
+            track_id = resolve_track_id(str(body.get("trackId", "rally_random")).strip())
             track_seed = body.get("trackSeed")
             laps = int(body.get("laps", 3))
             max_players = int(body.get("maxPlayers", 16))
