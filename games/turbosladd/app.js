@@ -104,78 +104,153 @@
     return smoothPoints;
   }
 
-  // Circuit 1: Grand Prix Skogsrally - Flowing forest rally stage with 850px starting straight
+  // Circuit 1: Grand Prix Skogsrally - Huge forest rally stage in 5000x3500 world with 2100px starting straight
   const RAW_GP_POINTS = [
-    { x: 1200, y: 1500 }, // 0: Start / Finish line
-    { x: 1900, y: 1500 }, // 1: Main straight end
-    { x: 2350, y: 1300 }, // 2: Turn 1 sweep
-    { x: 2450, y: 850 },  // 3: Turn 2 apex
-    { x: 2200, y: 450 },  // 4: Turn 3 exit
-    { x: 1700, y: 350 },  // 5: Back straight
-    { x: 1150, y: 350 },  // 6: Back straight end
-    { x: 750, y: 550 },   // 7: Chicane entry
-    { x: 800, y: 850 },   // 8: Chicane apex
-    { x: 1250, y: 950 },  // 9: Infield drift sweep
-    { x: 1350, y: 1200 }, // 10: Hairpin entry
-    { x: 1050, y: 1250 }, // 11: Hairpin apex
-    { x: 700, y: 1150 },  // 12: Infield exit
-    { x: 400, y: 1050 },  // 13: West curve
-    { x: 200, y: 1250 },  // 14: Final turn entry
-    { x: 250, y: 1470 },  // 15: Final turn exit
-    { x: 350, y: 1500 },  // 16: Straightaway runway entry (aligned with y:1500)
-    { x: 700, y: 1500 },  // 17: Straightaway runway continuation
+    { x: 2000, y: 2900 }, // 0: Start / Finish line
+    { x: 3100, y: 2900 }, // 1: Main straight blast
+    { x: 3800, y: 2800 }, // 2: Turn 1 sweeper entry
+    { x: 4350, y: 2500 }, // 3: Fast outer bend
+    { x: 4550, y: 1950 }, // 4: High-speed curve
+    { x: 4300, y: 1450 }, // 5: Chicane 1 entry
+    { x: 4500, y: 1050 }, // 6: Chicane 1 flick
+    { x: 4250, y: 650 },  // 7: Turn into north stretch
+    { x: 3650, y: 450 },  // 8: North plateau straight
+    { x: 3000, y: 450 },  // 9: Plateau continuation
+    { x: 2450, y: 650 },  // 10: Hairpin 1 entry
+    { x: 2250, y: 1050 }, // 11: Hairpin 1 apex
+    { x: 2600, y: 1450 }, // 12: Infield drift loop entry
+    { x: 3200, y: 1600 }, // 13: Infield drift sweep
+    { x: 3450, y: 2050 }, // 14: Infield hairpin entry
+    { x: 3100, y: 2250 }, // 15: Infield hairpin apex
+    { x: 2350, y: 2150 }, // 16: Switchback straight
+    { x: 1700, y: 2150 }, // 17: Valley chicane entry
+    { x: 1400, y: 1800 }, // 18: Chicane apex
+    { x: 1700, y: 1450 }, // 19: North-west sweep
+    { x: 1600, y: 950 },  // 20: West hairpin 1
+    { x: 1150, y: 750 },  // 21: Hairpin apex
+    { x: 750, y: 950 },   // 22: Downhill esses 1
+    { x: 950, y: 1400 },  // 23: Downhill esses 2
+    { x: 600, y: 1750 },  // 24: Forest hook
+    { x: 350, y: 2150 },  // 25: South-west hairpin entry
+    { x: 350, y: 2650 },  // 26: South-west hairpin apex
+    { x: 650, y: 2880 },  // 27: Final curve exit into runway
+    { x: 1000, y: 2900 }, // 28: Start runway straight
+    { x: 1500, y: 2900 }, // 29: Runway straight continuation to p0
   ];
 
-  // Circuit 2: Fjordsvingen - Technical mountain drift track with sharp hairpins
+  // Circuit 2: Fjordsvingen - Huge mountain drift track with cascading hairpins and switchbacks
   const RAW_FJORD_POINTS = [
-    { x: 1250, y: 1550 }, // 0: Start / Finish line
-    { x: 1900, y: 1550 }, // 1: High-speed sweep
-    { x: 2350, y: 1300 }, // 2: Hairpin 1
-    { x: 2100, y: 1000 }, // 3: Drift switch 1
-    { x: 1450, y: 1000 }, // 4: Infield drift
-    { x: 800, y: 1000 },  // 5: Hairpin 2
-    { x: 500, y: 750 },   // 6: Chicane entry
-    { x: 900, y: 550 },   // 7: S-curve
-    { x: 1500, y: 550 },  // 8: Infield technical
-    { x: 2100, y: 400 },  // 9: Hairpin 3
-    { x: 1800, y: 180 },  // 10: Mountain apex
-    { x: 1050, y: 180 },  // 11: High straight
-    { x: 350, y: 220 },   // 12: Hairpin 4
-    { x: 150, y: 650 },   // 13: Downhill sweep
-    { x: 150, y: 1200 },  // 14: Final hairpin
-    { x: 250, y: 1520 },  // 15: Return to main straight
-    { x: 400, y: 1550 },  // 16: Straightaway runway entry (aligned with y:1550)
-    { x: 750, y: 1550 },  // 17: Straightaway runway continuation
+    { x: 2000, y: 3000 }, // 0: Start / Finish line
+    { x: 3100, y: 3000 }, // 1: Launch straight
+    { x: 3850, y: 2950 }, // 2: High-speed right sweep
+    { x: 4400, y: 2650 }, // 3: Canyon entrance
+    { x: 4650, y: 2150 }, // 4: Mountain curve 1
+    { x: 4350, y: 1750 }, // 5: Hairpin Tier 1 entry
+    { x: 3700, y: 1850 }, // 6: Hairpin Tier 1 apex (drifting west)
+    { x: 3000, y: 1950 }, // 7: Serpentine connector
+    { x: 2400, y: 2250 }, // 8: Hairpin Tier 2 entry
+    { x: 1850, y: 2450 }, // 9: Hairpin Tier 2 apex
+    { x: 1350, y: 2200 }, // 10: Switchback left
+    { x: 1000, y: 1750 }, // 11: Switchback right
+    { x: 1350, y: 1300 }, // 12: Infield drift loop entry
+    { x: 2100, y: 1300 }, // 13: Infield drift acceleration
+    { x: 2900, y: 1300 }, // 14: Mid-mountain straight
+    { x: 3750, y: 1250 }, // 15: Hairpin Tier 3 entry
+    { x: 4400, y: 1100 }, // 16: Cliffside sweep
+    { x: 4600, y: 650 },  // 17: North mountain peak turn
+    { x: 4100, y: 400 },  // 18: Peak hairpin apex
+    { x: 3300, y: 400 },  // 19: High altitude straight
+    { x: 2500, y: 400 },  // 20: Alpine crest
+    { x: 1800, y: 550 },  // 21: Downhill chicane 1
+    { x: 1350, y: 750 },  // 22: Chicane flick
+    { x: 800, y: 650 },   // 23: Waterfall hairpin entry
+    { x: 400, y: 950 },   // 24: Waterfall hairpin apex
+    { x: 400, y: 1450 },  // 25: Fjord descent
+    { x: 650, y: 1900 },  // 26: Rocky valley curve
+    { x: 350, y: 2350 },  // 27: Final hairpin entry
+    { x: 400, y: 2800 },  // 28: Final hairpin apex
+    { x: 750, y: 2980 },  // 29: Final turn exit into runway
+    { x: 1100, y: 3000 }, // 30: Start runway straight
+    { x: 1550, y: 3000 }, // 31: Runway straight continuation to p0
   ];
 
-  // Circuit 3: Fjellpasset - Fast mountain rally pass with sharp corners and elevation switchbacks
+  // Circuit 3: Fjellpasset - Fast mountain rally pass with sharp corners, double apices and elevation switchbacks
   const RAW_FJELL_POINTS = [
-    { x: 1200, y: 1550 }, // 0: Start / Finish line
-    { x: 1950, y: 1550 }, // 1: Start straight launch
-    { x: 2450, y: 1350 }, // 2: Fast uphill curve
-    { x: 2550, y: 800 },  // 3: Valley bend
-    { x: 2350, y: 350 },  // 4: Mountain crest hairpin
-    { x: 1850, y: 250 },  // 5: High ridge straight
-    { x: 1350, y: 250 },  // 6: Ridge straight
-    { x: 950, y: 400 },   // 7: Downhill chicane entry
-    { x: 650, y: 650 },   // 8: Sharp S-turn
-    { x: 1150, y: 800 },  // 9: Infield technical sweep
-    { x: 1500, y: 1050 }, // 10: Switchback hairpin
-    { x: 1200, y: 1250 }, // 11: Switchback exit
-    { x: 600, y: 1200 },  // 12: Forest dip
-    { x: 250, y: 1300 },  // 13: Final hairpin entry
-    { x: 300, y: 1520 },  // 14: Final turn exit
-    { x: 450, y: 1550 },  // 15: Straight runway entry
-    { x: 800, y: 1550 },  // 16: Straight runway continuation
+    { x: 1900, y: 3050 }, // 0: Start / Finish line
+    { x: 3000, y: 3050 }, // 1: Launch straight
+    { x: 3750, y: 3000 }, // 2: Speed curve
+    { x: 4350, y: 2800 }, // 3: 90-degree right 1
+    { x: 4600, y: 2200 }, // 4: Ridge ascent
+    { x: 4400, y: 1650 }, // 5: Sharp 90-degree left
+    { x: 3850, y: 1550 }, // 6: Ridge straight
+    { x: 3300, y: 1750 }, // 7: Double-apex bend 1
+    { x: 2750, y: 1650 }, // 8: Double-apex bend 2
+    { x: 2300, y: 1250 }, // 9: Uphill chicane
+    { x: 2700, y: 850 },  // 10: Infield power bend
+    { x: 3500, y: 850 },  // 11: High plateau straight
+    { x: 4250, y: 800 },  // 12: Mountain hairpin entry
+    { x: 4550, y: 450 },  // 13: Summit hairpin apex
+    { x: 4100, y: 350 },  // 14: Summit exit
+    { x: 3200, y: 350 },  // 15: North pass straight
+    { x: 2200, y: 350 },  // 16: High speed pass
+    { x: 1500, y: 450 },  // 17: Descent chicane entry
+    { x: 1050, y: 700 },  // 18: Chicane apex
+    { x: 1350, y: 1050 }, // 19: Valley hook
+    { x: 1100, y: 1450 }, // 20: Technical S-turn 1
+    { x: 650, y: 1650 },  // 21: Technical S-turn 2
+    { x: 800, y: 2100 },  // 22: Forest switchback entry
+    { x: 1350, y: 2250 }, // 23: Switchback hook
+    { x: 1550, y: 2550 }, // 24: Infield return loop
+    { x: 1100, y: 2750 }, // 25: Loop exit
+    { x: 550, y: 2600 },  // 26: South hairpin entry
+    { x: 350, y: 2850 },  // 27: South hairpin apex
+    { x: 650, y: 3030 },  // 28: Exit into runway
+    { x: 1000, y: 3050 }, // 29: Runway straight
+    { x: 1450, y: 3050 }, // 30: Runway straight continuation to p0
+  ];
+
+  // Circuit 4: Canyon Rally - Vast canyon passes, tight chicanes and high-altitude hairpins
+  const RAW_CANYON_POINTS = [
+    { x: 1950, y: 3050 }, // 0: Start / Finish line
+    { x: 3050, y: 3050 }, // 1: Launch straight
+    { x: 3800, y: 3000 }, // 2: High-speed bend
+    { x: 4450, y: 2750 }, // 3: Canyon entrance right
+    { x: 4650, y: 2150 }, // 4: Wall ride curve
+    { x: 4350, y: 1550 }, // 5: Hairpin 1 entry
+    { x: 3750, y: 1450 }, // 6: Hairpin 1 apex
+    { x: 3200, y: 1650 }, // 7: Infield sweep
+    { x: 2650, y: 1850 }, // 8: Infield apex
+    { x: 2100, y: 1750 }, // 9: Infield exit
+    { x: 1650, y: 1350 }, // 10: Chicane entry
+    { x: 2050, y: 1050 }, // 11: Chicane flick
+    { x: 2650, y: 950 },  // 12: Plateau straight
+    { x: 3450, y: 950 },  // 13: Plateau blast
+    { x: 4250, y: 750 },  // 14: North canyon hairpin entry
+    { x: 4450, y: 400 },  // 15: North canyon hairpin apex
+    { x: 3900, y: 350 },  // 16: Summit pass
+    { x: 3000, y: 350 },  // 17: North straight
+    { x: 2000, y: 350 },  // 18: North descent
+    { x: 1250, y: 450 },  // 19: Hairpin 3 entry
+    { x: 750, y: 650 },   // 20: Hairpin 3 apex
+    { x: 450, y: 1050 },  // 21: Waterfall curve
+    { x: 650, y: 1550 },  // 22: River bend
+    { x: 1150, y: 1750 }, // 23: S-curve entry
+    { x: 950, y: 2150 },  // 24: S-curve flick
+    { x: 550, y: 2450 },  // 25: Hairpin 4 entry
+    { x: 350, y: 2800 },  // 26: Hairpin 4 apex
+    { x: 650, y: 3020 },  // 27: Exit into runway
+    { x: 1050, y: 3050 }, // 28: Runway straight
+    { x: 1500, y: 3050 }, // 29: Runway straight continuation to p0
   ];
 
   const RALLY_ARCHETYPES = [
     RAW_GP_POINTS,
     RAW_FJORD_POINTS,
     RAW_FJELL_POINTS,
+    RAW_CANYON_POINTS,
   ];
 
-  function generateRallyRawPoints(seed, worldW = 3000, worldH = 2000) {
+  function generateRallyRawPoints(seed, worldW = 5000, worldH = 3500) {
     const rng = createRallyRng(seed);
     const archIdx = Math.floor(rng() * RALLY_ARCHETYPES.length);
     const base = RALLY_ARCHETYPES[archIdx];
@@ -187,11 +262,11 @@
       if (isRunway) {
         return { x: p.x, y: p.y };
       }
-      const jx = (rng() - 0.5) * 80;
-      const jy = (rng() - 0.5) * 80;
+      const jx = (rng() - 0.5) * 140;
+      const jy = (rng() - 0.5) * 140;
       return {
-        x: Math.round(Math.max(120, Math.min(worldW - 120, p.x + jx))),
-        y: Math.round(Math.max(120, Math.min(worldH - 120, p.y + jy))),
+        x: Math.round(Math.max(300, Math.min(worldW - 300, p.x + jx))),
+        y: Math.round(Math.max(300, Math.min(worldH - 300, p.y + jy))),
       };
     });
   }
@@ -254,8 +329,8 @@
     }
 
     // 2. Wilderness background forest groves (outer boundary wilderness and deeper infield)
-    for (let x = 60; x < (track.worldWidth || 3000) - 60; x += 150) {
-      for (let y = 60; y < (track.worldHeight || 2000) - 60; y += 150) {
+    for (let x = 60; x < (track.worldWidth || 5000) - 60; x += 150) {
+      for (let y = 60; y < (track.worldHeight || 3500) - 60; y += 150) {
         const rx = x + (rng() - 0.5) * 80;
         const ry = y + (rng() - 0.5) * 80;
         let minDist = Infinity;
@@ -294,8 +369,8 @@
       id,
       name,
       seed,
-      worldWidth: 3000,
-      worldHeight: 2000,
+      worldWidth: 5000,
+      worldHeight: 3500,
       roadWidth,
       offroadWidth,
       rawPoints,
@@ -437,15 +512,15 @@
     splitLaps: 3,
     car1: null,
     car2: null,
-    cam1: { x: 1200, y: 1500, zoom: 1.15 },
-    cam2: { x: 1200, y: 1500, zoom: 1.15 },
+    cam1: { x: 2000, y: 2900, zoom: 1.15 },
+    cam2: { x: 2000, y: 2900, zoom: 1.15 },
     keysP1: { up: false, down: false, left: false, right: false },
     keysP2: { up: false, down: false, left: false, right: false },
     splitFinishTimeout: null,
     soloFinishTimer: null,
 
     opponentCars: {},
-    camera: { x: 1200, y: 1500, zoom: 1.25 },
+    camera: { x: 2000, y: 2900, zoom: 1.25 },
     skidmarks: [],
     particles: [],
 
@@ -1281,27 +1356,20 @@
     const onDirt = trackDist <= halfRoad;
     const onOffroad = !onDirt && trackDist <= wallDist;
 
-    // Lateral grip retention according to surface
-    const latRetention = onOffroad ? 0.92 : (isSlidingOnIce ? 0.978 : 0.88);
+    // Lateral grip retention: uniform on road and offroad shoulder
+    const latRetention = isSlidingOnIce ? 0.978 : 0.88;
     let newVLateral = vLateral * Math.pow(latRetention, dt * 60);
 
     // Forward drive & slide braking on surface
     let newVForward = vForward;
 
-    if (onOffroad) {
-      // Offroad shoulder: coarse gravel & dirt verge! Slightly higher drag, kicks up chunky dirt particles
-      newVForward *= Math.pow(0.95, dt * 60);
-      newVLateral *= Math.pow(0.93, dt * 60);
-      if (Math.abs(newVForward) > 260) {
-        newVForward -= Math.sign(newVForward) * 280 * dt;
-      }
-      if (car.speed > 20) {
-        addRallyDustParticle(car);
-      }
+    // Visual feedback: extra rally dust & gravel kicked up on the offroad shoulder, but NO slowdown!
+    if (onOffroad && car.speed > 20) {
+      addRallyDustParticle(car);
     }
 
-    const effectiveEnginePower = onOffroad ? (enginePower * 0.78) : enginePower;
-    const effectiveMaxSpeed = onOffroad ? Math.min(maxSpeed, 270) : maxSpeed;
+    const effectiveEnginePower = enginePower;
+    const effectiveMaxSpeed = maxSpeed;
 
     if (throttle > 0 && newVForward < effectiveMaxSpeed) {
       newVForward += throttle * effectiveEnginePower * dt;
@@ -1316,8 +1384,8 @@
       }
     }
 
-    // Rolling drag: low on dirt (0.996), slightly higher on offroad edge (0.95)
-    const rollingDrag = onOffroad ? 0.95 : 0.996;
+    // Rolling drag: uniform across dirt road and offroad shoulder (same top speed everywhere!)
+    const rollingDrag = 0.996;
     newVForward *= Math.pow(rollingDrag, dt * 60);
 
     car.vx = newVForward * forwardX + newVLateral * rightX;
@@ -1645,8 +1713,8 @@
     const rw = track.roadWidth || 140;
     const offroadW = track.offroadWidth || 24;
     const totalW = rw + offroadW * 2; // 188px
-    const worldW = track.worldWidth || 3000;
-    const worldH = track.worldHeight || 2000;
+    const worldW = track.worldWidth || 5000;
+    const worldH = track.worldHeight || 3500;
 
     const canvas = document.createElement("canvas");
     canvas.width = worldW;
@@ -1659,7 +1727,7 @@
 
     // 2. Procedural pixel-art terrain tufts & forest loam
     const bgRng = createRallyRng(typeof track.seed === "number" ? track.seed : 4281);
-    for (let i = 0; i < 3000; i++) {
+    for (let i = 0; i < 7000; i++) {
       const px = Math.floor(bgRng() * canvas.width);
       const py = Math.floor(bgRng() * canvas.height);
       const roll = bgRng();
@@ -1931,8 +1999,8 @@
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const worldW = track.worldWidth || 3000;
-    const worldH = track.worldHeight || 2000;
+    const worldW = track.worldWidth || 5000;
+    const worldH = track.worldHeight || 3500;
     const scale = Math.min((canvas.width - 16) / worldW, (canvas.height - 16) / worldH);
     const offsetX = (canvas.width - worldW * scale) / 2;
     const offsetY = (canvas.height - worldH * scale) / 2;
