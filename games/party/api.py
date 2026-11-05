@@ -2547,7 +2547,7 @@ class PartyAPI:
                         with _rooms_lock:
                             host_player = room.players.get(room.host_id, {})
                             laps = int(settings.get("laps", 3))
-                            track_id = str(settings.get("trackId", "grand_prix"))
+                            track_id = str(settings.get("trackId", "f1_random"))
                             max_p = max(len(room.players), 16)
                             host_color = host_player.get("color") or extract_color_from_avatar(host_player.get("avatar", "")) or PLAYER_PALETTE[0]["color"]
                             t_room = TurbosladdRoom(

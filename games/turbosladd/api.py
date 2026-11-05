@@ -42,25 +42,73 @@ PLAYER_PALETTE = [
 ]
 
 TRACK_CONFIGS = {
-    "grand_prix": {
-        "id": "grand_prix",
-        "name": "Grand Prix Skogsrally",
-        "desc": "Rask grusetappe gjennom barskog, med lange sladder og tretopper som henger over banen.",
+    "f1_random": {
+        "id": "f1_random",
+        "name": "Tilfeldig F1 GP 🎲",
+        "desc": "Unik, tilfeldig generert Grand Prix-bane med varierte sjikaner, langstrekker og hårnåler.",
+        "difficulty": "Variert",
+        "lapsDefault": 3,
+        "width": 4000,
+        "height": 2600,
+    },
+    "f1_monza": {
+        "id": "f1_monza",
+        "name": "Monza Autodromo (F1)",
+        "desc": "Legendarisk fartsbane med lange DRS-strekker, Variante del Rettifilo-sjikanen og Parabolica.",
         "difficulty": "Middels",
         "lapsDefault": 3,
-        "width": 1800,
-        "height": 1200,
+        "width": 4000,
+        "height": 2600,
     },
-    "fjord_drift": {
-        "id": "fjord_drift",
-        "name": "Fjordsvingen Rally",
-        "desc": "Teknisk grusrally med krappe hårnåler, store kampesteiner og overhengende trær.",
+    "f1_silverstone": {
+        "id": "f1_silverstone",
+        "name": "Silverstone Circuit (F1)",
+        "desc": "Klassisk britisk GP med berømte svinger: Copse, Maggotts, Becketts og Stowe.",
         "difficulty": "Ekspert",
         "lapsDefault": 3,
-        "width": 1800,
-        "height": 1200,
+        "width": 4000,
+        "height": 2600,
+    },
+    "f1_spa": {
+        "id": "f1_spa",
+        "name": "Spa-Francorchamps (F1)",
+        "desc": "Ardennerskogens perle med Eau Rouge-inspirert stigning, lange rettstrekker og Bus Stop-sjikanen.",
+        "difficulty": "Ekspert",
+        "lapsDefault": 3,
+        "width": 4000,
+        "height": 2600,
+    },
+    "f1_redbull": {
+        "id": "f1_redbull",
+        "name": "Red Bull Ring (F1)",
+        "desc": "Rask østerriksk bane med tre kraftige bremsesoner, krappe oppoverbakke-svinger og flytende infield.",
+        "difficulty": "Middels",
+        "lapsDefault": 3,
+        "width": 4000,
+        "height": 2600,
+    },
+    "f1_suzuka": {
+        "id": "f1_suzuka",
+        "name": "Suzuka Circuit (F1)",
+        "desc": "Teknisk mesterverk med sammenhengende S-kurver, Degner og 130R.",
+        "difficulty": "Ekspert",
+        "lapsDefault": 3,
+        "width": 4000,
+        "height": 2600,
     },
 }
+
+# Compatibility aliases for legacy track names
+TRACK_ALIASES = {
+    "grand_prix": "f1_monza",
+    "fjord_drift": "f1_spa",
+}
+
+def resolve_track_id(tid: Optional[str]) -> str:
+    if not tid:
+        return "f1_random"
+    mapped = TRACK_ALIASES.get(tid, tid)
+    return mapped if mapped in TRACK_CONFIGS else "f1_random"
 
 
 class TurbosladdRoom:
@@ -70,7 +118,8 @@ class TurbosladdRoom:
         host_name: str,
         host_color: str,
         host_car: str = "gt",
-        track_id: str = "grand_prix",
+        track_id: str = "f1_random",
+        track_seed: Optional[int] = None,
         laps: int = 3,
         max_players: int = 16,  # Configured for 1-16 players
         host_avatar: str = "",
@@ -81,7 +130,8 @@ class TurbosladdRoom:
         self.version = 1
         self.lock = threading.RLock()
 
-        self.track_id = track_id if track_id in TRACK_CONFIGS else "grand_prix"
+        self.track_id = resolve_track_id(track_id)
+        self.track_seed = int(track_seed) if track_seed is not None else random.randint(10000, 99999)
         self.laps = max(1, min(10, laps))
         self.max_players = max(1, min(16, max_players))
 
@@ -263,14 +313,19 @@ class TurbosladdRoom:
             self.bump()
             return True, "Farge oppdatert."
 
-    def update_settings(self, player_id: str, track_id: Optional[str] = None, laps: Optional[int] = None) -> Tuple[bool, str]:
+    def update_settings(self, player_id: str, track_id: Optional[str] = None, laps: Optional[int] = None, track_seed: Optional[int] = None) -> Tuple[bool, str]:
         with self.lock:
             if player_id != self.host_id:
                 return False, "Bare verten kan endre løpsinnstillinger."
             if self.status != "lobby":
                 return False, "Kan ikke endre innstillinger etter at løpet har startet."
-            if track_id and track_id in TRACK_CONFIGS:
-                self.track_id = track_id
+            if track_id:
+                self.track_id = resolve_track_id(track_id)
+            if track_seed is not None:
+                try:
+                    self.track_seed = int(track_seed)
+                except (ValueError, TypeError):
+                    pass
             if laps is not None:
                 try:
                     num_laps = int(laps)
@@ -425,6 +480,7 @@ class TurbosladdRoom:
                 "countdownRemaining": round(countdown_rem, 2),
                 "raceTime": round(race_time, 2),
                 "trackId": self.track_id,
+                "trackSeed": self.track_seed,
                 "laps": self.laps,
                 "maxPlayers": self.max_players,
                 "isHost": is_host,
@@ -477,7 +533,8 @@ class TurbosladdAPI:
                                 host_name=host_player.get("name", "Sjåfør 1"),
                                 host_color=host_color,
                                 host_car="gt",
-                                track_id="grand_prix",
+                                track_id="f1_random",
+                                track_seed=random.randint(10000, 99999),
                                 laps=3,
                                 max_players=max(len(p_room.players), 16),
                                 host_avatar=host_avatar,
@@ -567,7 +624,8 @@ class TurbosladdAPI:
             host_name = str(body.get("hostName", "Sjåfør 1")).strip()[:18] or "Sjåfør 1"
             host_color = str(body.get("color", "")).strip()
             host_avatar = str(body.get("avatar", "")).strip()
-            track_id = str(body.get("trackId", "grand_prix")).strip()
+            track_id = resolve_track_id(str(body.get("trackId", "f1_random")).strip())
+            track_seed = body.get("trackSeed")
             laps = int(body.get("laps", 3))
             max_players = int(body.get("maxPlayers", 16))
 
@@ -578,6 +636,7 @@ class TurbosladdAPI:
                 host_color=host_color,
                 host_car="gt",
                 track_id=track_id,
+                track_seed=track_seed,
                 laps=laps,
                 max_players=max_players,
                 host_avatar=host_avatar,
@@ -594,6 +653,7 @@ class TurbosladdAPI:
                 "slot": 0,
                 "color": host_color,
                 "trackId": room.track_id,
+                "trackSeed": room.track_seed,
                 "laps": room.laps,
             }
 
@@ -659,6 +719,7 @@ class TurbosladdAPI:
             code = str(body.get("roomCode", "")).strip().upper()
             player_id = str(body.get("playerId", "")).strip()
             track_id = body.get("trackId")
+            track_seed = body.get("trackSeed")
             laps = body.get("laps")
 
             with _rooms_lock:
@@ -666,13 +727,14 @@ class TurbosladdAPI:
             if not room:
                 return 404, {"error": "Fant ikke løpet."}
 
-            ok, msg = room.update_settings(player_id, track_id=track_id, laps=laps)
+            ok, msg = room.update_settings(player_id, track_id=track_id, laps=laps, track_seed=track_seed)
             if not ok:
                 return 400, {"error": msg}
 
             return 200, {
                 "ok": True,
                 "trackId": room.track_id,
+                "trackSeed": room.track_seed,
                 "laps": room.laps,
                 "message": msg,
             }
