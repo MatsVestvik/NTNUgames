@@ -372,7 +372,6 @@
 
     // Views
     viewLobby: document.getElementById("viewLobby"),
-    viewRoomLounge: document.getElementById("viewRoomLounge"),
     viewGame: document.getElementById("viewGame"),
 
     // Lobby
@@ -383,12 +382,6 @@
     panelSolo: document.getElementById("panelSolo"),
     panelSplitscreen: document.getElementById("panelSplitscreen"),
     btnGoToOnlineTab: document.getElementById("btnGoToOnlineTab"),
-
-    inputHostName: document.getElementById("inputHostName"),
-    inputJoinName: document.getElementById("inputJoinName"),
-    btnCreateRace: document.getElementById("btnCreateRace"),
-    inputRoomCode: document.getElementById("inputRoomCode"),
-    btnJoinRace: document.getElementById("btnJoinRace"),
 
     selectSoloTrack: document.getElementById("selectSoloTrack"),
     controlSoloLaps: document.getElementById("controlSoloLaps"),
@@ -402,23 +395,6 @@
     selectSplitTrack: document.getElementById("selectSplitTrack"),
     controlSplitLaps: document.getElementById("controlSplitLaps"),
     btnStartSplitscreen: document.getElementById("btnStartSplitscreen"),
-
-    // Room Lounge
-    displayRoomCode: document.getElementById("displayRoomCode"),
-    btnCopyCode: document.getElementById("btnCopyCode"),
-    loungeTrackName: document.getElementById("loungeTrackName"),
-    loungeLapsBadge: document.getElementById("loungeLapsBadge"),
-    loungeSelectTrack: document.getElementById("loungeSelectTrack"),
-    loungeControlLaps: document.getElementById("loungeControlLaps"),
-    loungeHostOnlyHint: document.getElementById("loungeHostOnlyHint"),
-    loungeCarPreviewCanvas: document.getElementById("loungeCarPreviewCanvas"),
-    loungeCarColorName: document.getElementById("loungeCarColorName"),
-    loungeColorPalette: document.getElementById("loungeColorPalette"),
-    racersGrid: document.getElementById("racersGrid"),
-    racersCountBadge: document.getElementById("racersCountBadge"),
-    btnLeaveRoom: document.getElementById("btnLeaveRoom"),
-    btnToggleReady: document.getElementById("btnToggleReady"),
-    btnHostStartRace: document.getElementById("btnHostStartRace"),
 
     // Race In-Game
     raceCanvas: document.getElementById("raceCanvas"),
@@ -440,7 +416,6 @@
     podiumTitle: document.getElementById("podiumTitle"),
     podiumDesc: document.getElementById("podiumDesc"),
     podiumStandings: document.getElementById("podiumStandings"),
-    btnPodiumPlayAgain: document.getElementById("btnPodiumPlayAgain"),
     btnPodiumReturnLobby: document.getElementById("btnPodiumReturnLobby"),
   };
 
@@ -580,10 +555,20 @@
 
   function showView(viewName) {
     if (el.viewLobby) el.viewLobby.classList.add("hidden");
-    if (el.viewRoomLounge) el.viewRoomLounge.classList.add("hidden");
     if (el.viewGame) el.viewGame.classList.add("hidden");
 
-    if (viewName === "lobby") {
+    if (viewName === "game") {
+      if (el.viewGame) el.viewGame.classList.remove("hidden");
+      // Only keep 1 leave button in race: hide left back button
+      if (el.btnHeaderBack) el.btnHeaderBack.classList.add("hidden");
+      if (el.btnHeaderLeave) {
+        el.btnHeaderLeave.classList.remove("hidden");
+        el.btnHeaderLeave.textContent = "Forlat løp";
+      }
+      resizeCanvas();
+      startEngineSound();
+    } else {
+      // Main Turbosladd Lobby
       if (el.viewLobby) el.viewLobby.classList.remove("hidden");
       if (el.btnHeaderBack) {
         el.btnHeaderBack.classList.remove("hidden");
@@ -595,28 +580,6 @@
       stopSimulation();
       stopRoomSync();
       stopLobbyPolling();
-    } else if (viewName === "room") {
-      if (el.viewRoomLounge) el.viewRoomLounge.classList.remove("hidden");
-      if (el.btnHeaderBack) el.btnHeaderBack.classList.add("hidden");
-      if (el.btnHeaderLeave) {
-        el.btnHeaderLeave.classList.remove("hidden");
-        el.btnHeaderLeave.textContent = "Forlat rom";
-      }
-      renderLoungeCarPreview();
-      renderLoungeColorPalette(state.players || []);
-      updateLoungeSettingsUI();
-      stopEngineSound();
-      stopSimulation();
-    } else if (viewName === "game") {
-      if (el.viewGame) el.viewGame.classList.remove("hidden");
-      // Only keep 1 leave button in race: hide left back button
-      if (el.btnHeaderBack) el.btnHeaderBack.classList.add("hidden");
-      if (el.btnHeaderLeave) {
-        el.btnHeaderLeave.classList.remove("hidden");
-        el.btnHeaderLeave.textContent = "Forlat løp";
-      }
-      resizeCanvas();
-      startEngineSound();
     }
   }
 
@@ -1519,89 +1482,65 @@
     for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
     ctx.closePath();
 
-    // 4. Timber Barrier Outer Drop Shadow
-    ctx.lineWidth = rw + 48;
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.42)";
+    // 4. Forest road clearance edge / dark soil ditch
+    ctx.lineWidth = rw + 36;
+    ctx.strokeStyle = "rgba(18, 28, 14, 0.65)";
     ctx.stroke();
 
-    // 5. Earth Embankment & Runoff Berm
-    ctx.lineWidth = rw + 40;
-    ctx.strokeStyle = "#382415";
+    // 5. Earth embankment & coarse gravel transition
+    ctx.lineWidth = rw + 24;
+    ctx.strokeStyle = "#382313";
     ctx.stroke();
 
-    // 6. Rustic Timber Log Barrier Fence (Solid wall boundary at rw + 32)
-    ctx.lineWidth = rw + 34;
-    ctx.strokeStyle = "#27170c"; // Dark timber rail base
+    // 6. Rustic Timber Log Barriers (Solid wall fence along road boundaries)
+    ctx.lineWidth = rw + 20;
+    ctx.strokeStyle = "#27170c";
     ctx.stroke();
 
-    ctx.lineWidth = rw + 28;
-    ctx.strokeStyle = "#5a361c"; // Wood plank rail
+    ctx.lineWidth = rw + 16;
+    ctx.strokeStyle = "#523219";
     ctx.stroke();
 
-    // Timber upright posts (dashed log tops)
-    ctx.lineWidth = rw + 28;
-    ctx.setLineDash([8, 22]);
-    ctx.strokeStyle = "#824e27";
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Rally Hazard Chevron Strips (Alternating red & white rally barrier tape)
-    ctx.lineWidth = rw + 22;
-    ctx.strokeStyle = "#b91c1c";
-    ctx.stroke();
-
-    ctx.lineWidth = rw + 22;
-    ctx.setLineDash([20, 20]);
-    ctx.strokeStyle = "#fef3c7";
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // 7. Gravel Shoulder / Road Verge
-    ctx.lineWidth = rw + 14;
-    ctx.strokeStyle = "#54371f";
-    ctx.stroke();
-
-    // 8. Apex Timber Rumble Curbs
+    // 7. Rough gravel shoulder / road verge
     ctx.lineWidth = rw + 8;
-    ctx.strokeStyle = "#dc2626";
+    ctx.strokeStyle = "#5f3c20";
     ctx.stroke();
 
-    ctx.lineWidth = rw + 8;
-    ctx.setLineDash([16, 16]);
-    ctx.strokeStyle = "#fef08a";
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // 9. Packed Rally Dirt Bed
+    // 8. Packed main rally dirt bed
     ctx.lineWidth = rw;
-    ctx.strokeStyle = "#7c4e28";
+    ctx.strokeStyle = "#7a4c26";
     ctx.stroke();
 
-    // 10. Surface Loam / Fine Dirt
+    // 9. Surface loam & fine dirt clay
     ctx.lineWidth = rw - 10;
-    ctx.strokeStyle = "#8c5b2e";
+    ctx.strokeStyle = "#8d5b2f";
     ctx.stroke();
 
-    // 11. Carved Twin Tire Ruts (Compacted darker wheel channels)
-    ctx.lineWidth = rw * 0.60;
-    ctx.strokeStyle = "#56341a";
+    // 10. Twin carved tire ruts (compacted damp dark channels where tires pack the soil)
+    ctx.lineWidth = rw * 0.62;
+    ctx.strokeStyle = "#543319";
     ctx.stroke();
 
-    ctx.lineWidth = rw * 0.48;
-    ctx.strokeStyle = "#492b15";
+    ctx.lineWidth = rw * 0.46;
+    ctx.strokeStyle = "#442711";
     ctx.stroke();
 
-    // 12. Center Gravel Ridge (Looser lighter dirt & gravel between wheel ruts)
+    // 11. Center gravel crown (natural loose dirt/gravel ridge between ruts, NO DOTTED LINE)
     ctx.lineWidth = rw * 0.22;
-    ctx.strokeStyle = "#9c6838";
+    ctx.strokeStyle = "#8f5e32";
     ctx.stroke();
 
-    // Subtle textured rut dashes
-    ctx.lineWidth = 3;
-    ctx.setLineDash([14, 26]);
-    ctx.strokeStyle = "#3e2410";
-    ctx.stroke();
-    ctx.setLineDash([]);
+    // 12. Organic soil & pebble granules along the dirt path (authentic rally road texture)
+    for (let i = 0; i < pts.length; i += 2) {
+      const pt = pts[i];
+      for (let s = 0; s < 5; s++) {
+        const offX = (bgRng() - 0.5) * (rw * 0.82);
+        const offY = (bgRng() - 0.5) * (rw * 0.82);
+        ctx.fillStyle = bgRng() > 0.5 ? "#2e1a0d" : "#ab733e";
+        const sz = bgRng() > 0.8 ? 3 : 2;
+        ctx.fillRect(Math.round(pt.x + offX), Math.round(pt.y + offY), sz, sz);
+      }
+    }
 
     // 13. Starting Grid Boxes (Slots 1..16 carved on dirt with whitewash)
     const slots = getStartGridSlots(track, 16);
@@ -3115,16 +3054,9 @@
       });
     }
 
-    if (el.btnLeaveRoom) {
-      el.btnLeaveRoom.addEventListener("click", handleForfeitAndLeave);
-    }
-
     if (el.btnHeaderBack) {
       el.btnHeaderBack.addEventListener("click", (e) => {
         if (el.viewGame && !el.viewGame.classList.contains("hidden")) {
-          e.preventDefault();
-          handleForfeitAndLeave();
-        } else if (el.viewRoomLounge && !el.viewRoomLounge.classList.contains("hidden")) {
           e.preventDefault();
           handleForfeitAndLeave();
         }
@@ -3138,31 +3070,7 @@
       });
     }
 
-    // Podium
-    if (el.btnPodiumPlayAgain) {
-      el.btnPodiumPlayAgain.addEventListener("click", async () => {
-        if (el.modalPodium) el.modalPodium.classList.add("hidden");
-        if (state.mode === "splitscreen") {
-          launchSplitscreenRace();
-        } else if (state.mode === "solo") {
-          launchSoloTimeTrial();
-        } else if (state.isHost) {
-          try {
-            await fetch("/api/turbosladd/restart", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ roomCode: state.roomCode, playerId: state.playerId }),
-            });
-          } catch (e) {}
-          showView("room");
-          startLobbyPolling();
-        } else {
-          showView("room");
-          startLobbyPolling();
-        }
-      });
-    }
-
+    // Podium: return to lobby
     if (el.btnPodiumReturnLobby) {
       el.btnPodiumReturnLobby.addEventListener("click", () => {
         if (el.modalPodium) el.modalPodium.classList.add("hidden");

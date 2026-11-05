@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="/game-lobby.css" />
   <link rel="stylesheet" href="/parallax-bg.css" />
   <link rel="stylesheet" href="/character/character-creator.css" />
-  <link rel="stylesheet" href="styles.css?v=2.4" />
+  <link rel="stylesheet" href="styles.css?v=2.5" />
 </head>
 
 <body class="turbosladd-page">
@@ -315,112 +315,7 @@
       </section>
 
       <!-- ============================================== -->
-      <!-- VIEW 2: MULTIDEVICE WAITING LOUNGE             -->
-      <!-- ============================================== -->
-      <section class="view-panel hidden" id="viewRoomLounge">
-        <div class="lobby-card">
-          <div class="room-lounge-header">
-            <div class="rlh-left">
-              <span class="opc-badge">Løpsrom</span>
-              <div class="room-code-display">
-                <span class="rc-label">Romkode:</span>
-                <span class="rc-code" id="displayRoomCode">TURBO</span>
-                <button type="button" class="btn-copy-code" id="btnCopyCode" title="Kopier romkode">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            <div class="rlh-right">
-              <div class="track-badge-pill" id="loungeTrackBadge">
-                <span class="tb-name" id="loungeTrackName">Grand Prix Skogsrally</span>
-                <span class="tb-laps" id="loungeLapsBadge">3 runder</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Løpsinnstillinger (Styres i lobbyen av romvert) -->
-          <div class="lounge-options-card" id="loungeOptionsCard">
-            <div class="loc-header">
-              <div class="loc-title-group">
-                <span class="opc-badge badge-orange">Løpsinnstillinger</span>
-                <h4 class="loc-title">Bane &amp; Runder</h4>
-              </div>
-              <span class="loc-host-badge" id="loungeHostOnlyHint">Romvert bestemmer innstillinger</span>
-            </div>
-
-            <div class="loc-grid">
-              <div class="form-group loc-field">
-                <label for="loungeSelectTrack">Valgt bane</label>
-                <select id="loungeSelectTrack" class="text-input select-input">
-                  <option value="grand_prix">Grand Prix Skogsrally (Grus &amp; skog)</option>
-                  <option value="fjord_drift">Fjordsvingen Rally (Teknisk grussladd)</option>
-                </select>
-              </div>
-
-              <div class="form-group loc-field">
-                <label>Antall runder</label>
-                <div class="segmented-control" id="loungeControlLaps">
-                  <button type="button" class="seg-btn active" data-laps="3">3 runder</button>
-                  <button type="button" class="seg-btn" data-laps="5">5 runder</button>
-                  <button type="button" class="seg-btn" data-laps="8">8 runder</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- In-Lobby Unique Color Picker (Max 1 per color) -->
-          <div class="lounge-color-picker-card">
-            <div class="lcpc-header">
-              <div class="lcpc-title-col">
-                <span class="opc-badge">Lakkverksted</span>
-                <h4 class="lcpc-title">Velg bilfarge <span class="lcpc-unique-tag">(Maks 1 per farge)</span></h4>
-              </div>
-              <div class="lcpc-preview-col">
-                <canvas id="loungeCarPreviewCanvas" width="90" height="48" class="ts-car-preview-canvas mini"></canvas>
-                <span id="loungeCarColorName" class="lcpc-color-name">Laster lakk...</span>
-              </div>
-            </div>
-
-            <div class="lcpc-palette-grid" id="loungeColorPalette">
-              <!-- Dynamically populated 16 colors with taken/active states -->
-            </div>
-          </div>
-
-          <!-- Racers Grid: Slots 1 to 16 -->
-          <div class="racers-grid-container">
-            <h4 class="racers-grid-title">
-              <span>Sjåfører på startstreken</span>
-              <span class="racers-count-badge" id="racersCountBadge">1/16</span>
-            </h4>
-            <div class="racers-grid" id="racersGrid">
-              <!-- Dynamic racer slots injected here -->
-            </div>
-          </div>
-
-          <!-- Room Action Controls -->
-          <div class="room-lounge-actions">
-            <button type="button" class="btn-exit-subtle" id="btnLeaveRoom">
-              Forlat rom
-            </button>
-            <div class="action-btn-group">
-              <button type="button" class="btn-cyan-accent" id="btnToggleReady">
-                Jeg er klar!
-              </button>
-              <button type="button" class="primary-btn pulse-glow hidden" id="btnHostStartRace">
-                Start løpet! 🏁
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ============================================== -->
-      <!-- VIEW 3: IN-GAME RACING ARENA (FULLSCREEN)      -->
+      <!-- VIEW 2: IN-GAME RACING ARENA (FULLSCREEN)      -->
       <!-- ============================================== -->
       <section class="view-panel hidden view-game-fullscreen" id="viewGame">
         <div class="race-viewport-wrapper">
@@ -498,11 +393,8 @@
         </div>
 
         <div class="podium-actions">
-          <button type="button" class="primary-btn pulse-glow" id="btnPodiumPlayAgain">
-            Kjør et nytt løp! 🔄
-          </button>
-          <button type="button" class="btn-exit-subtle" id="btnPodiumReturnLobby">
-            Tilbake til lobby
+          <button type="button" class="primary-btn pulse-glow" id="btnPodiumReturnLobby">
+            ‹ Tilbake til lobby
           </button>
         </div>
       </div>
@@ -512,7 +404,7 @@
   <script src="/parallax-bg.js?v=2.1"></script>
   <script src="/character/character-creator.js"></script>
   <script src="/game-lobby.js"></script>
-  <script src="app.js?v=2.4"></script>
+  <script src="app.js?v=2.5"></script>
 </body>
 
 </html>
