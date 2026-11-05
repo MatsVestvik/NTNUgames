@@ -275,6 +275,31 @@
 
     initLobbyCustomizer();
     startPolling();
+
+    // If navigated from a specific game, highlight that game in the catalog for the host
+    const preferredGame = (new URLSearchParams(window.location.search).get("game") || sessionStorage.getItem("party_preferred_game") || "").trim().toLowerCase();
+    if (preferredGame) {
+      sessionStorage.removeItem("party_preferred_game");
+      setTimeout(() => {
+        const gameCardMap = {
+          turbosladd: "gameCardTurbosladd",
+          ordbombe: "gameCardOrdbombe",
+          tegn_og_gjett: "gameCardTegnOgGjett",
+          sjakk: "gameCardSjakk",
+          korridorer: "gameCardKorridorer",
+          imposter: "gameCardImposter",
+          fargekoden: "gameCardFargekoden",
+          wavelength: "gameCardWavelength",
+        };
+        const cardId = gameCardMap[preferredGame];
+        const cardEl = cardId ? document.getElementById(cardId) : null;
+        if (cardEl) {
+          cardEl.scrollIntoView({ behavior: "smooth", block: "center" });
+          cardEl.style.boxShadow = "0 0 28px rgba(251, 133, 0, 0.75)";
+          cardEl.style.borderColor = "#fb8500";
+        }
+      }, 400);
+    }
   }
 
   function initLobbyCustomizer() {

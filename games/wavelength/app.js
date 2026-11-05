@@ -933,6 +933,17 @@
       });
     }
 
+    if (window.PartyConnect) {
+      window.PartyConnect.init({
+        gameId: "wavelength",
+        createBtnId: "btnCreatePartyRoom",
+        joinBtnId: "btnJoinPartyRoom",
+        hostInputId: "inputPartyHostName",
+        joinInputId: "inputPartyJoinName",
+        codeInputId: "inputPartyRoomCode",
+      });
+    }
+
     if (el.btnSubmitCreateLobby) {
       el.btnSubmitCreateLobby.addEventListener("click", async () => {
         const hostName = (el.inputHostNameLobby ? el.inputHostNameLobby.value : "").trim() || "Spiller 1";

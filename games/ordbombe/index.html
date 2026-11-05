@@ -129,25 +129,27 @@
           <div class="tab-panel hidden" id="panelLobbyRoom">
             <div class="online-lobby-deck">
               <div class="online-split">
-                <!-- Host Lounge Card -->
+                <!-- Host Party Card -->
                 <div class="action-box card-theme-orange">
                   <div class="action-box-header">
                     <div class="box-badge-row">
-                      <span class="action-card-badge badge-orange">Party Lounge</span>
+                      <span class="action-card-badge badge-orange">Romvert</span>
                     </div>
-                    <h3 class="box-title">Spill sammen i fellesrom</h3>
-                    <p class="box-desc">2–16 spillere på hver sin mobil! Bomben kastes fra spiller til spiller.</p>
+                    <h3 class="box-title">Opprett party</h3>
+                    <p class="box-desc">Start et felles party-rom for vennegjengen på mobil eller PC. I rommet kan du velge Ordbombe eller hvilket som helst spill fritt!</p>
                   </div>
 
                   <div class="action-box-content">
-                    <p style="font-size: 0.9rem; color: #cbd5e1; margin: 0;">
-                      I Party Lounge kobler alle til med 4-bokstavs kode og verten bytter sømløst mellom Ordbombe, Sjakk og Fargekoden.
-                    </p>
+                    <div class="form-group">
+                      <label for="inputPartyHostName">Ditt kallenavn</label>
+                      <input type="text" id="inputPartyHostName" class="text-input" maxlength="18"
+                        placeholder="F.eks. Henrik (Vert)" value="Vert" />
+                    </div>
                   </div>
 
-                  <a href="/party/" class="primary-btn btn-orange-accent">
-                    Åpne Party Lounge →
-                  </a>
+                  <button type="button" class="primary-btn pulse-glow" id="btnCreatePartyRoom">
+                    Opprett party-rom 🎉
+                  </button>
                 </div>
 
                 <!-- Join Room Card -->
@@ -156,20 +158,26 @@
                     <div class="box-badge-row">
                       <span class="action-card-badge badge-purple">Bli med</span>
                     </div>
-                    <h3 class="box-title">Har du en romkode?</h3>
-                    <p class="box-desc">Tast inn 4-bokstavs kode fra loungen eller verten.</p>
+                    <h3 class="box-title">Bli med i party</h3>
+                    <p class="box-desc">Tast inn 4-bokstavskoden fra storskjermen eller vennen din.</p>
                   </div>
 
                   <div class="action-box-content">
                     <div class="form-group">
-                      <label for="inputOrdbombeRoomCode">Romkode</label>
+                      <label for="inputOrdbombeRoomCode">Romkode (4 bokstaver)</label>
                       <input type="text" id="inputOrdbombeRoomCode" class="text-input code-input" maxlength="6"
-                        placeholder="BOMBE" autocomplete="off" autocorrect="off" autocapitalize="characters" />
+                        placeholder="FEST" autocomplete="off" autocorrect="off" autocapitalize="characters" required />
+                    </div>
+
+                    <div class="form-group">
+                      <label for="inputPartyJoinName">Ditt kallenavn</label>
+                      <input type="text" id="inputPartyJoinName" class="text-input" maxlength="18"
+                        placeholder="F.eks. Spiller" value="Spiller" />
                     </div>
                   </div>
 
                   <button type="button" class="btn-cyan-accent" id="btnSubmitJoinOrdbombeRoom">
-                    Koble til rom
+                    Bli med i festen 🚀
                   </button>
                 </div>
               </div>
@@ -383,6 +391,7 @@
   </div>
 
   <script src="/character/character-creator.js"></script>
+  <script src="/game-lobby.js"></script>
   <script src="/ordbombe/app.js?v=2.2"></script>
   <script src="/parallax-bg.js?v=2.1"></script>
 </body>

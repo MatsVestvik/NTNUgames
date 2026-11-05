@@ -3046,7 +3046,11 @@
 
     el.btnQuitRace.addEventListener("click", () => {
       if (confirm("Vil du avslutte løpet og gå tilbake til lobbyen?")) {
-        showView("lobby");
+        if (state.roomCode) {
+          window.location.href = `/party/?room=${encodeURIComponent(state.roomCode)}`;
+        } else {
+          showView("lobby");
+        }
       }
     });
 
@@ -3080,8 +3084,23 @@
 
     el.btnPodiumReturnLobby.addEventListener("click", () => {
       el.modalPodium.classList.add("hidden");
-      showView("lobby");
+      if (state.roomCode) {
+        window.location.href = `/party/?room=${encodeURIComponent(state.roomCode)}`;
+      } else {
+        showView("lobby");
+      }
     });
+
+    if (window.PartyConnect) {
+      window.PartyConnect.init({
+        gameId: "turbosladd",
+        createBtnId: "btnCreatePartyRoom",
+        joinBtnId: "btnJoinPartyRoom",
+        hostInputId: "inputPartyHostName",
+        joinInputId: "inputPartyJoinName",
+        codeInputId: "inputPartyRoomCode",
+      });
+    }
   }
 
   function escapeHtml(str) {
@@ -3132,9 +3151,8 @@
           if (data.status === "countdown" || data.status === "racing") {
             launchOnlineRace(data);
           } else {
-            showView("room");
-            updateLoungeSettingsUI();
-            startLobbyPolling();
+            // Room is in party lounge stage - redirect to central party room!
+            window.location.href = `/party/?room=${encodeURIComponent(roomParam)}`;
           }
           return;
         }

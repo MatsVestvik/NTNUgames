@@ -1455,6 +1455,17 @@
       });
     });
 
+    if (window.PartyConnect) {
+      window.PartyConnect.init({
+        gameId: "tegn_og_gjett",
+        createBtnId: "btnCreatePartyRoom",
+        joinBtnId: "btnJoinPartyRoom",
+        hostInputId: "inputPartyHostName",
+        joinInputId: "inputPartyJoinName",
+        codeInputId: "inputPartyRoomCode",
+      });
+    }
+
     if (el.btnStartTegnSolo) {
       el.btnStartTegnSolo.addEventListener("click", () => {
         initSoloMode();

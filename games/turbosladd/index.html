@@ -114,57 +114,57 @@
           <!-- TAB 1: Online Multiplayer Panel -->
           <div class="tab-panel active" id="panelOnline">
             <div class="online-lobby-deck">
-              <!-- Action Cards: Create vs Join -->
+              <!-- Action Cards: Create vs Join Standardized Party Room -->
               <div class="online-split">
-                <!-- Create Race Card -->
+                <!-- Create Party Card -->
                 <div class="action-box card-theme-orange">
                   <div class="action-box-header">
                     <div class="box-badge-row">
                       <span class="action-card-badge badge-orange">Romvert</span>
                     </div>
-                    <h3 class="box-title">Opprett nytt løp</h3>
-                    <p class="box-desc">Start et løpsrom for 1–16 sjåfører med 4-bokstavskode.</p>
+                    <h3 class="box-title">Opprett party</h3>
+                    <p class="box-desc">Start et felles party-rom for alle venner på mobil eller PC. I rommet kan du velge og bytte mellom alle spill fritt!</p>
                   </div>
 
                   <div class="action-box-content">
                     <div class="form-group">
-                      <label for="inputHostName">Ditt kallenavn</label>
-                      <input type="text" id="inputHostName" class="text-input" maxlength="18"
+                      <label for="inputPartyHostName">Ditt kallenavn</label>
+                      <input type="text" id="inputPartyHostName" class="text-input" maxlength="18"
                         placeholder="F.eks. Sjåfør 1" value="Sjåfør 1" required />
                     </div>
                   </div>
 
-                  <button type="button" class="primary-btn pulse-glow" id="btnCreateRace">
-                    Opprett løp →
+                  <button type="button" class="primary-btn pulse-glow" id="btnCreatePartyRoom">
+                    Opprett party-rom 🎉
                   </button>
                 </div>
 
-                <!-- Join Race Card -->
+                <!-- Join Party Card -->
                 <div class="action-box card-theme-purple">
                   <div class="action-box-header">
                     <div class="box-badge-row">
                       <span class="action-card-badge badge-purple">Bli med</span>
                     </div>
-                    <h3 class="box-title">Bli med i et løp</h3>
-                    <p class="box-desc">Skriv inn romkoden fra vennen din eller Party Lounge.</p>
+                    <h3 class="box-title">Bli med i party</h3>
+                    <p class="box-desc">Tast inn 4-bokstavskoden fra storskjermen eller vennen din.</p>
                   </div>
 
                   <div class="action-box-content">
                     <div class="form-group">
-                      <label for="inputJoinName">Ditt kallenavn</label>
-                      <input type="text" id="inputJoinName" class="text-input" maxlength="18"
-                        placeholder="F.eks. Sjåfør 2" value="Sjåfør 2" required />
+                      <label for="inputPartyRoomCode">Romkode (4 bokstaver)</label>
+                      <input type="text" id="inputPartyRoomCode" class="text-input code-input" maxlength="6"
+                        placeholder="FEST" autocomplete="off" autocorrect="off" autocapitalize="characters" required />
                     </div>
 
                     <div class="form-group">
-                      <label for="inputRoomCode">Romkode (4 bokstaver)</label>
-                      <input type="text" id="inputRoomCode" class="text-input code-input" maxlength="6"
-                        placeholder="F.EKS. TURBO" autocomplete="off" autocorrect="off" autocapitalize="characters" />
+                      <label for="inputPartyJoinName">Ditt kallenavn</label>
+                      <input type="text" id="inputPartyJoinName" class="text-input" maxlength="18"
+                        placeholder="F.eks. Sjåfør 2" value="Sjåfør 2" required />
                     </div>
                   </div>
 
-                  <button type="button" class="btn-cyan-accent" id="btnJoinRace">
-                    Koble til løp
+                  <button type="button" class="btn-cyan-accent" id="btnJoinPartyRoom">
+                    Bli med i festen 🚀
                   </button>
                 </div>
               </div>
@@ -519,6 +519,7 @@
 
   <script src="/parallax-bg.js?v=2.1"></script>
   <script src="/character/character-creator.js"></script>
+  <script src="/game-lobby.js"></script>
   <script src="app.js?v=2.0"></script>
 </body>
 

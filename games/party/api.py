@@ -2162,6 +2162,17 @@ class PartyAPI:
             except Exception as err:
                 print("Error updating korridorer room on to-lounge:", err)
 
+            try:
+                from games.turbosladd.api import _rooms as ts_rooms
+                with _rooms_lock:
+                    if code in ts_rooms:
+                        t_room = ts_rooms[code]
+                        with t_room.lock:
+                            t_room.status = "finished"
+                            t_room.bump()
+            except Exception as err:
+                print("Error updating turbosladd room on to-lounge:", err)
+
             return 200, {"ok": True, "message": "Returnert til lounge"}
 
         if rel_path in ("/api/select-game", "/api/start-game"):

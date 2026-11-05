@@ -1062,6 +1062,17 @@
       });
     }
 
+    if (window.PartyConnect) {
+      window.PartyConnect.init({
+        gameId: "fargekoden",
+        createBtnId: "btnCreatePartyRoom",
+        joinBtnId: "btnJoinPartyRoom",
+        hostInputId: "inputPartyHostName",
+        joinInputId: "inputPartyJoinName",
+        codeInputId: "inputPartyRoomCode",
+      });
+    }
+
     if (el.btnStartFkLocal) {
       el.btnStartFkLocal.addEventListener("click", () => {
         initPassAndPlayMode();

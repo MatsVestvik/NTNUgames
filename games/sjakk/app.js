@@ -2729,6 +2729,17 @@
       });
     }
 
+    if (window.PartyConnect) {
+      window.PartyConnect.init({
+        gameId: "sjakk",
+        createBtnId: "btnCreatePartyRoom",
+        joinBtnId: "btnJoinPartyRoom",
+        hostInputId: "inputPartyHostName",
+        joinInputId: "inputPartyJoinName",
+        codeInputId: "inputPartyRoomCode",
+      });
+    }
+
     if (el.btnSubmitCreateLobby) {
       el.btnSubmitCreateLobby.addEventListener("click", async () => {
         const name = (el.inputHostNameLobby ? el.inputHostNameLobby.value : "").trim() || "Hvit";

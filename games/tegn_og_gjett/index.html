@@ -96,25 +96,27 @@
         <div class="tab-panel active" id="panelLobbyRoom">
           <div class="online-lobby-deck">
             <div class="online-split">
-              <!-- Party Lounge Card -->
-              <div class="action-box card-theme-cyan">
+              <!-- Create Room Card -->
+              <div class="action-box card-theme-orange">
                 <div class="action-box-header">
                   <div class="box-badge-row">
-                    <span class="action-card-badge badge-cyan">Party Lounge</span>
+                    <span class="action-card-badge badge-orange">Romvert</span>
                   </div>
-                  <h3 class="box-title">Spill med vennegjengen</h3>
-                  <p class="box-desc">2–16 spillere! Én tegner på egen mobil og bildet synkroniseres til alles skjermer i sanntid.</p>
+                  <h3 class="box-title">Opprett party</h3>
+                  <p class="box-desc">Start et felles party-rom for vennegjengen på mobil eller PC. I rommet kan du velge Tegn &amp; Gjett eller hvilket som helst spill fritt!</p>
                 </div>
 
                 <div class="action-box-content">
-                  <p style="font-size: 0.9rem; color: #cbd5e1; margin: 0;">
-                    Opprett felles rom i loungen så venner kan koble til med mobilen, gjette i chatten og samle poeng!
-                  </p>
+                  <div class="form-group">
+                    <label for="inputPartyHostName">Ditt kallenavn</label>
+                    <input type="text" id="inputPartyHostName" class="text-input" maxlength="18"
+                      placeholder="F.eks. Henrik (Vert)" value="Vert" />
+                  </div>
                 </div>
 
-                <a href="/party/" class="primary-btn btn-cyan-accent">
-                  Åpne Party Lounge →
-                </a>
+                <button type="button" class="primary-btn pulse-glow" id="btnCreatePartyRoom">
+                  Opprett party-rom 🎉
+                </button>
               </div>
 
               <!-- Join Room Card -->
@@ -123,20 +125,26 @@
                   <div class="box-badge-row">
                     <span class="action-card-badge badge-purple">Bli med</span>
                   </div>
-                  <h3 class="box-title">Koble til rom</h3>
-                  <p class="box-desc">Skriv inn 4-bokstavskoden du har fått fra loungebordet eller verten.</p>
+                  <h3 class="box-title">Bli med i party</h3>
+                  <p class="box-desc">Tast inn 4-bokstavskoden fra storskjermen eller vennen din.</p>
                 </div>
 
                 <div class="action-box-content">
                   <div class="form-group">
-                    <label for="inputTegnRoomCode">Romkode</label>
-                    <input type="text" id="inputTegnRoomCode" class="text-input code-input" maxlength="6"
-                      placeholder="TEGN" autocomplete="off" autocorrect="off" autocapitalize="characters" />
+                    <label for="inputPartyRoomCode">Romkode (4 bokstaver)</label>
+                    <input type="text" id="inputPartyRoomCode" class="text-input code-input" maxlength="6"
+                      placeholder="FEST" autocomplete="off" autocorrect="off" autocapitalize="characters" required />
+                  </div>
+
+                  <div class="form-group">
+                    <label for="inputPartyJoinName">Ditt kallenavn</label>
+                    <input type="text" id="inputPartyJoinName" class="text-input" maxlength="18"
+                      placeholder="F.eks. Spiller" value="Spiller" />
                   </div>
                 </div>
 
-                <button type="button" class="btn-cyan-accent" id="btnSubmitJoinTegnRoom">
-                  Bli med i partiet
+                <button type="button" class="btn-cyan-accent" id="btnJoinPartyRoom">
+                  Bli med i festen 🚀
                 </button>
               </div>
             </div>
@@ -344,6 +352,7 @@
 
   <script src="/parallax-bg.js?v=2.1"></script>
   <script src="/character/character-creator.js"></script>
+  <script src="/game-lobby.js"></script>
   <script src="/tegn-og-gjett/app.js?v=1.1"></script>
 </body>
 

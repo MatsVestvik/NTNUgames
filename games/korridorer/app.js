@@ -1216,6 +1216,16 @@
     const name = el.createPlayerName.value.trim() || "Spiller 1";
     localStorage.setItem("korridorer_player_name", name);
 
+    if (window.PartyConnect) {
+      window.PartyConnect.createParty({
+        hostName: name,
+        avatar: selectedCreateAvatar,
+        preferredGame: "korridorer",
+        btnElement: el.btnSubmitCreate,
+      });
+      return;
+    }
+
     el.btnSubmitCreate.disabled = true;
     el.btnSubmitCreate.textContent = "Oppretter rom…";
 
@@ -1256,7 +1266,7 @@
 
   async function handleJoinOnlineRoom() {
     const code = el.joinRoomCode.value.trim().toUpperCase();
-    const name = el.joinPlayerName.value.trim() || "Spiller";
+    const name = (el.createPlayerName ? el.createPlayerName.value.trim() : "") || el.joinPlayerName.value.trim() || "Spiller";
 
     if (!code) {
       alert("Vennligst skriv inn en 4-bokstavs romkode.");
@@ -1264,6 +1274,17 @@
     }
 
     localStorage.setItem("korridorer_player_name", name);
+
+    if (window.PartyConnect) {
+      window.PartyConnect.joinParty({
+        roomCode: code,
+        playerName: name,
+        avatar: selectedCreateAvatar || selectedJoinAvatar,
+        btnElement: el.btnSubmitJoin,
+      });
+      return;
+    }
+
     el.btnSubmitJoin.disabled = true;
     el.btnSubmitJoin.textContent = "Kobler til…";
 

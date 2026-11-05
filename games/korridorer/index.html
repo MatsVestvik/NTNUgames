@@ -148,59 +148,50 @@
                 </div>
               </div>
 
-              <!-- Bottom Action Gateways: Create vs Join -->
+              <!-- Bottom Action Gateways: Create vs Join Standardized Party Room -->
               <div class="online-split">
-                <!-- Create Room Card -->
+                <!-- Create Party Card -->
                 <div class="action-box card-theme-amber">
                   <div class="action-box-header">
                     <div class="box-badge-row">
-                      <span class="action-card-badge badge-amber">Romvert</span>
+                      <span class="action-card-badge badge-orange">Romvert</span>
                     </div>
-                    <h3 class="box-title">Opprett nytt parti</h3>
-                    <p class="box-desc">Start et parti og inviter venner med 4-bokstavskode eller direktelenke.</p>
+                    <h3 class="box-title">Opprett party</h3>
+                    <p class="box-desc">Start et felles party-rom for 2–16 spillere. I rommet kan du velge Korridorer eller hvilket som helst annet spill!</p>
                   </div>
 
                   <div class="action-box-content">
-                    <div class="form-group">
-                      <label for="inputOnlinePlayerCount">Maks antall spillere i partiet (2–16)</label>
-                      <div class="player-count-picker" id="controlPlayerCount">
-                        <button type="button" class="pcp-step-btn" data-step="-1" aria-label="Færre spillere">−</button>
-                        <input type="range" class="pcp-slider" id="sliderOnlinePlayerCount" min="2" max="16" value="4" />
-                        <button type="button" class="pcp-step-btn" data-step="1" aria-label="Flere spillere">+</button>
-                        <div class="pcp-number-wrap">
-                          <input type="number" class="pcp-number-input" id="inputOnlinePlayerCount" min="2" max="16" value="4" />
-                          <span class="pcp-unit">spillere</span>
-                        </div>
-                      </div>
-                    </div>
+                    <p style="font-size: 0.9rem; color: #cbd5e1; margin: 0;">
+                      Alle deltakere kobler til med mobilen eller PC. Figuren og navnet ditt fra profilen over følger automatisk med.
+                    </p>
                   </div>
 
                   <button type="button" class="primary-btn pulse-glow" id="btnSubmitCreate">
-                    Opprett rom
+                    Opprett party-rom 🎉
                   </button>
                 </div>
 
-                <!-- Join Room Card -->
+                <!-- Join Party Card -->
                 <div class="action-box card-theme-cyan">
                   <div class="action-box-header">
                     <div class="box-badge-row">
-                      <span class="action-card-badge badge-cyan">Bli med</span>
+                      <span class="action-card-badge badge-purple">Bli med</span>
                     </div>
-                    <h3 class="box-title">Bli med med kode</h3>
-                    <p class="box-desc">Skriv inn koden du har fått fra romverten eller Party Lounge.</p>
+                    <h3 class="box-title">Bli med i party</h3>
+                    <p class="box-desc">Tast inn 4-bokstavskoden fra storskjermen eller vennen din.</p>
                   </div>
 
                   <div class="action-box-content">
                     <div class="form-group">
                       <label for="joinRoomCode">4-bokstavs romkode</label>
                       <input type="text" id="joinRoomCode" class="text-input code-input" maxlength="6"
-                        placeholder="F.EKS. VEGG" autocomplete="off" autocorrect="off" autocapitalize="characters"
+                        placeholder="FEST" autocomplete="off" autocorrect="off" autocapitalize="characters"
                         required />
                     </div>
                   </div>
 
-                  <button type="button" class="secondary-btn btn-cyan-accent" id="btnSubmitJoin">
-                    Koble til parti
+                  <button type="button" class="btn-cyan-accent" id="btnSubmitJoin">
+                    Bli med i festen 🚀
                   </button>
                 </div>
               </div>
@@ -535,6 +526,7 @@
   <script src="/parallax-bg.js?v=2.2"></script>
   <!-- Character Creator & Compositor -->
   <script src="/character/character-creator.js"></script>
+  <script src="/game-lobby.js"></script>
   <!-- Main Game App Script -->
   <script src="/korridorer/app.js?v=1.2"></script>
 </body>

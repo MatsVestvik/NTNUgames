@@ -122,32 +122,25 @@
           <div class="online-lobby-deck">
             <div class="online-split">
               <!-- Create Room Card -->
-              <div class="action-box card-theme-cyan">
+              <div class="action-box card-theme-orange">
                 <div class="action-box-header">
                   <div class="box-badge-row">
-                    <span class="action-card-badge badge-cyan">Romvert</span>
+                    <span class="action-card-badge badge-orange">Romvert</span>
                   </div>
-                  <h3 class="box-title">Opprett nytt parti</h3>
-                  <p class="box-desc">Start et parti og inviter medspilleren med 4-bokstavskode.</p>
+                  <h3 class="box-title">Opprett party</h3>
+                  <p class="box-desc">Start et felles party-rom for vennegjengen på mobil eller PC. I rommet kan du velge Wavelength eller hvilket som helst spill fritt!</p>
                 </div>
 
                 <div class="action-box-content">
                   <div class="form-group">
-                    <label for="inputHostNameLobby">Ditt navn</label>
-                    <input type="text" id="inputHostNameLobby" class="text-input" maxlength="16" placeholder="F.eks. Sara" value="Spiller 1" />
-                  </div>
-                  <div class="form-group">
-                    <label>Antall runder</label>
-                    <div class="segmented-control" id="controlOnlineRounds">
-                      <button type="button" class="seg-btn" data-rounds="5">5 runder</button>
-                      <button type="button" class="seg-btn active" data-rounds="7">7 runder</button>
-                      <button type="button" class="seg-btn" data-rounds="10">10 runder</button>
-                    </div>
+                    <label for="inputPartyHostName">Ditt kallenavn</label>
+                    <input type="text" id="inputPartyHostName" class="text-input" maxlength="18"
+                      placeholder="F.eks. Henrik (Vert)" value="Vert" />
                   </div>
                 </div>
 
-                <button type="button" class="primary-btn" id="btnSubmitCreateLobby">
-                  Opprett Wavelength-rom
+                <button type="button" class="primary-btn pulse-glow" id="btnCreatePartyRoom">
+                  Opprett party-rom 🎉
                 </button>
               </div>
 
@@ -157,38 +150,28 @@
                   <div class="box-badge-row">
                     <span class="action-card-badge badge-purple">Bli med</span>
                   </div>
-                  <h3 class="box-title">Bli med med kode</h3>
-                  <p class="box-desc">Tast inn koden du har fått fra medspilleren eller Party Lounge.</p>
+                  <h3 class="box-title">Bli med i party</h3>
+                  <p class="box-desc">Tast inn 4-bokstavskoden fra storskjermen eller vennen din.</p>
                 </div>
 
                 <div class="action-box-content">
                   <div class="form-group">
-                    <label for="inputRoomCodeLobby">Romkode</label>
-                    <input type="text" id="inputRoomCodeLobby" class="text-input code-input" maxlength="6"
-                      placeholder="BØLGE" autocomplete="off" autocorrect="off" autocapitalize="characters" required />
+                    <label for="inputPartyRoomCode">Romkode (4 bokstaver)</label>
+                    <input type="text" id="inputPartyRoomCode" class="text-input code-input" maxlength="6"
+                      placeholder="FEST" autocomplete="off" autocorrect="off" autocapitalize="characters" required />
                   </div>
+
                   <div class="form-group">
-                    <label for="inputJoinNameLobby">Ditt navn</label>
-                    <input type="text" id="inputJoinNameLobby" class="text-input" maxlength="16" placeholder="F.eks. Jonas" value="Spiller 2" />
+                    <label for="inputPartyJoinName">Ditt kallenavn</label>
+                    <input type="text" id="inputPartyJoinName" class="text-input" maxlength="18"
+                      placeholder="F.eks. Spiller" value="Spiller" />
                   </div>
                 </div>
 
-                <button type="button" class="btn-cyan-accent" id="btnSubmitJoinLobby">
-                  Koble til rom
+                <button type="button" class="btn-cyan-accent" id="btnJoinPartyRoom">
+                  Bli med i festen 🚀
                 </button>
               </div>
-            </div>
-
-            <!-- Party Lounge Callout -->
-            <div class="lounge-cta-banner">
-              <div class="lounge-cta-left">
-                <img src="/hub/assets/icons/party.png" alt="" class="lounge-cta-icon" />
-                <div class="lounge-cta-text">
-                  <h4>Vil dere spille i Party Lounge?</h4>
-                  <p>I felles lounge kan verten starte Wavelength, Sjakk, Korridorer og Ordbombe for alle samlet.</p>
-                </div>
-              </div>
-              <a href="/party/" class="lounge-cta-btn">Gå til Party Lounge →</a>
             </div>
           </div>
         </div>
@@ -446,6 +429,7 @@
 
   <!-- Parallax BG and Sound scripts -->
   <script src="/parallax-bg.js"></script>
+  <script src="/game-lobby.js"></script>
   <script src="/wavelength/app.js?v=1.0"></script>
 </body>
 

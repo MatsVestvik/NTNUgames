@@ -1639,7 +1639,16 @@
       });
     });
 
-    if (el.btnSubmitJoinOrdbombeRoom) {
+    if (window.PartyConnect) {
+      window.PartyConnect.init({
+        gameId: "ordbombe",
+        createBtnId: "btnCreatePartyRoom",
+        joinBtnId: "btnSubmitJoinOrdbombeRoom",
+        hostInputId: "inputPartyHostName",
+        joinInputId: "inputPartyJoinName",
+        codeInputId: "inputOrdbombeRoomCode",
+      });
+    } else if (el.btnSubmitJoinOrdbombeRoom) {
       el.btnSubmitJoinOrdbombeRoom.addEventListener("click", () => {
         const code = (el.inputOrdbombeRoomCode ? el.inputOrdbombeRoomCode.value : "").trim().toUpperCase();
         if (!code) {
