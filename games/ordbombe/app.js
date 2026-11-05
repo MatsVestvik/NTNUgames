@@ -378,6 +378,7 @@
     turnPlayerName: document.getElementById("turnPlayerName"),
     activeHeartsBox: document.getElementById("activeHeartsBox"),
     soloScoreDisplay: document.getElementById("soloScoreDisplay"),
+    btnArenaQuit: document.getElementById("btnArenaQuit"),
     arenaScoreNum: document.getElementById("arenaScoreNum"),
     arenaStreakBadge: document.getElementById("arenaStreakBadge"),
 
@@ -751,6 +752,7 @@
     el.inputFeedback.className = "input-feedback hidden";
 
     // Switch view
+    state.isLeaving = false;
     showView("game");
     el.gameOverCard.classList.add("hidden");
     el.gameArena.classList.remove("hidden");
@@ -1406,7 +1408,7 @@
 
         // If game was closed or returned to lobby
         if (!data.currentGame) {
-          window.location.href = `/party/?code=${encodeURIComponent(state.roomCode)}`;
+          window.location.replace(`/party/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId || "")}`);
           return;
         }
 
@@ -1601,15 +1603,12 @@
 
     if (el.btnBackToLobby) {
       el.btnBackToLobby.classList.remove("hidden");
+      el.btnBackToLobby.textContent = "‹ Tilbake til Party Lounge";
     }
 
-    if (state.isHost) {
-      el.btnPlayAgain.classList.remove("hidden");
-      el.btnPlayAgain.textContent = "Spill en ny runde ↺ (Vert)";
-    } else {
-      el.btnPlayAgain.classList.add("hidden");
-    }
-    el.btnChangeSettings.classList.add("hidden");
+    // In party mode, return to lounge is the only action so players re-sync and get ready together
+    if (el.btnPlayAgain) el.btnPlayAgain.classList.add("hidden");
+    if (el.btnChangeSettings) el.btnChangeSettings.classList.add("hidden");
   }
 
   function showView(viewName) {
@@ -1617,13 +1616,27 @@
     if (viewName === "lobby") {
       el.viewLobby.classList.remove("hidden");
       el.viewGame.classList.add("hidden");
+      if (el.headerBackLink) {
+        el.headerBackLink.classList.remove("hidden");
+        el.headerBackLink.href = "/";
+        el.headerBackLink.textContent = "‹ Hub";
+      }
       if (el.btnLeaveRoom) el.btnLeaveRoom.classList.add("hidden");
       state.isPlaying = false;
+      state.isLeaving = false;
       stopTimer();
     } else if (viewName === "game") {
       el.viewLobby.classList.add("hidden");
       el.viewGame.classList.remove("hidden");
-      if (el.btnLeaveRoom) el.btnLeaveRoom.classList.remove("hidden");
+      // Keep only 1 clear exit button in header: hide left back link
+      if (el.headerBackLink) el.headerBackLink.classList.add("hidden");
+      if (el.btnLeaveRoom) {
+        el.btnLeaveRoom.classList.remove("hidden");
+        el.btnLeaveRoom.textContent = (state.isRoomMode && state.isHost) ? "Avslutt spill (Vert)" : "Forlat spill";
+      }
+      if (el.btnArenaQuit) {
+        el.btnArenaQuit.textContent = (state.isRoomMode && state.isHost) ? "✕ Avslutt spill" : "✕ Forlat spill";
+      }
     }
   }
 
@@ -1694,9 +1707,10 @@
       } catch (_) {}
 
       try {
-        await fetch("/api/party/to-lounge", {
+        fetch("/api/party/to-lounge", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          keepalive: true,
           body: JSON.stringify({
             roomCode: code,
             playerId: pid,
@@ -1708,6 +1722,7 @@
       return;
     }
     showView("lobby");
+    state.isLeaving = false;
   }
 
   function initRoomModeIfPresent() {
@@ -1727,11 +1742,12 @@
     };
 
     bindLeave(el.btnLeaveRoom);
+    bindLeave(el.btnArenaQuit);
     bindLeave(el.headerBackLink);
     bindLeave(el.btnBackToLobby);
 
     const params = new URLSearchParams(window.location.search);
-    const roomCode = (params.get("room") || "").trim().toUpperCase();
+    const roomCode = (params.get("room") || params.get("code") || "").trim().toUpperCase();
     const playerId = (params.get("player") || sessionStorage.getItem("party_player_id") || "").trim();
 
     if (roomCode) {
