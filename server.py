@@ -300,28 +300,34 @@ class GameGatewayHandler(BaseHTTPRequestHandler):
 
             if os.path.isfile(candidate):
                 full_path = candidate
-            elif safe_rel.startswith("background/") or safe_rel.startswith("seabed/") or safe_rel.startswith("prison/") or safe_rel.startswith("mons/"):
-                asset_cand = os.path.join(HUB_DIR, "assets", safe_rel)
-                if os.path.isfile(asset_cand):
-                    full_path = asset_cand
+            elif os.path.isfile(os.path.join(HUB_DIR, "assets", safe_rel)):
+                full_path = os.path.join(HUB_DIR, "assets", safe_rel)
+            elif os.path.isfile(os.path.join(HUB_DIR, "assets", "icons", safe_rel)):
+                full_path = os.path.join(HUB_DIR, "assets", "icons", safe_rel)
+            elif safe_rel.startswith("bomb/"):
+                sub_bomb = safe_rel[len("bomb/"):]
+                bomb_cand = os.path.join(GAMES_DIR, "ordbombe", "assets", "bomb", sub_bomb)
+                if os.path.isfile(bomb_cand):
+                    full_path = bomb_cand
+                elif os.path.isfile(os.path.join(HUB_DIR, "assets", safe_rel)):
+                    full_path = os.path.join(HUB_DIR, "assets", safe_rel)
                 elif os.path.isfile(os.path.join(BASE_DIR, safe_rel)):
                     full_path = os.path.join(BASE_DIR, safe_rel)
                 else:
                     self._send_json({"error": "Fil ikke funnet"}, status=404)
                     return
+            elif safe_rel == "bil.png":
+                ts_car = os.path.join(GAMES_DIR, "turbosladd", "bil.png")
+                if os.path.isfile(ts_car):
+                    full_path = ts_car
+                elif os.path.isfile(os.path.join(HUB_DIR, "assets", "bil.png")):
+                    full_path = os.path.join(HUB_DIR, "assets", "bil.png")
             elif safe_rel.startswith("character/"):
                 char_cand = os.path.join(BASE_DIR, safe_rel)
                 if os.path.isfile(char_cand):
                     full_path = char_cand
                 else:
                     self._send_json({"error": "Fil ikke funnet"}, status=404)
-            elif safe_rel.startswith("bomb/"):
-                bomb_cand = os.path.join(BASE_DIR, safe_rel)
-                if os.path.isfile(bomb_cand):
-                    full_path = bomb_cand
-                else:
-                    self._send_json({"error": "Fil ikke funnet"}, status=404)
-                    return
             elif os.path.isfile(os.path.join(BASE_DIR, safe_rel)):
                 full_path = os.path.join(BASE_DIR, safe_rel)
             else:
