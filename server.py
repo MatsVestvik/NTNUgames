@@ -30,6 +30,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 HUB_DIR = os.path.join(BASE_DIR, "hub")
 GAMES_DIR = os.path.join(BASE_DIR, "games")
 
+DISABLED_GAMES = {"imposter", "fargekoden", "wavelength"}
+
 mimetypes.add_type("font/ttf", ".ttf")
 mimetypes.add_type("image/svg+xml", ".svg")
 
@@ -70,6 +72,10 @@ class GameGatewayHandler(BaseHTTPRequestHandler):
         query = urllib.parse.parse_qs(parsed.query)
 
         try:
+            # Block disabled games APIs
+            if any(path.startswith(f"/api/{g}/") for g in DISABLED_GAMES):
+                return self._send_json({"error": "Dette spillet er deaktivert."}, status=404)
+
             # 1. Check Kattfisking API (legacy and namespaced paths)
             if path.startswith("/api/kattfisking/") or path in (
                 "/api/daily",
@@ -147,6 +153,10 @@ class GameGatewayHandler(BaseHTTPRequestHandler):
         path = parsed.path
 
         try:
+            # Block disabled games APIs
+            if any(path.startswith(f"/api/{g}/") for g in DISABLED_GAMES):
+                return self._send_json({"error": "Dette spillet er deaktivert."}, status=404)
+
             body = self._read_json_body()
 
             # 1. Check Kattfisking API
@@ -223,6 +233,23 @@ class GameGatewayHandler(BaseHTTPRequestHandler):
         if safe_rel.startswith(".."):
             self._send_json({"error": "Forbidden"}, status=403)
             return
+
+        # Redirect disabled games to hub
+        for disabled in DISABLED_GAMES:
+            disabled_slug = disabled.replace("_", "-")
+            clean_rel = safe_rel.rstrip("/\\")
+            if (
+                clean_rel == disabled
+                or clean_rel == disabled_slug
+                or safe_rel.startswith(disabled + "/")
+                or safe_rel.startswith(disabled_slug + "/")
+                or safe_rel.startswith(disabled + "\\")
+                or safe_rel.startswith(disabled_slug + "\\")
+            ):
+                self.send_response(302)
+                self.send_header("Location", "/")
+                self.end_headers()
+                return
 
         # Check if the request is for a specific game under games/<game_name>/
         game_names = [

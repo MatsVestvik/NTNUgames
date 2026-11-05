@@ -298,9 +298,6 @@
           tegn_og_gjett: "gameCardTegnOgGjett",
           sjakk: "gameCardSjakk",
           korridorer: "gameCardKorridorer",
-          imposter: "gameCardImposter",
-          fargekoden: "gameCardFargekoden",
-          wavelength: "gameCardWavelength",
         };
         const cardId = gameCardMap[preferredGame];
         const cardEl = cardId ? document.getElementById(cardId) : null;
@@ -733,27 +730,6 @@
       btn: el.btnStartKorridorer,
       id: "korridorer",
       settings: () => ({}),
-    },
-    {
-      btn: el.btnStartImposter,
-      id: "imposter",
-      settings: () => ({
-        strokeTime: parseInt(el.selectTimerImposter?.value || "25", 10) || 25,
-      }),
-    },
-    {
-      btn: el.btnStartFargekoden,
-      id: "fargekoden",
-      settings: () => ({
-        rounds: parseInt(el.selectRoundsFargekoden?.value || "3", 10) || 3,
-      }),
-    },
-    {
-      btn: el.btnStartWavelength,
-      id: "wavelength",
-      settings: () => ({
-        rounds: parseInt(el.selectRoundsWavelength?.value || "7", 10) || 7,
-      }),
     },
     {
       btn: el.btnStartTurbosladd,

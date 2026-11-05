@@ -119,6 +119,7 @@ PARTY_REGISTRY: Dict[str, Dict[str, Any]] = {
         "min_players": 3,
         "max_players": 10,
         "is_internal": True,
+        "disabled": True,
     },
     "fargekoden": {
         "name": "Fargekoden",
@@ -126,6 +127,7 @@ PARTY_REGISTRY: Dict[str, Dict[str, Any]] = {
         "min_players": 2,
         "max_players": 8,
         "is_internal": True,
+        "disabled": True,
     },
     "sjakk": {
         "name": "Sjakk",
@@ -147,6 +149,7 @@ PARTY_REGISTRY: Dict[str, Dict[str, Any]] = {
         "min_players": 2,
         "max_players": 12,
         "is_internal": False,
+        "disabled": True,
     },
     "turbosladd": {
         "name": "Turbosladd",
@@ -2163,39 +2166,6 @@ class PartyAPI:
                         "route": "/korridorer/",
                     },
                     {
-                        "id": "imposter",
-                        "title": "Imposter",
-                        "subtitle": "Tegn én strek & avslør bedrageren",
-                        "desc": "Alle får samme hemmelige ord unntatt Imposteren. Hvem bløffer?",
-                        "status": "ready",
-                        "badge": "Klar til å spilles!",
-                        "players": "3–16 spillere",
-                        "icon": "/assets/icons/imposter.svg",
-                        "route": "/imposter/",
-                    },
-                    {
-                        "id": "fargekoden",
-                        "title": "Fargekoden (Hues & Cues)",
-                        "subtitle": "Fargegjettespill på stort fargespekter",
-                        "desc": "Beskriv fargen med 1–2 ord og gjett på det enorme fargekartet!",
-                        "status": "ready",
-                        "badge": "Klar til å spilles!",
-                        "players": "2–16 spillere",
-                        "icon": "/assets/icons/fargekoden.svg",
-                        "route": "/fargekoden/",
-                    },
-                    {
-                        "id": "wavelength",
-                        "title": "Wavelength",
-                        "subtitle": "2-spillers telepatisk duell",
-                        "desc": "Er dere på samme bølgelengde? Les medspillerens tanker og still inn hjulet!",
-                        "status": "ready",
-                        "badge": "Klar til å spilles!",
-                        "players": "2 spillere",
-                        "icon": "/assets/icons/wavelength.svg",
-                        "route": "/wavelength/",
-                    },
-                    {
                         "id": "turbosladd",
                         "title": "Turbosladd",
                         "subtitle": "Topp-ned 2D arkaderacing & drifting",
@@ -2446,8 +2416,8 @@ class PartyAPI:
                     return 403, {"ok": False, "error": "Bare romverten kan starte eller bytte spill"}
 
                 reg_info = PARTY_REGISTRY.get(game_id)
-                if not reg_info:
-                    return 400, {"ok": False, "error": f"Ukjent spill: '{game_id}'"}
+                if not reg_info or reg_info.get("disabled"):
+                    return 400, {"ok": False, "error": f"Spillet '{game_id}' er deaktivert eller ukjent."}
 
                 min_req = reg_info.get("min_players", 1)
                 if len(room.players) < min_req:
