@@ -1349,6 +1349,9 @@
           body: JSON.stringify({ roomCode: code, playerId: pid, hostToken: hostToken }),
         });
       } catch (e) {}
+      try {
+        sessionStorage.setItem("party_just_left", code);
+      } catch (_) {}
       window.location.href = `/party/?room=${encodeURIComponent(code)}&player=${encodeURIComponent(pid)}`;
       return;
     }

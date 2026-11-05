@@ -3023,6 +3023,7 @@
       if (code) {
         try {
           sessionStorage.setItem(`forfeit_${code}`, "turbosladd");
+          sessionStorage.setItem("party_just_left", code);
         } catch (e) {}
 
         // Notify server that this player forfeits/leaves

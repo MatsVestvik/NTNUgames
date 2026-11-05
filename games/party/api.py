@@ -483,6 +483,45 @@ class PartyRoom:
                 }
                 self.bump()
 
+    def _advance_ordbombe_turn(self) -> None:
+        with self.lock:
+            active_ids = self.game_state.get("active_player_ids", [])
+            if not active_ids:
+                return
+            living_ids = [pid for pid in active_ids if not self.players.get(pid, {}).get("eliminated")]
+            if len(living_ids) <= 1:
+                winner_id = living_ids[0] if living_ids else None
+                winner = self.players.get(winner_id or "")
+                self.game_state["status"] = "game_over"
+                self.game_state["winner"] = winner
+                self.bump()
+                return
+
+            curr_idx = self.game_state.get("current_player_idx", 0)
+            next_idx = (curr_idx + 1) % len(active_ids)
+            attempts = 0
+            while self.players.get(active_ids[next_idx], {}).get("eliminated") and attempts < len(active_ids):
+                next_idx = (next_idx + 1) % len(active_ids)
+                attempts += 1
+
+            next_player_id = active_ids[next_idx]
+            next_player = self.players.get(next_player_id)
+
+            diff = self.game_state.get("difficulty", "medium")
+            prompts_cache = get_prompts_cache()
+            pool = prompts_cache.get(diff) or prompts_cache.get("medium") or ["BIL"]
+            new_prompt = random.choice(pool).upper()
+
+            self.game_state["current_player_idx"] = next_idx
+            self.game_state["active_player_id"] = next_player_id
+            self.game_state["active_player_name"] = next_player["name"] if next_player else "Ukjent"
+            self.game_state["prompt"] = new_prompt
+            self.game_state["current_typing"] = ""
+            self.game_state["turn_start_time"] = time.time()
+            self.game_state["time_remaining"] = self.game_state.get("turn_duration", 6.0)
+            self.game_state["status"] = "playing"
+            self.bump()
+
     def set_ordbombe_typing(self, player_id: str, text: str) -> bool:
         with self.lock:
             if self.current_game != "ordbombe":
@@ -2066,6 +2105,7 @@ class PartyAPI:
             code = str(body.get("roomCode") or "").strip().upper()
             player_name = str(body.get("playerName") or "Spiller").strip()[:18] or "Spiller"
             avatar = str(body.get("avatar") or "charbear").strip()[:200000] or "charbear"
+            client_player_id = str(body.get("playerId") or "").strip()
 
             with _rooms_lock:
                 room = _rooms.get(code)
@@ -2074,6 +2114,41 @@ class PartyAPI:
                 return 404, {"ok": False, "error": f"Fant ikke party-rom med kode «{code}». Sjekk koden og prøv igjen!"}
 
             with room.lock:
+                # If player already exists in the room with this playerId, reuse it
+                if client_player_id and client_player_id in room.players:
+                    p = room.players[client_player_id]
+                    p["name"] = player_name
+                    p["avatar"] = replace_color_in_avatar(avatar, p.get("color") or "#ffd166")
+                    p["last_seen"] = time.time()
+                    p["is_ready"] = True
+                    room.bump()
+                    return 200, {
+                        "ok": True,
+                        "roomCode": room.code,
+                        "playerId": p["id"],
+                        "playerName": p["name"],
+                        "avatar": p["avatar"],
+                        "color": p["color"],
+                        "isHost": p["is_host"],
+                    }
+
+                # Also prevent rapid duplicate joins with the same name within 3 seconds
+                now = time.time()
+                for p in room.players.values():
+                    if p["name"].lower() == player_name.lower() and (now - p.get("last_seen", 0)) < 3.0:
+                        p["last_seen"] = now
+                        p["is_ready"] = True
+                        room.bump()
+                        return 200, {
+                            "ok": True,
+                            "roomCode": room.code,
+                            "playerId": p["id"],
+                            "playerName": p["name"],
+                            "avatar": p["avatar"],
+                            "color": p["color"],
+                            "isHost": p["is_host"],
+                        }
+
                 # Check if player name already exists; if so append a number
                 existing_names = {p["name"].lower() for p in room.players.values()}
                 final_name = player_name
@@ -2154,6 +2229,7 @@ class PartyAPI:
         if rel_path in ("/api/to-lounge", "/api/to-lobby", "/api/ready"):
             code = str(body.get("roomCode") or body.get("code") or "").strip().upper()
             player_id = str(body.get("playerId") or "").strip()
+            host_token = str(body.get("hostToken") or "").strip()
             with _rooms_lock:
                 room = _rooms.get(code)
             if room:
@@ -2161,11 +2237,33 @@ class PartyAPI:
                     if player_id in room.players:
                         room.players[player_id]["is_ready"] = True
                         room.players[player_id]["last_seen"] = time.time()
-                    is_host = bool(player_id and room.players.get(player_id, {}).get("is_host"))
+                    is_host = bool(
+                        (player_id and room.players.get(player_id, {}).get("is_host")) or
+                        (host_token and room.host_token == host_token) or
+                        (player_id and player_id == room.host_id)
+                    )
                     all_ready = all(p.get("is_ready", False) for p in room.players.values())
-                    if rel_path in ("/api/to-lounge", "/api/to-lobby") and (is_host or all_ready):
-                        room.current_game = None
-                        room.game_state = {}
+                    if rel_path in ("/api/to-lounge", "/api/to-lobby"):
+                        if is_host:
+                            # Host returned: end active game for the room
+                            room.current_game = None
+                            room.game_state = {}
+                            for p in room.players.values():
+                                p["is_ready"] = True
+                        elif all_ready:
+                            room.current_game = None
+                            room.game_state = {}
+                        elif room.current_game == "ordbombe" and room.game_state:
+                            # Guest left Ordbombe
+                            if player_id in room.players:
+                                room.players[player_id]["eliminated"] = True
+                            if room.game_state.get("active_player_id") == player_id:
+                                room._advance_ordbombe_turn()
+                            living = [pid for pid in room.game_state.get("active_player_ids", []) if not room.players.get(pid, {}).get("eliminated")]
+                            if len(living) <= 1:
+                                room.game_state["status"] = "game_over"
+                                if living:
+                                    room.game_state["winner"] = room.players.get(living[0])
                     room.bump()
 
             try:

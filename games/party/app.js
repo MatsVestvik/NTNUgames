@@ -419,69 +419,76 @@
           updateLobbyUI(data);
 
           // Check if active game was launched!
-          if (data.currentGame === "ordbombe") {
-            // Redirect to Ordbombe in room mode!
-            const target = `/ordbombe/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
-            window.location.href = target;
-            return;
+          // Only redirect if this player has not yet returned to the lounge (!meIsReady)
+          // and has not explicitly left this game session.
+          const justLeft = sessionStorage.getItem("party_just_left");
+          if (!data.currentGame) {
+            sessionStorage.removeItem("party_just_left");
           }
 
-          if (data.currentGame === "tegn_og_gjett" && data.gameState?.turn_state !== "game_over" && data.gameState?.status !== "game_over") {
-            // Redirect to Tegn & Gjett in room mode!
-            const target = `/tegn-og-gjett/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
-            window.location.href = target;
-            return;
-          }
+          const meIsReady = Boolean(data.me && data.me.isReady);
+          const shouldRedirectToGame = Boolean(data.currentGame && !meIsReady && justLeft !== state.roomCode);
 
-          if (data.currentGame === "sjakk" && data.gameState?.status !== "finished") {
-            // Redirect to Sjakk in room mode!
-            const target = `/sjakk/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
-            window.location.href = target;
-            return;
-          }
+          if (shouldRedirectToGame) {
+            if (data.currentGame === "ordbombe") {
+              // Redirect to Ordbombe in room mode!
+              const target = `/ordbombe/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
+              window.location.href = target;
+              return;
+            }
 
-          if (data.currentGame === "korridorer") {
-            // Redirect to Korridorer in room mode!
-            const target = `/korridorer/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
-            window.location.href = target;
-            return;
-          }
+            if (data.currentGame === "tegn_og_gjett" && data.gameState?.turn_state !== "game_over" && data.gameState?.status !== "game_over") {
+              // Redirect to Tegn & Gjett in room mode!
+              const target = `/tegn-og-gjett/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
+              window.location.href = target;
+              return;
+            }
 
-          if (data.currentGame === "imposter" && data.gameState?.status !== "round_over") {
-            // Redirect to Imposter in room mode!
-            const target = `/imposter/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
-            window.location.href = target;
-            return;
-          }
+            if (data.currentGame === "sjakk" && data.gameState?.status !== "finished") {
+              // Redirect to Sjakk in room mode!
+              const target = `/sjakk/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
+              window.location.href = target;
+              return;
+            }
 
-          if (data.currentGame === "fargekoden" && data.gameState?.status !== "game_over") {
-            // Redirect to Fargekoden in room mode!
-            const target = `/fargekoden/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
-            window.location.href = target;
-            return;
-          }
+            if (data.currentGame === "korridorer") {
+              // Redirect to Korridorer in room mode!
+              const target = `/korridorer/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
+              window.location.href = target;
+              return;
+            }
 
-          if (data.currentGame === "wavelength" && data.gameState?.status !== "game_over") {
-            // Redirect to Wavelength in room mode!
-            const target = `/wavelength/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
-            window.location.href = target;
-            return;
+            if (data.currentGame === "imposter" && data.gameState?.status !== "round_over") {
+              // Redirect to Imposter in room mode!
+              const target = `/imposter/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
+              window.location.href = target;
+              return;
+            }
+
+            if (data.currentGame === "fargekoden" && data.gameState?.status !== "game_over") {
+              // Redirect to Fargekoden in room mode!
+              const target = `/fargekoden/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
+              window.location.href = target;
+              return;
+            }
+
+            if (data.currentGame === "wavelength" && data.gameState?.status !== "game_over") {
+              // Redirect to Wavelength in room mode!
+              const target = `/wavelength/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
+              window.location.href = target;
+              return;
+            }
+
+            if (data.currentGame === "turbosladd" && data.gameState?.status !== "finished") {
+              // Redirect to Turbosladd in room mode!
+              const target = `/turbosladd/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
+              window.location.href = target;
+              return;
+            }
           }
 
           if (data.currentGame !== "turbosladd") {
             try { sessionStorage.removeItem(`forfeit_${state.roomCode}`); } catch (e) {}
-          }
-
-          if (data.currentGame === "turbosladd" && data.gameState?.status !== "finished") {
-            const isForfeited = sessionStorage.getItem(`forfeit_${state.roomCode}`) === "turbosladd";
-            if (isForfeited || data.gameState?.my_status === "left") {
-              // This player has already forfeited/left this race; stay in lounge!
-              return;
-            }
-            // Redirect to Turbosladd in room mode!
-            const target = `/turbosladd/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
-            window.location.href = target;
-            return;
           }
         }
       } catch (err) {

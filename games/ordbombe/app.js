@@ -761,6 +761,8 @@
   }
 
   function ensureInputFocus() {
+    if (state.isLeaving) return;
+    if (document.activeElement && (document.activeElement.tagName === "BUTTON" || document.activeElement.tagName === "A")) return;
     if (el.helpModal && !el.helpModal.classList.contains("hidden")) return;
     if (el.gameOverCard && !el.gameOverCard.classList.contains("hidden")) return;
     if (el.gameArena && el.gameArena.classList.contains("hidden")) return;
@@ -1354,6 +1356,7 @@
 
   // Keep word input ALWAYS focused and selected during active game (Desktop & Mobile)
   const focusInputOnUserInteraction = (e) => {
+    if (state.isLeaving) return;
     if (!el.gameArena || el.gameArena.classList.contains("hidden") || !state.isPlaying) return;
     if (e && e.target && (e.target.closest("button") || e.target.closest("a") || e.target.closest(".modal-backdrop") || e.target.closest("select") || e.target.closest("input:not(#wordInput)"))) {
       return;
@@ -1368,15 +1371,22 @@
   document.addEventListener("pointerdown", focusInputOnUserInteraction);
 
   if (el.wordInput) {
-    el.wordInput.addEventListener("blur", () => {
-      if (isPlayerTurn() && state.isPlaying) {
-        setTimeout(ensureInputFocus, 50);
-      }
+    el.wordInput.addEventListener("blur", (e) => {
+      if (state.isLeaving) return;
+      if (e.relatedTarget && (e.relatedTarget.tagName === "BUTTON" || e.relatedTarget.tagName === "A")) return;
+      setTimeout(() => {
+        if (state.isLeaving) return;
+        if (document.activeElement && (document.activeElement.tagName === "BUTTON" || document.activeElement.tagName === "A")) return;
+        if (isPlayerTurn() && state.isPlaying) {
+          ensureInputFocus();
+        }
+      }, 150);
     });
   }
 
   // --- MULTI-DEVICE ROOM SYNC ---
   async function pollRoomState() {
+    if (state.isLeaving) return;
     if (!state.isRoomMode || !state.roomCode) return;
 
     try {
@@ -1407,7 +1417,7 @@
     }
 
     const pollInterval = (state.isRoomMode && state.currentRoomStatus === "playing") ? 220 : 450;
-    setTimeout(pollRoomState, pollInterval);
+    state.roomPollTimer = setTimeout(pollRoomState, pollInterval);
   }
 
   function syncRoomGameState(data) {
@@ -1661,17 +1671,28 @@
   }
 
   async function leaveToLounge() {
+    if (state.isLeaving) return;
+    state.isLeaving = true;
     state.isPlaying = false;
     stopTimer();
     if (state.roomPollTimer) {
-      clearInterval(state.roomPollTimer);
+      clearTimeout(state.roomPollTimer);
       state.roomPollTimer = null;
+    }
+    if (el.wordInput) {
+      el.wordInput.disabled = true;
+      try { el.wordInput.blur(); } catch (_) {}
     }
 
     if (state.isRoomMode && state.roomCode) {
       const code = state.roomCode;
       const pid = state.playerId || sessionStorage.getItem("party_player_id") || "";
       const hostToken = state.hostToken || sessionStorage.getItem("party_host_token") || "";
+
+      try {
+        sessionStorage.setItem("party_just_left", code);
+      } catch (_) {}
+
       try {
         await fetch("/api/party/to-lounge", {
           method: "POST",
@@ -1683,7 +1704,7 @@
           }),
         });
       } catch (e) {}
-      window.location.href = `/party/?room=${encodeURIComponent(code)}&player=${encodeURIComponent(pid)}`;
+      window.location.replace(`/party/?room=${encodeURIComponent(code)}&player=${encodeURIComponent(pid)}`);
       return;
     }
     showView("lobby");
@@ -1692,20 +1713,22 @@
   function initRoomModeIfPresent() {
     initLobbyTabs();
 
-    if (el.btnLeaveRoom) {
-      el.btnLeaveRoom.addEventListener("click", () => {
-        leaveToLounge();
-      });
-    }
-
-    if (el.headerBackLink) {
-      el.headerBackLink.addEventListener("click", (e) => {
-        if (state.isRoomMode && state.roomCode) {
+    const bindLeave = (elem) => {
+      if (!elem) return;
+      const handler = (e) => {
+        if (e) {
           e.preventDefault();
-          leaveToLounge();
+          e.stopPropagation();
         }
-      });
-    }
+        leaveToLounge();
+      };
+      elem.addEventListener("pointerdown", handler);
+      elem.addEventListener("click", handler);
+    };
+
+    bindLeave(el.btnLeaveRoom);
+    bindLeave(el.headerBackLink);
+    bindLeave(el.btnBackToLobby);
 
     const params = new URLSearchParams(window.location.search);
     const roomCode = (params.get("room") || "").trim().toUpperCase();
@@ -1734,13 +1757,6 @@
     } else {
       showView("lobby");
     }
-  }
-
-  // Back to lobby button action
-  if (el.btnBackToLobby) {
-    el.btnBackToLobby.addEventListener("click", () => {
-      leaveToLounge();
-    });
   }
 
   initRoomModeIfPresent();

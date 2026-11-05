@@ -565,6 +565,9 @@
         }),
       });
     } catch (e) {}
+    try {
+      sessionStorage.setItem("party_just_left", state.roomCode);
+    } catch (_) {}
     window.location.href = `/party/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
   }
 

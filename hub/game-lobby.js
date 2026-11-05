@@ -26,7 +26,13 @@
     );
   }
 
+  let isCreating = false;
+  let isJoining = false;
+
   async function createParty({ hostName, avatar, preferredGame, btnElement } = {}) {
+    if (isCreating) return;
+    isCreating = true;
+
     const name = (hostName || getSavedName() || "Vert").trim();
     const av = avatar || getSavedAvatar();
 
@@ -50,6 +56,7 @@
           btnElement.disabled = false;
           btnElement.textContent = oldText || "Opprett party-rom 🎉";
         }
+        isCreating = false;
         return;
       }
 
@@ -79,18 +86,24 @@
         btnElement.disabled = false;
         btnElement.textContent = oldText || "Opprett party-rom 🎉";
       }
+      isCreating = false;
     }
   }
 
   async function joinParty({ roomCode, playerName, avatar, btnElement } = {}) {
+    if (isJoining) return;
+    isJoining = true;
+
     const code = (roomCode || "").trim().toUpperCase();
     if (!code) {
       alert("Vennligst skriv inn en 4-bokstavs romkode.");
+      isJoining = false;
       return;
     }
 
     const name = (playerName || getSavedName() || "Spiller").trim();
     const av = avatar || getSavedAvatar();
+    const existingPid = sessionStorage.getItem("party_player_id") || localStorage.getItem("party_player_id") || "";
 
     let oldText = "";
     if (btnElement) {
@@ -103,7 +116,7 @@
       const resp = await fetch("/api/party/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roomCode: code, playerName: name, avatar: av }),
+        body: JSON.stringify({ roomCode: code, playerName: name, avatar: av, playerId: existingPid }),
       });
       const data = await resp.json();
       if (!data.ok) {
@@ -112,6 +125,7 @@
           btnElement.disabled = false;
           btnElement.textContent = oldText || "Bli med i festen 🚀";
         }
+        isJoining = false;
         return;
       }
 
@@ -128,7 +142,7 @@
       localStorage.setItem("party_avatar", data.avatar || av);
       localStorage.setItem("spillhjornet_player_name", data.playerName);
 
-      window.location.href = `/party/?room=${encodeURIComponent(data.roomCode)}`;
+      window.location.href = `/party/?room=${encodeURIComponent(data.roomCode)}&player=${encodeURIComponent(data.playerId)}`;
     } catch (err) {
       console.error("Party join error:", err);
       alert("Nettverksfeil ved tilkobling til rom.");
@@ -136,6 +150,7 @@
         btnElement.disabled = false;
         btnElement.textContent = oldText || "Bli med i festen 🚀";
       }
+      isJoining = false;
     }
   }
 
@@ -160,7 +175,8 @@
     }
 
     // Keep host and join name inputs in sync if user changes one
-    if (hostInput && joinInput) {
+    if (hostInput && joinInput && !hostInput.dataset.boundSync) {
+      hostInput.dataset.boundSync = "true";
       hostInput.addEventListener("input", () => {
         if (!joinInput.value || joinInput.value === hostInput.defaultValue) {
           joinInput.value = hostInput.value;
@@ -169,7 +185,8 @@
     }
 
     const codeInput = document.getElementById(codeInputId);
-    if (codeInput) {
+    if (codeInput && !codeInput.dataset.boundSync) {
+      codeInput.dataset.boundSync = "true";
       codeInput.addEventListener("input", () => {
         codeInput.value = codeInput.value.toUpperCase().replace(/\s+/g, "");
       });
@@ -183,7 +200,8 @@
     }
 
     const createBtn = document.getElementById(createBtnId);
-    if (createBtn) {
+    if (createBtn && !createBtn.dataset.boundPartyConnect) {
+      createBtn.dataset.boundPartyConnect = "true";
       createBtn.addEventListener("click", () => {
         const hostName = hostInput ? hostInput.value : "";
         createParty({ hostName, preferredGame: gameId, btnElement: createBtn });
@@ -191,7 +209,8 @@
     }
 
     const joinBtn = document.getElementById(joinBtnId);
-    if (joinBtn) {
+    if (joinBtn && !joinBtn.dataset.boundPartyConnect) {
+      joinBtn.dataset.boundPartyConnect = "true";
       joinBtn.addEventListener("click", () => {
         const roomCode = codeInput ? codeInput.value : "";
         const playerName = joinInput ? joinInput.value : (hostInput ? hostInput.value : "");

@@ -1794,6 +1794,7 @@
       }
 
       sessionStorage.setItem("party_room_code", code);
+      sessionStorage.setItem("party_just_left", code);
       if (playerId) sessionStorage.setItem("party_player_id", playerId);
       window.location.href = `/party/?code=${encodeURIComponent(code)}&player=${encodeURIComponent(playerId)}`;
       return;
