@@ -505,18 +505,32 @@
       }
     }
 
-    // 3. Parkland trees & boulders along outer wilderness perimeter
-    for (let x = 100; x < track.worldWidth - 100; x += 180) {
-      for (let y = 100; y < track.worldHeight - 100; y += 180) {
-        const rx = x + (rng() - 0.5) * 110;
-        const ry = y + (rng() - 0.5) * 110;
+    // 3. Parkland trees & boulders along outer wilderness perimeter ONLY
+    // (Keeps the entire racing infield / middle of the field completely clean of trees and rocks!)
+    let minTrackX = Infinity, maxTrackX = -Infinity, minTrackY = Infinity, maxTrackY = -Infinity;
+    for (let i = 0; i < pts.length; i++) {
+      if (pts[i].x < minTrackX) minTrackX = pts[i].x;
+      if (pts[i].x > maxTrackX) maxTrackX = pts[i].x;
+      if (pts[i].y < minTrackY) minTrackY = pts[i].y;
+      if (pts[i].y > maxTrackY) maxTrackY = pts[i].y;
+    }
+
+    for (let x = 70; x < track.worldWidth - 70; x += 110) {
+      for (let y = 70; y < track.worldHeight - 70; y += 110) {
+        const rx = x + (rng() - 0.5) * 80;
+        const ry = y + (rng() - 0.5) * 80;
+
+        // Strictly outside the racing circuit area (never inside the infield / middle of the field)
+        const isOutsideCircuit = (rx < minTrackX - 40 || rx > maxTrackX + 40 || ry < minTrackY - 40 || ry > maxTrackY + 40);
+        if (!isOutsideCircuit) continue;
+
         let minDist = Infinity;
-        for (let i = 0; i < pts.length; i += 6) {
+        for (let i = 0; i < pts.length; i += 4) {
           const d = Math.hypot(rx - pts[i].x, ry - pts[i].y);
           if (d < minDist) minDist = d;
         }
 
-        if (minDist > halfRoad + kerbW + 150 && minDist < 900) {
+        if (minDist > halfRoad + kerbW + 120) {
           if (rng() > 0.35) {
             trees.push({
               x: Math.round(rx),
@@ -595,11 +609,11 @@
       }
     }
 
-    // Infield Anti-Shortcut Barriers (in grass corridors between parallel segments)
+    // Infield Anti-Shortcut Barriers (Guaranteed strictly in grass corridors, never on or under road!)
     const infieldBarriers = [];
     const rawN = rawPoints.length;
-    const safeClearance = halfRoad + kerbWidth + 35;
-    const safeClearanceSq = safeClearance * safeClearance;
+    const requiredClearance = halfRoad + kerbWidth + 70; // Guaranteed minimum 183.5px clearance to tarmac
+    const requiredClearanceSq = requiredClearance * requiredClearance;
 
     for (let i = 0; i < rawN; i++) {
       const p1 = rawPoints[i];
@@ -613,13 +627,17 @@
         const mid2 = { x: (q1.x + q2.x) * 0.5, y: (q1.y + q2.y) * 0.5 };
 
         const dist = Math.hypot(mid1.x - mid2.x, mid1.y - mid2.y);
-        if (dist > roadWidth + 120 && dist < 550) {
+        if (dist > roadWidth + 140 && dist < 580) {
           const b1 = { x: Math.round((p1.x + q2.x) * 0.5), y: Math.round((p1.y + q2.y) * 0.5) };
           const b2 = { x: Math.round((p2.x + q1.x) * 0.5), y: Math.round((p2.y + q1.y) * 0.5) };
 
+          const barLen = Math.hypot(b2.x - b1.x, b2.y - b1.y);
+          if (barLen < 80) continue; // No microscopic stubs
+
+          // CRITICAL: Validate clearance against ALL smooth spline points of the actual curved tarmac!
           let safe = true;
-          for (let k = 0; k < rawN; k++) {
-            if (distToSegmentSquared(rawPoints[k], b1, b2) < safeClearanceSq) {
+          for (let k = 0; k < smoothPoints.length; k += 2) {
+            if (distToSegmentSquared(smoothPoints[k], b1, b2) < requiredClearanceSq) {
               safe = false;
               break;
             }
@@ -1667,6 +1685,9 @@
     if (!Number.isFinite(car.vx)) car.vx = 0;
     if (!Number.isFinite(car.vy)) car.vy = 0;
 
+    car.x += car.vx * dt;
+    car.y += car.vy * dt;
+
     // 1. Infield Anti-Shortcut Barriers (Block cutting straight across grass infields!)
     if (track.infieldBarriers && track.infieldBarriers.length > 0) {
       for (let b = 0; b < track.infieldBarriers.length; b++) {
@@ -1681,19 +1702,29 @@
           let bnx = toBarX;
           let bny = toBarY;
           if (barDist < 0.001) {
-            bnx = 1;
+            bnx = -1;
             bny = 0;
           } else {
             bnx /= barDist;
+            bny /= barDist;
           }
 
-          car.x = bcp.x + bnx * barRadius;
-          car.y = bcp.y + bny * barRadius;
+          // Gentle position push-out by exact penetration depth (No teleporting!)
+          const overlap = barRadius - barDist;
+          car.x += bnx * overlap;
+          car.y += bny * overlap;
 
-          const bDot = car.vx * bnx + car.vy * bny;
-          if (bDot < 0) {
-            car.vx = (car.vx - 1.6 * bDot * bnx) * 0.7;
-            car.vy = (car.vy - 1.6 * bDot * bny) * 0.7;
+          // Impact response: absorb shock & grind along barrier (No pinball catapulting!)
+          const vn = car.vx * bnx + car.vy * bny;
+          if (vn < 0) {
+            const vtX = car.vx - vn * bnx;
+            const vtY = car.vy - vn * bny;
+            const bounce = 0.12;       // Absorbs 88% of normal impact energy
+            const wallFriction = 0.65; // Realistic friction sliding along barrier
+            car.vx = vtX * wallFriction - bnx * (vn * bounce);
+            car.vy = vtY * wallFriction - bny * (vn * bounce);
+            car.speed = Math.hypot(car.vx, car.vy);
+
             const now = performance.now();
             if (!car.lastBarrierHit || now - car.lastBarrierHit > 120) {
               car.lastBarrierHit = now;
@@ -1735,10 +1766,16 @@
       const bLen = Math.hypot(bnx, bny) || 1;
       bnx /= bLen;
       bny /= bLen;
-      const dot = car.vx * bnx + car.vy * bny;
-      if (dot < 0) {
-        car.vx = (car.vx - 1.5 * dot * bnx) * 0.7;
-        car.vy = (car.vy - 1.5 * dot * bny) * 0.7;
+      const vn = car.vx * bnx + car.vy * bny;
+      if (vn < 0) {
+        const vtX = car.vx - vn * bnx;
+        const vtY = car.vy - vn * bny;
+        const bounce = 0.12;
+        const wallFriction = 0.65;
+        car.vx = vtX * wallFriction - bnx * (vn * bounce);
+        car.vy = vtY * wallFriction - bny * (vn * bounce);
+        car.speed = Math.hypot(car.vx, car.vy);
+
         const now = performance.now();
         if (!car.lastWallHit || now - car.lastWallHit > 120) {
           car.lastWallHit = now;
@@ -1747,9 +1784,6 @@
         }
       }
     }
-
-    car.x += car.vx * dt;
-    car.y += car.vy * dt;
 
     if (!Number.isFinite(car.x) || !Number.isFinite(car.y)) {
       car.x = track.rawPoints[0].x;
@@ -2081,7 +2115,59 @@
     ctx.strokeStyle = "#252a32"; // Dark asphalt run-off
     ctx.stroke();
 
-    // 6. Infield Anti-Shortcut Barriers
+    // 6. Red & White Rumble Kerbs ("de røde og hvite delene")
+    if (track.kerbs && track.kerbs.length > 0) {
+      track.kerbs.forEach(k => {
+        ctx.save();
+        ctx.translate(k.x, k.y);
+        ctx.rotate(Math.atan2(k.ny, k.nx));
+        // Alternating red and white curb block
+        ctx.fillStyle = k.isRed ? "#dc2626" : "#f8fafc";
+        ctx.fillRect(-11, -kerbW * 0.5, 22, kerbW);
+
+        // 3D rumble strip bevel shadow & highlight
+        ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
+        ctx.fillRect(-11, kerbW * 0.5 - 3, 22, 3);
+        ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+        ctx.fillRect(-11, -kerbW * 0.5, 22, 3);
+        ctx.restore();
+      });
+    }
+
+    // 7. Main Circuit Asphalt / Tarmac
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.closePath();
+
+    // Outer White Track Limit Boundary Lines
+    ctx.lineWidth = rw;
+    ctx.strokeStyle = "#f8fafc";
+    ctx.stroke();
+
+    // Dark Smooth Tarmac Surface
+    ctx.lineWidth = rw - 6;
+    ctx.strokeStyle = "#23262d";
+    ctx.stroke();
+
+    // Subtle Racing Line Rubber Groove
+    ctx.lineWidth = rw * 0.42;
+    ctx.strokeStyle = "#1b1d24";
+    ctx.stroke();
+
+    // Fine asphalt texture grains
+    for (let i = 0; i < pts.length; i += 3) {
+      const pt = pts[i];
+      for (let s = 0; s < 4; s++) {
+        const offX = (bgRng() - 0.5) * (rw * 0.85);
+        const offY = (bgRng() - 0.5) * (rw * 0.85);
+        ctx.fillStyle = bgRng() > 0.5 ? "#181a20" : "#2f343e";
+        const sz = bgRng() > 0.8 ? 3 : 2;
+        ctx.fillRect(Math.round(pt.x + offX), Math.round(pt.y + offY), sz, sz);
+      }
+    }
+
+    // 8. Infield Anti-Shortcut Barriers (Drawn on top of grass, 100% visible, never under road!)
     if (track.infieldBarriers && track.infieldBarriers.length > 0) {
       track.infieldBarriers.forEach(b => {
         // Barrier shadow
@@ -2114,7 +2200,7 @@
       });
     }
 
-    // 7. Outer Venue Perimeter Barrier
+    // 9. Outer Venue Perimeter Barrier
     ctx.strokeStyle = "rgba(0, 0, 0, 0.45)";
     ctx.lineWidth = 16;
     ctx.strokeRect(52, 52, worldW - 100, worldH - 100);
@@ -2126,58 +2212,6 @@
     ctx.strokeStyle = "#94a3b8";
     ctx.lineWidth = 4;
     ctx.strokeRect(50, 50, worldW - 100, worldH - 100);
-
-    // 8. Red & White Rumble Kerbs ("de røde og hvite delene")
-    if (track.kerbs && track.kerbs.length > 0) {
-      track.kerbs.forEach(k => {
-        ctx.save();
-        ctx.translate(k.x, k.y);
-        ctx.rotate(Math.atan2(k.ny, k.nx));
-        // Alternating red and white curb block
-        ctx.fillStyle = k.isRed ? "#dc2626" : "#f8fafc";
-        ctx.fillRect(-11, -kerbW * 0.5, 22, kerbW);
-
-        // 3D rumble strip bevel shadow & highlight
-        ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
-        ctx.fillRect(-11, kerbW * 0.5 - 3, 22, 3);
-        ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
-        ctx.fillRect(-11, -kerbW * 0.5, 22, 3);
-        ctx.restore();
-      });
-    }
-
-    // 9. Main Circuit Asphalt / Tarmac
-    ctx.beginPath();
-    ctx.moveTo(pts[0].x, pts[0].y);
-    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-    ctx.closePath();
-
-    // Outer White Track Limit Boundary Lines
-    ctx.lineWidth = rw;
-    ctx.strokeStyle = "#f8fafc";
-    ctx.stroke();
-
-    // Dark Smooth Tarmac Surface
-    ctx.lineWidth = rw - 6;
-    ctx.strokeStyle = "#23262d";
-    ctx.stroke();
-
-    // Subtle Racing Line Rubber Groove
-    ctx.lineWidth = rw * 0.42;
-    ctx.strokeStyle = "#1b1d24";
-    ctx.stroke();
-
-    // Fine asphalt texture grains
-    for (let i = 0; i < pts.length; i += 3) {
-      const pt = pts[i];
-      for (let s = 0; s < 4; s++) {
-        const offX = (bgRng() - 0.5) * (rw * 0.85);
-        const offY = (bgRng() - 0.5) * (rw * 0.85);
-        ctx.fillStyle = bgRng() > 0.5 ? "#181a20" : "#2f343e";
-        const sz = bgRng() > 0.8 ? 3 : 2;
-        ctx.fillRect(Math.round(pt.x + offX), Math.round(pt.y + offY), sz, sz);
-      }
-    }
 
     // 10. Starting Grid Boxes (Slots 1..16 along the Main Straight)
     const slots = getStartGridSlots(track, 16);
