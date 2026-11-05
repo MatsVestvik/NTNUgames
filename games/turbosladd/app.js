@@ -463,6 +463,8 @@
     mode: "online", // "online" | "solo" | "splitscreen"
     driverName: localStorage.getItem("ts_driver_name") || "Sjåfør 1",
     driverColor: localStorage.getItem("ts_driver_color") || PALETTE[0].color,
+    driverBodyId: parseInt(localStorage.getItem("ts_driver_body_id") || "1", 10),
+    driverWheelId: parseInt(localStorage.getItem("ts_driver_wheel_id") || "1", 10),
     driverAvatar: "",
 
     roomCode: "",
@@ -472,7 +474,7 @@
     trackId: "rally_random",
     trackSeed: Math.floor(Math.random() * 90000) + 10000,
     laps: 3,
-    maxPlayers: 4,
+    maxPlayers: 16,
 
     roomStatus: "lobby", // "lobby" | "countdown" | "racing" | "finished"
     players: [],
@@ -498,16 +500,28 @@
       bestLap: 0,
       lapStartTime: 0,
       raceStartTime: 0,
+      bodyId: 1,
+      wheelId: 1,
+      color: "#ef4444",
     },
+
+    // Solo Car Customizer state
+    soloBodyId: 1,
+    soloWheelId: 1,
+    soloColor: localStorage.getItem("ts_driver_color") || PALETTE[0].color,
 
     // Splitscreen 2-Player Local State
     splitP1: {
       name: "Spiller 1",
       color: "#ef4444",
+      bodyId: 1,
+      wheelId: 1,
     },
     splitP2: {
       name: "Spiller 2",
       color: "#06b6d4",
+      bodyId: 2,
+      wheelId: 2,
     },
     splitLaps: 3,
     car1: null,
@@ -552,8 +566,9 @@
     // Views
     viewLobby: document.getElementById("viewLobby"),
     viewGame: document.getElementById("viewGame"),
+    viewRoom: document.getElementById("viewRoom"),
 
-    // Lobby
+    // Lobby Tabs & Panels
     tabOnline: document.getElementById("tabOnline"),
     tabSolo: document.getElementById("tabSolo"),
     tabSplitscreen: document.getElementById("tabSplitscreen"),
@@ -562,20 +577,76 @@
     panelSplitscreen: document.getElementById("panelSplitscreen"),
     btnGoToOnlineTab: document.getElementById("btnGoToOnlineTab"),
 
+    inputHostName: document.getElementById("inputHostName"),
+    inputJoinName: document.getElementById("inputJoinName"),
+    inputRoomCode: document.getElementById("inputRoomCode"),
+    btnCreateRace: document.getElementById("btnCreateRace"),
+    btnJoinRace: document.getElementById("btnJoinRace"),
+
+    // Solo Setup & Customizer
     selectSoloTrack: document.getElementById("selectSoloTrack"),
     btnRegenSoloTrack: document.getElementById("btnRegenSoloTrack"),
     controlSoloLaps: document.getElementById("controlSoloLaps"),
     btnStartSolo: document.getElementById("btnStartSolo"),
+    soloCarPreviewCanvas: document.getElementById("soloCarPreviewCanvas"),
+    soloBodyOptions: document.getElementById("soloBodyOptions"),
+    soloWheelOptions: document.getElementById("soloWheelOptions"),
+    soloColorSwatches: document.getElementById("soloColorSwatches"),
+    soloColorPicker: document.getElementById("soloColorPicker"),
+    soloColorName: document.getElementById("soloColorName"),
 
-    // Splitscreen Local 2-Player Controls
+    // Splitscreen Local 2-Player Controls & Customizers
     inputSplitP1Name: document.getElementById("inputSplitP1Name"),
     inputSplitP2Name: document.getElementById("inputSplitP2Name"),
+    splitP1CarPreviewCanvas: document.getElementById("splitP1CarPreviewCanvas"),
+    splitP1BodyOptions: document.getElementById("splitP1BodyOptions"),
+    splitP1WheelOptions: document.getElementById("splitP1WheelOptions"),
     splitP1Colors: document.getElementById("splitP1Colors"),
+    splitP1ColorPicker: document.getElementById("splitP1ColorPicker"),
+
+    splitP2CarPreviewCanvas: document.getElementById("splitP2CarPreviewCanvas"),
+    splitP2BodyOptions: document.getElementById("splitP2BodyOptions"),
+    splitP2WheelOptions: document.getElementById("splitP2WheelOptions"),
     splitP2Colors: document.getElementById("splitP2Colors"),
+    splitP2ColorPicker: document.getElementById("splitP2ColorPicker"),
+
     selectSplitTrack: document.getElementById("selectSplitTrack"),
     btnRegenSplitTrack: document.getElementById("btnRegenSplitTrack"),
     controlSplitLaps: document.getElementById("controlSplitLaps"),
     btnStartSplitscreen: document.getElementById("btnStartSplitscreen"),
+
+    // Pre-race Room Lounge / Garasje (viewRoom)
+    displayRoomCode: document.getElementById("displayRoomCode"),
+    btnCopyRoomCode: document.getElementById("btnCopyRoomCode"),
+    btnCopyCode: document.getElementById("btnCopyRoomCode"),
+    displayTrackName: document.getElementById("displayTrackName"),
+    displayLapsCount: document.getElementById("displayLapsCount"),
+    loungeTrackName: document.getElementById("displayTrackName"),
+    loungeLapsBadge: document.getElementById("displayLapsCount"),
+    loungeCarPreviewCanvas: document.getElementById("loungeCarPreviewCanvas"),
+    loungeBodyOptions: document.getElementById("loungeBodyOptions"),
+    loungeWheelOptions: document.getElementById("loungeWheelOptions"),
+    loungeColorSwatches: document.getElementById("loungeColorSwatches"),
+    loungeColorPalette: document.getElementById("loungeColorSwatches"),
+    loungeColorPicker: document.getElementById("loungeColorPicker"),
+    loungeColorNameDisplay: document.getElementById("loungeColorNameDisplay"),
+    loungeCarColorName: document.getElementById("loungeColorNameDisplay"),
+    loungeHostSettingsCard: document.getElementById("loungeHostSettingsCard"),
+    selectLoungeTrack: document.getElementById("selectLoungeTrack"),
+    loungeSelectTrack: document.getElementById("selectLoungeTrack"),
+    controlLoungeLaps: document.getElementById("controlLoungeLaps"),
+    loungeControlLaps: document.getElementById("controlLoungeLaps"),
+    racersGrid: document.getElementById("racersGrid"),
+    racersCountBadge: document.getElementById("racersCountBadge"),
+    btnHostStartRace: document.getElementById("btnHostStartRace"),
+    btnToggleReady: document.getElementById("btnToggleReady"),
+    btnLeaveLobbyRoom: document.getElementById("btnLeaveLobbyRoom"),
+
+    // Profile elements
+    onlineAvatarPreview: document.getElementById("onlineAvatarPreview"),
+    carPreviewCanvas: document.getElementById("carPreviewCanvas"),
+    carColorNameDisplay: document.getElementById("carColorNameDisplay"),
+    cpwQuickColors: document.getElementById("cpwQuickColors"),
 
     // Race In-Game
     raceCanvas: document.getElementById("raceCanvas"),
@@ -746,6 +817,7 @@
   function showView(viewName) {
     if (el.viewLobby) el.viewLobby.classList.add("hidden");
     if (el.viewGame) el.viewGame.classList.add("hidden");
+    if (el.viewRoom) el.viewRoom.classList.add("hidden");
 
     if (viewName === "game") {
       if (el.viewGame) el.viewGame.classList.remove("hidden");
@@ -757,6 +829,17 @@
       }
       resizeCanvas();
       startEngineSound();
+    } else if (viewName === "room") {
+      if (el.viewRoom) el.viewRoom.classList.remove("hidden");
+      if (el.btnHeaderBack) {
+        el.btnHeaderBack.classList.remove("hidden");
+        el.btnHeaderBack.href = state.roomCode ? `/party/?room=${encodeURIComponent(state.roomCode)}` : "/";
+      }
+      if (el.backBtnText) el.backBtnText.textContent = state.roomCode ? "Lounge" : "Hub";
+      if (el.btnHeaderLeave) el.btnHeaderLeave.classList.add("hidden");
+      stopEngineSound();
+      stopSimulation();
+      stopRoomSync();
     } else {
       // Main Turbosladd Lobby
       if (el.viewLobby) el.viewLobby.classList.remove("hidden");
@@ -774,12 +857,46 @@
   }
 
   // =========================================================================
-  // CAR MODEL SPRITE & DYNAMIC COLOR TINTING
+  // CAR MODEL SPRITES, BODIES, WHEELS & DYNAMIC COLOR TINTING
   // =========================================================================
 
-  const baseCarImage = new Image();
-  baseCarImage.src = "/bil.png";
-  const tintedCarCache = new Map();
+  const BODY_DEFS = [
+    { id: 1, name: "Klassisk", file: "/body/car_0001.png" },
+    { id: 2, name: "Coupe GT", file: "/body/car_0002.png" },
+    { id: 3, name: "Muscle", file: "/body/car_0003.png" },
+    { id: 4, name: "Offroad", file: "/body/car_0004.png" },
+  ];
+
+  const WHEEL_DEFS = [
+    { id: 1, name: "Stålfelger", file: "/wheels/car_0001.png" },
+    { id: 2, name: "Stjerne", file: "/wheels/car_0002.png" },
+    { id: 3, name: "Rally", file: "/wheels/car_0003.png" },
+    { id: 4, name: "Multieike", file: "/wheels/car_0004.png" },
+  ];
+
+  const bodyImages = {};
+  const wheelImages = {};
+  const tintedBodyCache = new Map();
+  const compositeCarCache = new Map();
+
+  for (let i = 1; i <= 4; i++) {
+    const bImg = new Image();
+    bImg.src = `/body/car_000${i}.png`;
+    bImg.onload = () => {
+      tintedBodyCache.clear();
+      compositeCarCache.clear();
+      refreshAllCustomizers();
+    };
+    bodyImages[i] = bImg;
+
+    const wImg = new Image();
+    wImg.src = `/wheels/car_000${i}.png`;
+    wImg.onload = () => {
+      compositeCarCache.clear();
+      refreshAllCustomizers();
+    };
+    wheelImages[i] = wImg;
+  }
 
   function hexToRgb(hex) {
     if (!hex) return { r: 56, g: 189, b: 248 };
@@ -794,27 +911,28 @@
     };
   }
 
-  function getTintedCarCanvas(colorHex) {
-    const key = (colorHex || "#ef4444").toLowerCase();
-    if (tintedCarCache.has(key)) {
-      return tintedCarCache.get(key);
+  function getTintedBodyCanvas(bId, hex) {
+    const safeBId = Math.max(1, Math.min(4, parseInt(bId, 10) || 1));
+    const safeHex = (hex || "#ef4444").toLowerCase();
+    const cacheKey = `${safeBId}_${safeHex}`;
+    if (tintedBodyCache.has(cacheKey)) {
+      return tintedBodyCache.get(cacheKey);
     }
-    if (!baseCarImage.complete || baseCarImage.naturalWidth === 0) {
-      return null;
-    }
+    const bodyImg = bodyImages[safeBId];
+    if (!bodyImg || !bodyImg.complete || bodyImg.naturalWidth === 0) return null;
 
-    const w = baseCarImage.naturalWidth || 64;
-    const h = baseCarImage.naturalHeight || 64;
+    const w = 64;
+    const h = 64;
     const canvas = document.createElement("canvas");
     canvas.width = w;
     canvas.height = h;
     const ctx = canvas.getContext("2d");
-    ctx.drawImage(baseCarImage, 0, 0);
+    ctx.drawImage(bodyImg, 0, 0, w, h);
 
     try {
       const imgData = ctx.getImageData(0, 0, w, h);
       const data = imgData.data;
-      const target = hexToRgb(key);
+      const target = hexToRgb(safeHex);
 
       for (let i = 0; i < data.length; i += 4) {
         const r = data[i];
@@ -824,35 +942,126 @@
 
         if (a < 20) continue;
 
-        // Black outlines and performance tires remain black
-        if (r === 0 && g === 0 && b === 0) continue;
+        // Black outlines remain black
+        if (r < 20 && g < 20 && b < 20) continue;
 
         // Yellow headlights remain yellow
-        if (r > 200 && g > 200 && b < 50) continue;
+        if (r > 200 && g > 200 && b < 60) continue;
 
-        // Cockpit window glass remains blueish
-        if (b > r && b > g) continue;
+        // Cockpit / windshield glass (blueish tinted glass)
+        if (b > r + 6 && b > g) continue;
 
-        // Greyscale car body: tint to driver color with highlight/shadow shading
-        const lum = (r + g + b) / (3.0 * 255.0);
-        data[i] = Math.min(255, Math.round(target.r * lum * 1.15));
-        data[i + 1] = Math.min(255, Math.round(target.g * lum * 1.15));
-        data[i + 2] = Math.min(255, Math.round(target.b * lum * 1.15));
+        // Greyscale car body: tint to chosen color with highlight/shadow shading
+        if (Math.abs(r - g) <= 8 && Math.abs(g - b) <= 8) {
+          const lum = (r + g + b) / (3.0 * 255.0);
+          data[i] = Math.min(255, Math.round(target.r * lum * 1.15));
+          data[i + 1] = Math.min(255, Math.round(target.g * lum * 1.15));
+          data[i + 2] = Math.min(255, Math.round(target.b * lum * 1.15));
+        }
       }
 
       ctx.putImageData(imgData, 0, 0);
-      tintedCarCache.set(key, canvas);
+      tintedBodyCache.set(cacheKey, canvas);
       return canvas;
     } catch (e) {
       return canvas;
     }
   }
 
-  baseCarImage.onload = () => {
-    tintedCarCache.clear();
-    renderProfileCarPreview();
-    renderLoungeCarPreview();
-  };
+  function getCompositeCarCanvas(bodyId = 1, wheelId = 1, colorHex = "#ef4444") {
+    const bId = Math.max(1, Math.min(4, parseInt(bodyId, 10) || 1));
+    const wId = Math.max(1, Math.min(4, parseInt(wheelId, 10) || 1));
+    const hex = (colorHex || "#ef4444").toLowerCase();
+    const cacheKey = `${bId}_${wId}_${hex}`;
+
+    if (compositeCarCache.has(cacheKey)) {
+      return compositeCarCache.get(cacheKey);
+    }
+
+    const bodyImg = bodyImages[bId];
+    const wheelImg = wheelImages[wId];
+
+    if (!bodyImg || !bodyImg.complete || bodyImg.naturalWidth === 0) return null;
+
+    const w = 64;
+    const h = 64;
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+
+    // 1. Draw wheels underneath
+    if (wheelImg && wheelImg.complete && wheelImg.naturalWidth > 0) {
+      ctx.drawImage(wheelImg, 0, 0, w, h);
+    }
+
+    // 2. Draw tinted body on top
+    const tintedBody = getTintedBodyCanvas(bId, hex);
+    if (tintedBody) {
+      ctx.drawImage(tintedBody, 0, 0, w, h);
+    } else {
+      ctx.drawImage(bodyImg, 0, 0, w, h);
+    }
+
+    compositeCarCache.set(cacheKey, canvas);
+    return canvas;
+  }
+
+  function getTintedCarCanvas(colorHex) {
+    return getCompositeCarCanvas(state.driverBodyId || 1, state.driverWheelId || 1, colorHex);
+  }
+
+  function drawCarPreviewOnCanvas(canvas, bodyId = 1, wheelId = 1, color = "#ef4444") {
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const cw = canvas.width;
+    const ch = canvas.height;
+    ctx.clearRect(0, 0, cw, ch);
+
+    // Subtle background grid
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.06)";
+    ctx.lineWidth = 1;
+    const step = 12;
+    for (let x = 0; x < cw; x += step) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, ch);
+      ctx.stroke();
+    }
+    for (let y = 0; y < ch; y += step) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(cw, y);
+      ctx.stroke();
+    }
+
+    // Ground shadow
+    ctx.save();
+    ctx.translate(cw / 2, ch / 2 + 3);
+    ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 20, 12, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Composite car sprite (facing UP)
+    const sprite = getCompositeCarCanvas(bodyId, wheelId, color);
+    if (sprite) {
+      ctx.imageSmoothingEnabled = false;
+      ctx.save();
+      ctx.translate(cw / 2, ch / 2);
+      ctx.drawImage(sprite, -32, -32, 64, 64);
+      ctx.restore();
+    } else {
+      ctx.save();
+      ctx.translate(cw / 2, ch / 2);
+      ctx.fillStyle = color || "#ef4444";
+      ctx.beginPath();
+      ctx.roundRect(-14, -22, 28, 44, 4);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
 
   // =========================================================================
   // DIRT RALLY TILESET & SPRITE ASSETS (Trees & Rocks)
@@ -914,16 +1123,16 @@
     initTilemapAssets();
   }
 
-  function drawCarOnCanvas(ctx, cx, cy, angle, color, scale = 1.0, steerInput = 0, isBraking = false) {
+  function drawCarOnCanvas(ctx, cx, cy, angle, color, scale = 1.0, steerInput = 0, isBraking = false, bodyId = 1, wheelId = 1) {
     ctx.save();
     ctx.translate(cx, cy);
 
-    // bil.png points UP. Angle = 0 in game physics points RIGHT.
+    // Car sprite points UP. Angle = 0 in game physics points RIGHT.
     // Rotate 90 deg so the sprite's nose points along car.angle.
     ctx.rotate(angle + Math.PI / 2);
     ctx.scale(scale, scale);
 
-    const sprite = getTintedCarCanvas(color);
+    const sprite = getCompositeCarCanvas(bodyId, wheelId, color);
     if (sprite) {
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(sprite, -32, -32, 64, 64);
@@ -970,127 +1179,305 @@
   let selectedAvatar = null;
   let selectedAvatarStr = "";
 
-  function renderProfileCarPreview() {
-    const canvas = el.carPreviewCanvas;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  let soloCustomizer = null;
+  let splitP1Customizer = null;
+  let splitP2Customizer = null;
+  let loungeCustomizer = null;
 
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.06)";
-    ctx.lineWidth = 1;
-    for (let x = 0; x < canvas.width; x += 15) {
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, canvas.height);
-      ctx.stroke();
-    }
-    for (let y = 0; y < canvas.height; y += 15) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(canvas.width, y);
-      ctx.stroke();
-    }
+  function setupCustomizerUI(config) {
+    const {
+      bodyContainer,
+      wheelContainer,
+      swatchesContainer,
+      colorPicker,
+      colorNameEl,
+      previewCanvas,
+      getValues, // () => ({ bodyId, wheelId, color })
+      setValues, // ({ bodyId, wheelId, color }) => void
+      compact = false,
+      onChanged,
+    } = config;
 
-    // Draw car model facing upwards in preview with driver's active tint
-    drawCarOnCanvas(ctx, canvas.width / 2, canvas.height / 2, -Math.PI / 2, state.driverColor, 1.25, 0);
-  }
+    function refreshPreviews() {
+      const vals = getValues();
+      drawCarPreviewOnCanvas(previewCanvas, vals.bodyId, vals.wheelId, vals.color);
 
-  function renderLoungeCarPreview() {
-    const canvas = el.loungeCarPreviewCanvas;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
-    ctx.lineWidth = 1;
-    for (let x = 0; x < canvas.width; x += 15) {
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, canvas.height);
-      ctx.stroke();
-    }
-    for (let y = 0; y < canvas.height; y += 15) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(canvas.width, y);
-      ctx.stroke();
-    }
-
-    // In lounge, display the car tinted with driver's assigned/chosen color
-    drawCarOnCanvas(ctx, canvas.width / 2, canvas.height / 2, -Math.PI / 2, state.driverColor || "#ef4444", 1.15, 0);
-
-    if (el.loungeCarColorName) {
-      const match = PALETTE.find(p => p.color.toLowerCase() === (state.driverColor || "").toLowerCase());
-      el.loungeCarColorName.textContent = match ? match.name : "Valgt lakk";
-      el.loungeCarColorName.style.color = state.driverColor || "#38bdf8";
-    }
-  }
-
-  function renderLoungeColorPalette(players = []) {
-    if (!el.loungeColorPalette) return;
-    el.loungeColorPalette.innerHTML = "";
-
-    // Map of taken colors by OTHER active players in the room
-    const takenByOthers = new Map();
-    (players || []).forEach(p => {
-      if (p.id !== state.playerId && p.color) {
-        takenByOthers.set(p.color.toLowerCase(), p.name || "En annen spiller");
+      if (colorNameEl) {
+        const match = PALETTE.find(p => p.color.toLowerCase() === (vals.color || "").toLowerCase());
+        colorNameEl.textContent = match ? match.name : "Valgt lakk";
+        colorNameEl.style.color = vals.color;
       }
+    }
+
+    // 1. Populate body buttons
+    if (bodyContainer) {
+      bodyContainer.innerHTML = "";
+      BODY_DEFS.forEach(b => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "cc-option-btn" + (b.id === getValues().bodyId ? " active" : "");
+        btn.innerHTML = `
+          <img src="${b.file}" alt="${b.name}" class="cc-option-thumb" />
+          <span class="cc-option-label" style="font-size:${compact ? '0.65rem' : '0.75rem'};">${b.name}</span>
+        `;
+        btn.addEventListener("click", () => {
+          bodyContainer.querySelectorAll(".cc-option-btn").forEach(x => x.classList.remove("active"));
+          btn.classList.add("active");
+          setValues({ bodyId: b.id });
+          refreshPreviews();
+          if (onChanged) onChanged();
+        });
+        bodyContainer.appendChild(btn);
+      });
+    }
+
+    // 2. Populate wheel buttons
+    if (wheelContainer) {
+      wheelContainer.innerHTML = "";
+      WHEEL_DEFS.forEach(w => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "cc-option-btn" + (w.id === getValues().wheelId ? " active" : "");
+        btn.innerHTML = `
+          <img src="${w.file}" alt="${w.name}" class="cc-option-thumb" />
+          <span class="cc-option-label" style="font-size:${compact ? '0.65rem' : '0.75rem'};">${w.name}</span>
+        `;
+        btn.addEventListener("click", () => {
+          wheelContainer.querySelectorAll(".cc-option-btn").forEach(x => x.classList.remove("active"));
+          btn.classList.add("active");
+          setValues({ wheelId: w.id });
+          refreshPreviews();
+          if (onChanged) onChanged();
+        });
+        wheelContainer.appendChild(btn);
+      });
+    }
+
+    // 3. Populate color swatches
+    if (swatchesContainer) {
+      swatchesContainer.innerHTML = "";
+      const paletteToUse = compact ? PALETTE.slice(0, 8) : PALETTE;
+      paletteToUse.forEach(item => {
+        const dot = document.createElement("button");
+        dot.type = "button";
+        const isCur = item.color.toLowerCase() === (getValues().color || "").toLowerCase();
+        dot.className = "cc-color-dot" + (isCur ? " active" : "");
+        dot.style.backgroundColor = item.color;
+        dot.style.color = item.color;
+        dot.title = item.name;
+        dot.addEventListener("click", () => {
+          swatchesContainer.querySelectorAll(".cc-color-dot").forEach(x => x.classList.remove("active"));
+          dot.classList.add("active");
+          if (colorPicker) colorPicker.value = item.color;
+          setValues({ color: item.color });
+          refreshPreviews();
+          if (onChanged) onChanged();
+        });
+        swatchesContainer.appendChild(dot);
+      });
+    }
+
+    // 4. Color picker input
+    if (colorPicker) {
+      colorPicker.value = getValues().color || "#ef4444";
+      colorPicker.addEventListener("input", (e) => {
+        const newCol = e.target.value;
+        if (swatchesContainer) {
+          swatchesContainer.querySelectorAll(".cc-color-dot").forEach(x => x.classList.remove("active"));
+        }
+        setValues({ color: newCol });
+        refreshPreviews();
+        if (onChanged) onChanged();
+      });
+    }
+
+    refreshPreviews();
+
+    return { refresh: refreshPreviews };
+  }
+
+  function initAllCustomizers() {
+    // Solo Customizer
+    soloCustomizer = setupCustomizerUI({
+      bodyContainer: el.soloBodyOptions,
+      wheelContainer: el.soloWheelOptions,
+      swatchesContainer: el.soloColorSwatches,
+      colorPicker: el.soloColorPicker,
+      colorNameEl: el.soloColorName,
+      previewCanvas: el.soloCarPreviewCanvas,
+      getValues: () => ({
+        bodyId: state.soloBodyId || 1,
+        wheelId: state.soloWheelId || 1,
+        color: state.soloColor || state.driverColor || "#ef4444",
+      }),
+      setValues: (v) => {
+        if (v.bodyId !== undefined) state.soloBodyId = v.bodyId;
+        if (v.wheelId !== undefined) state.soloWheelId = v.wheelId;
+        if (v.color !== undefined) {
+          state.soloColor = v.color;
+          state.driverColor = v.color;
+          localStorage.setItem("ts_driver_color", v.color);
+        }
+      },
     });
 
-    PALETTE.forEach(item => {
-      const isSelected = item.color.toLowerCase() === (state.driverColor || "").toLowerCase();
-      const takenBy = takenByOthers.get(item.color.toLowerCase());
-      const isTaken = Boolean(takenBy);
+    // Splitscreen P1
+    splitP1Customizer = setupCustomizerUI({
+      bodyContainer: el.splitP1BodyOptions,
+      wheelContainer: el.splitP1WheelOptions,
+      swatchesContainer: el.splitP1Colors,
+      colorPicker: el.splitP1ColorPicker,
+      colorNameEl: null,
+      previewCanvas: el.splitP1CarPreviewCanvas,
+      compact: true,
+      getValues: () => ({
+        bodyId: state.splitP1.bodyId || 1,
+        wheelId: state.splitP1.wheelId || 1,
+        color: state.splitP1.color || "#ef4444",
+      }),
+      setValues: (v) => {
+        if (v.bodyId !== undefined) state.splitP1.bodyId = v.bodyId;
+        if (v.wheelId !== undefined) state.splitP1.wheelId = v.wheelId;
+        if (v.color !== undefined) state.splitP1.color = v.color;
+      },
+    });
 
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "lcpc-swatch" +
-        (isSelected ? " active" : "") +
-        (isTaken ? " taken" : "");
-      btn.style.setProperty("--swatch-color", item.color);
-      btn.style.backgroundColor = item.color;
+    // Splitscreen P2
+    splitP2Customizer = setupCustomizerUI({
+      bodyContainer: el.splitP2BodyOptions,
+      wheelContainer: el.splitP2WheelOptions,
+      swatchesContainer: el.splitP2Colors,
+      colorPicker: el.splitP2ColorPicker,
+      colorNameEl: null,
+      previewCanvas: el.splitP2CarPreviewCanvas,
+      compact: true,
+      getValues: () => ({
+        bodyId: state.splitP2.bodyId || 2,
+        wheelId: state.splitP2.wheelId || 2,
+        color: state.splitP2.color || "#06b6d4",
+      }),
+      setValues: (v) => {
+        if (v.bodyId !== undefined) state.splitP2.bodyId = v.bodyId;
+        if (v.wheelId !== undefined) state.splitP2.wheelId = v.wheelId;
+        if (v.color !== undefined) state.splitP2.color = v.color;
+      },
+    });
 
-      if (isTaken) {
-        btn.title = `${item.name} (Tatt av ${takenBy})`;
-        btn.disabled = true;
-      } else if (isSelected) {
-        btn.title = `${item.name} (Din valgte farge)`;
-      } else {
-        btn.title = `Velg ${item.name}`;
-        btn.addEventListener("click", () => handleSelectLobbyColor(item.color));
-      }
-
-      el.loungeColorPalette.appendChild(btn);
+    // Pre-race Room Lounge Customizer
+    loungeCustomizer = setupCustomizerUI({
+      bodyContainer: el.loungeBodyOptions,
+      wheelContainer: el.loungeWheelOptions,
+      swatchesContainer: el.loungeColorSwatches,
+      colorPicker: el.loungeColorPicker,
+      colorNameEl: el.loungeColorNameDisplay,
+      previewCanvas: el.loungeCarPreviewCanvas,
+      getValues: () => ({
+        bodyId: state.driverBodyId || 1,
+        wheelId: state.driverWheelId || 1,
+        color: state.driverColor || "#ef4444",
+      }),
+      setValues: (v) => {
+        if (v.bodyId !== undefined) {
+          state.driverBodyId = v.bodyId;
+          localStorage.setItem("ts_driver_body_id", v.bodyId);
+        }
+        if (v.wheelId !== undefined) {
+          state.driverWheelId = v.wheelId;
+          localStorage.setItem("ts_driver_wheel_id", v.wheelId);
+        }
+        if (v.color !== undefined) {
+          state.driverColor = v.color;
+          localStorage.setItem("ts_driver_color", v.color);
+        }
+        syncCustomizationToServer();
+      },
+      onChanged: () => {
+        renderProfileCarPreview();
+      },
     });
   }
 
-  async function handleSelectLobbyColor(newColor) {
+  function refreshAllCustomizers() {
+    if (soloCustomizer) soloCustomizer.refresh();
+    if (splitP1Customizer) splitP1Customizer.refresh();
+    if (splitP2Customizer) splitP2Customizer.refresh();
+    if (loungeCustomizer) loungeCustomizer.refresh();
+    renderProfileCarPreview();
+  }
+
+  function refreshLoungeCustomizer() {
+    if (el.loungeBodyOptions) {
+      el.loungeBodyOptions.querySelectorAll(".cc-option-btn").forEach((btn, idx) => {
+        btn.classList.toggle("active", idx + 1 === (state.driverBodyId || 1));
+      });
+    }
+    if (el.loungeWheelOptions) {
+      el.loungeWheelOptions.querySelectorAll(".cc-option-btn").forEach((btn, idx) => {
+        btn.classList.toggle("active", idx + 1 === (state.driverWheelId || 1));
+      });
+    }
+    if (el.loungeColorSwatches) {
+      el.loungeColorSwatches.querySelectorAll(".cc-color-dot").forEach((dot) => {
+        dot.classList.toggle("active", dot.style.backgroundColor === (state.driverColor || ""));
+      });
+    }
+    if (el.loungeColorPicker) {
+      el.loungeColorPicker.value = state.driverColor || "#ef4444";
+    }
+    if (loungeCustomizer) {
+      loungeCustomizer.refresh();
+    }
+  }
+
+  async function syncCustomizationToServer() {
     if (!state.roomCode || !state.playerId) return;
-    if (state.driverColor && state.driverColor.toLowerCase() === newColor.toLowerCase()) return;
-
     try {
-      const res = await fetch("/api/turbosladd/color", {
+      const res = await fetch("/api/turbosladd/customize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           roomCode: state.roomCode,
           playerId: state.playerId,
-          color: newColor,
+          bodyId: state.driverBodyId || 1,
+          wheelId: state.driverWheelId || 1,
+          color: state.driverColor || "#ef4444",
         }),
       });
       const data = await res.json();
       if (data && data.ok) {
-        state.driverColor = newColor;
-        localStorage.setItem("ts_driver_color", newColor);
-        renderLoungeCarPreview();
         pollLobbyState();
-      } else {
-        alert(data.error || "Fargen er dessverre opptatt av en annen sjåfør.");
       }
     } catch (err) {
-      console.error("Feil ved endring av lakkfarge:", err);
+      console.warn("Feil ved synkronisering av bil:", err);
     }
+  }
+
+  function renderProfileCarPreview() {
+    const canvas = el.carPreviewCanvas;
+    if (!canvas) return;
+    drawCarPreviewOnCanvas(canvas, state.driverBodyId || 1, state.driverWheelId || 1, state.driverColor);
+  }
+
+  function renderLoungeCarPreview() {
+    const canvas = el.loungeCarPreviewCanvas;
+    if (!canvas) return;
+    drawCarPreviewOnCanvas(canvas, state.driverBodyId || 1, state.driverWheelId || 1, state.driverColor);
+
+    if (el.loungeColorNameDisplay) {
+      const match = PALETTE.find(p => p.color.toLowerCase() === (state.driverColor || "").toLowerCase());
+      el.loungeColorNameDisplay.textContent = match ? match.name : "Valgt lakk";
+      el.loungeColorNameDisplay.style.color = state.driverColor || "#38bdf8";
+    }
+  }
+
+  function renderLoungeColorPalette(players = []) {
+    if (loungeCustomizer) loungeCustomizer.refresh();
+  }
+
+  async function handleSelectLobbyColor(newColor) {
+    state.driverColor = newColor;
+    localStorage.setItem("ts_driver_color", newColor);
+    syncCustomizationToServer();
   }
 
   function updateDriverProfileUI() {
@@ -1189,7 +1576,7 @@
   // ENHANCED DRIFT PHYSICS & SIMULATION
   // =========================================================================
 
-  function createCarState(slotIndex, track) {
+  function createCarState(slotIndex, track, bodyId = 1, wheelId = 1, color = "#ef4444") {
     const slots = getStartGridSlots(track, 16);
     const slot = slots[slotIndex % slots.length];
     return {
@@ -1213,11 +1600,17 @@
       bestLap: 0,
       lapStartTime: performance.now(),
       raceStartTime: performance.now(),
+      bodyId: bodyId || 1,
+      wheelId: wheelId || 1,
+      color: color || "#ef4444",
     };
   }
 
   function resetCarToSlot(car, track, slotIndex) {
-    const fresh = createCarState(slotIndex, track);
+    const savedBodyId = car.bodyId || state.driverBodyId || 1;
+    const savedWheelId = car.wheelId || state.driverWheelId || 1;
+    const savedColor = car.color || state.driverColor || "#ef4444";
+    const fresh = createCarState(slotIndex, track, savedBodyId, savedWheelId, savedColor);
     Object.assign(car, fresh);
 
     // Immediately snap camera to the car
@@ -1970,7 +2363,9 @@
   function drawPlayerCar(ctx, car, color, name, isLocal = false) {
     const isBraking = car.brakeInput > 0;
     const steer = car.steerInput || 0;
-    drawCarOnCanvas(ctx, car.x, car.y, car.angle, color, 1.4, steer, isBraking);
+    const bodyId = car.bodyId || 1;
+    const wheelId = car.wheelId || 1;
+    drawCarOnCanvas(ctx, car.x, car.y, car.angle, color, 1.4, steer, isBraking, bodyId, wheelId);
 
     // Floating Name Tag (for opponents)
     if (!isLocal) {
@@ -2585,6 +2980,8 @@
             id: p.id,
             name: p.name,
             color: color,
+            bodyId: p.bodyId || 1,
+            wheelId: p.wheelId || 1,
             x: p.x,
             y: p.y,
             angle: p.angle,
@@ -2601,6 +2998,8 @@
         } else {
           const opp = state.opponentCars[p.id];
           opp.color = color;
+          opp.bodyId = p.bodyId || opp.bodyId || 1;
+          opp.wheelId = p.wheelId || opp.wheelId || 1;
           opp.targetX = p.x;
           opp.targetY = p.y;
           opp.targetAngle = p.angle;
@@ -2641,18 +3040,27 @@
         state.trackId = data.trackId || "rally_random";
         if (data.trackSeed) state.trackSeed = data.trackSeed;
         state.laps = data.laps || 3;
-        state.maxPlayers = data.maxPlayers || 4;
+        state.maxPlayers = data.maxPlayers || 16;
         state.players = data.players || [];
 
-        // Sync driverColor if server assigned or updated our color
+        // Sync driver specs if server assigned or updated
         const me = (data.players || []).find(p => p.id === state.playerId);
-        if (me && me.color && me.color.toLowerCase() !== (state.driverColor || "").toLowerCase()) {
-          state.driverColor = me.color;
-          localStorage.setItem("ts_driver_color", me.color);
+        if (me) {
+          if (me.color && me.color.toLowerCase() !== (state.driverColor || "").toLowerCase()) {
+            state.driverColor = me.color;
+            localStorage.setItem("ts_driver_color", me.color);
+          }
+          if (me.bodyId && me.bodyId !== state.driverBodyId) {
+            state.driverBodyId = me.bodyId;
+            localStorage.setItem("ts_driver_body_id", me.bodyId);
+          }
+          if (me.wheelId && me.wheelId !== state.driverWheelId) {
+            state.driverWheelId = me.wheelId;
+            localStorage.setItem("ts_driver_wheel_id", me.wheelId);
+          }
         }
 
         renderLoungeRacers(data.players);
-        renderLoungeColorPalette(data.players);
         renderLoungeCarPreview();
         updateLoungeSettingsUI();
 
@@ -2678,39 +3086,53 @@
   }
 
   function renderLoungeRacers(players) {
+    if (!el.racersGrid) return;
     el.racersGrid.innerHTML = "";
-    el.racersCountBadge.textContent = `${players.length}/${state.maxPlayers}`;
+    if (el.racersCountBadge) {
+      el.racersCountBadge.textContent = `${players.length}/${state.maxPlayers || 16}`;
+    }
 
     players.forEach((p, idx) => {
       const card = document.createElement("div");
       card.className = "racer-slot-card occupied" + (p.id === state.playerId ? " is-me" : "");
-      const avatarSrc = (typeof CharacterCreator !== "undefined" && p.avatar)
-        ? CharacterCreator.getAvatarImgSrc(p.avatar)
-        : "";
       const color = p.color || (p.avatar ? extractCharacterColor(p.avatar) : "#ef4444");
+      const pBodyId = p.bodyId || 1;
+      const pWheelId = p.wheelId || 1;
 
-      const avatarHtml = avatarSrc
-        ? `<div class="avatar-circle-preview" style="width:38px;height:38px;"><img src="${avatarSrc}" alt="${escapeHtml(p.name)}" /></div>`
-        : `<div class="racer-car-icon-wrap" style="background:${color};"><span style="font-size:1.1rem;">🏎️</span></div>`;
+      const miniCanvas = document.createElement("canvas");
+      miniCanvas.width = 44;
+      miniCanvas.height = 44;
+      miniCanvas.style.width = "40px";
+      miniCanvas.style.height = "40px";
+      miniCanvas.style.borderRadius = "8px";
+      miniCanvas.style.background = "radial-gradient(circle, #1e293b 0%, #0b0f19 100%)";
+      miniCanvas.style.border = `1.5px solid ${color}`;
+      miniCanvas.style.boxShadow = `0 0 8px ${color}33`;
+      drawCarPreviewOnCanvas(miniCanvas, pBodyId, pWheelId, color);
+
+      const bodyDef = BODY_DEFS.find(b => b.id === pBodyId) || BODY_DEFS[0];
+      const wheelDef = WHEEL_DEFS.find(w => w.id === pWheelId) || WHEEL_DEFS[0];
 
       card.innerHTML = `
         <div class="racer-slot-num">${idx + 1}</div>
-        ${avatarHtml}
+        <div class="racer-car-preview-slot" style="display:flex;align-items:center;"></div>
         <div class="racer-info-wrap">
           <div class="racer-name" style="display:flex;align-items:center;gap:0.4rem;">
             <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};box-shadow:0 0 6px ${color};"></span>
-            <span>${escapeHtml(p.name)}${p.isHost ? " (Vert 👑)" : ""}</span>
+            <span>${escapeHtml(p.name)}${p.isHost ? " (Vert 👑)" : ""}${p.id === state.playerId ? " (Deg)" : ""}</span>
           </div>
-          <div class="racer-subtext">Klar for sladd 🏁</div>
+          <div class="racer-subtext">${escapeHtml(bodyDef.name)} • ${escapeHtml(wheelDef.name)} 🏁</div>
         </div>
         <span class="racer-ready-tag ${p.isReady ? "ready" : "waiting"}">
           ${p.isReady ? "KLAR" : "VENTER..."}
         </span>
       `;
+      card.querySelector(".racer-car-preview-slot").appendChild(miniCanvas);
       el.racersGrid.appendChild(card);
     });
 
-    for (let i = players.length; i < state.maxPlayers; i++) {
+    const maxSlots = Math.min(16, Math.max(state.maxPlayers || 4, players.length));
+    for (let i = players.length; i < maxSlots; i++) {
       const emptyCard = document.createElement("div");
       emptyCard.className = "racer-slot-card empty";
       emptyCard.innerHTML = `
@@ -2720,10 +3142,12 @@
       el.racersGrid.appendChild(emptyCard);
     }
 
-    if (state.isHost) {
-      el.btnHostStartRace.classList.remove("hidden");
-    } else {
-      el.btnHostStartRace.classList.add("hidden");
+    if (el.btnHostStartRace) {
+      if (state.isHost) {
+        el.btnHostStartRace.classList.remove("hidden");
+      } else {
+        el.btnHostStartRace.classList.add("hidden");
+      }
     }
   }
 
@@ -2749,8 +3173,8 @@
     state.laps = state.splitLaps || 3;
 
     const track = getTrack(state.trackId, state.trackSeed);
-    state.car1 = createCarState(0, track);
-    state.car2 = createCarState(1, track);
+    state.car1 = createCarState(0, track, state.splitP1.bodyId || 1, state.splitP1.wheelId || 1, state.splitP1.color || "#ef4444");
+    state.car2 = createCarState(1, track, state.splitP2.bodyId || 2, state.splitP2.wheelId || 2, state.splitP2.color || "#06b6d4");
     state.cam1 = { x: state.car1.x, y: state.car1.y, zoom: 1.15 };
     state.cam2 = { x: state.car2.x, y: state.car2.y, zoom: 1.15 };
 
@@ -2790,6 +3214,8 @@
     const mySlot = myPlayer ? myPlayer.slot : 0;
     if (myPlayer) {
       state.playerId = myPlayer.id;
+      if (myPlayer.bodyId) state.driverBodyId = myPlayer.bodyId;
+      if (myPlayer.wheelId) state.driverWheelId = myPlayer.wheelId;
       if (myPlayer.color) {
         state.driverColor = myPlayer.color;
       } else if (myPlayer.avatar) {
@@ -2799,7 +3225,13 @@
         state.driverName = myPlayer.name;
       }
       localStorage.setItem("ts_driver_color", state.driverColor);
+      localStorage.setItem("ts_driver_body_id", state.driverBodyId);
+      localStorage.setItem("ts_driver_wheel_id", state.driverWheelId);
     }
+
+    state.myCar.bodyId = state.driverBodyId || 1;
+    state.myCar.wheelId = state.driverWheelId || 1;
+    state.myCar.color = state.driverColor || "#ef4444";
 
     resetCarToSlot(state.myCar, track, mySlot);
 
@@ -2855,6 +3287,10 @@
         state.laps = parseInt(activeBtn.dataset.laps, 10) || 3;
       }
     }
+
+    state.myCar.bodyId = state.soloBodyId || state.driverBodyId || 1;
+    state.myCar.wheelId = state.soloWheelId || state.driverWheelId || 1;
+    state.myCar.color = state.soloColor || state.driverColor || "#ef4444";
 
     const track = getTrack(state.trackId, state.trackSeed);
     resetCarToSlot(state.myCar, track, 0);
@@ -2950,6 +3386,14 @@
         btn.style.opacity = state.isHost ? "1" : (btnLaps === state.laps ? "1" : "0.45");
         btn.style.cursor = state.isHost ? "pointer" : "not-allowed";
       });
+    }
+
+    if (el.loungeHostSettingsCard) {
+      if (state.isHost) {
+        el.loungeHostSettingsCard.classList.remove("hidden");
+      } else {
+        el.loungeHostSettingsCard.classList.add("hidden");
+      }
     }
 
     if (el.loungeHostOnlyHint) {
@@ -3160,25 +3604,6 @@
       });
     }
 
-    // Splitscreen Local Setup
-    if (el.splitP1Colors) {
-      el.splitP1Colors.querySelectorAll(".spc-color-dot").forEach(dot => {
-        dot.addEventListener("click", () => {
-          el.splitP1Colors.querySelectorAll(".spc-color-dot").forEach(d => d.classList.remove("active"));
-          dot.classList.add("active");
-          state.splitP1.color = dot.dataset.color;
-        });
-      });
-    }
-    if (el.splitP2Colors) {
-      el.splitP2Colors.querySelectorAll(".spc-color-dot").forEach(dot => {
-        dot.addEventListener("click", () => {
-          el.splitP2Colors.querySelectorAll(".spc-color-dot").forEach(d => d.classList.remove("active"));
-          dot.classList.add("active");
-          state.splitP2.color = dot.dataset.color;
-        });
-      });
-    }
     if (el.controlSplitLaps) {
       el.controlSplitLaps.querySelectorAll(".seg-btn").forEach(btn => {
         btn.addEventListener("click", () => {
@@ -3217,6 +3642,8 @@
             body: JSON.stringify({
               hostName: hostName,
               color: state.driverColor,
+              bodyId: state.driverBodyId || 1,
+              wheelId: state.driverWheelId || 1,
               avatar: selectedAvatarStr,
               trackId: state.trackId || "rally_random",
               trackSeed: state.trackSeed,
@@ -3237,6 +3664,7 @@
             if (el.displayRoomCode) el.displayRoomCode.textContent = data.roomCode;
             showView("room");
             updateLoungeSettingsUI();
+            refreshLoungeCustomizer();
             startLobbyPolling();
           } else {
             alert(data.error || "Kunne ikke opprette rom.");
@@ -3267,6 +3695,8 @@
               roomCode: code,
               playerName: playerName,
               color: state.driverColor,
+              bodyId: state.driverBodyId || 1,
+              wheelId: state.driverWheelId || 1,
               avatar: selectedAvatarStr,
             }),
           });
@@ -3285,6 +3715,7 @@
             if (el.displayRoomCode) el.displayRoomCode.textContent = data.roomCode;
             showView("room");
             updateLoungeSettingsUI();
+            refreshLoungeCustomizer();
             startLobbyPolling();
           } else {
             alert(data.error || "Kunne ikke koble til rom.");
@@ -3295,14 +3726,23 @@
       });
     }
 
-    // Copy code button
-    if (el.btnCopyCode) {
-      el.btnCopyCode.addEventListener("click", () => {
-        if (state.roomCode && el.displayRoomCode) {
-          navigator.clipboard.writeText(state.roomCode);
-          el.displayRoomCode.style.color = "#34d399";
-          setTimeout(() => { if (el.displayRoomCode) el.displayRoomCode.style.color = "#38bdf8"; }, 800);
-        }
+    // Copy code buttons
+    const handleCopyCode = () => {
+      if (state.roomCode && el.displayRoomCode) {
+        navigator.clipboard.writeText(state.roomCode);
+        el.displayRoomCode.style.color = "#34d399";
+        setTimeout(() => { if (el.displayRoomCode) el.displayRoomCode.style.color = "#38bdf8"; }, 800);
+      }
+    };
+    if (el.btnCopyCode) el.btnCopyCode.addEventListener("click", handleCopyCode);
+    if (el.btnCopyRoomCode && el.btnCopyRoomCode !== el.btnCopyCode) {
+      el.btnCopyRoomCode.addEventListener("click", handleCopyCode);
+    }
+
+    // Leave lounge button in viewRoom
+    if (el.btnLeaveLobbyRoom) {
+      el.btnLeaveLobbyRoom.addEventListener("click", () => {
+        handleForfeitAndLeave();
       });
     }
 
@@ -3459,6 +3899,7 @@
 
   async function init() {
     initCharacterProfile();
+    initAllCustomizers();
     renderProfileCarPreview();
     initInputHandlers();
 
@@ -3499,7 +3940,7 @@
             el.backBtnText.textContent = "Lounge";
           }
 
-          // Match player identity and assign car color from character
+          // Match player identity and assign car specs
           let myPlayer = (data.players || []).find(p => p.id === state.playerId || p.isMe);
           if (!myPlayer && (data.isHost || state.isHost)) {
             myPlayer = (data.players || []).find(p => p.isHost) || (data.players || [])[0];
@@ -3510,6 +3951,8 @@
           }
           if (myPlayer) {
             state.playerId = myPlayer.id;
+            if (myPlayer.bodyId) state.driverBodyId = myPlayer.bodyId;
+            if (myPlayer.wheelId) state.driverWheelId = myPlayer.wheelId;
             if (myPlayer.color) {
               state.driverColor = myPlayer.color;
             } else if (myPlayer.avatar) {
@@ -3519,10 +3962,18 @@
               state.driverName = myPlayer.name;
             }
             localStorage.setItem("ts_driver_color", state.driverColor);
+            localStorage.setItem("ts_driver_body_id", state.driverBodyId);
+            localStorage.setItem("ts_driver_wheel_id", state.driverWheelId);
           }
 
-          if (data.status === "countdown" || data.status === "racing" || data.status === "lobby") {
+          if (data.status === "countdown" || data.status === "racing") {
             launchOnlineRace(data);
+            return;
+          } else if (data.status === "lobby") {
+            showView("room");
+            updateLoungeSettingsUI();
+            refreshLoungeCustomizer();
+            startLobbyPolling();
             return;
           } else {
             // Room is in party lounge stage or finished - redirect to central party room!

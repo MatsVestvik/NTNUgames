@@ -2561,8 +2561,8 @@ class PartyAPI:
                                 host_avatar=host_player.get("avatar", ""),
                             )
                             t_room.host_id = room.host_id
-                            t_room.status = "countdown"
-                            t_room.countdown_start = time.time()
+                            t_room.status = "lobby"
+                            t_room.countdown_start = None
                             t_room.players = {}
                             # Host
                             t_room.players[room.host_id] = {
@@ -2571,6 +2571,8 @@ class PartyAPI:
                                 "color": host_color,
                                 "avatar": host_player.get("avatar", ""),
                                 "carModel": "gt",
+                                "bodyId": int(host_player.get("bodyId", 1)),
+                                "wheelId": int(host_player.get("wheelId", 1)),
                                 "isHost": True,
                                 "isReady": True,
                                 "slot": 0,
@@ -2599,8 +2601,10 @@ class PartyAPI:
                                         "color": p_color,
                                         "avatar": pdata.get("avatar", ""),
                                         "carModel": "gt",
+                                        "bodyId": int(pdata.get("bodyId", 1)),
+                                        "wheelId": int(pdata.get("wheelId", 1)),
                                         "isHost": False,
-                                        "isReady": True,
+                                        "isReady": False,
                                         "slot": slot,
                                         "x": 0.0,
                                         "y": 0.0,

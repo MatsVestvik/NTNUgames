@@ -1454,3 +1454,181 @@ body.turbosladd-page {
     flex-direction: column;
   }
 }
+
+/* ==========================================================================
+   CAR CUSTOMIZER (BODY, WHEELS, COLOR) STYLES
+   ========================================================================== */
+.car-customizer-card {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--ts-border);
+  border-radius: 14px;
+  padding: 1.15rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cc-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.cc-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #f8fafc;
+}
+
+.cc-desc {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.cc-preview-wrap {
+  width: 80px;
+  height: 80px;
+  background: radial-gradient(circle, #1e293b 0%, #0b0f19 100%);
+  border: 2px solid rgba(56, 189, 248, 0.35);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.15);
+  flex-shrink: 0;
+}
+
+.cc-preview-wrap canvas {
+  width: 64px;
+  height: 64px;
+  image-rendering: pixelated;
+}
+
+.cc-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.cc-section-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #cbd5e1;
+}
+
+.cc-options-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+@media (max-width: 480px) {
+  .cc-options-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.cc-option-btn {
+  background: rgba(15, 23, 42, 0.75);
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 0.5rem 0.35rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.15s ease;
+  color: #cbd5e1;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.cc-option-btn:hover {
+  border-color: #38bdf8;
+  transform: translateY(-2px);
+  color: #fff;
+}
+
+.cc-option-btn.active {
+  border-color: #f97316;
+  background: rgba(249, 115, 22, 0.22);
+  color: #fff;
+  box-shadow: 0 0 12px rgba(249, 115, 22, 0.4);
+}
+
+.cc-option-thumb {
+  width: 42px;
+  height: 42px;
+  image-rendering: pixelated;
+  object-fit: contain;
+}
+
+.cc-color-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cc-color-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #38bdf8;
+}
+
+.cc-color-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.cc-color-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.cc-color-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.cc-color-dot:hover {
+  transform: scale(1.18);
+}
+
+.cc-color-dot.active {
+  border-color: #ffffff;
+  transform: scale(1.15);
+  box-shadow: 0 0 10px currentColor;
+}
+
+.cc-color-picker-input {
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
