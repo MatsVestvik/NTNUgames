@@ -97,6 +97,127 @@ def get_available_party_color(taken_colors: set, preferred_color: Optional[str] 
     return HEAD_COLORS[len(taken_lower) % len(HEAD_COLORS)].lower()
 
 
+# Declarative Party Game Registry
+PARTY_REGISTRY: Dict[str, Dict[str, Any]] = {
+    "ordbombe": {
+        "name": "Ordbombe",
+        "url_path": "/ordbombe/",
+        "min_players": 1,
+        "max_players": 12,
+        "is_internal": True,
+    },
+    "tegn_og_gjett": {
+        "name": "Tegn & Gjett",
+        "url_path": "/tegn-og-gjett/",
+        "min_players": 2,
+        "max_players": 12,
+        "is_internal": True,
+    },
+    "imposter": {
+        "name": "Imposter",
+        "url_path": "/imposter/",
+        "min_players": 3,
+        "max_players": 10,
+        "is_internal": True,
+    },
+    "fargekoden": {
+        "name": "Fargekoden",
+        "url_path": "/fargekoden/",
+        "min_players": 2,
+        "max_players": 8,
+        "is_internal": True,
+    },
+    "sjakk": {
+        "name": "Sjakk",
+        "url_path": "/sjakk/",
+        "min_players": 2,
+        "max_players": 2,
+        "is_internal": False,
+    },
+    "korridorer": {
+        "name": "Korridorer",
+        "url_path": "/korridorer/",
+        "min_players": 2,
+        "max_players": 16,
+        "is_internal": False,
+    },
+    "wavelength": {
+        "name": "Wavelength",
+        "url_path": "/wavelength/",
+        "min_players": 2,
+        "max_players": 12,
+        "is_internal": False,
+    },
+    "turbosladd": {
+        "name": "Turbosladd",
+        "url_path": "/turbosladd/",
+        "min_players": 1,
+        "max_players": 16,
+        "is_internal": False,
+    },
+}
+
+
+def cleanup_external_game_session(code: str, game_id: Optional[str], player_id: Optional[str] = None) -> None:
+    """Safely terminate or forfeit external game sessions when returning to lounge."""
+    if not game_id:
+        return
+
+    if game_id == "sjakk":
+        try:
+            from games.sjakk.api import _rooms as sjakk_rooms
+            with _rooms_lock:
+                s_room = sjakk_rooms.get(code)
+                if s_room:
+                    with s_room.lock:
+                        s_room.status = "finished"
+                        s_room.returned_to_lounge = True
+                        s_room.result_reason = "Partiet ble avsluttet (returnert til Party Lounge)."
+                        s_room.bump()
+        except Exception as err:
+            print("Cleanup sjakk error:", err)
+
+    elif game_id == "korridorer":
+        try:
+            from games.korridorer.api import _rooms as korr_rooms
+            with _rooms_lock:
+                k_room = korr_rooms.get(code)
+                if k_room:
+                    with k_room.lock:
+                        k_room.status = "finished"
+                        k_room.bump()
+        except Exception as err:
+            print("Cleanup korridorer error:", err)
+
+    elif game_id == "turbosladd":
+        try:
+            from games.turbosladd.api import _rooms as ts_rooms
+            with _rooms_lock:
+                t_room = ts_rooms.get(code)
+                if t_room:
+                    with t_room.lock:
+                        if player_id and player_id in t_room.players:
+                            t_room.remove_player(player_id, forfeit=True)
+                        else:
+                            t_room.status = "finished"
+                            t_room.bump()
+        except Exception as err:
+            print("Cleanup turbosladd error:", err)
+
+    elif game_id == "wavelength":
+        try:
+            from games.wavelength.api import _rooms as wl_rooms
+            with _rooms_lock:
+                w_room = wl_rooms.get(code)
+                if w_room:
+                    with w_room.lock:
+                        w_room.status = "finished"
+                        w_room.returned_to_lounge = True
+                        w_room.bump()
+        except Exception as err:
+            print("Cleanup wavelength error:", err)
+
+
 class PartyRoom:
     def __init__(self, code: str, host_token: str, host_name: str, host_avatar: str):
         self.code = code
@@ -244,10 +365,20 @@ class PartyRoom:
             else:
                 effective_game_state = self.game_state
 
+            game_url = None
+            if self.current_game and self.current_game in PARTY_REGISTRY:
+                base_path = PARTY_REGISTRY[self.current_game]["url_path"]
+                pid_str = f"&player={client_player_id}" if client_player_id else ""
+                game_url = f"{base_path}?room={self.code}{pid_str}"
+
+            all_ready = bool(self.players and all(p.get("is_ready", False) for p in self.players.values()))
+
             return {
                 "ok": True,
                 "roomCode": self.code,
                 "currentGame": self.current_game,
+                "gameUrl": game_url,
+                "allReady": all_ready,
                 "version": self.version,
                 "players": players_list,
                 "playerCount": len(players_list),
@@ -2243,66 +2374,30 @@ class PartyAPI:
                         (player_id and player_id == room.host_id)
                     )
                     all_ready = all(p.get("is_ready", False) for p in room.players.values())
+                    current_game = room.current_game
+
                     if rel_path in ("/api/to-lounge", "/api/to-lobby"):
-                        if is_host:
-                            # Host returned: end active game for the room
+                        if is_host or all_ready:
+                            # Host returned or all players returned: terminate game session for everyone
+                            cleanup_external_game_session(code, current_game)
                             room.current_game = None
                             room.game_state = {}
                             for p in room.players.values():
                                 p["is_ready"] = True
-                        elif all_ready:
-                            room.current_game = None
-                            room.game_state = {}
-                        elif room.current_game == "ordbombe" and room.game_state:
-                            # Guest left Ordbombe
-                            if player_id in room.players:
-                                room.players[player_id]["eliminated"] = True
-                            if room.game_state.get("active_player_id") == player_id:
-                                room._advance_ordbombe_turn()
-                            living = [pid for pid in room.game_state.get("active_player_ids", []) if not room.players.get(pid, {}).get("eliminated")]
-                            if len(living) <= 1:
-                                room.game_state["status"] = "game_over"
-                                if living:
-                                    room.game_state["winner"] = room.players.get(living[0])
+                        else:
+                            # Guest left active game: notify game and mark guest ready
+                            cleanup_external_game_session(code, current_game, player_id=player_id)
+                            if current_game == "ordbombe" and room.game_state:
+                                if player_id in room.players:
+                                    room.players[player_id]["eliminated"] = True
+                                if room.game_state.get("active_player_id") == player_id:
+                                    room._advance_ordbombe_turn()
+                                living = [pid for pid in room.game_state.get("active_player_ids", []) if not room.players.get(pid, {}).get("eliminated")]
+                                if len(living) <= 1:
+                                    room.game_state["status"] = "game_over"
+                                    if living:
+                                        room.game_state["winner"] = room.players.get(living[0])
                     room.bump()
-
-            try:
-                from games.sjakk.api import _rooms as sjakk_rooms
-                with _rooms_lock:
-                    if code in sjakk_rooms:
-                        s_room = sjakk_rooms[code]
-                        with s_room.lock:
-                            s_room.status = "finished"
-                            s_room.returned_to_lounge = True
-                            s_room.result_reason = "Partiet ble avsluttet (returnert til Party Lounge)."
-                            s_room.bump()
-            except Exception as err:
-                print("Error updating sjakk room on to-lounge:", err)
-
-            try:
-                from games.korridorer.api import _rooms as korr_rooms
-                with _rooms_lock:
-                    if code in korr_rooms:
-                        k_room = korr_rooms[code]
-                        with k_room.lock:
-                            k_room.status = "finished"
-                            k_room.bump()
-            except Exception as err:
-                print("Error updating korridorer room on to-lounge:", err)
-
-            try:
-                from games.turbosladd.api import _rooms as ts_rooms
-                with _rooms_lock:
-                    if code in ts_rooms:
-                        t_room = ts_rooms[code]
-                        with t_room.lock:
-                            if player_id in t_room.players:
-                                t_room.remove_player(player_id, forfeit=True)
-                            else:
-                                t_room.status = "finished"
-                                t_room.bump()
-            except Exception as err:
-                print("Error updating turbosladd room on to-lounge:", err)
 
             return 200, {"ok": True, "message": "Returnert til lounge"}
 
@@ -2322,41 +2417,24 @@ class PartyAPI:
                 is_host_req = bool(room.host_token and room.host_token == host_token)
                 # Allow returning to lobby if host OR if game is finished
                 if game_id is None:
+                    cleanup_external_game_session(code, room.current_game)
                     room.current_game = None
                     room.game_state = {}
                     for p in room.players.values():
                         p["is_ready"] = True
                     room.bump()
-                    try:
-                        from games.sjakk.api import _rooms as sjakk_rooms
-                        with _rooms_lock:
-                            if code in sjakk_rooms:
-                                s_room = sjakk_rooms[code]
-                                with s_room.lock:
-                                    s_room.status = "finished"
-                                    s_room.returned_to_lounge = True
-                                    s_room.result_reason = "Partiet ble avsluttet (returnert til Party Lounge)."
-                                    s_room.bump()
-                    except Exception:
-                        pass
                     return 200, {"ok": True, "currentGame": None}
 
                 if not is_host_req:
                     return 403, {"ok": False, "error": "Bare romverten kan starte eller bytte spill"}
 
-                MIN_PLAYERS = {
-                    "ordbombe": 1,
-                    "tegn_og_gjett": 2,
-                    "sjakk": 2,
-                    "korridorer": 2,
-                    "imposter": 3,
-                    "fargekoden": 2,
-                    "wavelength": 2,
-                    "turbosladd": 1,
-                }
-                min_req = MIN_PLAYERS.get(game_id, 2)
+                reg_info = PARTY_REGISTRY.get(game_id)
+                if not reg_info:
+                    return 400, {"ok": False, "error": f"Ukjent spill: '{game_id}'"}
+
+                min_req = reg_info.get("min_players", 1)
                 if len(room.players) < min_req:
-                    return 400, {"ok": False, "error": f"Dette spillet krever minst {min_req} spillere i rommet."}
+                    return 400, {"ok": False, "error": f"{reg_info['name']} krever minst {min_req} spillere i rommet."}
 
                 # Check if all players in party room have returned to lounge
                 not_ready = [p["name"] for p in room.players.values() if not p.get("is_ready", False)]
@@ -2366,7 +2444,10 @@ class PartyAPI:
                         "error": f"Kan ikke starte før alle har returnert til lobbyen. Venter på: {', '.join(not_ready)}"
                     }
 
-                # Mark all players as not ready in lounge now that the game begins
+                # Clean up previous external session if any
+                cleanup_external_game_session(code, room.current_game)
+
+                # Mark all players as in game now that the game begins
                 for p in room.players.values():
                     p["is_ready"] = False
 
@@ -2572,24 +2653,18 @@ class PartyAPI:
                     room.bump()
                 elif game_id is None:
                     # Return to lobby
+                    cleanup_external_game_session(code, room.current_game)
                     room.current_game = None
                     room.game_state = {}
-                    try:
-                        from games.sjakk.api import _rooms as sjakk_rooms
-                        with _rooms_lock:
-                            if code in sjakk_rooms:
-                                s_room = sjakk_rooms[code]
-                                with s_room.lock:
-                                    s_room.status = "finished"
-                                    s_room.result_reason = "Verten avsluttet partiet og returnerte til loungen."
-                                    s_room.bump()
-                    except Exception as s_err:
-                        print("Error updating sjakk room on return to lobby:", s_err)
+                    for p in room.players.values():
+                        p["is_ready"] = True
                     room.bump()
                 else:
                     return 400, {"ok": False, "error": f"Spillet '{game_id}' er under utvikling og ikke tilgjengelig enda."}
 
-            return 200, {"ok": True, "currentGame": room.current_game}
+            base_url = PARTY_REGISTRY.get(room.current_game, {}).get("url_path", f"/{room.current_game}/")
+            game_url = f"{base_url}?room={room.code}&player={room.host_id}"
+            return 200, {"ok": True, "currentGame": room.current_game, "gameUrl": game_url}
 
         if rel_path == "/api/ordbombe/action":
             code = str(body.get("roomCode") or "").strip().upper()

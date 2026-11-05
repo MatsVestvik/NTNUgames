@@ -3021,36 +3021,47 @@
       const pid = state.playerId;
 
       if (code) {
-        try {
-          sessionStorage.setItem(`forfeit_${code}`, "turbosladd");
-          sessionStorage.setItem("party_just_left", code);
-        } catch (e) {}
+        if (window.PartyBridge) {
+          window.PartyBridge.leaveToLounge({
+            roomCode: code,
+            playerId: pid,
+            beforeLeave: () => {
+              try {
+                fetch("/api/turbosladd/leave", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  keepalive: true,
+                  body: JSON.stringify({ roomCode: code, playerId: pid, forfeit: true }),
+                });
+              } catch (_) {}
+            },
+          });
+          return;
+        }
 
-        // Notify server that this player forfeits/leaves
         try {
           fetch("/api/turbosladd/leave", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
+            keepalive: true,
             body: JSON.stringify({ roomCode: code, playerId: pid, forfeit: true }),
           });
-        } catch (e) {}
-
-        try {
           fetch("/api/party/to-lounge", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
+            keepalive: true,
             body: JSON.stringify({ roomCode: code, playerId: pid }),
           });
-        } catch (e) {}
+        } catch (_) {}
 
         state.roomCode = "";
         state.playerId = "";
 
         try {
           window.history.replaceState({}, document.title, window.location.pathname);
-        } catch (e) {}
+        } catch (_) {}
 
-        window.location.href = `/party/?room=${encodeURIComponent(code)}&player=${encodeURIComponent(pid)}`;
+        window.location.replace(`/party/?room=${encodeURIComponent(code)}&player=${encodeURIComponent(pid)}`);
         return;
       }
 

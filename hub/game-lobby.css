@@ -9,6 +9,7 @@
   animation: fadeInPanel 0.25s ease-out;
 }
 
+.hidden,
 .view-panel.hidden,
 .tab-panel.hidden {
   display: none !important;

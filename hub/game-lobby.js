@@ -227,6 +227,97 @@
     getSavedAvatar,
   };
 
+  const PartyBridge = {
+    getSession() {
+      const params = new URLSearchParams(window.location.search);
+      const roomCode = (params.get("room") || params.get("code") || sessionStorage.getItem("party_room_code") || localStorage.getItem("party_room_code") || "").trim().toUpperCase();
+      const playerId = (params.get("player") || params.get("playerId") || sessionStorage.getItem("party_player_id") || localStorage.getItem("party_player_id") || "").trim();
+      const hostToken = (sessionStorage.getItem("party_host_token") || localStorage.getItem("party_host_token") || "").trim();
+      const playerName = (sessionStorage.getItem("party_player_name") || localStorage.getItem("party_player_name") || getSavedName() || "Spiller").trim();
+      const avatar = (sessionStorage.getItem("party_avatar") || localStorage.getItem("party_avatar") || getSavedAvatar()).trim();
+      return {
+        roomCode,
+        playerId,
+        hostToken,
+        playerName,
+        avatar,
+        isHost: Boolean(hostToken),
+      };
+    },
+
+    saveSession(data = {}) {
+      if (data.roomCode) {
+        sessionStorage.setItem("party_room_code", data.roomCode);
+        localStorage.setItem("party_room_code", data.roomCode);
+      }
+      if (data.playerId) {
+        sessionStorage.setItem("party_player_id", data.playerId);
+        localStorage.setItem("party_player_id", data.playerId);
+      }
+      if (data.hostToken) {
+        sessionStorage.setItem("party_host_token", data.hostToken);
+        localStorage.setItem("party_host_token", data.hostToken);
+      }
+      if (data.playerName) {
+        sessionStorage.setItem("party_player_name", data.playerName);
+        localStorage.setItem("party_player_name", data.playerName);
+      }
+      if (data.avatar) {
+        sessionStorage.setItem("party_avatar", data.avatar);
+        localStorage.setItem("party_avatar", data.avatar);
+      }
+    },
+
+    leaveToLounge(options = {}) {
+      const sess = this.getSession();
+      const code = options.roomCode || sess.roomCode;
+      const pid = options.playerId || sess.playerId;
+      const hostToken = options.hostToken || sess.hostToken;
+
+      if (options.beforeLeave && typeof options.beforeLeave === "function") {
+        try { options.beforeLeave(); } catch (_) {}
+      }
+
+      if (code) {
+        try {
+          sessionStorage.setItem("party_just_left", code);
+          sessionStorage.setItem("party_room_code", code);
+          if (pid) sessionStorage.setItem("party_player_id", pid);
+        } catch (_) {}
+
+        try {
+          fetch("/api/party/to-lounge", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            keepalive: true,
+            body: JSON.stringify({ roomCode: code, playerId: pid, hostToken }),
+          });
+        } catch (_) {}
+
+        window.location.replace(`/party/?room=${encodeURIComponent(code)}&player=${encodeURIComponent(pid)}`);
+        return;
+      }
+
+      window.location.replace("/party/");
+    },
+
+    bindLeaveButton(elem, options = {}) {
+      if (!elem || elem.dataset.boundPartyBridgeLeave) return;
+      elem.dataset.boundPartyBridgeLeave = "true";
+      const handler = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        this.leaveToLounge(options);
+      };
+      elem.addEventListener("pointerdown", handler);
+      elem.addEventListener("click", handler);
+    },
+  };
+
+  window.PartyBridge = PartyBridge;
+
   // Auto-init on DOMContentLoaded if standard IDs are found
   function autoInit() {
     if (document.getElementById("btnCreatePartyRoom") || document.getElementById("btnJoinPartyRoom")) {

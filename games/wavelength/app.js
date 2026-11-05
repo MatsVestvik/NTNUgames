@@ -1342,17 +1342,26 @@
       const code = state.roomCode;
       const pid = state.playerId || sessionStorage.getItem("party_player_id") || "";
       const hostToken = state.hostToken || sessionStorage.getItem("party_host_token") || "";
+      if (window.PartyBridge) {
+        window.PartyBridge.leaveToLounge({
+          roomCode: code,
+          playerId: pid,
+          hostToken: hostToken,
+        });
+        return;
+      }
       try {
         await fetch("/api/party/to-lounge", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          keepalive: true,
           body: JSON.stringify({ roomCode: code, playerId: pid, hostToken: hostToken }),
         });
       } catch (e) {}
       try {
         sessionStorage.setItem("party_just_left", code);
       } catch (_) {}
-      window.location.href = `/party/?room=${encodeURIComponent(code)}&player=${encodeURIComponent(pid)}`;
+      window.location.replace(`/party/?room=${encodeURIComponent(code)}&player=${encodeURIComponent(pid)}`);
       return;
     }
     showView("lobby");

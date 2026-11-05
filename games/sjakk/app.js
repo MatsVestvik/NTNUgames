@@ -1779,10 +1779,29 @@
     }
 
     if (code && state.isPartyRoom) {
+      if (window.PartyBridge) {
+        window.PartyBridge.leaveToLounge({
+          roomCode: code,
+          playerId: playerId,
+          hostToken: hostToken,
+          beforeLeave: () => {
+            try {
+              fetch("/api/sjakk/exit", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                keepalive: true,
+                body: JSON.stringify({ roomCode: code, playerId: playerId }),
+              });
+            } catch (_) {}
+          },
+        });
+        return;
+      }
       try {
         await fetch("/api/party/to-lounge", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          keepalive: true,
           body: JSON.stringify({
             roomCode: code,
             playerId: playerId,
@@ -1796,7 +1815,7 @@
       sessionStorage.setItem("party_room_code", code);
       sessionStorage.setItem("party_just_left", code);
       if (playerId) sessionStorage.setItem("party_player_id", playerId);
-      window.location.href = `/party/?code=${encodeURIComponent(code)}&player=${encodeURIComponent(playerId)}`;
+      window.location.replace(`/party/?room=${encodeURIComponent(code)}&player=${encodeURIComponent(playerId)}`);
       return;
     }
 

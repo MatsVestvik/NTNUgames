@@ -429,66 +429,9 @@
           const meIsReady = Boolean(data.me && data.me.isReady);
           const shouldRedirectToGame = Boolean(data.currentGame && !meIsReady && justLeft !== state.roomCode);
 
-          if (shouldRedirectToGame) {
-            if (data.currentGame === "ordbombe") {
-              // Redirect to Ordbombe in room mode!
-              const target = `/ordbombe/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
-              window.location.href = target;
-              return;
-            }
-
-            if (data.currentGame === "tegn_og_gjett" && data.gameState?.turn_state !== "game_over" && data.gameState?.status !== "game_over") {
-              // Redirect to Tegn & Gjett in room mode!
-              const target = `/tegn-og-gjett/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
-              window.location.href = target;
-              return;
-            }
-
-            if (data.currentGame === "sjakk" && data.gameState?.status !== "finished") {
-              // Redirect to Sjakk in room mode!
-              const target = `/sjakk/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
-              window.location.href = target;
-              return;
-            }
-
-            if (data.currentGame === "korridorer") {
-              // Redirect to Korridorer in room mode!
-              const target = `/korridorer/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
-              window.location.href = target;
-              return;
-            }
-
-            if (data.currentGame === "imposter" && data.gameState?.status !== "round_over") {
-              // Redirect to Imposter in room mode!
-              const target = `/imposter/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
-              window.location.href = target;
-              return;
-            }
-
-            if (data.currentGame === "fargekoden" && data.gameState?.status !== "game_over") {
-              // Redirect to Fargekoden in room mode!
-              const target = `/fargekoden/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
-              window.location.href = target;
-              return;
-            }
-
-            if (data.currentGame === "wavelength" && data.gameState?.status !== "game_over") {
-              // Redirect to Wavelength in room mode!
-              const target = `/wavelength/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
-              window.location.href = target;
-              return;
-            }
-
-            if (data.currentGame === "turbosladd" && data.gameState?.status !== "finished") {
-              // Redirect to Turbosladd in room mode!
-              const target = `/turbosladd/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
-              window.location.href = target;
-              return;
-            }
-          }
-
-          if (data.currentGame !== "turbosladd") {
-            try { sessionStorage.removeItem(`forfeit_${state.roomCode}`); } catch (e) {}
+          if (shouldRedirectToGame && data.gameUrl) {
+            window.location.href = data.gameUrl;
+            return;
           }
         }
       } catch (err) {
@@ -717,15 +660,14 @@
     updatePartyGamesListByPlayerCount(state.lastPlayerCount || 1, isHost);
   }
 
-  // Host launches Ordbombe
-  el.btnStartOrdbombe.addEventListener("click", async () => {
-    if (!state.isHost || !state.hostToken) return;
+  // Standardized Declarative Game Launcher for Host
+  async function launchPartyGame(btnElement, gameId, getSettings) {
+    if (!state.isHost || !state.roomCode) return;
+    const originalText = btnElement.textContent;
+    btnElement.disabled = true;
+    btnElement.textContent = "Starter spill…";
 
-    el.btnStartOrdbombe.disabled = true;
-    el.btnStartOrdbombe.textContent = "Starter spill…";
-
-    const turnDuration = parseFloat(el.selectTimerParty.value) || 6.0;
-    const difficulty = el.selectDiffParty.value || "medium";
+    const settings = (typeof getSettings === "function") ? getSettings() : {};
 
     try {
       const resp = await fetch("/api/party/select-game", {
@@ -734,310 +676,94 @@
         body: JSON.stringify({
           roomCode: state.roomCode,
           hostToken: state.hostToken,
-          gameId: "ordbombe",
-          settings: {
-            turnDuration: turnDuration,
-            difficulty: difficulty,
-          },
+          gameId: gameId,
+          settings: settings,
         }),
       });
 
       const data = await resp.json();
       if (!data.ok) {
         alert(data.error || "Kunne ikke starte spillet.");
-        el.btnStartOrdbombe.disabled = false;
-        el.btnStartOrdbombe.textContent = "Start Ordbombe";
+        btnElement.disabled = false;
+        btnElement.textContent = originalText;
         return;
       }
 
-      // Transition self immediately
-      window.location.href = `/ordbombe/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
+      const target = data.gameUrl || `/${gameId.replace(/_/g, "-")}/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
+      window.location.href = target;
     } catch (err) {
-      console.error(err);
-      alert("Feil ved start av spill.");
-      el.btnStartOrdbombe.disabled = false;
-      el.btnStartOrdbombe.textContent = "Start Ordbombe";
+      console.error("Launch error:", err);
+      alert("Nettverksfeil ved start av spill.");
+      btnElement.disabled = false;
+      btnElement.textContent = originalText;
+    }
+  }
+
+  const GAME_LAUNCHERS = [
+    {
+      btn: el.btnStartOrdbombe,
+      id: "ordbombe",
+      settings: () => ({
+        turnDuration: parseFloat(el.selectTimerParty?.value) || 6.0,
+        difficulty: el.selectDiffParty?.value || "medium",
+      }),
+    },
+    {
+      btn: el.btnStartTegnOgGjett,
+      id: "tegn_og_gjett",
+      settings: () => ({
+        drawTime: parseInt(el.selectTimerDraw?.value || "80", 10),
+        rounds: parseInt(el.selectRoundsDraw?.value || "3", 10),
+      }),
+    },
+    {
+      btn: el.btnStartSjakk,
+      id: "sjakk",
+      settings: () => ({
+        timeControl: parseInt(el.selectTimerSjakk?.value || "300", 10),
+      }),
+    },
+    {
+      btn: el.btnStartKorridorer,
+      id: "korridorer",
+      settings: () => ({}),
+    },
+    {
+      btn: el.btnStartImposter,
+      id: "imposter",
+      settings: () => ({
+        strokeTime: parseInt(el.selectTimerImposter?.value || "25", 10) || 25,
+      }),
+    },
+    {
+      btn: el.btnStartFargekoden,
+      id: "fargekoden",
+      settings: () => ({
+        rounds: parseInt(el.selectRoundsFargekoden?.value || "3", 10) || 3,
+      }),
+    },
+    {
+      btn: el.btnStartWavelength,
+      id: "wavelength",
+      settings: () => ({
+        rounds: parseInt(el.selectRoundsWavelength?.value || "7", 10) || 7,
+      }),
+    },
+    {
+      btn: el.btnStartTurbosladd,
+      id: "turbosladd",
+      settings: () => ({
+        laps: parseInt(el.selectLapsTurbosladd?.value || "3", 10) || 3,
+        trackId: el.selectTrackTurbosladd?.value || "grand_prix",
+      }),
+    },
+  ];
+
+  GAME_LAUNCHERS.forEach(({ btn, id, settings }) => {
+    if (btn) {
+      btn.addEventListener("click", () => launchPartyGame(btn, id, settings));
     }
   });
-
-  // Host launches Tegn & Gjett
-  if (el.btnStartTegnOgGjett) {
-    el.btnStartTegnOgGjett.addEventListener("click", async () => {
-      if (!state.isHost || !state.hostToken) return;
-
-      el.btnStartTegnOgGjett.disabled = true;
-      el.btnStartTegnOgGjett.textContent = "Starter spill…";
-
-      const drawTime = parseInt(el.selectTimerDraw?.value || "80", 10);
-      const rounds = parseInt(el.selectRoundsDraw?.value || "3", 10);
-
-      try {
-        const resp = await fetch("/api/party/select-game", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            roomCode: state.roomCode,
-            hostToken: state.hostToken,
-            gameId: "tegn_og_gjett",
-            settings: {
-              drawTime: drawTime,
-              rounds: rounds,
-            },
-          }),
-        });
-
-        const data = await resp.json();
-        if (!data.ok) {
-          alert(data.error || "Kunne ikke starte Tegn & Gjett.");
-          el.btnStartTegnOgGjett.disabled = false;
-          el.btnStartTegnOgGjett.textContent = "Start Tegn & Gjett";
-          return;
-        }
-
-        // Transition self immediately
-        window.location.href = `/tegn-og-gjett/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
-      } catch (err) {
-        console.error(err);
-        alert("Feil ved start av spill.");
-        el.btnStartTegnOgGjett.disabled = false;
-        el.btnStartTegnOgGjett.textContent = "Start Tegn & Gjett";
-      }
-    });
-  }
-
-  // Host launches Sjakk
-  if (el.btnStartSjakk) {
-    el.btnStartSjakk.addEventListener("click", async () => {
-      if (!state.isHost || !state.hostToken) return;
-
-      el.btnStartSjakk.disabled = true;
-      el.btnStartSjakk.textContent = "Starter spill…";
-
-      const timeControl = parseInt(el.selectTimerSjakk?.value || "300", 10);
-
-      try {
-        const resp = await fetch("/api/party/select-game", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            roomCode: state.roomCode,
-            hostToken: state.hostToken,
-            gameId: "sjakk",
-            settings: {
-              timeControl: timeControl,
-            },
-          }),
-        });
-
-        const data = await resp.json();
-        if (!data.ok) {
-          alert(data.error || "Kunne ikke starte Sjakk.");
-          el.btnStartSjakk.disabled = false;
-          el.btnStartSjakk.textContent = "Start Sjakk";
-          return;
-        }
-
-        // Transition self immediately
-        window.location.href = `/sjakk/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
-      } catch (err) {
-        console.error(err);
-        alert("Feil ved start av spill.");
-        el.btnStartSjakk.disabled = false;
-        el.btnStartSjakk.textContent = "Start Sjakk";
-      }
-    });
-  }
-
-  // Host launches Korridorer
-  if (el.btnStartKorridorer) {
-    el.btnStartKorridorer.addEventListener("click", async () => {
-      if (!state.isHost || !state.roomCode) return;
-      try {
-        el.btnStartKorridorer.disabled = true;
-        el.btnStartKorridorer.textContent = "Starter spill…";
-
-        const resp = await fetch("/api/party/select-game", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            roomCode: state.roomCode,
-            hostToken: state.hostToken,
-            gameId: "korridorer",
-            settings: {},
-          }),
-        });
-
-        const data = await resp.json();
-        if (!data.ok) {
-          alert(data.error || "Kunne ikke starte Korridorer.");
-          el.btnStartKorridorer.disabled = false;
-          el.btnStartKorridorer.textContent = "Start Korridorer";
-          return;
-        }
-
-        // Transition self immediately
-        window.location.href = `/korridorer/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
-      } catch (err) {
-        console.error(err);
-        alert("Feil ved start av spill.");
-        el.btnStartKorridorer.disabled = false;
-        el.btnStartKorridorer.textContent = "Start Korridorer";
-      }
-    });
-  }
-
-  // Host launches Imposter
-  if (el.btnStartImposter) {
-    el.btnStartImposter.addEventListener("click", async () => {
-      if (!state.isHost || !state.roomCode) return;
-      const strokeTime = parseInt(el.selectTimerImposter?.value || "25", 10) || 25;
-      try {
-        el.btnStartImposter.disabled = true;
-        el.btnStartImposter.textContent = "Starter spill…";
-
-        const resp = await fetch("/api/party/select-game", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            roomCode: state.roomCode,
-            hostToken: state.hostToken,
-            gameId: "imposter",
-            settings: { strokeTime },
-          }),
-        });
-
-        const data = await resp.json();
-        if (!data.ok) {
-          alert(data.error || "Kunne ikke starte Imposter.");
-          el.btnStartImposter.disabled = false;
-          el.btnStartImposter.textContent = "Start Imposter";
-          return;
-        }
-
-        window.location.href = `/imposter/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
-      } catch (err) {
-        console.error(err);
-        alert("Feil ved start av spill.");
-        el.btnStartImposter.disabled = false;
-        el.btnStartImposter.textContent = "Start Imposter";
-      }
-    });
-  }
-
-  // Host launches Fargekoden
-  if (el.btnStartFargekoden) {
-    el.btnStartFargekoden.addEventListener("click", async () => {
-      if (!state.isHost || !state.roomCode) return;
-      const rounds = parseInt(el.selectRoundsFargekoden?.value || "3", 10) || 3;
-      try {
-        el.btnStartFargekoden.disabled = true;
-        el.btnStartFargekoden.textContent = "Starter spill…";
-
-        const resp = await fetch("/api/party/select-game", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            roomCode: state.roomCode,
-            hostToken: state.hostToken,
-            gameId: "fargekoden",
-            settings: { rounds },
-          }),
-        });
-
-        const data = await resp.json();
-        if (!data.ok) {
-          alert(data.error || "Kunne ikke starte Fargekoden.");
-          el.btnStartFargekoden.disabled = false;
-          el.btnStartFargekoden.textContent = "Start Fargekoden";
-          return;
-        }
-
-        window.location.href = `/fargekoden/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
-      } catch (err) {
-        console.error(err);
-        alert("Feil ved start av spill.");
-        el.btnStartFargekoden.disabled = false;
-        el.btnStartFargekoden.textContent = "Start Fargekoden";
-      }
-    });
-  }
-
-  // Host launches Wavelength
-  if (el.btnStartWavelength) {
-    el.btnStartWavelength.addEventListener("click", async () => {
-      if (!state.isHost || !state.roomCode) return;
-      const rounds = parseInt(el.selectRoundsWavelength?.value || "7", 10) || 7;
-      try {
-        el.btnStartWavelength.disabled = true;
-        el.btnStartWavelength.textContent = "Starter spill…";
-
-        const resp = await fetch("/api/party/select-game", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            roomCode: state.roomCode,
-            hostToken: state.hostToken,
-            gameId: "wavelength",
-            settings: { rounds },
-          }),
-        });
-
-        const data = await resp.json();
-        if (!data.ok) {
-          alert(data.error || "Kunne ikke starte Wavelength.");
-          el.btnStartWavelength.disabled = false;
-          el.btnStartWavelength.textContent = "Start Wavelength";
-          return;
-        }
-
-        window.location.href = `/wavelength/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
-      } catch (err) {
-        console.error(err);
-        alert("Feil ved start av spill.");
-        el.btnStartWavelength.disabled = false;
-        el.btnStartWavelength.textContent = "Start Wavelength";
-      }
-    });
-  }
-
-  // Host launches Turbosladd
-  if (el.btnStartTurbosladd) {
-    el.btnStartTurbosladd.addEventListener("click", async () => {
-      if (!state.isHost || !state.roomCode) return;
-      const laps = parseInt(el.selectLapsTurbosladd?.value || "3", 10) || 3;
-      const trackId = el.selectTrackTurbosladd?.value || "grand_prix";
-      try {
-        el.btnStartTurbosladd.disabled = true;
-        el.btnStartTurbosladd.textContent = "Starter løp…";
-
-        const resp = await fetch("/api/party/select-game", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            roomCode: state.roomCode,
-            hostToken: state.hostToken,
-            gameId: "turbosladd",
-            settings: { laps, trackId },
-          }),
-        });
-
-        const data = await resp.json();
-        if (!data.ok) {
-          alert(data.error || "Kunne ikke starte Turbosladd.");
-          el.btnStartTurbosladd.disabled = false;
-          el.btnStartTurbosladd.textContent = "Start Turbosladd 🏁";
-          return;
-        }
-
-        window.location.href = `/turbosladd/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
-      } catch (err) {
-        console.error(err);
-        alert("Feil ved start av spill.");
-        el.btnStartTurbosladd.disabled = false;
-        el.btnStartTurbosladd.textContent = "Start Turbosladd 🏁";
-      }
-    });
-  }
 
   // Copy invitation link
   el.btnCopyLink.addEventListener("click", async () => {

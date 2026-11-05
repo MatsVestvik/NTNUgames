@@ -485,10 +485,19 @@
   });
 
   async function returnToLounge() {
+    if (window.PartyBridge) {
+      window.PartyBridge.leaveToLounge({
+        roomCode: state.roomCode,
+        playerId: state.playerId,
+        hostToken: state.hostToken,
+      });
+      return;
+    }
     try {
       await fetch("/api/party/to-lounge", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        keepalive: true,
         body: JSON.stringify({
           roomCode: state.roomCode,
           playerId: state.playerId,
@@ -496,7 +505,7 @@
         }),
       });
     } catch (e) {}
-    window.location.href = `/party/?room=${encodeURIComponent(state.roomCode)}`;
+    window.location.replace(`/party/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`);
   }
 
   el.btnReturnLobby.addEventListener("click", returnToLounge);

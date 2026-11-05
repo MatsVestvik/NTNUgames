@@ -2457,17 +2457,25 @@
     clearStagedWall();
 
     if (code) {
+      if (window.PartyBridge) {
+        window.PartyBridge.leaveToLounge({
+          roomCode: code,
+          playerId: playerId || "",
+        });
+        return;
+      }
       try {
         await fetch("/api/party/to-lounge", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          keepalive: true,
           body: JSON.stringify({
             roomCode: code,
             playerId: playerId || "",
           }),
         });
       } catch (_) {}
-      window.location.href = `/party/?code=${encodeURIComponent(code)}&player=${encodeURIComponent(playerId || "")}`;
+      window.location.replace(`/party/?room=${encodeURIComponent(code)}&player=${encodeURIComponent(playerId || "")}`);
       return;
     }
 

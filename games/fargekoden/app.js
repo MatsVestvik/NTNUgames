@@ -554,10 +554,19 @@
       showView("lobby");
       return;
     }
+    if (window.PartyBridge) {
+      window.PartyBridge.leaveToLounge({
+        roomCode: state.roomCode,
+        playerId: state.playerId,
+        hostToken: state.hostToken,
+      });
+      return;
+    }
     try {
       await fetch("/api/party/to-lounge", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        keepalive: true,
         body: JSON.stringify({
           roomCode: state.roomCode,
           playerId: state.playerId,
@@ -568,7 +577,7 @@
     try {
       sessionStorage.setItem("party_just_left", state.roomCode);
     } catch (_) {}
-    window.location.href = `/party/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
+    window.location.replace(`/party/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`);
   }
 
   el.btnReturnLobby.addEventListener("click", returnToLounge);

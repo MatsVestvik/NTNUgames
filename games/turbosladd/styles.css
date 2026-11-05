@@ -169,6 +169,7 @@ body.turbosladd-page {
   width: 100%;
 }
 
+.hidden,
 .view-panel.hidden {
   display: none !important;
 }
