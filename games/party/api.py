@@ -231,6 +231,10 @@ class PartyRoom:
                     if ts_room:
                         with ts_room.lock:
                             effective_game_state["status"] = ts_room.status
+                            if client_player_id:
+                                ts_p = ts_room.players.get(client_player_id)
+                                if ts_p and (ts_p.get("left") or ts_p.get("forfeit")):
+                                    effective_game_state["my_status"] = "left"
                             if ts_room.status == "finished":
                                 self.current_game = None
                                 self.game_state = {}

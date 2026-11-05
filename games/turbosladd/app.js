@@ -432,7 +432,6 @@
     hudCurrentTime: document.getElementById("hudCurrentTime"),
     hudBestLap: document.getElementById("hudBestLap"),
     hudSpeedNum: document.getElementById("hudSpeedNum"),
-    btnQuitRace: document.getElementById("btnQuitRace"),
     countdownOverlay: document.getElementById("countdownOverlay"),
     countdownText: document.getElementById("countdownText"),
 
@@ -443,13 +442,6 @@
     podiumStandings: document.getElementById("podiumStandings"),
     btnPodiumPlayAgain: document.getElementById("btnPodiumPlayAgain"),
     btnPodiumReturnLobby: document.getElementById("btnPodiumReturnLobby"),
-
-    // Exit Modal
-    modalExitConfirm: document.getElementById("modalExitConfirm"),
-    exitModalDesc: document.getElementById("exitModalDesc"),
-    btnConfirmExitLounge: document.getElementById("btnConfirmExitLounge"),
-    btnConfirmExitLobby: document.getElementById("btnConfirmExitLobby"),
-    btnCancelExit: document.getElementById("btnCancelExit"),
   };
 
   // =========================================================================
@@ -593,8 +585,11 @@
 
     if (viewName === "lobby") {
       if (el.viewLobby) el.viewLobby.classList.remove("hidden");
+      if (el.btnHeaderBack) {
+        el.btnHeaderBack.classList.remove("hidden");
+        el.btnHeaderBack.href = "/";
+      }
       if (el.backBtnText) el.backBtnText.textContent = "Hub";
-      if (el.btnHeaderBack) el.btnHeaderBack.href = "/";
       if (el.btnHeaderLeave) el.btnHeaderLeave.classList.add("hidden");
       stopEngineSound();
       stopSimulation();
@@ -602,9 +597,11 @@
       stopLobbyPolling();
     } else if (viewName === "room") {
       if (el.viewRoomLounge) el.viewRoomLounge.classList.remove("hidden");
-      if (el.backBtnText) el.backBtnText.textContent = "Lobby";
-      if (el.btnHeaderBack) el.btnHeaderBack.href = "#";
-      if (el.btnHeaderLeave) el.btnHeaderLeave.classList.remove("hidden");
+      if (el.btnHeaderBack) el.btnHeaderBack.classList.add("hidden");
+      if (el.btnHeaderLeave) {
+        el.btnHeaderLeave.classList.remove("hidden");
+        el.btnHeaderLeave.textContent = "Forlat rom";
+      }
       renderLoungeCarPreview();
       renderLoungeColorPalette(state.players || []);
       updateLoungeSettingsUI();
@@ -612,14 +609,12 @@
       stopSimulation();
     } else if (viewName === "game") {
       if (el.viewGame) el.viewGame.classList.remove("hidden");
-      if (state.roomCode) {
-        if (el.backBtnText) el.backBtnText.textContent = "Lounge";
-        if (el.btnHeaderBack) el.btnHeaderBack.href = `/party/?room=${encodeURIComponent(state.roomCode)}`;
-      } else {
-        if (el.backBtnText) el.backBtnText.textContent = "Lobby";
-        if (el.btnHeaderBack) el.btnHeaderBack.href = "#";
+      // Only keep 1 leave button in race: hide left back button
+      if (el.btnHeaderBack) el.btnHeaderBack.classList.add("hidden");
+      if (el.btnHeaderLeave) {
+        el.btnHeaderLeave.classList.remove("hidden");
+        el.btnHeaderLeave.textContent = "Forlat løp";
       }
-      if (el.btnHeaderLeave) el.btnHeaderLeave.classList.remove("hidden");
       resizeCanvas();
       startEngineSound();
     }
@@ -2113,15 +2108,10 @@
           ctx.restore();
         }
 
-        // Splitscreen race finished handling
-        const bothFinished = state.car1.finished && state.car2.finished;
+        // Splitscreen race finished handling: sisteplass trenger ikke komme i mål
         if (state.car1.finished || state.car2.finished) {
-          if (!state.splitFinishTimeout) {
-            // Generous 60-second grace period for trailing racer to complete all laps
-            state.splitFinishTimeout = performance.now() + 60000;
-          }
-          if (bothFinished || performance.now() >= state.splitFinishTimeout) {
-            state.splitFinishTimeout = null;
+          if (!state.splitFinishTriggered) {
+            state.splitFinishTriggered = true;
             setTimeout(() => {
               const racers = [
                 { name: state.splitP1.name, color: state.splitP1.color, finishTime: state.car1.finishTime, bestLap: state.car1.bestLap, lap: state.car1.lap, finished: state.car1.finished },
@@ -2135,9 +2125,9 @@
                 return (a.finishTime || 9999) - (b.finishTime || 9999);
               });
               showGameOverPodium(racers);
-            }, bothFinished ? 1200 : 500);
-            return;
+            }, 800);
           }
+          return;
         }
       } else {
         // Normal Singleplayer / Online Mode
@@ -2497,7 +2487,7 @@
     state.roomStatus = "racing";
     state.skidmarks = [];
     state.particles = [];
-    state.splitFinishTimeout = null;
+    state.splitFinishTriggered = false;
     state.keysP1 = { up: false, down: false, left: false, right: false };
     state.keysP2 = { up: false, down: false, left: false, right: false };
 
@@ -2645,13 +2635,23 @@
       const row = document.createElement("div");
       row.className = "podium-row" + (idx === 0 ? " rank-1" : "");
       const medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : `${idx + 1}.`;
+      let timeText = "";
+      if (r.forfeit || r.left) {
+        timeText = "Ga opp";
+      } else if (r.finished && r.finishTime > 0) {
+        timeText = formatTime(r.finishTime);
+      } else if (r.lap && r.lap > 1) {
+        timeText = `Runde ${r.lap}`;
+      } else {
+        timeText = "Ikke i mål";
+      }
       row.innerHTML = `
         <div class="podium-left">
           <span class="podium-medal">${medal}</span>
           <span class="podium-color-dot" style="background:${r.color || '#38bdf8'};"></span>
           <span class="podium-name">${escapeHtml(r.name)}</span>
         </div>
-        <div class="podium-time">${r.finishTime > 0 ? formatTime(r.finishTime) : (r.lap ? `Runde ${r.lap}` : "Fullførte")}</div>
+        <div class="podium-time">${timeText}</div>
       `;
       el.podiumStandings.appendChild(row);
     });
@@ -3056,34 +3056,8 @@
       });
     }
 
-    // Exit & Leave Race Handlers
-    function promptExitRace() {
-      if (!el.modalExitConfirm) {
-        exitRaceToLobby();
-        return;
-      }
-
-      if (state.roomCode) {
-        if (el.btnConfirmExitLounge) el.btnConfirmExitLounge.style.display = "block";
-        if (el.exitModalDesc) {
-          el.exitModalDesc.textContent = "Vil du avslutte løpet og gå tilbake til Party Lounge eller spillmenyen?";
-        }
-      } else {
-        if (el.btnConfirmExitLounge) el.btnConfirmExitLounge.style.display = "none";
-        if (el.exitModalDesc) {
-          el.exitModalDesc.textContent = "Vil du avslutte løpet og gå tilbake til menyen?";
-        }
-      }
-
-      el.modalExitConfirm.classList.remove("hidden");
-    }
-
-    function closeExitModal() {
-      if (el.modalExitConfirm) el.modalExitConfirm.classList.add("hidden");
-    }
-
-    async function exitRaceToPartyLounge() {
-      closeExitModal();
+    // Single Direct Exit/Forfeit Handler
+    function handleForfeitAndLeave() {
       stopEngineSound();
       stopSimulation();
       stopRoomSync();
@@ -3091,22 +3065,18 @@
 
       const code = state.roomCode;
       const pid = state.playerId;
-      const hostToken = state.hostToken || sessionStorage.getItem("party_host_token") || localStorage.getItem("party_host_token") || "";
 
       if (code) {
         try {
-          await fetch("/api/party/to-lounge", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ roomCode: code, playerId: pid, hostToken }),
-          });
+          sessionStorage.setItem(`forfeit_${code}`, "turbosladd");
         } catch (e) {}
 
+        // Notify server that this player forfeits/leaves
         try {
-          await fetch("/api/turbosladd/leave", {
+          fetch("/api/turbosladd/leave", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ roomCode: code, playerId: pid }),
+            body: JSON.stringify({ roomCode: code, playerId: pid, forfeit: true }),
           });
         } catch (e) {}
 
@@ -3117,87 +3087,32 @@
           window.history.replaceState({}, document.title, window.location.pathname);
         } catch (e) {}
 
-        window.location.href = `/party/?room=${encodeURIComponent(code)}`;
+        window.location.href = `/party/?room=${encodeURIComponent(code)}&player=${encodeURIComponent(pid)}`;
         return;
       }
 
       showView("lobby");
     }
 
-    async function exitRaceToLobby() {
-      closeExitModal();
-      stopEngineSound();
-      stopSimulation();
-      stopRoomSync();
-      stopLobbyPolling();
-
-      const code = state.roomCode;
-      const pid = state.playerId;
-      const hostToken = state.hostToken || sessionStorage.getItem("party_host_token") || localStorage.getItem("party_host_token") || "";
-
-      if (code) {
-        try {
-          if (state.isHost) {
-            await fetch("/api/party/to-lounge", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ roomCode: code, playerId: pid, hostToken }),
-            });
-          }
-          await fetch("/api/turbosladd/leave", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ roomCode: code, playerId: pid }),
-          });
-        } catch (e) {}
-      }
-
-      state.roomCode = "";
-      state.playerId = "";
-
-      try {
-        window.history.replaceState({}, document.title, window.location.pathname);
-      } catch (e) {}
-
-      showView("lobby");
-    }
-
-    if (el.btnConfirmExitLounge) {
-      el.btnConfirmExitLounge.addEventListener("click", exitRaceToPartyLounge);
-    }
-    if (el.btnConfirmExitLobby) {
-      el.btnConfirmExitLobby.addEventListener("click", exitRaceToLobby);
-    }
-    if (el.btnCancelExit) {
-      el.btnCancelExit.addEventListener("click", closeExitModal);
+    if (el.btnHeaderLeave) {
+      el.btnHeaderLeave.addEventListener("click", () => {
+        handleForfeitAndLeave();
+      });
     }
 
     if (el.btnLeaveRoom) {
-      el.btnLeaveRoom.addEventListener("click", exitRaceToLobby);
+      el.btnLeaveRoom.addEventListener("click", handleForfeitAndLeave);
     }
 
-    // Navbar Back Button
     if (el.btnHeaderBack) {
       el.btnHeaderBack.addEventListener("click", (e) => {
         if (el.viewGame && !el.viewGame.classList.contains("hidden")) {
           e.preventDefault();
-          promptExitRace();
+          handleForfeitAndLeave();
         } else if (el.viewRoomLounge && !el.viewRoomLounge.classList.contains("hidden")) {
           e.preventDefault();
-          exitRaceToLobby();
+          handleForfeitAndLeave();
         }
-      });
-    }
-
-    if (el.btnHeaderLeave) {
-      el.btnHeaderLeave.addEventListener("click", () => {
-        promptExitRace();
-      });
-    }
-
-    if (el.btnQuitRace) {
-      el.btnQuitRace.addEventListener("click", () => {
-        promptExitRace();
       });
     }
 
@@ -3234,13 +3149,9 @@
     }
 
     if (el.btnPodiumReturnLobby) {
-      el.btnPodiumReturnLobby.addEventListener("click", async () => {
+      el.btnPodiumReturnLobby.addEventListener("click", () => {
         if (el.modalPodium) el.modalPodium.classList.add("hidden");
-        if (state.roomCode) {
-          await exitRaceToPartyLounge();
-        } else {
-          await exitRaceToLobby();
-        }
+        handleForfeitAndLeave();
       });
     }
 

@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="/game-lobby.css" />
   <link rel="stylesheet" href="/parallax-bg.css" />
   <link rel="stylesheet" href="/character/character-creator.css" />
-  <link rel="stylesheet" href="styles.css?v=2.2" />
+  <link rel="stylesheet" href="styles.css?v=2.3" />
 </head>
 
 <body class="turbosladd-page">
@@ -461,15 +461,6 @@
                 <span class="speed-num" id="hudSpeedNum">0</span>
                 <span class="speed-unit">km/t</span>
               </div>
-
-              <button type="button" class="hud-quit-btn" id="btnQuitRace" title="Avslutt løpet">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-                <span>Avslutt</span>
-              </button>
             </div>
           </div>
 
@@ -516,37 +507,12 @@
         </div>
       </div>
     </div>
-
-    <!-- ============================================== -->
-    <!-- MODAL: EXIT CONFIRMATION                       -->
-    <!-- ============================================== -->
-    <div class="modal-backdrop hidden" id="modalExitConfirm">
-      <div class="podium-modal-card" style="max-width: 440px; text-align: center;">
-        <div class="podium-header">
-          <span class="flag-icon" style="font-size: 2rem;">🏎️</span>
-          <h2 class="podium-title" style="margin-top: 0.5rem;">Avslutte løpet?</h2>
-          <p class="podium-desc" id="exitModalDesc" style="margin-bottom: 0.5rem;">Vil du forlate det pågående løpet?</p>
-        </div>
-
-        <div class="podium-actions" style="margin-top: 1.25rem;">
-          <button type="button" class="primary-btn pulse-glow" id="btnConfirmExitLounge" style="display: none;">
-            ‹ Tilbake til Party Lounge
-          </button>
-          <button type="button" class="btn-cyan-accent" id="btnConfirmExitLobby">
-            Til spillmenyen (Turbosladd)
-          </button>
-          <button type="button" class="btn-exit-subtle" id="btnCancelExit">
-            Fortsett å kjøre
-          </button>
-        </div>
-      </div>
-    </div>
   </div>
 
   <script src="/parallax-bg.js?v=2.1"></script>
   <script src="/character/character-creator.js"></script>
   <script src="/game-lobby.js"></script>
-  <script src="app.js?v=2.2"></script>
+  <script src="app.js?v=2.3"></script>
 </body>
 
 </html>

@@ -457,7 +457,16 @@
             return;
           }
 
+          if (data.currentGame !== "turbosladd") {
+            try { sessionStorage.removeItem(`forfeit_${state.roomCode}`); } catch (e) {}
+          }
+
           if (data.currentGame === "turbosladd" && data.gameState?.status !== "finished") {
+            const isForfeited = sessionStorage.getItem(`forfeit_${state.roomCode}`) === "turbosladd";
+            if (isForfeited || data.gameState?.my_status === "left") {
+              // This player has already forfeited/left this race; stay in lounge!
+              return;
+            }
             // Redirect to Turbosladd in room mode!
             const target = `/turbosladd/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
             window.location.href = target;

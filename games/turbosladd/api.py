@@ -135,18 +135,30 @@ class TurbosladdRoom:
                 self.race_start = now
                 self.bump()
         elif self.status == "racing":
-            # Check if all players have finished
-            active_racers = [p for p in self.players.values() if not p.get("left")]
-            if active_racers and all(p.get("finished") for p in active_racers):
+            # Active racers: players currently in race who haven't forfeited or left
+            active_racers = [p for p in self.players.values() if not p.get("left") and not p.get("forfeit")]
+            finished_racers = [p for p in active_racers if p.get("finished")]
+            unfinished_racers = [p for p in active_racers if not p.get("finished")]
+
+            # 1. All active racers finished
+            if active_racers and len(unfinished_racers) == 0:
                 self.status = "finished"
                 self.bump()
+            # 2. Sisteplass kommer ikke i mål: in multiplayer (2+ racers), once all except last place have finished
+            elif len(active_racers) >= 2 and len(unfinished_racers) <= 1 and len(finished_racers) >= 1:
+                self.status = "finished"
+                self.bump()
+            # 3. Fallback timeout after first finisher (15s grace period)
             elif any(p.get("finished") for p in active_racers):
-                # Generous 75 second grace period for remaining racers after first finisher to finish their laps
                 if not self.finish_timeout:
-                    self.finish_timeout = now + 75.0
+                    self.finish_timeout = now + 15.0
                 elif now >= self.finish_timeout:
                     self.status = "finished"
                     self.bump()
+            # 4. If all racers have left / forfeited
+            elif not active_racers and self.players:
+                self.status = "finished"
+                self.bump()
 
     def add_player(self, name: str, color: str, car_model: str = "gt", avatar: str = "") -> Optional[Dict[str, Any]]:
         with self.lock:
@@ -200,11 +212,12 @@ class TurbosladdRoom:
             self.bump()
             return player
 
-    def remove_player(self, player_id: str) -> None:
+    def remove_player(self, player_id: str, forfeit: bool = True) -> None:
         with self.lock:
             if player_id in self.players:
                 p = self.players[player_id]
                 p["left"] = True
+                p["forfeit"] = bool(forfeit)
                 p["isReady"] = False
 
                 # Host migration if host left
@@ -214,6 +227,7 @@ class TurbosladdRoom:
                         remaining[0]["isHost"] = True
                         remaining[0]["isReady"] = True
                         self.host_id = remaining[0]["id"]
+                self._check_status_transitions()
                 self.bump()
 
     def set_ready(self, player_id: str, ready: bool) -> bool:
@@ -351,6 +365,8 @@ class TurbosladdRoom:
             if self.status in ("racing", "finished") and self.race_start:
                 race_time = now - self.race_start
 
+            # Include all racers in standings if finished (forfeited racers at bottom)
+            include_all = (self.status == "finished")
             active_players = [
                 {
                     "id": p["id"],
@@ -373,16 +389,19 @@ class TurbosladdRoom:
                     "finished": p["finished"],
                     "finishTime": p["finishTime"],
                     "bestLap": p["bestLap"],
+                    "forfeit": bool(p.get("forfeit")),
+                    "left": bool(p.get("left")),
                     "isMe": (p["id"] == for_player_id),
                 }
                 for p in self.players.values()
-                if not p.get("left")
+                if include_all or not p.get("left")
             ]
 
-            # Calculate standings (Finished first by finishTime, then by lap DESC, checkpoint DESC)
+            # Calculate standings (Finished first by finishTime, then active by lap/checkpoint, forfeits last)
             standings = sorted(
                 active_players,
                 key=lambda pl: (
+                    1 if pl.get("forfeit") or pl.get("left") else 0,
                     0 if pl["finished"] else 1,
                     pl["finishTime"] if pl["finished"] else 0,
                     -pl["lap"],
@@ -700,15 +719,16 @@ class TurbosladdAPI:
 
             return 200, {"ok": True, "status": room.status}
 
-        # 7. Leave Room
+        # 7. Leave Room / Forfeit
         if path == "/api/turbosladd/leave":
             code = str(body.get("roomCode", "")).strip().upper()
             player_id = str(body.get("playerId", "")).strip()
+            forfeit = bool(body.get("forfeit", True))
 
             with _rooms_lock:
                 room = _rooms.get(code)
             if room:
-                room.remove_player(player_id)
+                room.remove_player(player_id, forfeit=forfeit)
 
             return 200, {"ok": True}
 
