@@ -251,7 +251,7 @@
   const el = {
     viewLobby: document.getElementById("viewLobby"),
     viewGame: document.getElementById("viewGame"),
-    btnExitToLobby: document.getElementById("btnExitToLobby"),
+    btnLeaveRoom: document.getElementById("btnLeaveRoom"),
 
     tabLobbyLocal: document.getElementById("tabLobbyLocal"),
     tabLobbyRoom: document.getElementById("tabLobbyRoom"),
@@ -874,12 +874,12 @@
     if (viewName === "lobby") {
       el.viewLobby.classList.remove("hidden");
       el.viewGame.classList.add("hidden");
-      if (el.btnExitToLobby) el.btnExitToLobby.classList.add("hidden");
+      if (el.btnLeaveRoom) el.btnLeaveRoom.classList.add("hidden");
       stopPolling();
     } else if (viewName === "game") {
       el.viewLobby.classList.add("hidden");
       el.viewGame.classList.remove("hidden");
-      if (el.btnExitToLobby) el.btnExitToLobby.classList.remove("hidden");
+      if (el.btnLeaveRoom) el.btnLeaveRoom.classList.remove("hidden");
     }
   }
 
@@ -964,9 +964,9 @@
       });
     }
 
-    if (el.btnExitToLobby) {
-      el.btnExitToLobby.addEventListener("click", () => {
-        showView("lobby");
+    if (el.btnLeaveRoom) {
+      el.btnLeaveRoom.addEventListener("click", () => {
+        returnToLounge();
       });
     }
   }
@@ -1336,27 +1336,37 @@
 
   // --- HEADER & MODAL CONTROLS ---
 
+  async function returnToLounge() {
+    stopPolling();
+    if (state.mode === "room" && state.roomCode) {
+      const code = state.roomCode;
+      const pid = state.playerId || sessionStorage.getItem("party_player_id") || "";
+      const hostToken = state.hostToken || sessionStorage.getItem("party_host_token") || "";
+      try {
+        await fetch("/api/party/to-lounge", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ roomCode: code, playerId: pid, hostToken: hostToken }),
+        });
+      } catch (e) {}
+      window.location.href = `/party/?room=${encodeURIComponent(code)}&player=${encodeURIComponent(pid)}`;
+      return;
+    }
+    showView("lobby");
+  }
+
   el.btnBack.addEventListener("click", () => {
-    if (document.referrer && document.referrer.includes("/party/")) {
+    if (state.mode === "room" && state.roomCode) {
+      returnToLounge();
+    } else if (document.referrer && document.referrer.includes("/party/")) {
       window.location.href = "/party/";
     } else {
       window.location.href = "/";
     }
   });
 
-  el.btnBackToLounge.addEventListener("click", async () => {
-    if (state.mode === "room" && state.roomCode) {
-      try {
-        await fetch("/api/wavelength/to-lounge", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ roomCode: state.roomCode }),
-        });
-      } catch (e) {}
-      window.location.href = `/party/?room=${encodeURIComponent(state.roomCode)}`;
-    } else {
-      window.location.href = "/party/";
-    }
+  el.btnBackToLounge.addEventListener("click", () => {
+    returnToLounge();
   });
 
   el.btnSoundToggle.addEventListener("click", () => {

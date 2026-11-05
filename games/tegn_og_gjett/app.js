@@ -93,7 +93,7 @@
     // Views & Lobby
     viewLobby: document.getElementById("viewLobby"),
     viewGame: document.getElementById("viewGame"),
-    btnExitToLobby: document.getElementById("btnExitToLobby"),
+    btnLeaveRoom: document.getElementById("btnLeaveRoom"),
 
     tabLobbyRoom: document.getElementById("tabLobbyRoom"),
     tabLobbySolo: document.getElementById("tabLobbySolo"),
@@ -787,44 +787,33 @@
 
   async function onBackToLounge(e) {
     if (e && e.preventDefault) e.preventDefault();
-    if (state.isSolo) {
-      window.location.href = "/";
+    if (state.pollTimer) {
+      clearInterval(state.pollTimer);
+      state.pollTimer = null;
+    }
+    if (state.drawSyncTimer) {
+      clearTimeout(state.drawSyncTimer);
+      state.drawSyncTimer = null;
+    }
+
+    if (state.isSolo || !state.roomCode) {
+      showView("lobby");
       return;
     }
 
     const hostToken = sessionStorage.getItem("party_host_token") || "";
-    if (state.isHost) {
-      const ok = confirm("Vil du gå tilbake til Party Lounge og ta med alle spillerne?");
-      if (!ok) return;
-      try {
-        await fetch("/api/party/tegn-og-gjett/action", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            roomCode: state.roomCode,
-            playerId: state.playerId,
-            hostToken: hostToken,
-            action: "to_lobby",
-          }),
-        });
-      } catch (err) {}
-      window.location.href = `/party/?code=${encodeURIComponent(state.roomCode)}`;
-    } else {
-      const ok = confirm("Vil du forlate spillet og gå til Party Lounge?");
-      if (!ok) return;
-      try {
-        await fetch("/api/party/leave", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            roomCode: state.roomCode,
-            playerId: state.playerId,
-          }),
-        });
-      } catch (err) {}
-      sessionStorage.removeItem("party_room_code");
-      window.location.href = "/party/";
-    }
+    try {
+      await fetch("/api/party/to-lounge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roomCode: state.roomCode,
+          playerId: state.playerId,
+          hostToken: hostToken,
+        }),
+      });
+    } catch (err) {}
+    window.location.href = `/party/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
   }
 
   function startPolling() {
@@ -1421,7 +1410,7 @@
     if (viewName === "lobby") {
       el.viewLobby.classList.remove("hidden");
       el.viewGame.classList.add("hidden");
-      if (el.btnExitToLobby) el.btnExitToLobby.classList.add("hidden");
+      if (el.btnLeaveRoom) el.btnLeaveRoom.classList.add("hidden");
       if (state.pollTimer) {
         clearInterval(state.pollTimer);
         state.pollTimer = null;
@@ -1429,7 +1418,7 @@
     } else if (viewName === "game") {
       el.viewLobby.classList.add("hidden");
       el.viewGame.classList.remove("hidden");
-      if (el.btnExitToLobby) el.btnExitToLobby.classList.remove("hidden");
+      if (el.btnLeaveRoom) el.btnLeaveRoom.classList.remove("hidden");
     }
   }
 
@@ -1484,10 +1473,8 @@
       });
     }
 
-    if (el.btnExitToLobby) {
-      el.btnExitToLobby.addEventListener("click", () => {
-        showView("lobby");
-      });
+    if (el.btnLeaveRoom) {
+      el.btnLeaveRoom.addEventListener("click", onBackToLounge);
     }
   }
 

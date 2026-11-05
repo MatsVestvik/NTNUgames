@@ -73,7 +73,7 @@
   const el = {
     viewLobby: document.getElementById("viewLobby"),
     viewGame: document.getElementById("viewGame"),
-    btnExitToLobby: document.getElementById("btnExitToLobby"),
+    btnLeaveRoom: document.getElementById("btnLeaveRoom"),
 
     tabLobbyLocal: document.getElementById("tabLobbyLocal"),
     tabLobbyRoom: document.getElementById("tabLobbyRoom"),
@@ -546,8 +546,12 @@
   });
 
   async function returnToLounge() {
-    if (state.isSolo) {
-      window.location.href = "/";
+    if (state.pollTimer) {
+      clearInterval(state.pollTimer);
+      state.pollTimer = null;
+    }
+    if (state.isSolo || !state.roomCode) {
+      showView("lobby");
       return;
     }
     try {
@@ -561,7 +565,7 @@
         }),
       });
     } catch (e) {}
-    window.location.href = `/party/?room=${encodeURIComponent(state.roomCode)}`;
+    window.location.href = `/party/?room=${encodeURIComponent(state.roomCode)}&player=${encodeURIComponent(state.playerId)}`;
   }
 
   el.btnReturnLobby.addEventListener("click", returnToLounge);
@@ -1011,7 +1015,7 @@
     if (viewName === "lobby") {
       el.viewLobby.classList.remove("hidden");
       el.viewGame.classList.add("hidden");
-      if (el.btnExitToLobby) el.btnExitToLobby.classList.add("hidden");
+      if (el.btnLeaveRoom) el.btnLeaveRoom.classList.add("hidden");
       if (state.pollTimer) {
         clearInterval(state.pollTimer);
         state.pollTimer = null;
@@ -1019,7 +1023,7 @@
     } else if (viewName === "game") {
       el.viewLobby.classList.add("hidden");
       el.viewGame.classList.remove("hidden");
-      if (el.btnExitToLobby) el.btnExitToLobby.classList.remove("hidden");
+      if (el.btnLeaveRoom) el.btnLeaveRoom.classList.remove("hidden");
     }
   }
 
@@ -1091,9 +1095,9 @@
       });
     }
 
-    if (el.btnExitToLobby) {
-      el.btnExitToLobby.addEventListener("click", () => {
-        showView("lobby");
+    if (el.btnLeaveRoom) {
+      el.btnLeaveRoom.addEventListener("click", () => {
+        returnToLounge();
       });
     }
   }

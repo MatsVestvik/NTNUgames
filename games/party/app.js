@@ -274,6 +274,17 @@
     history.replaceState(null, "", newUrl);
 
     initLobbyCustomizer();
+    // Immediately notify server that we are back in the lounge and ready
+    if (state.roomCode && state.playerId) {
+      fetch("/api/party/ready", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roomCode: state.roomCode,
+          playerId: state.playerId,
+        }),
+      }).catch(() => {});
+    }
     startPolling();
 
     // If navigated from a specific game, highlight that game in the catalog for the host
@@ -372,7 +383,7 @@
       if (!state.roomCode || !state.playerId) return;
 
       try {
-        const url = `/api/party/state?code=${encodeURIComponent(state.roomCode)}&playerId=${encodeURIComponent(state.playerId)}&v=${state.version}`;
+        const url = `/api/party/state?code=${encodeURIComponent(state.roomCode)}&playerId=${encodeURIComponent(state.playerId)}&v=${state.version}&inLounge=1`;
         const resp = await fetch(url);
 
         if (resp.status === 404) {
@@ -531,6 +542,7 @@
     (room.players || []).forEach((p) => {
       const isMe = p.id === state.playerId;
       const canKick = state.isHost && !isMe && !p.isHost;
+      const isReady = Boolean(p.isReady);
       const tile = document.createElement("div");
       tile.className = `player-tile ${p.isHost ? "is-host" : ""} ${isMe ? "is-me" : ""}`;
       tile.innerHTML = `
@@ -539,6 +551,9 @@
         ${canKick ? `<button type="button" class="player-kick-btn" title="Fjern ${escapeHtml(p.name)} fra rommet" aria-label="Fjern ${escapeHtml(p.name)}">✕</button>` : ''}
         <div class="player-avatar-circle" style="border-color: ${p.color || '#3b5080'}">${renderAvatarHtml(p.avatar)}</div>
         <div class="player-name-text">${escapeHtml(p.name)}</div>
+        <div class="player-status-badge ${isReady ? 'status-ready' : 'status-waiting'}">
+          ${isReady ? '✅ Klar i lobby' : '⏳ I spill…'}
+        </div>
       `;
       if (canKick) {
         const kickBtn = tile.querySelector(".player-kick-btn");
@@ -561,10 +576,13 @@
     } catch (e) {
       // Ignore
     }
-    updatePartyGamesListByPlayerCount(state.lastPlayerCount, state.isHost);
+    const allReady = (room.players || []).length > 0 && (room.players || []).every((p) => p.isReady);
+    const readyCount = (room.players || []).filter((p) => p.isReady).length;
+    const totalCount = (room.players || []).length;
+    updatePartyGamesListByPlayerCount(state.lastPlayerCount, state.isHost, allReady, readyCount, totalCount);
   }
 
-  function updatePartyGamesListByPlayerCount(playerCount, isHost) {
+  function updatePartyGamesListByPlayerCount(playerCount, isHost, allReady = true, readyCount = 1, totalCount = 1) {
     const container = document.getElementById("lobbyGamesList");
     if (!container) return;
 
@@ -609,20 +627,35 @@
         card.style.order = "1";
 
         if (startBtn) {
-          startBtn.classList.remove("disabled-btn");
-          if (isHost) {
-            startBtn.disabled = false;
-            startBtn.textContent = startBtn.dataset.hostText || "Start spill";
-          } else {
+          if (!allReady) {
+            startBtn.classList.add("disabled-btn");
             startBtn.disabled = true;
-            startBtn.textContent = "Venter på vert 👑";
+            if (isHost) {
+              startBtn.textContent = `Venter på spillere (${readyCount}/${totalCount} i lobby)…`;
+            } else {
+              startBtn.textContent = `Venter på spillere (${readyCount}/${totalCount})…`;
+            }
+          } else {
+            startBtn.classList.remove("disabled-btn");
+            if (isHost) {
+              startBtn.disabled = false;
+              startBtn.textContent = startBtn.dataset.hostText || "Start spill";
+            } else {
+              startBtn.disabled = true;
+              startBtn.textContent = "Venter på vert 👑";
+            }
           }
         }
         if (badge) {
-          badge.className = "lg-card-badge badge-ready";
-          badge.textContent = badge.dataset.origText || "Klar til spill";
+          if (!allReady) {
+            badge.className = "lg-card-badge badge-waiting";
+            badge.textContent = `Venter på retur (${readyCount}/${totalCount})`;
+          } else {
+            badge.className = "lg-card-badge badge-ready";
+            badge.textContent = badge.dataset.origText || "Klar til spill";
+          }
         }
-        selects.forEach((s) => (s.disabled = !isHost));
+        selects.forEach((s) => (s.disabled = !isHost || !allReady));
         enabledCards.push(card);
       }
     });

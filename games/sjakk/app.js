@@ -857,7 +857,7 @@
   const el = {
     viewLobby: document.getElementById("viewLobby"),
     viewGame: document.getElementById("viewGame"),
-    btnExitToLobby: document.getElementById("btnExitToLobby"),
+    btnLeaveRoom: document.getElementById("btnLeaveRoom"),
 
     tabLobbyLocal: document.getElementById("tabLobbyLocal"),
     tabLobbyRoom: document.getElementById("tabLobbyRoom"),
@@ -1768,18 +1768,6 @@
     const code = state.roomCode || state.partyRoomCode;
     const playerId = state.playerId || sessionStorage.getItem("party_player_id") || "";
     const hostToken = sessionStorage.getItem("party_host_token") || "";
-    const isGameOver =
-      state.gameStatus === "finished" ||
-      state.game.getGameStatus().over ||
-      (state.timeControl > 0 && (state.whiteTime <= 0 || state.blackTime <= 0));
-
-    if (state.gameStatus === "active" && !isGameOver) {
-      const promptMsg = state.isPartyRoom
-        ? "Vil du avslutte partiet og gå til Party Lounge?"
-        : "Vil du avslutte partiet og forlate rommet?";
-      const ok = confirm(promptMsg);
-      if (!ok) return;
-    }
 
     if (state.pollTimer) {
       clearInterval(state.pollTimer);
@@ -2601,13 +2589,13 @@
     if (viewName === "lobby") {
       el.viewLobby.classList.remove("hidden");
       el.viewGame.classList.add("hidden");
-      if (el.btnExitToLobby) el.btnExitToLobby.classList.add("hidden");
+      if (el.btnLeaveRoom) el.btnLeaveRoom.classList.add("hidden");
       stopTimer();
       stopRoomPolling();
     } else if (viewName === "game") {
       el.viewLobby.classList.add("hidden");
       el.viewGame.classList.remove("hidden");
-      if (el.btnExitToLobby) el.btnExitToLobby.classList.remove("hidden");
+      if (el.btnLeaveRoom) el.btnLeaveRoom.classList.remove("hidden");
     }
   }
 
@@ -2791,9 +2779,13 @@
       });
     }
 
-    if (el.btnExitToLobby) {
-      el.btnExitToLobby.addEventListener("click", () => {
-        showView("lobby");
+    if (el.btnLeaveRoom) {
+      el.btnLeaveRoom.addEventListener("click", () => {
+        if (state.roomCode) {
+          returnToLounge();
+        } else {
+          showView("lobby");
+        }
       });
     }
   }

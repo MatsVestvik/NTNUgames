@@ -3034,6 +3034,14 @@
           });
         } catch (e) {}
 
+        try {
+          fetch("/api/party/to-lounge", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ roomCode: code, playerId: pid }),
+          });
+        } catch (e) {}
+
         state.roomCode = "";
         state.playerId = "";
 

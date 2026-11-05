@@ -1878,10 +1878,14 @@ class PartyAPI:
             if not room:
                 return 404, {"ok": False, "error": f"Fant ikke party-rom med kode «{code}»"}
 
-            # Update heartbeat
+            # Update heartbeat and lounge readiness
             with room.lock:
                 if player_id in room.players:
                     room.players[player_id]["last_seen"] = time.time()
+                    in_lounge = query.get("inLounge", [""])[0] in ("1", "true", "yes")
+                    if in_lounge and not room.players[player_id].get("is_ready"):
+                        room.players[player_id]["is_ready"] = True
+                        room.bump()
                 room.touch()
 
             # If polling and client already has current version, short wait (up to 1.5s)
@@ -2147,14 +2151,21 @@ class PartyAPI:
                 "color": new_color
             }
 
-        if rel_path in ("/api/to-lounge", "/api/to-lobby"):
+        if rel_path in ("/api/to-lounge", "/api/to-lobby", "/api/ready"):
             code = str(body.get("roomCode") or body.get("code") or "").strip().upper()
+            player_id = str(body.get("playerId") or "").strip()
             with _rooms_lock:
                 room = _rooms.get(code)
             if room:
                 with room.lock:
-                    room.current_game = None
-                    room.game_state = {}
+                    if player_id in room.players:
+                        room.players[player_id]["is_ready"] = True
+                        room.players[player_id]["last_seen"] = time.time()
+                    is_host = bool(player_id and room.players.get(player_id, {}).get("is_host"))
+                    all_ready = all(p.get("is_ready", False) for p in room.players.values())
+                    if rel_path in ("/api/to-lounge", "/api/to-lobby") and (is_host or all_ready):
+                        room.current_game = None
+                        room.game_state = {}
                     room.bump()
 
             try:
@@ -2187,8 +2198,11 @@ class PartyAPI:
                     if code in ts_rooms:
                         t_room = ts_rooms[code]
                         with t_room.lock:
-                            t_room.status = "finished"
-                            t_room.bump()
+                            if player_id in t_room.players:
+                                t_room.remove_player(player_id, forfeit=True)
+                            else:
+                                t_room.status = "finished"
+                                t_room.bump()
             except Exception as err:
                 print("Error updating turbosladd room on to-lounge:", err)
 
@@ -2212,6 +2226,8 @@ class PartyAPI:
                 if game_id is None:
                     room.current_game = None
                     room.game_state = {}
+                    for p in room.players.values():
+                        p["is_ready"] = True
                     room.bump()
                     try:
                         from games.sjakk.api import _rooms as sjakk_rooms
@@ -2243,6 +2259,18 @@ class PartyAPI:
                 min_req = MIN_PLAYERS.get(game_id, 2)
                 if len(room.players) < min_req:
                     return 400, {"ok": False, "error": f"Dette spillet krever minst {min_req} spillere i rommet."}
+
+                # Check if all players in party room have returned to lounge
+                not_ready = [p["name"] for p in room.players.values() if not p.get("is_ready", False)]
+                if not_ready:
+                    return 400, {
+                        "ok": False,
+                        "error": f"Kan ikke starte før alle har returnert til lobbyen. Venter på: {', '.join(not_ready)}"
+                    }
+
+                # Mark all players as not ready in lounge now that the game begins
+                for p in room.players.values():
+                    p["is_ready"] = False
 
                 if game_id == "ordbombe":
                     room.start_ordbombe(settings)

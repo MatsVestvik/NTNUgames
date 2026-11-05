@@ -351,7 +351,7 @@
     // Views & Lobby
     viewLobby: document.getElementById("viewLobby"),
     viewGame: document.getElementById("viewGame"),
-    btnExitToLobby: document.getElementById("btnExitToLobby"),
+    btnLeaveRoom: document.getElementById("btnLeaveRoom"),
 
     tabLobbySolo: document.getElementById("tabLobbySolo"),
     tabLobbyRoom: document.getElementById("tabLobbyRoom"),
@@ -1607,13 +1607,13 @@
     if (viewName === "lobby") {
       el.viewLobby.classList.remove("hidden");
       el.viewGame.classList.add("hidden");
-      if (el.btnExitToLobby) el.btnExitToLobby.classList.add("hidden");
+      if (el.btnLeaveRoom) el.btnLeaveRoom.classList.add("hidden");
       state.isPlaying = false;
       stopTimer();
     } else if (viewName === "game") {
       el.viewLobby.classList.add("hidden");
       el.viewGame.classList.remove("hidden");
-      if (el.btnExitToLobby) el.btnExitToLobby.classList.remove("hidden");
+      if (el.btnLeaveRoom) el.btnLeaveRoom.classList.remove("hidden");
     }
   }
 
@@ -1658,16 +1658,54 @@
         window.location.href = `/party/?code=${encodeURIComponent(code)}`;
       });
     }
+  }
 
-    if (el.btnExitToLobby) {
-      el.btnExitToLobby.addEventListener("click", () => {
-        showView("lobby");
-      });
+  async function leaveToLounge() {
+    state.isPlaying = false;
+    stopTimer();
+    if (state.roomPollTimer) {
+      clearInterval(state.roomPollTimer);
+      state.roomPollTimer = null;
     }
+
+    if (state.isRoomMode && state.roomCode) {
+      const code = state.roomCode;
+      const pid = state.playerId || sessionStorage.getItem("party_player_id") || "";
+      const hostToken = state.hostToken || sessionStorage.getItem("party_host_token") || "";
+      try {
+        await fetch("/api/party/to-lounge", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            roomCode: code,
+            playerId: pid,
+            hostToken: hostToken,
+          }),
+        });
+      } catch (e) {}
+      window.location.href = `/party/?room=${encodeURIComponent(code)}&player=${encodeURIComponent(pid)}`;
+      return;
+    }
+    showView("lobby");
   }
 
   function initRoomModeIfPresent() {
     initLobbyTabs();
+
+    if (el.btnLeaveRoom) {
+      el.btnLeaveRoom.addEventListener("click", () => {
+        leaveToLounge();
+      });
+    }
+
+    if (el.headerBackLink) {
+      el.headerBackLink.addEventListener("click", (e) => {
+        if (state.isRoomMode && state.roomCode) {
+          e.preventDefault();
+          leaveToLounge();
+        }
+      });
+    }
 
     const params = new URLSearchParams(window.location.search);
     const roomCode = (params.get("room") || "").trim().toUpperCase();
@@ -1681,7 +1719,7 @@
       state.isHost = !!state.hostToken;
 
       if (el.headerBackLink) {
-        el.headerBackLink.href = `/party/?code=${encodeURIComponent(roomCode)}`;
+        el.headerBackLink.href = `/party/?room=${encodeURIComponent(roomCode)}`;
         el.headerBackLink.textContent = "‹ Party Lounge";
       }
       if (el.headerRoomBadge) {
@@ -1700,24 +1738,8 @@
 
   // Back to lobby button action
   if (el.btnBackToLobby) {
-    el.btnBackToLobby.addEventListener("click", async () => {
-      if (state.isRoomMode && state.roomCode) {
-        const hostToken = state.hostToken || sessionStorage.getItem("party_host_token");
-        if (hostToken) {
-          try {
-            await fetch("/api/party/ordbombe/action", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                roomCode: state.roomCode,
-                hostToken: hostToken,
-                action: "to_lobby",
-              }),
-            });
-          } catch (e) { }
-        }
-        window.location.href = `/party/?code=${encodeURIComponent(state.roomCode)}`;
-      }
+    el.btnBackToLobby.addEventListener("click", () => {
+      leaveToLounge();
     });
   }
 
