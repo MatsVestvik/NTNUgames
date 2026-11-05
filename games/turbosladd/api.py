@@ -441,8 +441,92 @@ class TurbosladdAPI:
 
             with _rooms_lock:
                 room = _rooms.get(room_code)
+                if not room:
+                    try:
+                        from games.party.api import _rooms as party_rooms, extract_color_from_avatar
+                        p_room = party_rooms.get(room_code)
+                        if p_room and p_room.current_game == "turbosladd":
+                            host_player = p_room.players.get(p_room.host_id, {})
+                            host_avatar = host_player.get("avatar", "")
+                            host_color = host_player.get("color") or extract_color_from_avatar(host_avatar) or PLAYER_PALETTE[0]["color"]
+                            room = TurbosladdRoom(
+                                code=room_code,
+                                host_name=host_player.get("name", "Sjåfør 1"),
+                                host_color=host_color,
+                                host_car="gt",
+                                track_id="grand_prix",
+                                laps=3,
+                                max_players=max(len(p_room.players), 16),
+                                host_avatar=host_avatar,
+                            )
+                            room.host_id = p_room.host_id
+                            room.status = "countdown"
+                            room.countdown_start = time.time()
+                            room.players = {}
+                            room.players[p_room.host_id] = {
+                                "id": p_room.host_id,
+                                "name": host_player.get("name", "Sjåfør 1"),
+                                "color": host_color,
+                                "avatar": host_avatar,
+                                "carModel": "gt",
+                                "isHost": True,
+                                "isReady": True,
+                                "slot": 0,
+                                "x": 0.0, "y": 0.0, "angle": 0.0, "vx": 0.0, "vy": 0.0, "speed": 0.0,
+                                "isDrifting": False, "lap": 1, "checkpoint": 0, "finished": False,
+                                "finishTime": 0.0, "bestLap": 0.0, "lastSeen": time.time(),
+                            }
+                            slot = 1
+                            for pid, pdata in p_room.players.items():
+                                if pid != p_room.host_id and len(room.players) < room.max_players:
+                                    pal = PLAYER_PALETTE[slot % len(PLAYER_PALETTE)]
+                                    p_color = pdata.get("color") or extract_color_from_avatar(pdata.get("avatar", "")) or pal["color"]
+                                    room.players[pid] = {
+                                        "id": pid,
+                                        "name": pdata.get("name", f"Sjåfør {slot + 1}"),
+                                        "color": p_color,
+                                        "avatar": pdata.get("avatar", ""),
+                                        "carModel": "gt",
+                                        "isHost": False,
+                                        "isReady": True,
+                                        "slot": slot,
+                                        "x": 0.0, "y": 0.0, "angle": 0.0, "vx": 0.0, "vy": 0.0, "speed": 0.0,
+                                        "isDrifting": False, "lap": 1, "checkpoint": 0, "finished": False,
+                                        "finishTime": 0.0, "bestLap": 0.0, "lastSeen": time.time(),
+                                    }
+                                    slot += 1
+                            _rooms[room_code] = room
+                    except Exception:
+                        pass
+
             if not room:
                 return 404, {"error": "Løpet finnes ikke eller er utgått."}
+
+            if player_id and player_id not in room.players:
+                try:
+                    from games.party.api import _rooms as party_rooms, extract_color_from_avatar
+                    p_room = party_rooms.get(room_code)
+                    if p_room and player_id in p_room.players:
+                        pdata = p_room.players[player_id]
+                        with room.lock:
+                            slot = len(room.players)
+                            pal = PLAYER_PALETTE[slot % len(PLAYER_PALETTE)]
+                            p_color = pdata.get("color") or extract_color_from_avatar(pdata.get("avatar", "")) or pal["color"]
+                            room.players[player_id] = {
+                                "id": player_id,
+                                "name": pdata.get("name", f"Sjåfør {slot + 1}"),
+                                "color": p_color,
+                                "avatar": pdata.get("avatar", ""),
+                                "carModel": "gt",
+                                "isHost": False,
+                                "isReady": True,
+                                "slot": slot,
+                                "x": 0.0, "y": 0.0, "angle": 0.0, "vx": 0.0, "vy": 0.0, "speed": 0.0,
+                                "isDrifting": False, "lap": 1, "checkpoint": 0, "finished": False,
+                                "finishTime": 0.0, "bestLap": 0.0, "lastSeen": time.time(),
+                            }
+                except Exception:
+                    pass
 
             return 200, room.get_public_state(player_id)
 

@@ -2352,11 +2352,12 @@ class PartyAPI:
                             host_player = room.players.get(room.host_id, {})
                             laps = int(settings.get("laps", 3))
                             track_id = str(settings.get("trackId", "grand_prix"))
-                            max_p = max(len(room.players), 4)
+                            max_p = max(len(room.players), 16)
+                            host_color = host_player.get("color") or extract_color_from_avatar(host_player.get("avatar", "")) or PLAYER_PALETTE[0]["color"]
                             t_room = TurbosladdRoom(
                                 code=code,
                                 host_name=host_player.get("name", "Sjåfør 1"),
-                                host_color=host_player.get("color") or PLAYER_PALETTE[0]["color"],
+                                host_color=host_color,
                                 host_car="gt",
                                 track_id=track_id,
                                 laps=laps,
@@ -2371,7 +2372,7 @@ class PartyAPI:
                             t_room.players[room.host_id] = {
                                 "id": room.host_id,
                                 "name": host_player.get("name", "Sjåfør 1"),
-                                "color": host_player.get("color") or PLAYER_PALETTE[0]["color"],
+                                "color": host_color,
                                 "avatar": host_player.get("avatar", ""),
                                 "carModel": "gt",
                                 "isHost": True,
@@ -2395,10 +2396,11 @@ class PartyAPI:
                             for pid, pdata in room.players.items():
                                 if pid != room.host_id and len(t_room.players) < t_room.max_players:
                                     pal = PLAYER_PALETTE[slot % len(PLAYER_PALETTE)]
+                                    p_color = pdata.get("color") or extract_color_from_avatar(pdata.get("avatar", "")) or pal["color"]
                                     t_room.players[pid] = {
                                         "id": pid,
                                         "name": pdata.get("name", f"Sjåfør {slot + 1}"),
-                                        "color": pdata.get("color") or pal["color"],
+                                        "color": p_color,
                                         "avatar": pdata.get("avatar", ""),
                                         "carModel": "gt",
                                         "isHost": False,
