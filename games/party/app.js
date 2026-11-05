@@ -388,7 +388,6 @@
 
         if (resp.status === 404) {
           // Room expired or deleted
-          alert("Party-rommet er ikke lenger tilgjengelig.");
           leaveRoom();
           return;
         }

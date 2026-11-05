@@ -1360,7 +1360,7 @@
   const focusInputOnUserInteraction = (e) => {
     if (state.isLeaving) return;
     if (!el.gameArena || el.gameArena.classList.contains("hidden") || !state.isPlaying) return;
-    if (e && e.target && (e.target.closest("button") || e.target.closest("a") || e.target.closest(".modal-backdrop") || e.target.closest("select") || e.target.closest("input:not(#wordInput)"))) {
+    if (e && e.target && (e.target.closest("button") || e.target.closest("a") || e.target.closest(".btn-arena-quit") || e.target.closest(".btn-leave-room") || e.target.closest(".modal-backdrop") || e.target.closest("select") || e.target.closest("input:not(#wordInput)"))) {
       return;
     }
     if (isPlayerTurn()) {
@@ -1396,8 +1396,7 @@
       const resp = await fetch(url);
 
       if (resp.status === 404) {
-        alert("Party-rommet er avsluttet.");
-        window.location.href = "/party/";
+        window.location.replace("/party/");
         return;
       }
 
@@ -1683,11 +1682,9 @@
     }
   }
 
-  async function leaveToLounge() {
-    if (state.isLeaving) return;
-    state.isLeaving = true;
-    state.isPlaying = false;
+  function leaveToLounge() {
     stopTimer();
+    state.isPlaying = false;
     if (state.roomPollTimer) {
       clearTimeout(state.roomPollTimer);
       state.roomPollTimer = null;
@@ -1697,15 +1694,30 @@
       try { el.wordInput.blur(); } catch (_) {}
     }
 
-    if (state.isRoomMode && state.roomCode) {
-      const code = state.roomCode;
-      const pid = state.playerId || sessionStorage.getItem("party_player_id") || "";
-      const hostToken = state.hostToken || sessionStorage.getItem("party_host_token") || "";
+    const sess = (window.PartyBridge && typeof window.PartyBridge.getSession === "function")
+      ? window.PartyBridge.getSession()
+      : {};
+    const code = state.roomCode || sess.roomCode || (new URLSearchParams(window.location.search).get("room") || new URLSearchParams(window.location.search).get("code") || sessionStorage.getItem("party_room_code") || "").trim().toUpperCase();
+    const pid = state.playerId || sess.playerId || (new URLSearchParams(window.location.search).get("player") || sessionStorage.getItem("party_player_id") || "").trim();
+    const hostToken = state.hostToken || sess.hostToken || sessionStorage.getItem("party_host_token") || "";
 
+    if (window.PartyBridge && typeof window.PartyBridge.leaveToLounge === "function") {
+      window.PartyBridge.leaveToLounge({
+        roomCode: code,
+        playerId: pid,
+        hostToken: hostToken,
+        beforeLeave: () => {
+          stopTimer();
+          if (state.roomPollTimer) clearTimeout(state.roomPollTimer);
+        },
+      });
+      return;
+    }
+
+    if (code) {
       try {
         sessionStorage.setItem("party_just_left", code);
       } catch (_) {}
-
       try {
         fetch("/api/party/to-lounge", {
           method: "POST",
@@ -1722,7 +1734,6 @@
       return;
     }
     showView("lobby");
-    state.isLeaving = false;
   }
 
   function initRoomModeIfPresent() {
@@ -1730,15 +1741,28 @@
 
     const bindLeave = (elem) => {
       if (!elem) return;
-      const handler = (e) => {
+      if (window.PartyBridge && typeof window.PartyBridge.bindLeaveButton === "function") {
+        window.PartyBridge.bindLeaveButton(elem, {
+          roomCode: state.roomCode,
+          playerId: state.playerId,
+          hostToken: state.hostToken,
+          beforeLeave: () => {
+            stopTimer();
+            if (state.roomPollTimer) clearTimeout(state.roomPollTimer);
+          },
+        });
+      }
+      const directHandler = (e) => {
         if (e) {
           e.preventDefault();
           e.stopPropagation();
         }
         leaveToLounge();
       };
-      elem.addEventListener("pointerdown", handler);
-      elem.addEventListener("click", handler);
+      elem.addEventListener("click", directHandler);
+      elem.addEventListener("pointerdown", (e) => {
+        if (e) e.stopPropagation();
+      });
     };
 
     bindLeave(el.btnLeaveRoom);
