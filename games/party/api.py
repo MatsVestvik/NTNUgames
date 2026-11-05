@@ -2250,23 +2250,6 @@ class PartyAPI:
                         "isHost": p["is_host"],
                     }
 
-                # Also prevent rapid duplicate joins with the same name within 3 seconds
-                now = time.time()
-                for p in room.players.values():
-                    if p["name"].lower() == player_name.lower() and (now - p.get("last_seen", 0)) < 3.0:
-                        p["last_seen"] = now
-                        p["is_ready"] = True
-                        room.bump()
-                        return 200, {
-                            "ok": True,
-                            "roomCode": room.code,
-                            "playerId": p["id"],
-                            "playerName": p["name"],
-                            "avatar": p["avatar"],
-                            "color": p["color"],
-                            "isHost": p["is_host"],
-                        }
-
                 # Check if player name already exists; if so append a number
                 existing_names = {p["name"].lower() for p in room.players.values()}
                 final_name = player_name

@@ -180,9 +180,18 @@ class TurbosladdRoom:
                 if not assigned_color:
                     assigned_color = PLAYER_PALETTE[slot % len(PLAYER_PALETTE)]["color"]
 
+            # Deduplicate driver name
+            existing_names = {p["name"].lower() for p in self.players.values() if not p.get("left")}
+            raw_name = name[:18].strip() or f"Sjåfør {slot + 1}"
+            final_name = raw_name
+            counter = 2
+            while final_name.lower() in existing_names:
+                final_name = f"{raw_name} {counter}"
+                counter += 1
+
             player = {
                 "id": pid,
-                "name": name[:18].strip() or f"Sjåfør {slot + 1}",
+                "name": final_name,
                 "color": assigned_color,
                 "avatar": avatar or "",
                 "carModel": "gt",

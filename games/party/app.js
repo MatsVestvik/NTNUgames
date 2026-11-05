@@ -192,6 +192,10 @@
     el.btnSubmitJoin.disabled = true;
     el.btnSubmitJoin.textContent = "Kobler til…";
 
+    const prevCode = sessionStorage.getItem("party_room_code");
+    const prevPid = sessionStorage.getItem("party_player_id");
+    const existingPid = (prevCode && prevCode.toUpperCase() === code && prevPid) ? prevPid : undefined;
+
     try {
       const resp = await fetch("/api/party/join", {
         method: "POST",
@@ -200,6 +204,7 @@
           roomCode: code,
           playerName: playerName,
           avatar: state.avatar || getInitialAvatar(),
+          playerId: existingPid,
         }),
       });
 
