@@ -48,8 +48,8 @@ TRACK_CONFIGS = {
         "desc": "Unik, tilfeldig generert Grand Prix-bane med varierte sjikaner, langstrekker og hårnåler.",
         "difficulty": "Variert",
         "lapsDefault": 3,
-        "width": 4000,
-        "height": 2600,
+        "width": 5600,
+        "height": 3600,
     },
     "f1_monza": {
         "id": "f1_monza",
@@ -57,8 +57,8 @@ TRACK_CONFIGS = {
         "desc": "Legendarisk fartsbane med lange DRS-strekker, Variante del Rettifilo-sjikanen og Parabolica.",
         "difficulty": "Middels",
         "lapsDefault": 3,
-        "width": 4000,
-        "height": 2600,
+        "width": 5600,
+        "height": 3600,
     },
     "f1_silverstone": {
         "id": "f1_silverstone",
@@ -66,8 +66,8 @@ TRACK_CONFIGS = {
         "desc": "Klassisk britisk GP med berømte svinger: Copse, Maggotts, Becketts og Stowe.",
         "difficulty": "Ekspert",
         "lapsDefault": 3,
-        "width": 4000,
-        "height": 2600,
+        "width": 5600,
+        "height": 3600,
     },
     "f1_spa": {
         "id": "f1_spa",
@@ -75,8 +75,8 @@ TRACK_CONFIGS = {
         "desc": "Ardennerskogens perle med Eau Rouge-inspirert stigning, lange rettstrekker og Bus Stop-sjikanen.",
         "difficulty": "Ekspert",
         "lapsDefault": 3,
-        "width": 4000,
-        "height": 2600,
+        "width": 5600,
+        "height": 3600,
     },
     "f1_redbull": {
         "id": "f1_redbull",
@@ -84,8 +84,8 @@ TRACK_CONFIGS = {
         "desc": "Rask østerriksk bane med tre kraftige bremsesoner, krappe oppoverbakke-svinger og flytende infield.",
         "difficulty": "Middels",
         "lapsDefault": 3,
-        "width": 4000,
-        "height": 2600,
+        "width": 5600,
+        "height": 3600,
     },
     "f1_suzuka": {
         "id": "f1_suzuka",
@@ -93,8 +93,8 @@ TRACK_CONFIGS = {
         "desc": "Teknisk mesterverk med sammenhengende S-kurver, Degner og 130R.",
         "difficulty": "Ekspert",
         "lapsDefault": 3,
-        "width": 4000,
-        "height": 2600,
+        "width": 5600,
+        "height": 3600,
     },
 }
 

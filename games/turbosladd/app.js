@@ -149,83 +149,275 @@
     return true;
   }
 
-  function attemptGenerateF1Points(seed, worldW = 4000, worldH = 2600, archetype = null) {
-    const rng = createF1Rng(seed);
-    const cx = worldW * 0.5;
-    const cy = worldH * 0.5;
+  // Authentic Circuit Blueprints (normalized coordinates: 0..1)
+  // Designed with real racing layout topologies: chicanes, hairpins, long DRS straights, and S-curves
+  const F1_ARCHETYPES = [
+    // 0: Monza Autodromo (Variante del Rettifilo chicane, Curva Grande, Roggia, Lesmo 1 & 2, Ascari, Parabolica)
+    [
+      { x: 0.35, y: 0.88 }, // Start / Finish line
+      { x: 0.70, y: 0.88 }, // Rettifilo braking zone
+      { x: 0.76, y: 0.84, sharp: true }, // Variante del Rettifilo chicane
+      { x: 0.78, y: 0.76, sharp: true },
+      { x: 0.83, y: 0.73, sharp: true },
+      { x: 0.90, y: 0.62 }, // Curva Grande sweeping arc
+      { x: 0.91, y: 0.48 },
+      { x: 0.87, y: 0.36 },
+      { x: 0.82, y: 0.28, sharp: true }, // Variante della Roggia chicane
+      { x: 0.76, y: 0.26, sharp: true },
+      { x: 0.73, y: 0.20, sharp: true },
+      { x: 0.66, y: 0.14, sharp: true }, // Curva di Lesmo 1 (sharp 90° right)
+      { x: 0.58, y: 0.12, sharp: true },
+      { x: 0.50, y: 0.15, sharp: true }, // Curva di Lesmo 2 (sharp 90° right)
+      { x: 0.42, y: 0.24 }, // Curva del Serraglio straight
+      { x: 0.34, y: 0.34 },
+      { x: 0.28, y: 0.40, sharp: true }, // Variante Ascari chicane
+      { x: 0.24, y: 0.45, sharp: true },
+      { x: 0.20, y: 0.52, sharp: true },
+      { x: 0.16, y: 0.66 }, // Back straightaway
+      { x: 0.14, y: 0.76, sharp: true },
+      { x: 0.11, y: 0.85 }, // Curva Parabolica
+      { x: 0.18, y: 0.88 }, // Main straight entry
+      { x: 0.25, y: 0.88 }
+    ],
+    // 1: Silverstone Circuit (Abbey, Farm, Village, The Loop hairpin, Wellington, Brooklands, Luffield, Copse, Maggotts/Becketts, Hangar, Stowe)
+    [
+      { x: 0.38, y: 0.86 }, // Hamilton straight
+      { x: 0.62, y: 0.86 },
+      { x: 0.72, y: 0.82, sharp: true }, // Abbey & Farm
+      { x: 0.76, y: 0.74 },
+      { x: 0.80, y: 0.66, sharp: true }, // Village
+      { x: 0.75, y: 0.62, sharp: true }, // The Loop tight 180° hairpin
+      { x: 0.68, y: 0.63, sharp: true },
+      { x: 0.70, y: 0.70, sharp: true }, // Aintree
+      { x: 0.62, y: 0.74 }, // Wellington straight
+      { x: 0.46, y: 0.74 },
+      { x: 0.34, y: 0.74 },
+      { x: 0.24, y: 0.72, sharp: true }, // Brooklands sharp left
+      { x: 0.18, y: 0.64, sharp: true }, // Luffield sweeping right hairpin
+      { x: 0.18, y: 0.56, sharp: true },
+      { x: 0.25, y: 0.52 }, // Woodcote onto National straight
+      { x: 0.36, y: 0.52 },
+      { x: 0.48, y: 0.50 },
+      { x: 0.60, y: 0.48, sharp: true }, // Copse high-speed 90° right
+      { x: 0.64, y: 0.40, sharp: true },
+      { x: 0.60, y: 0.32, sharp: true }, // Maggotts & Becketts S-curves
+      { x: 0.64, y: 0.26, sharp: true },
+      { x: 0.58, y: 0.20, sharp: true },
+      { x: 0.50, y: 0.16, sharp: true }, // Chapel onto Hangar straight
+      { x: 0.36, y: 0.16 }, // Hangar straight
+      { x: 0.22, y: 0.16 },
+      { x: 0.14, y: 0.19, sharp: true }, // Stowe sharp 90° right
+      { x: 0.12, y: 0.28, sharp: true },
+      { x: 0.13, y: 0.48, sharp: true }, // Vale & Club chicane
+      { x: 0.10, y: 0.58, sharp: true },
+      { x: 0.14, y: 0.68, sharp: true },
+      { x: 0.22, y: 0.78, sharp: true },
+      { x: 0.28, y: 0.86 }
+    ],
+    // 2: Spa-Francorchamps (La Source hairpin, Eau Rouge/Raidillon, Kemmel straight, Les Combes, Bruxelles, Pouhon, Blanchimont, Bus Stop)
+    [
+      { x: 0.35, y: 0.88 }, // Start / Finish line
+      { x: 0.62, y: 0.88 }, // La Source braking zone
+      { x: 0.72, y: 0.82, sharp: true }, // La Source tight 150° hairpin
+      { x: 0.74, y: 0.72, sharp: true },
+      { x: 0.78, y: 0.60, sharp: true }, // Eau Rouge & Raidillon S-flick
+      { x: 0.82, y: 0.45 }, // Kemmel Straight (massive high-speed straight)
+      { x: 0.84, y: 0.28 },
+      { x: 0.85, y: 0.14 },
+      { x: 0.82, y: 0.08, sharp: true }, // Les Combes chicane
+      { x: 0.74, y: 0.06, sharp: true },
+      { x: 0.66, y: 0.10, sharp: true }, // Malmedy
+      { x: 0.58, y: 0.16, sharp: true }, // Bruxelles 180° hairpin
+      { x: 0.52, y: 0.22, sharp: true },
+      { x: 0.56, y: 0.30, sharp: true },
+      { x: 0.48, y: 0.38 }, // Pouhon double-apex fast left
+      { x: 0.42, y: 0.48 },
+      { x: 0.36, y: 0.56, sharp: true }, // Campus / Fagnes chicane
+      { x: 0.30, y: 0.62, sharp: true },
+      { x: 0.22, y: 0.70 }, // Stavelot & Blanchimont sweeps
+      { x: 0.18, y: 0.78 },
+      { x: 0.18, y: 0.84, sharp: true }, // Bus Stop chicane (sharp right-left)
+      { x: 0.24, y: 0.88, sharp: true }
+    ],
+    // 3: Red Bull Ring (T1 Niki Lauda 90°, Uphill straight, T3 Remus 140° hairpin, Downhill straight, T4 Schlossgold, Infield, T9 & T10)
+    [
+      { x: 0.35, y: 0.88 }, // Start / Finish line
+      { x: 0.65, y: 0.88 }, // T1 braking
+      { x: 0.74, y: 0.82, sharp: true }, // T1 Niki Lauda sharp 90° uphill right
+      { x: 0.78, y: 0.65 },
+      { x: 0.80, y: 0.42 }, // Uphill straight
+      { x: 0.80, y: 0.20 },
+      { x: 0.80, y: 0.08, sharp: true }, // T3 Remus tight 140° hairpin
+      { x: 0.74, y: 0.08, sharp: true },
+      { x: 0.66, y: 0.16, sharp: true },
+      { x: 0.54, y: 0.24 }, // Downhill straight to T4
+      { x: 0.42, y: 0.34 },
+      { x: 0.34, y: 0.44, sharp: true }, // T4 Schlossgold sharp 90° right
+      { x: 0.28, y: 0.52, sharp: true },
+      { x: 0.34, y: 0.62 }, // T5 & T6 Rauch infield
+      { x: 0.44, y: 0.68 },
+      { x: 0.42, y: 0.76 }, // T7 & T8 Würth
+      { x: 0.30, y: 0.80, sharp: true }, // T9 Rindt 90° right
+      { x: 0.18, y: 0.86, sharp: true }  // T10 final 90° right onto straight
+    ],
+    // 4: Suzuka Circuit (T1 & T2, The S-Curves, Dunlop, Degner 1 & 2, Hairpin, 200R, Spoon Curve, Back Straight, 130R, Casio chicane)
+    [
+      { x: 0.35, y: 0.88 }, // Start / Finish line
+      { x: 0.65, y: 0.88 }, // T1 braking zone
+      { x: 0.76, y: 0.82, sharp: true }, // T1 & T2 fast sweeping rights
+      { x: 0.80, y: 0.72, sharp: true },
+      { x: 0.74, y: 0.64, sharp: true }, // S-curves snake (left-right-left-right)
+      { x: 0.82, y: 0.55, sharp: true },
+      { x: 0.74, y: 0.46, sharp: true },
+      { x: 0.80, y: 0.38, sharp: true },
+      { x: 0.72, y: 0.30 }, // Dunlop curve
+      { x: 0.62, y: 0.24 },
+      { x: 0.54, y: 0.22, sharp: true }, // Degner 1 (sharp 90° right)
+      { x: 0.58, y: 0.16, sharp: true }, // Degner 2 (sharp 90° right)
+      { x: 0.68, y: 0.18, sharp: true },
+      { x: 0.74, y: 0.22, sharp: true }, // Hairpin entry
+      { x: 0.78, y: 0.12, sharp: true }, // Hairpin apex (tight 180° hairpin)
+      { x: 0.70, y: 0.05, sharp: true }, // Hairpin exit
+      { x: 0.54, y: 0.05 }, // 200R sweep
+      { x: 0.38, y: 0.08 },
+      { x: 0.24, y: 0.16, sharp: true }, // Spoon Curve double-apex left
+      { x: 0.18, y: 0.28, sharp: true },
+      { x: 0.16, y: 0.42 }, // Back straight (high speed straight)
+      { x: 0.16, y: 0.60 },
+      { x: 0.18, y: 0.74 }, // 130R ultra-fast left sweep
+      { x: 0.22, y: 0.82, sharp: true }, // Casio Triangle chicane
+      { x: 0.26, y: 0.88, sharp: true }
+    ],
+    // 5: Infield Switchback (Technical circuit with deep interior hairpins and sharp corners)
+    [
+      { x: 0.35, y: 0.88 }, // Start / Finish line
+      { x: 0.70, y: 0.88 }, // Main straight
+      { x: 0.82, y: 0.82, sharp: true }, // T1 90° right
+      { x: 0.84, y: 0.58 }, // Outer straight
+      { x: 0.82, y: 0.28 },
+      { x: 0.76, y: 0.12, sharp: true }, // Top corner
+      { x: 0.64, y: 0.10 },
+      { x: 0.54, y: 0.18, sharp: true }, // Dive into deep infield
+      { x: 0.50, y: 0.38, sharp: true },
+      { x: 0.58, y: 0.50, sharp: true }, // Infield hairpin apex
+      { x: 0.50, y: 0.62, sharp: true }, // Switchback left
+      { x: 0.38, y: 0.54, sharp: true }, // Switchback right
+      { x: 0.36, y: 0.28 }, // Exit infield
+      { x: 0.28, y: 0.14, sharp: true }, // North-west corner
+      { x: 0.16, y: 0.20, sharp: true },
+      { x: 0.14, y: 0.44 }, // West straight
+      { x: 0.14, y: 0.70 },
+      { x: 0.18, y: 0.82, sharp: true }, // Final chicane
+      { x: 0.24, y: 0.88, sharp: true }
+    ],
+    // 6: Grand Prix Street Circuit (Multiple sharp 90-degree square corners and chicanes)
+    [
+      { x: 0.35, y: 0.88 }, // Start / Finish line
+      { x: 0.72, y: 0.88 }, // Long straight
+      { x: 0.82, y: 0.82, sharp: true }, // 90° right
+      { x: 0.82, y: 0.64 },
+      { x: 0.74, y: 0.58, sharp: true }, // Chicane flick 1
+      { x: 0.82, y: 0.50, sharp: true }, // Chicane flick 2
+      { x: 0.82, y: 0.30 },
+      { x: 0.76, y: 0.14, sharp: true }, // 90° right
+      { x: 0.58, y: 0.14 },
+      { x: 0.46, y: 0.24, sharp: true }, // 90° left
+      { x: 0.46, y: 0.44 },
+      { x: 0.36, y: 0.44, sharp: true }, // 90° right
+      { x: 0.36, y: 0.24 },
+      { x: 0.24, y: 0.14, sharp: true }, // 90° left
+      { x: 0.14, y: 0.24, sharp: true }, // 90° left
+      { x: 0.14, y: 0.56 }, // West straight
+      { x: 0.18, y: 0.72, sharp: true }, // 90° right
+      { x: 0.22, y: 0.84, sharp: true }  // 90° left onto main straight
+    ]
+  ];
 
-    const arc = archetype !== null ? archetype : Math.floor(rng() * 5);
-    const numCorners = 15 + Math.floor(rng() * 5);
-    const rawPoints = [];
+  // Sharp Corner Refinement: Inserts shoulder control points at sharp vertices
+  // so Catmull-Rom spline stays tight and sharp through chicanes, 90° turns, and hairpins
+  function sharpenCorners(rawPoints) {
+    const n = rawPoints.length;
+    const result = [];
+    for (let i = 0; i < n; i++) {
+      const prev = rawPoints[(i - 1 + n) % n];
+      const cur = rawPoints[i];
+      const next = rawPoints[(i + 1) % n];
 
-    const baseRadiusX = (worldW * 0.36) + (rng() - 0.5) * 100;
-    const baseRadiusY = (worldH * 0.34) + (rng() - 0.5) * 80;
+      const d1x = cur.x - prev.x;
+      const d1y = cur.y - prev.y;
+      const len1 = Math.hypot(d1x, d1y);
 
-    for (let i = 0; i < numCorners; i++) {
-      const frac = i / numCorners;
-      const ang = (Math.PI * 0.5) - (frac * Math.PI * 2);
-      let rx = baseRadiusX;
-      let ry = baseRadiusY;
+      const d2x = next.x - cur.x;
+      const d2y = next.y - cur.y;
+      const len2 = Math.hypot(d2x, d2y);
 
-      if (arc === 0) { // Monza: Flat top and bottom straights, chicanes
-        if (Math.abs(Math.sin(ang)) > 0.4) ry *= 0.84;
-        if (Math.sin(ang) < -0.3 && Math.cos(ang) < -0.2) rx *= 0.85;
-      } else if (arc === 1) { // Silverstone: Sweeping aerodynamic curves
-        rx += Math.sin(ang * 3) * 120;
-        ry += Math.cos(ang * 2) * 90;
-      } else if (arc === 2) { // Spa: Kemmel straight, infield Pouhon/Bruxelles
-        if (Math.cos(ang) > 0.1) rx *= 1.12;
-        if (Math.sin(ang) < -0.2 && Math.cos(ang) < -0.1) { rx *= 0.78; ry *= 0.82; }
-      } else if (arc === 3) { // Red Bull Ring: Compact, steep uphill corners
-        rx *= 0.88;
-        ry *= 0.90;
-        if (Math.cos(ang) < -0.3) rx *= 1.1;
-      } else if (arc === 4) { // Suzuka: S-curves and hairpin
-        rx += Math.sin(ang * 4) * 110;
-        ry += Math.cos(ang * 3) * 80;
+      if (len1 < 50 || len2 < 50) {
+        result.push(cur);
+        continue;
       }
 
-      const noise = (rng() - 0.5) * 80;
-      rx += noise;
-      ry += noise * 0.7;
+      const u1x = d1x / len1;
+      const u1y = d1y / len1;
+      const u2x = d2x / len2;
+      const u2y = d2y / len2;
 
-      const px = Math.round(cx + Math.cos(ang) * rx);
-      const py = Math.round(cy + Math.sin(ang) * ry);
-      rawPoints.push({ x: px, y: py });
+      const dot = u1x * u2x + u1y * u2y;
+      const angleTurn = Math.acos(Math.max(-1, Math.min(1, dot)));
+      const isSharp = cur.sharp || (angleTurn > 0.85);
+
+      if (isSharp && len1 > 160 && len2 > 160) {
+        const bevelDist = Math.min(85, Math.min(len1 * 0.32, len2 * 0.32));
+        result.push({
+          x: Math.round(cur.x - u1x * bevelDist),
+          y: Math.round(cur.y - u1y * bevelDist)
+        });
+        result.push(cur);
+        result.push({
+          x: Math.round(cur.x + u2x * bevelDist),
+          y: Math.round(cur.y + u2y * bevelDist)
+        });
+      } else {
+        result.push(cur);
+      }
     }
-
-    const bottomY = Math.min(worldH - 260, Math.max(rawPoints[0].y, rawPoints[numCorners - 1].y));
-    const straightLength = 950 + Math.floor(rng() * 250);
-    const startX = cx - straightLength * 0.25;
-    const endX = cx + straightLength * 0.45;
-    const entryX = cx - straightLength * 0.55;
-
-    rawPoints[0] = { x: Math.round(startX), y: Math.round(bottomY) }; // Finish line
-    rawPoints[1] = { x: Math.round(endX), y: Math.round(bottomY) };   // T1 braking zone
-
-    const last = numCorners - 1;
-    const prev = numCorners - 2;
-    rawPoints[last] = { x: Math.round(entryX), y: Math.round(bottomY) }; // Straight entry
-    rawPoints[prev] = { x: Math.round(entryX - 160), y: Math.round(bottomY - 140) }; // Final turn entry
-
-    for (let i = 0; i < rawPoints.length; i++) {
-      rawPoints[i].x = Math.max(220, Math.min(worldW - 220, rawPoints[i].x));
-      rawPoints[i].y = Math.max(220, Math.min(worldH - 220, rawPoints[i].y));
-    }
-
-    return rawPoints;
+    return result;
   }
 
-  function generateF1RawPoints(seed, worldW = 4000, worldH = 2600, archetype = null) {
-    let curSeed = seed;
+  function generateF1RawPoints(seed, worldW = 5600, worldH = 3600, archetype = null) {
+    const rng = createF1Rng(seed);
+    const padX = 300;
+    const padY = 280;
+    const effW = worldW - 2 * padX;
+    const effH = worldH - 2 * padY;
+
+    const archIdx = archetype !== null ? archetype : Math.floor(rng() * F1_ARCHETYPES.length);
+    const base = F1_ARCHETYPES[archIdx % F1_ARCHETYPES.length];
+
+    // Seed-based procedural perturbation on intermediate corners
     for (let attempt = 0; attempt < 25; attempt++) {
-      const pts = attemptGenerateF1Points(curSeed, worldW, worldH, archetype);
-      if (checkTrackValid(pts, 170)) {
+      const pts = base.map((p, idx) => {
+        // Keep start/finish straight locked and flat
+        const isStartStraight = (idx === 0 || idx === 1 || idx === base.length - 1);
+        const jx = isStartStraight ? 0 : (rng() - 0.5) * 50;
+        const jy = isStartStraight ? 0 : (rng() - 0.5) * 45;
+        return {
+          x: Math.max(160, Math.min(worldW - 160, Math.round(padX + p.x * effW + jx))),
+          y: Math.max(160, Math.min(worldH - 160, Math.round(padY + p.y * effH + jy))),
+          sharp: Boolean(p.sharp)
+        };
+      });
+
+      if (checkTrackValid(pts, 150)) {
         return pts;
       }
-      curSeed = (curSeed * 1664525 + 1013904223) >>> 0;
     }
-    return attemptGenerateF1Points(seed, worldW, worldH, archetype);
+
+    // Fallback to pure blueprint coordinates
+    return base.map(p => ({
+      x: Math.round(padX + p.x * effW),
+      y: Math.round(padY + p.y * effH),
+      sharp: Boolean(p.sharp)
+    }));
   }
 
   function generateF1Scenery(track) {
@@ -323,10 +515,11 @@
   }
 
   function createF1Track(id, name, seed, archetype = null, roadWidth = 175) {
-    const worldWidth = 4000;
-    const worldHeight = 2600;
+    const worldWidth = 5600;
+    const worldHeight = 3600;
     const rawPoints = generateF1RawPoints(seed, worldWidth, worldHeight, archetype);
-    const smoothPoints = generateSmoothTrack(rawPoints, 20);
+    const sharpenedPoints = sharpenCorners(rawPoints);
+    const smoothPoints = generateSmoothTrack(sharpenedPoints, 14);
     const n = smoothPoints.length;
     const halfRoad = roadWidth * 0.5;
     const kerbWidth = 26;
@@ -351,7 +544,7 @@
 
       const cross = (dx1 * dy2 - dy1 * dx2) / (len1 * len2);
 
-      if (Math.abs(cross) > 0.016) {
+      if (Math.abs(cross) > 0.015) {
         const turnSign = Math.sign(cross);
         const isRed = Math.floor(i / 2) % 2 === 0;
 
@@ -392,7 +585,7 @@
         const mid2 = { x: (q1.x + q2.x) * 0.5, y: (q1.y + q2.y) * 0.5 };
 
         const dist = Math.hypot(mid1.x - mid2.x, mid1.y - mid2.y);
-        if (dist < 460 && dist > roadWidth + 50) {
+        if (dist < 600 && dist > roadWidth + 80) {
           infieldBarriers.push({
             x1: Math.round((p1.x + q2.x) * 0.5),
             y1: Math.round((p1.y + q2.y) * 0.5),
@@ -1503,8 +1696,8 @@
     }
 
     // 3. World Boundary Limits
-    const wWidth = track.worldWidth || 4000;
-    const wHeight = track.worldHeight || 2600;
+    const wWidth = track.worldWidth || 5600;
+    const wHeight = track.worldHeight || 3600;
     car.x = Math.max(60, Math.min(wWidth - 60, car.x));
     car.y = Math.max(60, Math.min(wHeight - 60, car.y));
 
@@ -1791,8 +1984,8 @@
     const rw = track.roadWidth || 175;
     const halfRoad = rw * 0.5;
     const kerbW = track.kerbWidth || 26;
-    const worldW = track.worldWidth || 4000;
-    const worldH = track.worldHeight || 2600;
+    const worldW = track.worldWidth || 5600;
+    const worldH = track.worldHeight || 3600;
 
     const canvas = document.createElement("canvas");
     canvas.width = worldW;
@@ -2209,8 +2402,8 @@
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const worldW = track.worldWidth || 4000;
-    const worldH = track.worldHeight || 2600;
+    const worldW = track.worldWidth || 5600;
+    const worldH = track.worldHeight || 3600;
     const scale = Math.min((canvas.width - 16) / worldW, (canvas.height - 16) / worldH);
     const offsetX = (canvas.width - worldW * scale) / 2;
     const offsetY = (canvas.height - worldH * scale) / 2;
