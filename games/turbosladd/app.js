@@ -149,191 +149,206 @@
     return true;
   }
 
-  // Authentic Circuit Blueprints (normalized coordinates: 0..1)
-  // Designed with real racing layout topologies: chicanes, hairpins, long DRS straights, and S-curves
+  // Authentic Circuit Blueprints calibrated for expansive 4600x3000 world
+  // Designed with real racing layout topologies: chicanes, hairpins, long DRS straights, and technical switchbacks
   const F1_ARCHETYPES = [
     // 0: Monza Autodromo (Variante del Rettifilo chicane, Curva Grande, Roggia, Lesmo 1 & 2, Ascari, Parabolica)
     [
-      { x: 0.35, y: 0.88 }, // Start / Finish line
-      { x: 0.70, y: 0.88 }, // Rettifilo braking zone
-      { x: 0.76, y: 0.84, sharp: true }, // Variante del Rettifilo chicane
-      { x: 0.78, y: 0.76, sharp: true },
-      { x: 0.83, y: 0.73, sharp: true },
-      { x: 0.90, y: 0.62 }, // Curva Grande sweeping arc
-      { x: 0.91, y: 0.48 },
-      { x: 0.87, y: 0.36 },
-      { x: 0.82, y: 0.28, sharp: true }, // Variante della Roggia chicane
-      { x: 0.76, y: 0.26, sharp: true },
-      { x: 0.73, y: 0.20, sharp: true },
-      { x: 0.66, y: 0.14, sharp: true }, // Curva di Lesmo 1 (sharp 90° right)
-      { x: 0.58, y: 0.12, sharp: true },
-      { x: 0.50, y: 0.15, sharp: true }, // Curva di Lesmo 2 (sharp 90° right)
-      { x: 0.42, y: 0.24 }, // Curva del Serraglio straight
-      { x: 0.34, y: 0.34 },
-      { x: 0.28, y: 0.40, sharp: true }, // Variante Ascari chicane
-      { x: 0.24, y: 0.45, sharp: true },
-      { x: 0.20, y: 0.52, sharp: true },
-      { x: 0.16, y: 0.66 }, // Back straightaway
-      { x: 0.14, y: 0.76, sharp: true },
-      { x: 0.11, y: 0.85 }, // Curva Parabolica
-      { x: 0.18, y: 0.88 }, // Main straight entry
-      { x: 0.25, y: 0.88 }
+      { x: 1400, y: 2600 }, // Start / Finish line
+      { x: 3100, y: 2600 }, // Rettifilo braking zone
+      { x: 3350, y: 2550, sharp: true }, // Variante del Rettifilo chicane
+      { x: 3500, y: 2400, sharp: true },
+      { x: 3650, y: 2300, sharp: true },
+      { x: 3950, y: 2050 }, // Curva Grande sweeping arc
+      { x: 4150, y: 1650 },
+      { x: 4050, y: 1200 },
+      { x: 3750, y: 1000, sharp: true }, // Variante della Roggia chicane
+      { x: 3600, y: 800, sharp: true },
+      { x: 3200, y: 600, sharp: true }, // Curva di Lesmo 1 (sharp 90° right)
+      { x: 2800, y: 520, sharp: true }, // Curva di Lesmo 2 (sharp 90° right)
+      { x: 2400, y: 580, sharp: true }, // Curva del Serraglio straight
+      { x: 2100, y: 750 },
+      { x: 1700, y: 1100, sharp: true }, // Variante Ascari chicane
+      { x: 1400, y: 1450, sharp: true },
+      { x: 1150, y: 1650, sharp: true },
+      { x: 950, y: 1850 }, // Back straightaway
+      { x: 800, y: 2050 },
+      { x: 650, y: 2250, sharp: true }, // Curva Parabolica
+      { x: 550, y: 2450, sharp: true },
+      { x: 750, y: 2600, sharp: true }, // Main straight entry
+      { x: 1000, y: 2600 }
     ],
-    // 1: Silverstone Circuit (Abbey, Farm, Village, The Loop hairpin, Wellington, Brooklands, Luffield, Copse, Maggotts/Becketts, Hangar, Stowe)
+    // 1: Silverstone Arena (The Loop 180° hairpin, Wellington infield straight, Becketts, Hangar, Stowe, Vale/Club)
     [
-      { x: 0.38, y: 0.86 }, // Hamilton straight
-      { x: 0.62, y: 0.86 },
-      { x: 0.72, y: 0.82, sharp: true }, // Abbey & Farm
-      { x: 0.76, y: 0.74 },
-      { x: 0.80, y: 0.66, sharp: true }, // Village
-      { x: 0.75, y: 0.62, sharp: true }, // The Loop tight 180° hairpin
-      { x: 0.68, y: 0.63, sharp: true },
-      { x: 0.70, y: 0.70, sharp: true }, // Aintree
-      { x: 0.62, y: 0.74 }, // Wellington straight
-      { x: 0.46, y: 0.74 },
-      { x: 0.34, y: 0.74 },
-      { x: 0.24, y: 0.72, sharp: true }, // Brooklands sharp left
-      { x: 0.18, y: 0.64, sharp: true }, // Luffield sweeping right hairpin
-      { x: 0.18, y: 0.56, sharp: true },
-      { x: 0.25, y: 0.52 }, // Woodcote onto National straight
-      { x: 0.36, y: 0.52 },
-      { x: 0.48, y: 0.50 },
-      { x: 0.60, y: 0.48, sharp: true }, // Copse high-speed 90° right
-      { x: 0.64, y: 0.40, sharp: true },
-      { x: 0.60, y: 0.32, sharp: true }, // Maggotts & Becketts S-curves
-      { x: 0.64, y: 0.26, sharp: true },
-      { x: 0.58, y: 0.20, sharp: true },
-      { x: 0.50, y: 0.16, sharp: true }, // Chapel onto Hangar straight
-      { x: 0.36, y: 0.16 }, // Hangar straight
-      { x: 0.22, y: 0.16 },
-      { x: 0.14, y: 0.19, sharp: true }, // Stowe sharp 90° right
-      { x: 0.12, y: 0.28, sharp: true },
-      { x: 0.13, y: 0.48, sharp: true }, // Vale & Club chicane
-      { x: 0.10, y: 0.58, sharp: true },
-      { x: 0.14, y: 0.68, sharp: true },
-      { x: 0.22, y: 0.78, sharp: true },
-      { x: 0.28, y: 0.86 }
+      { x: 1400, y: 2600 }, // Hamilton straight (Start/Finish)
+      { x: 2800, y: 2600 },
+      { x: 3300, y: 2500, sharp: true }, // Abbey & Farm
+      { x: 3500, y: 2200, sharp: true }, // Village
+      { x: 3600, y: 1800, sharp: true }, // The Loop tight 180° hairpin
+      { x: 3300, y: 1650, sharp: true },
+      { x: 3000, y: 1750, sharp: true }, // Aintree
+      { x: 2900, y: 2000, sharp: true },
+      { x: 3150, y: 2150, sharp: true },
+      { x: 3000, y: 2280, sharp: true }, // Wellington straight cutting across infield
+      { x: 2200, y: 2280 },
+      { x: 1400, y: 2280 },
+      { x: 900, y: 2150, sharp: true }, // Brooklands sharp left
+      { x: 700, y: 1900, sharp: true }, // Luffield sweeping right hairpin
+      { x: 700, y: 1600, sharp: true },
+      { x: 950, y: 1450 }, // Woodcote onto National straight
+      { x: 1300, y: 1450 },
+      { x: 1900, y: 1400 },
+      { x: 2400, y: 1300, sharp: true }, // Copse high-speed 90° right
+      { x: 2700, y: 1050, sharp: true },
+      { x: 2500, y: 850, sharp: true }, // Maggotts & Becketts S-curves
+      { x: 2700, y: 650, sharp: true },
+      { x: 2450, y: 480, sharp: true }, // Chapel onto Hangar straight
+      { x: 2100, y: 400 }, // Hangar straight
+      { x: 1400, y: 400 },
+      { x: 700, y: 400 },
+      { x: 450, y: 550, sharp: true }, // Stowe sharp 90° right
+      { x: 400, y: 850, sharp: true },
+      { x: 450, y: 1450, sharp: true }, // Vale & Club chicane complex
+      { x: 450, y: 1850, sharp: true },
+      { x: 550, y: 2100, sharp: true },
+      { x: 450, y: 2300, sharp: true },
+      { x: 650, y: 2500, sharp: true },
+      { x: 950, y: 2600 }
     ],
-    // 2: Spa-Francorchamps (La Source hairpin, Eau Rouge/Raidillon, Kemmel straight, Les Combes, Bruxelles, Pouhon, Blanchimont, Bus Stop)
+    // 2: Spa-Francorchamps (La Source hairpin, Eau Rouge/Raidillon, Kemmel straight, Les Combes, Bruxelles, Pouhon, Bus Stop)
     [
-      { x: 0.35, y: 0.88 }, // Start / Finish line
-      { x: 0.62, y: 0.88 }, // La Source braking zone
-      { x: 0.72, y: 0.82, sharp: true }, // La Source tight 150° hairpin
-      { x: 0.74, y: 0.72, sharp: true },
-      { x: 0.78, y: 0.60, sharp: true }, // Eau Rouge & Raidillon S-flick
-      { x: 0.82, y: 0.45 }, // Kemmel Straight (massive high-speed straight)
-      { x: 0.84, y: 0.28 },
-      { x: 0.85, y: 0.14 },
-      { x: 0.82, y: 0.08, sharp: true }, // Les Combes chicane
-      { x: 0.74, y: 0.06, sharp: true },
-      { x: 0.66, y: 0.10, sharp: true }, // Malmedy
-      { x: 0.58, y: 0.16, sharp: true }, // Bruxelles 180° hairpin
-      { x: 0.52, y: 0.22, sharp: true },
-      { x: 0.56, y: 0.30, sharp: true },
-      { x: 0.48, y: 0.38 }, // Pouhon double-apex fast left
-      { x: 0.42, y: 0.48 },
-      { x: 0.36, y: 0.56, sharp: true }, // Campus / Fagnes chicane
-      { x: 0.30, y: 0.62, sharp: true },
-      { x: 0.22, y: 0.70 }, // Stavelot & Blanchimont sweeps
-      { x: 0.18, y: 0.78 },
-      { x: 0.18, y: 0.84, sharp: true }, // Bus Stop chicane (sharp right-left)
-      { x: 0.24, y: 0.88, sharp: true }
+      { x: 1400, y: 2500 }, // Start / Finish line
+      { x: 3000, y: 2500 }, // La Source braking
+      { x: 3300, y: 2400, sharp: true }, // La Source 150° tight hairpin
+      { x: 3400, y: 2150, sharp: true },
+      { x: 3250, y: 1950, sharp: true }, // Eau Rouge & Raidillon S-flick
+      { x: 3000, y: 1850 },
+      { x: 3080, y: 1600 }, // Kemmel Straight (high speed straight)
+      { x: 3000, y: 1350 },
+      { x: 2850, y: 950 },
+      { x: 2650, y: 550 },
+      { x: 2500, y: 350, sharp: true }, // Les Combes chicane
+      { x: 2250, y: 300, sharp: true },
+      { x: 2000, y: 360, sharp: true }, // Malmedy
+      { x: 1750, y: 320, sharp: true }, // Bruxelles 180° hairpin
+      { x: 1450, y: 450, sharp: true },
+      { x: 1250, y: 600, sharp: true },
+      { x: 1400, y: 800 }, // Pouhon double-apex fast left
+      { x: 1750, y: 950 },
+      { x: 2000, y: 1200 },
+      { x: 2200, y: 1450, sharp: true }, // Campus / Fagnes chicane
+      { x: 1950, y: 1700, sharp: true },
+      { x: 1650, y: 1800 }, // Stavelot & Blanchimont fast sweeps
+      { x: 1350, y: 1950 },
+      { x: 900, y: 2100 },
+      { x: 600, y: 2250, sharp: true }, // Bus Stop chicane (sharp flick)
+      { x: 550, y: 2450, sharp: true },
+      { x: 950, y: 2500 }
     ],
-    // 3: Red Bull Ring (T1 Niki Lauda 90°, Uphill straight, T3 Remus 140° hairpin, Downhill straight, T4 Schlossgold, Infield, T9 & T10)
+    // 3: Red Bull Ring (T1 90°, Uphill straight, T3 Remus hairpin, Downhill straight, T4 Schlossgold 90°, Rauch infield)
     [
-      { x: 0.35, y: 0.88 }, // Start / Finish line
-      { x: 0.65, y: 0.88 }, // T1 braking
-      { x: 0.74, y: 0.82, sharp: true }, // T1 Niki Lauda sharp 90° uphill right
-      { x: 0.78, y: 0.65 },
-      { x: 0.80, y: 0.42 }, // Uphill straight
-      { x: 0.80, y: 0.20 },
-      { x: 0.80, y: 0.08, sharp: true }, // T3 Remus tight 140° hairpin
-      { x: 0.74, y: 0.08, sharp: true },
-      { x: 0.66, y: 0.16, sharp: true },
-      { x: 0.54, y: 0.24 }, // Downhill straight to T4
-      { x: 0.42, y: 0.34 },
-      { x: 0.34, y: 0.44, sharp: true }, // T4 Schlossgold sharp 90° right
-      { x: 0.28, y: 0.52, sharp: true },
-      { x: 0.34, y: 0.62 }, // T5 & T6 Rauch infield
-      { x: 0.44, y: 0.68 },
-      { x: 0.42, y: 0.76 }, // T7 & T8 Würth
-      { x: 0.30, y: 0.80, sharp: true }, // T9 Rindt 90° right
-      { x: 0.18, y: 0.86, sharp: true }  // T10 final 90° right onto straight
+      { x: 1400, y: 2600 }, // Start / Finish line
+      { x: 2900, y: 2600 }, // T1 braking
+      { x: 3350, y: 2500, sharp: true }, // T1 Niki Lauda 90° uphill right
+      { x: 3500, y: 2250 },
+      { x: 3550, y: 1750 }, // Uphill straight to T3
+      { x: 3550, y: 1050 },
+      { x: 3550, y: 500, sharp: true }, // T3 Remus 140° tight hairpin
+      { x: 3350, y: 420, sharp: true },
+      { x: 3000, y: 600 }, // Downhill straight to T4
+      { x: 2600, y: 850 },
+      { x: 2200, y: 1150, sharp: true }, // T4 Schlossgold 90° right
+      { x: 1900, y: 1350, sharp: true },
+      { x: 1650, y: 1500 }, // Rauch infield sweeps
+      { x: 1800, y: 1750 },
+      { x: 2100, y: 1900 },
+      { x: 2000, y: 2150, sharp: true }, // T9 Rindt 90° right
+      { x: 1650, y: 2300, sharp: true },
+      { x: 1250, y: 2380, sharp: true }, // T10 final 90° right onto straight
+      { x: 950, y: 2500 }
     ],
-    // 4: Suzuka Circuit (T1 & T2, The S-Curves, Dunlop, Degner 1 & 2, Hairpin, 200R, Spoon Curve, Back Straight, 130R, Casio chicane)
+    // 4: Suzuka Circuit (Esses snake, Dunlop, Degner 1 & 2, Hairpin, Spoon Curve, Back Straight, 130R, Casio chicane)
     [
-      { x: 0.35, y: 0.88 }, // Start / Finish line
-      { x: 0.65, y: 0.88 }, // T1 braking zone
-      { x: 0.76, y: 0.82, sharp: true }, // T1 & T2 fast sweeping rights
-      { x: 0.80, y: 0.72, sharp: true },
-      { x: 0.74, y: 0.64, sharp: true }, // S-curves snake (left-right-left-right)
-      { x: 0.82, y: 0.55, sharp: true },
-      { x: 0.74, y: 0.46, sharp: true },
-      { x: 0.80, y: 0.38, sharp: true },
-      { x: 0.72, y: 0.30 }, // Dunlop curve
-      { x: 0.62, y: 0.24 },
-      { x: 0.54, y: 0.22, sharp: true }, // Degner 1 (sharp 90° right)
-      { x: 0.58, y: 0.16, sharp: true }, // Degner 2 (sharp 90° right)
-      { x: 0.68, y: 0.18, sharp: true },
-      { x: 0.74, y: 0.22, sharp: true }, // Hairpin entry
-      { x: 0.78, y: 0.12, sharp: true }, // Hairpin apex (tight 180° hairpin)
-      { x: 0.70, y: 0.05, sharp: true }, // Hairpin exit
-      { x: 0.54, y: 0.05 }, // 200R sweep
-      { x: 0.38, y: 0.08 },
-      { x: 0.24, y: 0.16, sharp: true }, // Spoon Curve double-apex left
-      { x: 0.18, y: 0.28, sharp: true },
-      { x: 0.16, y: 0.42 }, // Back straight (high speed straight)
-      { x: 0.16, y: 0.60 },
-      { x: 0.18, y: 0.74 }, // 130R ultra-fast left sweep
-      { x: 0.22, y: 0.82, sharp: true }, // Casio Triangle chicane
-      { x: 0.26, y: 0.88, sharp: true }
+      { x: 1400, y: 2500 }, // Start / Finish line
+      { x: 2800, y: 2500 }, // T1 braking
+      { x: 3200, y: 2400, sharp: true }, // T1 & T2 fast rights
+      { x: 3400, y: 2150, sharp: true },
+      { x: 3100, y: 1900, sharp: true }, // S-curves snake (left-right-left-right)
+      { x: 3450, y: 1650, sharp: true },
+      { x: 3050, y: 1400, sharp: true },
+      { x: 3350, y: 1150, sharp: true },
+      { x: 2950, y: 950 }, // Dunlop curve
+      { x: 2500, y: 850 },
+      { x: 2200, y: 700, sharp: true }, // Degner 1 (sharp 90° right)
+      { x: 2400, y: 520, sharp: true }, // Degner 2 (sharp 90° right)
+      { x: 2750, y: 580, sharp: true },
+      { x: 3000, y: 700, sharp: true }, // Hairpin entry
+      { x: 3200, y: 550, sharp: true }, // Hairpin 180° apex
+      { x: 3000, y: 350, sharp: true }, // Hairpin exit
+      { x: 2300, y: 350 }, // 200R sweep
+      { x: 1600, y: 420 },
+      { x: 1000, y: 550, sharp: true }, // Spoon Curve double-apex left
+      { x: 800, y: 800, sharp: true },
+      { x: 1000, y: 1150 }, // Back straight (high-speed DRS straight)
+      { x: 1300, y: 1500 },
+      { x: 1600, y: 1850 },
+      { x: 1800, y: 2150, sharp: true }, // 130R high-speed left sweep
+      { x: 1300, y: 2220, sharp: true }, // Casio chicane (sharp flick)
+      { x: 700, y: 2350, sharp: true },
+      { x: 950, y: 2500 }
     ],
-    // 5: Infield Switchback (Technical circuit with deep interior hairpins and sharp corners)
+    // 5: Fjordsvingen Drift (Legendary 4-tier mountain drift switchback with 3 hairpins and high-speed downhill descent)
     [
-      { x: 0.35, y: 0.88 }, // Start / Finish line
-      { x: 0.70, y: 0.88 }, // Main straight
-      { x: 0.82, y: 0.82, sharp: true }, // T1 90° right
-      { x: 0.84, y: 0.58 }, // Outer straight
-      { x: 0.82, y: 0.28 },
-      { x: 0.76, y: 0.12, sharp: true }, // Top corner
-      { x: 0.64, y: 0.10 },
-      { x: 0.54, y: 0.18, sharp: true }, // Dive into deep infield
-      { x: 0.50, y: 0.38, sharp: true },
-      { x: 0.58, y: 0.50, sharp: true }, // Infield hairpin apex
-      { x: 0.50, y: 0.62, sharp: true }, // Switchback left
-      { x: 0.38, y: 0.54, sharp: true }, // Switchback right
-      { x: 0.36, y: 0.28 }, // Exit infield
-      { x: 0.28, y: 0.14, sharp: true }, // North-west corner
-      { x: 0.16, y: 0.20, sharp: true },
-      { x: 0.14, y: 0.44 }, // West straight
-      { x: 0.14, y: 0.70 },
-      { x: 0.18, y: 0.82, sharp: true }, // Final chicane
-      { x: 0.24, y: 0.88, sharp: true }
+      { x: 1400, y: 2600 }, // Start / Finish line on bottom tier
+      { x: 3300, y: 2600 }, // Fast drag straight
+      { x: 3900, y: 2400, sharp: true }, // Tier 1 -> Tier 2 Hairpin (180° right)
+      { x: 4000, y: 2100, sharp: true },
+      { x: 3900, y: 1850, sharp: true },
+      { x: 3300, y: 1850 }, // Tier 2 straight (going west)
+      { x: 2300, y: 1850 },
+      { x: 1400, y: 1850 },
+      { x: 800, y: 1700, sharp: true }, // Tier 2 -> Tier 3 Hairpin (180° left)
+      { x: 700, y: 1450, sharp: true },
+      { x: 800, y: 1200, sharp: true },
+      { x: 1400, y: 1200 }, // Tier 3 straight (going east)
+      { x: 2300, y: 1200 },
+      { x: 3300, y: 1200 },
+      { x: 3900, y: 1050, sharp: true }, // Tier 3 -> Tier 4 Hairpin (180° right)
+      { x: 4000, y: 800, sharp: true },
+      { x: 3900, y: 550, sharp: true },
+      { x: 3300, y: 550 }, // Mountain summit straight (going west)
+      { x: 2300, y: 550 },
+      { x: 1400, y: 550 },
+      { x: 800, y: 600, sharp: true }, // High-speed downhill descent entry
+      { x: 550, y: 850, sharp: true },
+      { x: 450, y: 1300 }, // Downhill canyon descent straight
+      { x: 450, y: 1900 },
+      { x: 550, y: 2450, sharp: true }, // Entry onto bottom straight
+      { x: 850, y: 2600 }
     ],
-    // 6: Grand Prix Street Circuit (Multiple sharp 90-degree square corners and chicanes)
+    // 6: Grand Prix Skogsrally (Infield chicane & hairpin complex, wide flowing straights and technical drift turns)
     [
-      { x: 0.35, y: 0.88 }, // Start / Finish line
-      { x: 0.72, y: 0.88 }, // Long straight
-      { x: 0.82, y: 0.82, sharp: true }, // 90° right
-      { x: 0.82, y: 0.64 },
-      { x: 0.74, y: 0.58, sharp: true }, // Chicane flick 1
-      { x: 0.82, y: 0.50, sharp: true }, // Chicane flick 2
-      { x: 0.82, y: 0.30 },
-      { x: 0.76, y: 0.14, sharp: true }, // 90° right
-      { x: 0.58, y: 0.14 },
-      { x: 0.46, y: 0.24, sharp: true }, // 90° left
-      { x: 0.46, y: 0.44 },
-      { x: 0.36, y: 0.44, sharp: true }, // 90° right
-      { x: 0.36, y: 0.24 },
-      { x: 0.24, y: 0.14, sharp: true }, // 90° left
-      { x: 0.14, y: 0.24, sharp: true }, // 90° left
-      { x: 0.14, y: 0.56 }, // West straight
-      { x: 0.18, y: 0.72, sharp: true }, // 90° right
-      { x: 0.22, y: 0.84, sharp: true }  // 90° left onto main straight
+      { x: 1400, y: 2600 }, // Start / Finish line
+      { x: 3400, y: 2600 }, // Massive main straight
+      { x: 4100, y: 2250, sharp: true }, // Turn 1 90° right
+      { x: 4300, y: 1500 }, // East straight
+      { x: 3900, y: 850, sharp: true }, // North-east sweeper
+      { x: 3000, y: 650 }, // Top straight
+      { x: 2000, y: 650, sharp: true }, // Dive into infield complex
+      { x: 1300, y: 1000, sharp: true }, // Infield chicane entry
+      { x: 1400, y: 1500, sharp: true }, // Infield hairpin apex
+      { x: 2200, y: 1650, sharp: true }, // S-curve exit
+      { x: 2400, y: 2050, sharp: true }, // Infield switchback
+      { x: 1900, y: 2150, sharp: true },
+      { x: 1200, y: 2000 },
+      { x: 700, y: 1850, sharp: true }, // South-west corner
+      { x: 350, y: 2150, sharp: true }, // Final chicane
+      { x: 450, y: 2550, sharp: true }, // Final turn onto start straight
+      { x: 900, y: 2600 }
     ]
   ];
 
-  // Sharp Corner Refinement: Inserts shoulder control points at sharp vertices
+  // Sharp Corner Refinement: Inserts 5-point tangent-clamped shoulder points
   // so Catmull-Rom spline stays tight and sharp through chicanes, 90° turns, and hairpins
   function sharpenCorners(rawPoints) {
     const n = rawPoints.length;
@@ -345,11 +360,11 @@
 
       const d1x = cur.x - prev.x;
       const d1y = cur.y - prev.y;
-      const len1 = Math.hypot(d1x, d1y);
+      const len1 = Math.hypot(d1x, d1y) || 1;
 
       const d2x = next.x - cur.x;
       const d2y = next.y - cur.y;
-      const len2 = Math.hypot(d2x, d2y);
+      const len2 = Math.hypot(d2x, d2y) || 1;
 
       if (len1 < 50 || len2 < 50) {
         result.push(cur);
@@ -361,20 +376,32 @@
       const u2x = d2x / len2;
       const u2y = d2y / len2;
 
-      const dot = u1x * u2x + u1y * u2y;
-      const angleTurn = Math.acos(Math.max(-1, Math.min(1, dot)));
-      const isSharp = cur.sharp || (angleTurn > 0.85);
+      const dot = Math.max(-1, Math.min(1, u1x * u2x + u1y * u2y));
+      const angleTurn = Math.acos(dot);
+      const isSharp = cur.sharp || (angleTurn > 0.60);
 
-      if (isSharp && len1 > 160 && len2 > 160) {
-        const bevelDist = Math.min(85, Math.min(len1 * 0.32, len2 * 0.32));
+      if (isSharp && len1 > 130 && len2 > 130) {
+        const bevel = Math.min(65, Math.min(len1 * 0.28, len2 * 0.28));
         result.push({
-          x: Math.round(cur.x - u1x * bevelDist),
-          y: Math.round(cur.y - u1y * bevelDist)
+          x: Math.round(cur.x - u1x * bevel * 1.3),
+          y: Math.round(cur.y - u1y * bevel * 1.3),
+          sharp: false
+        });
+        result.push({
+          x: Math.round(cur.x - u1x * bevel * 0.45),
+          y: Math.round(cur.y - u1y * bevel * 0.45),
+          sharp: false
         });
         result.push(cur);
         result.push({
-          x: Math.round(cur.x + u2x * bevelDist),
-          y: Math.round(cur.y + u2y * bevelDist)
+          x: Math.round(cur.x + u2x * bevel * 0.45),
+          y: Math.round(cur.y + u2y * bevel * 0.45),
+          sharp: false
+        });
+        result.push({
+          x: Math.round(cur.x + u2x * bevel * 1.3),
+          y: Math.round(cur.y + u2y * bevel * 1.3),
+          sharp: false
         });
       } else {
         result.push(cur);
@@ -383,39 +410,37 @@
     return result;
   }
 
-  function generateF1RawPoints(seed, worldW = 5600, worldH = 3600, archetype = null) {
+  function generateF1RawPoints(seed, worldW = 4600, worldH = 3000, archetype = null) {
     const rng = createF1Rng(seed);
-    const padX = 300;
-    const padY = 280;
-    const effW = worldW - 2 * padX;
-    const effH = worldH - 2 * padY;
-
     const archIdx = archetype !== null ? archetype : Math.floor(rng() * F1_ARCHETYPES.length);
     const base = F1_ARCHETYPES[archIdx % F1_ARCHETYPES.length];
+
+    const scaleX = worldW / 4600;
+    const scaleY = worldH / 3000;
 
     // Seed-based procedural perturbation on intermediate corners
     for (let attempt = 0; attempt < 25; attempt++) {
       const pts = base.map((p, idx) => {
         // Keep start/finish straight locked and flat
         const isStartStraight = (idx === 0 || idx === 1 || idx === base.length - 1);
-        const jx = isStartStraight ? 0 : (rng() - 0.5) * 50;
-        const jy = isStartStraight ? 0 : (rng() - 0.5) * 45;
+        const jx = isStartStraight ? 0 : (rng() - 0.5) * 40 * scaleX;
+        const jy = isStartStraight ? 0 : (rng() - 0.5) * 40 * scaleY;
         return {
-          x: Math.max(160, Math.min(worldW - 160, Math.round(padX + p.x * effW + jx))),
-          y: Math.max(160, Math.min(worldH - 160, Math.round(padY + p.y * effH + jy))),
+          x: Math.max(120, Math.min(worldW - 120, Math.round(p.x * scaleX + jx))),
+          y: Math.max(120, Math.min(worldH - 120, Math.round(p.y * scaleY + jy))),
           sharp: Boolean(p.sharp)
         };
       });
 
-      if (checkTrackValid(pts, 150)) {
+      if (checkTrackValid(pts, 150 * Math.min(scaleX, scaleY))) {
         return pts;
       }
     }
 
     // Fallback to pure blueprint coordinates
     return base.map(p => ({
-      x: Math.round(padX + p.x * effW),
-      y: Math.round(padY + p.y * effH),
+      x: Math.round(p.x * scaleX),
+      y: Math.round(p.y * scaleY),
       sharp: Boolean(p.sharp)
     }));
   }
@@ -515,11 +540,11 @@
   }
 
   function createF1Track(id, name, seed, archetype = null, roadWidth = 175) {
-    const worldWidth = 5600;
-    const worldHeight = 3600;
+    const worldWidth = 4600;
+    const worldHeight = 3000;
     const rawPoints = generateF1RawPoints(seed, worldWidth, worldHeight, archetype);
     const sharpenedPoints = sharpenCorners(rawPoints);
-    const smoothPoints = generateSmoothTrack(sharpenedPoints, 14);
+    const smoothPoints = generateSmoothTrack(sharpenedPoints, 12);
     const n = smoothPoints.length;
     const halfRoad = roadWidth * 0.5;
     const kerbWidth = 26;
@@ -570,9 +595,12 @@
       }
     }
 
-    // Infield Anti-Shortcut Barriers
+    // Infield Anti-Shortcut Barriers (in grass corridors between parallel segments)
     const infieldBarriers = [];
     const rawN = rawPoints.length;
+    const safeClearance = halfRoad + kerbWidth + 35;
+    const safeClearanceSq = safeClearance * safeClearance;
+
     for (let i = 0; i < rawN; i++) {
       const p1 = rawPoints[i];
       const p2 = rawPoints[(i + 1) % rawN];
@@ -585,13 +613,20 @@
         const mid2 = { x: (q1.x + q2.x) * 0.5, y: (q1.y + q2.y) * 0.5 };
 
         const dist = Math.hypot(mid1.x - mid2.x, mid1.y - mid2.y);
-        if (dist < 600 && dist > roadWidth + 80) {
-          infieldBarriers.push({
-            x1: Math.round((p1.x + q2.x) * 0.5),
-            y1: Math.round((p1.y + q2.y) * 0.5),
-            x2: Math.round((p2.x + q1.x) * 0.5),
-            y2: Math.round((p2.y + q1.y) * 0.5),
-          });
+        if (dist > roadWidth + 120 && dist < 550) {
+          const b1 = { x: Math.round((p1.x + q2.x) * 0.5), y: Math.round((p1.y + q2.y) * 0.5) };
+          const b2 = { x: Math.round((p2.x + q1.x) * 0.5), y: Math.round((p2.y + q1.y) * 0.5) };
+
+          let safe = true;
+          for (let k = 0; k < rawN; k++) {
+            if (distToSegmentSquared(rawPoints[k], b1, b2) < safeClearanceSq) {
+              safe = false;
+              break;
+            }
+          }
+          if (safe) {
+            infieldBarriers.push({ x1: b1.x, y1: b1.y, x2: b2.x, y2: b2.y });
+          }
         }
       }
     }
@@ -619,12 +654,14 @@
   const TRACK_PRESETS = {
     f1_random: { name: "Tilfeldig F1 GP 🎲", seed: null, arc: null },
     f1_monza: { name: "Monza Autodromo (F1)", seed: 1922, arc: 0 },
-    f1_silverstone: { name: "Silverstone Circuit (F1)", seed: 1950, arc: 1 },
+    f1_silverstone: { name: "Silverstone Arena (F1)", seed: 1950, arc: 1 },
     f1_spa: { name: "Spa-Francorchamps (F1)", seed: 1925, arc: 2 },
     f1_redbull: { name: "Red Bull Ring (F1)", seed: 1970, arc: 3 },
-    f1_suzuka: { name: "Suzuka Circuit (F1)", seed: 1962, arc: 4 },
-    grand_prix: { name: "Monza Autodromo (F1)", seed: 1922, arc: 0 },
-    fjord_drift: { name: "Spa-Francorchamps (F1)", seed: 1925, arc: 2 },
+    f1_suzuka: { name: "Suzuka Figure-Fold (F1)", seed: 1962, arc: 4 },
+    f1_fjordsvingen: { name: "Fjordsvingen Drift (F1)", seed: 2026, arc: 5 },
+    f1_gp_classic: { name: "Grand Prix Skogsrally (F1)", seed: 1994, arc: 6 },
+    grand_prix: { name: "Grand Prix Skogsrally (F1)", seed: 1994, arc: 6 },
+    fjord_drift: { name: "Fjordsvingen Drift (F1)", seed: 2026, arc: 5 },
   };
 
   const trackCache = {};
@@ -1567,7 +1604,7 @@
     const trackDist = Math.hypot(toTrackX, toTrackY);
     const halfRoad = track.roadWidth * 0.5;
     const kerbWidth = track.kerbWidth || 26;
-    const runoffWidth = 90; // The grey asphalt run-off buffer outside kerbs
+    const runoffWidth = 36; // The grey asphalt run-off buffer outside kerbs
 
     const onAsphalt = trackDist <= halfRoad;
     const onKerb = !onAsphalt && trackDist <= halfRoad + kerbWidth;
@@ -1575,7 +1612,7 @@
     const onGrass = trackDist > halfRoad + kerbWidth + runoffWidth;
 
     // Lateral grip retention according to surface
-    const latRetention = onGrass ? 0.91 : (onRunoff ? 0.94 : (isSlidingOnIce ? 0.978 : 0.88));
+    const latRetention = onGrass ? 0.90 : (onRunoff ? 0.94 : (isSlidingOnIce ? 0.978 : 0.88));
     let newVLateral = vLateral * Math.pow(latRetention, dt * 60);
 
     // Forward drive & slide braking on surface
@@ -1593,11 +1630,11 @@
         addRallyDustParticle(car);
       }
     } else if (onGrass) {
-      // Drivable on grass! Smooth rolling deceleration & grass particles
-      newVForward *= Math.pow(0.93, dt * 60);
-      newVLateral *= Math.pow(0.92, dt * 60);
-      if (Math.abs(newVForward) > 270) {
-        newVForward -= Math.sign(newVForward) * 350 * dt;
+      // Fully drivable on grass! Smooth rolling deceleration & grass particles
+      newVForward *= Math.pow(0.925, dt * 60);
+      newVLateral *= Math.pow(0.91, dt * 60);
+      if (Math.abs(newVForward) > 250) {
+        newVForward -= Math.sign(newVForward) * 320 * dt;
       }
       if (car.speed > 20) {
         addGrassParticle(car);
@@ -1605,7 +1642,7 @@
     }
 
     const effectiveEnginePower = onGrass ? (enginePower * 0.55) : (onRunoff ? enginePower * 0.88 : enginePower);
-    const effectiveMaxSpeed = onGrass ? Math.min(maxSpeed, 270) : maxSpeed;
+    const effectiveMaxSpeed = onGrass ? Math.min(maxSpeed, 260) : maxSpeed;
 
     if (throttle > 0 && newVForward < effectiveMaxSpeed) {
       newVForward += throttle * effectiveEnginePower * dt;
@@ -1620,8 +1657,8 @@
       }
     }
 
-    // Rolling drag: low on asphalt/kerb (0.996), mild on grey runoff (0.988), higher on grass (0.93)
-    const rollingDrag = onGrass ? 0.93 : (onRunoff ? 0.988 : (onKerb ? 0.994 : 0.996));
+    // Rolling drag: low on asphalt/kerb (0.996), mild on grey runoff (0.988), higher on grass (0.925)
+    const rollingDrag = onGrass ? 0.925 : (onRunoff ? 0.988 : (onKerb ? 0.994 : 0.996));
     newVForward *= Math.pow(rollingDrag, dt * 60);
 
     car.vx = newVForward * forwardX + newVLateral * rightX;
@@ -1630,33 +1667,7 @@
     if (!Number.isFinite(car.vx)) car.vx = 0;
     if (!Number.isFinite(car.vy)) car.vy = 0;
 
-    // 1. Solid Outer Runoff Barriers (F1 Armco Crash Barrier)
-    const wallCollisionDist = halfRoad + kerbWidth + 140;
-
-    if (trackDist > wallCollisionDist) {
-      const d = trackDist || 1;
-      const nx = toTrackX / d;
-      const ny = toTrackY / d;
-
-      // Keep car firmly inside outer run-off barrier
-      car.x = closest.x - nx * wallCollisionDist;
-      car.y = closest.y - ny * wallCollisionDist;
-
-      // Normal velocity component towards track
-      const dot = car.vx * nx + car.vy * ny;
-      if (dot < 0) {
-        car.vx = (car.vx - 1.5 * dot * nx) * 0.72;
-        car.vy = (car.vy - 1.5 * dot * ny) * 0.72;
-        const now = performance.now();
-        if (!car.lastWallHit || now - car.lastWallHit > 120) {
-          car.lastWallHit = now;
-          playTone(150, 0.12, "sawtooth", 0.32);
-          addSparkParticles(car.x, car.y);
-        }
-      }
-    }
-
-    // 2. Infield Anti-Shortcut Barriers (Block cutting straight across grass infields!)
+    // 1. Infield Anti-Shortcut Barriers (Block cutting straight across grass infields!)
     if (track.infieldBarriers && track.infieldBarriers.length > 0) {
       for (let b = 0; b < track.infieldBarriers.length; b++) {
         const bar = track.infieldBarriers[b];
@@ -1674,7 +1685,6 @@
             bny = 0;
           } else {
             bnx /= barDist;
-            bny /= barDist;
           }
 
           car.x = bcp.x + bnx * barRadius;
@@ -1695,11 +1705,48 @@
       }
     }
 
-    // 3. World Boundary Limits
-    const wWidth = track.worldWidth || 5600;
-    const wHeight = track.worldHeight || 3600;
-    car.x = Math.max(60, Math.min(wWidth - 60, car.x));
-    car.y = Math.max(60, Math.min(wHeight - 60, car.y));
+    // 2. World Outer Perimeter Boundary Barrier
+    const wWidth = track.worldWidth || 4600;
+    const wHeight = track.worldHeight || 3000;
+    const margin = 60;
+    let hitBorder = false;
+    let bnx = 0, bny = 0;
+
+    if (car.x < margin) {
+      car.x = margin;
+      bnx = 1;
+      hitBorder = true;
+    } else if (car.x > wWidth - margin) {
+      car.x = wWidth - margin;
+      bnx = -1;
+      hitBorder = true;
+    }
+    if (car.y < margin) {
+      car.y = margin;
+      bny = 1;
+      hitBorder = true;
+    } else if (car.y > wHeight - margin) {
+      car.y = wHeight - margin;
+      bny = -1;
+      hitBorder = true;
+    }
+
+    if (hitBorder) {
+      const bLen = Math.hypot(bnx, bny) || 1;
+      bnx /= bLen;
+      bny /= bLen;
+      const dot = car.vx * bnx + car.vy * bny;
+      if (dot < 0) {
+        car.vx = (car.vx - 1.5 * dot * bnx) * 0.7;
+        car.vy = (car.vy - 1.5 * dot * bny) * 0.7;
+        const now = performance.now();
+        if (!car.lastWallHit || now - car.lastWallHit > 120) {
+          car.lastWallHit = now;
+          playTone(150, 0.12, "sawtooth", 0.32);
+          addSparkParticles(car.x, car.y);
+        }
+      }
+    }
 
     car.x += car.vx * dt;
     car.y += car.vy * dt;
@@ -1984,8 +2031,8 @@
     const rw = track.roadWidth || 175;
     const halfRoad = rw * 0.5;
     const kerbW = track.kerbWidth || 26;
-    const worldW = track.worldWidth || 5600;
-    const worldH = track.worldHeight || 3600;
+    const worldW = track.worldWidth || 4600;
+    const worldH = track.worldHeight || 3000;
 
     const canvas = document.createElement("canvas");
     canvas.width = worldW;
@@ -2029,32 +2076,12 @@
     for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
     ctx.closePath();
 
-    // 5. Outer Run-off Area (Asphalt run-off buffer outside curves)
-    ctx.lineWidth = rw + 2 * (kerbW + 140);
-    ctx.strokeStyle = "rgba(15, 23, 42, 0.7)";
+    // 5. Run-off Area (Dark asphalt run-off buffer outside curves/kerbs)
+    ctx.lineWidth = rw + 2 * (kerbW + 36);
+    ctx.strokeStyle = "#252a32"; // Dark asphalt run-off
     ctx.stroke();
 
-    ctx.lineWidth = rw + 2 * (kerbW + 90);
-    ctx.strokeStyle = "#2d333b"; // Dark asphalt run-off
-    ctx.stroke();
-
-    // 6. Outer Armco Crash Barrier (Wall perimeter)
-    // Shadow
-    ctx.lineWidth = rw + 2 * (kerbW + 140) + 12;
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.45)";
-    ctx.stroke();
-
-    // Steel Barrier Beam
-    ctx.lineWidth = rw + 2 * (kerbW + 140) + 6;
-    ctx.strokeStyle = "#475569";
-    ctx.stroke();
-
-    // Galvanized Rail Top Highlight
-    ctx.lineWidth = rw + 2 * (kerbW + 140) + 2;
-    ctx.strokeStyle = "#94a3b8";
-    ctx.stroke();
-
-    // 7. Infield Anti-Shortcut Barriers
+    // 6. Infield Anti-Shortcut Barriers
     if (track.infieldBarriers && track.infieldBarriers.length > 0) {
       track.infieldBarriers.forEach(b => {
         // Barrier shadow
@@ -2086,6 +2113,19 @@
         ctx.setLineDash([]);
       });
     }
+
+    // 7. Outer Venue Perimeter Barrier
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.45)";
+    ctx.lineWidth = 16;
+    ctx.strokeRect(52, 52, worldW - 100, worldH - 100);
+
+    ctx.strokeStyle = "#334155";
+    ctx.lineWidth = 12;
+    ctx.strokeRect(50, 50, worldW - 100, worldH - 100);
+
+    ctx.strokeStyle = "#94a3b8";
+    ctx.lineWidth = 4;
+    ctx.strokeRect(50, 50, worldW - 100, worldH - 100);
 
     // 8. Red & White Rumble Kerbs ("de røde og hvite delene")
     if (track.kerbs && track.kerbs.length > 0) {
@@ -2402,8 +2442,8 @@
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const worldW = track.worldWidth || 5600;
-    const worldH = track.worldHeight || 3600;
+    const worldW = track.worldWidth || 4600;
+    const worldH = track.worldHeight || 3000;
     const scale = Math.min((canvas.width - 16) / worldW, (canvas.height - 16) / worldH);
     const offsetX = (canvas.width - worldW * scale) / 2;
     const offsetY = (canvas.height - worldH * scale) / 2;
