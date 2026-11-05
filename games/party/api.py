@@ -373,16 +373,20 @@ class PartyRoom:
 
             all_ready = bool(self.players and all(p.get("is_ready", False) for p in self.players.values()))
 
+            is_host_client = bool(client_player and client_player.get("is_host"))
+
             return {
                 "ok": True,
                 "roomCode": self.code,
+                "hostId": self.host_id,
+                "hostToken": self.host_token if is_host_client else None,
                 "currentGame": self.current_game,
                 "gameUrl": game_url,
                 "allReady": all_ready,
                 "version": self.version,
                 "players": players_list,
                 "playerCount": len(players_list),
-                "isHost": bool(client_player and client_player.get("is_host")),
+                "isHost": is_host_client,
                 "me": client_player,
                 "kicked": bool(client_player_id and client_player_id in self.kicked_players),
                 "gameState": effective_game_state,
@@ -2031,7 +2035,19 @@ class PartyRoom:
 
 class PartyAPI:
     @staticmethod
+    def _clean_expired_rooms() -> None:
+        now = time.time()
+        with _rooms_lock:
+            to_remove = [
+                code for code, room in _rooms.items()
+                if (now - room.last_active) > 7200 or len(room.players) == 0
+            ]
+            for code in to_remove:
+                del _rooms[code]
+
+    @staticmethod
     def handle_get(path: str, query: Dict[str, Any]) -> Optional[Tuple[int, Any]]:
+        PartyAPI._clean_expired_rooms()
         # Remove /api/party/ prefix if present
         rel_path = path
         if rel_path.startswith("/api/party/"):
@@ -2197,6 +2213,7 @@ class PartyAPI:
 
     @staticmethod
     def handle_post(path: str, body: Dict[str, Any]) -> Optional[Tuple[int, Any]]:
+        PartyAPI._clean_expired_rooms()
         rel_path = path
         if rel_path.startswith("/api/party/"):
             rel_path = "/api/" + rel_path[len("/api/party/"):]
@@ -2554,16 +2571,16 @@ class PartyAPI:
                                 "isHost": True,
                                 "lastSeen": time.time(),
                             }
-                            other_players = [p for pid, p in room.players.items() if pid != room.host_id]
-                            if other_players:
-                                p2 = other_players[0]
-                                wl_room.players[p2["id"]] = {
-                                    "id": p2["id"],
-                                    "name": p2["name"],
-                                    "avatar": p2["avatar"],
-                                    "isHost": False,
-                                    "lastSeen": time.time(),
-                                }
+                            for pid, pdata in room.players.items():
+                                if pid != room.host_id:
+                                    wl_room.players[pid] = {
+                                        "id": pid,
+                                        "name": pdata.get("name", "Spiller"),
+                                        "avatar": pdata.get("avatar", "charbear"),
+                                        "isHost": False,
+                                        "lastSeen": time.time(),
+                                    }
+                            if len(wl_room.players) >= 2:
                                 wl_room.start_game_if_ready()
                             wl_rooms[code] = wl_room
                     except Exception as err:
@@ -2795,7 +2812,12 @@ class PartyAPI:
                             new_host_id = next(iter(room.players))
                             room.host_id = new_host_id
                             room.players[new_host_id]["is_host"] = True
+                            room.host_token = f"ht_{uuid.uuid4().hex[:12]}"
                         room.bump()
+
+                with _rooms_lock:
+                    if len(room.players) == 0:
+                        del _rooms[code]
 
             return 200, {"ok": True}
 

@@ -701,9 +701,74 @@ class KorridorerAPI:
 
             with _rooms_lock:
                 room = _rooms.get(room_code)
+                if not room:
+                    try:
+                        from games.party.api import _rooms as party_rooms, extract_color_from_avatar
+                        p_room = party_rooms.get(room_code)
+                        if p_room:
+                            host_player = p_room.players.get(p_room.host_id, {})
+                            room = KorridorerRoom(
+                                code=room_code,
+                                host_name=host_player.get("name", "Spiller 1"),
+                                host_avatar=host_player.get("avatar", "charbear"),
+                                max_players=16
+                            )
+                            room.host_id = p_room.host_id
+                            room.players[0]["id"] = p_room.host_id
+                            room.players[0]["avatar"] = host_player.get("avatar", "charbear")
+                            room.players[0]["color"] = host_player.get("color") or extract_color_from_avatar(host_player.get("avatar"), PLAYER_CONFIGS[0]["color"])
+                            for pid, pdata in p_room.players.items():
+                                if pid != p_room.host_id and len(room.players) < 16:
+                                    idx = len(room.players)
+                                    cfg = PLAYER_CONFIGS[idx % len(PLAYER_CONFIGS)]
+                                    p_color = pdata.get("color") or extract_color_from_avatar(pdata.get("avatar"), cfg["color"])
+                                    room.players.append({
+                                        "id": pid,
+                                        "name": pdata.get("name", f"Spiller {idx + 1}"),
+                                        "avatar": pdata.get("avatar", cfg["defaultAvatar"]),
+                                        "color": p_color,
+                                        "colorName": pdata.get("colorName", cfg["colorName"]),
+                                        "pos": list(cfg["start"]),
+                                        "walls": 10 if len(p_room.players) == 2 else 5,
+                                        "goalDesc": cfg["goalDesc"],
+                                        "isHost": False,
+                                        "lastSeen": time.time(),
+                                    })
+                            if len(room.players) >= 2:
+                                room.start_game()
+                            _rooms[room_code] = room
+                    except Exception as err:
+                        print("Korridorer auto-bridge error:", err)
 
             if not room:
                 return 404, {"ok": False, "error": "Rommet finnes ikke eller har utløpt."}
+
+            if player_id and not any(p["id"] == player_id for p in room.players):
+                try:
+                    from games.party.api import _rooms as party_rooms, extract_color_from_avatar
+                    p_room = party_rooms.get(room_code)
+                    if p_room and player_id in p_room.players:
+                        pdata = p_room.players[player_id]
+                        with room.lock:
+                            idx = len(room.players)
+                            cfg = PLAYER_CONFIGS[idx % len(PLAYER_CONFIGS)]
+                            p_color = pdata.get("color") or extract_color_from_avatar(pdata.get("avatar"), cfg["color"])
+                            room.players.append({
+                                "id": player_id,
+                                "name": pdata.get("name", f"Spiller {idx + 1}"),
+                                "avatar": pdata.get("avatar", cfg["defaultAvatar"]),
+                                "color": p_color,
+                                "colorName": pdata.get("colorName", cfg["colorName"]),
+                                "pos": list(cfg["start"]),
+                                "walls": 5,
+                                "goalDesc": cfg["goalDesc"],
+                                "isHost": False,
+                                "lastSeen": time.time(),
+                            })
+                            if len(room.players) >= 2 and room.status == "waiting":
+                                room.start_game()
+                except Exception:
+                    pass
 
             return 200, room.get_public_state(player_id)
 

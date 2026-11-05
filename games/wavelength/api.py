@@ -297,8 +297,8 @@ class WavelengthAPI:
             rel = "/" + rel
 
         if rel == "/state":
-            code = (query.get("code", [""])[0] or "").strip().upper()
-            player_id = (query.get("playerId", [""])[0] or "").strip()
+            code = (query.get("room", [""])[0] or query.get("code", [""])[0] or "").strip().upper()
+            player_id = (query.get("player", [""])[0] or query.get("playerId", [""])[0] or "").strip()
             client_v = -1
             try:
                 client_v = int(query.get("v", [-1])[0])
@@ -307,9 +307,55 @@ class WavelengthAPI:
 
             with _rooms_lock:
                 room = _rooms.get(code)
+                if not room:
+                    try:
+                        from games.party.api import _rooms as party_rooms
+                        p_room = party_rooms.get(code)
+                        if p_room:
+                            host_p = p_room.players.get(p_room.host_id, {})
+                            room = WavelengthRoom(
+                                code=code,
+                                host_name=host_p.get("name", "Spiller 1"),
+                                host_avatar=host_p.get("avatar", "charbear"),
+                                rounds=int(p_room.game_state.get("settings", {}).get("rounds", 7))
+                            )
+                            room.host_id = p_room.host_id
+                            room.players = {}
+                            for pid, pdata in p_room.players.items():
+                                room.players[pid] = {
+                                    "id": pid,
+                                    "name": pdata.get("name", "Spiller"),
+                                    "avatar": pdata.get("avatar", "charbear"),
+                                    "isHost": bool(pid == p_room.host_id),
+                                    "lastSeen": time.time(),
+                                }
+                            if len(room.players) >= 2:
+                                room.start_game_if_ready()
+                            _rooms[code] = room
+                    except Exception as b_err:
+                        print("Wavelength auto-bridge error:", b_err)
 
             if not room:
                 return 404, {"ok": False, "error": "Rommet finnes ikke."}
+
+            if player_id and player_id not in room.players:
+                try:
+                    from games.party.api import _rooms as party_rooms
+                    p_room = party_rooms.get(code)
+                    if p_room and player_id in p_room.players:
+                        pdata = p_room.players[player_id]
+                        with room.lock:
+                            room.players[player_id] = {
+                                "id": player_id,
+                                "name": pdata.get("name", "Spiller"),
+                                "avatar": pdata.get("avatar", "charbear"),
+                                "isHost": False,
+                                "lastSeen": time.time(),
+                            }
+                            if len(room.players) >= 2 and room.status == "waiting":
+                                room.start_game_if_ready()
+                except Exception:
+                    pass
 
             with room.lock:
                 if player_id in room.players:

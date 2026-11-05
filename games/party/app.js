@@ -414,7 +414,14 @@
           }
 
           state.version = data.version;
-          state.isHost = data.isHost;
+          state.isHost = Boolean(data.isHost);
+          if (data.isHost && data.hostToken) {
+            state.hostToken = data.hostToken;
+            sessionStorage.setItem("party_host_token", data.hostToken);
+            if (window.PartyBridge) {
+              window.PartyBridge.saveSession({ hostToken: data.hostToken });
+            }
+          }
 
           updateLobbyUI(data);
 

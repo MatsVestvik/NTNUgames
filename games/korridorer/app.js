@@ -930,9 +930,7 @@
 
     // Header Leave Room
     el.btnLeaveRoomHeader.addEventListener("click", () => {
-      if (confirm("Vil du forlate rommet og gå til lobbyen?")) {
-        leaveToLobby();
-      }
+      leaveToLobby();
     });
 
     // Lobby Tabs Switching
@@ -2417,6 +2415,12 @@
 
     el.statTurnCount.textContent = state.turnCount;
     el.statWallsPlaced.textContent = state.walls.length;
+
+    if (el.btnVictoryLounge && el.btnVictoryLobby) {
+      const isParty = Boolean(state.roomCode || sessionStorage.getItem("party_room_code"));
+      el.btnVictoryLounge.classList.toggle("hidden", !isParty);
+      el.btnVictoryLobby.classList.toggle("hidden", isParty);
+    }
 
     el.modalVictory.classList.remove("hidden");
   }

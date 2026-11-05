@@ -389,14 +389,62 @@ class SjakkAPI:
         SjakkAPI._clean_expired_rooms()
 
         if path == "/api/sjakk/state":
-            room_code = (query.get("room") or [""])[0].strip().upper()
-            player_id = (query.get("player") or [""])[0].strip()
+            room_code = (query.get("room") or query.get("code") or [""])[0].strip().upper()
+            player_id = (query.get("player") or query.get("playerId") or [""])[0].strip()
 
             with _rooms_lock:
                 room = _rooms.get(room_code)
+                if not room:
+                    try:
+                        from games.party.api import _rooms as party_rooms
+                        p_room = party_rooms.get(room_code)
+                        if p_room:
+                            host_player = p_room.players.get(p_room.host_id, {})
+                            room = SjakkRoom(
+                                code=room_code,
+                                host_name=host_player.get("name", "Hvit"),
+                                host_avatar=host_player.get("avatar", "charbear"),
+                                time_control=int(p_room.game_state.get("settings", {}).get("timeControl", 300)),
+                            )
+                            room.host_id = p_room.host_id
+                            room.white_player["id"] = p_room.host_id
+                            other_players = [p for pid, p in p_room.players.items() if pid != p_room.host_id]
+                            if other_players:
+                                p2 = other_players[0]
+                                room.black_player = {
+                                    "id": p2["id"],
+                                    "name": p2["name"],
+                                    "avatar": p2["avatar"],
+                                    "color": "b",
+                                    "isHost": False,
+                                    "lastSeen": time.time(),
+                                }
+                                room.start_game_if_ready()
+                            _rooms[room_code] = room
+                    except Exception as err:
+                        print("Sjakk auto-bridge error:", err)
 
             if not room:
                 return 404, {"ok": False, "error": "Rommet finnes ikke eller har utløpt."}
+
+            if player_id and room.black_player is None:
+                try:
+                    from games.party.api import _rooms as party_rooms
+                    p_room = party_rooms.get(room_code)
+                    if p_room and player_id != room.host_id and player_id in p_room.players:
+                        p2 = p_room.players[player_id]
+                        with room.lock:
+                            room.black_player = {
+                                "id": p2["id"],
+                                "name": p2["name"],
+                                "avatar": p2["avatar"],
+                                "color": "b",
+                                "isHost": False,
+                                "lastSeen": time.time(),
+                            }
+                            room.start_game_if_ready()
+                except Exception:
+                    pass
 
             return 200, room.get_public_state(player_id)
 
