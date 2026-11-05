@@ -677,8 +677,13 @@
     inGameRoomCodePill: document.getElementById("inGameRoomCodePill"),
     inGameRoomCodeText: document.getElementById("inGameRoomCodeText"),
     inGameCarPreviewCanvas: document.getElementById("inGameCarPreviewCanvas"),
-    inGameBodyOptions: document.getElementById("inGameBodyOptions"),
-    inGameWheelOptions: document.getElementById("inGameWheelOptions"),
+    btnInGameBodyPrev: document.getElementById("btnInGameBodyPrev"),
+    btnInGameBodyNext: document.getElementById("btnInGameBodyNext"),
+    btnInGameWheelPrev: document.getElementById("btnInGameWheelPrev"),
+    btnInGameWheelNext: document.getElementById("btnInGameWheelNext"),
+    inGameBodyLabel: document.getElementById("inGameBodyLabel"),
+    inGameWheelLabel: document.getElementById("inGameWheelLabel"),
+    btnInGameRandomize: document.getElementById("btnInGameRandomize"),
     inGameColorName: document.getElementById("inGameColorName"),
     inGameColorSwatches: document.getElementById("inGameColorSwatches"),
     inGameColorPicker: document.getElementById("inGameColorPicker"),
@@ -688,7 +693,26 @@
     inGameSplitGarage: document.getElementById("inGameSplitGarage"),
     splitP1GarageName: document.getElementById("splitP1GarageName"),
     splitP2GarageName: document.getElementById("splitP2GarageName"),
+    btnSplitP1BodyPrev: document.getElementById("btnSplitP1BodyPrev"),
+    btnSplitP1BodyNext: document.getElementById("btnSplitP1BodyNext"),
+    btnSplitP1WheelPrev: document.getElementById("btnSplitP1WheelPrev"),
+    btnSplitP1WheelNext: document.getElementById("btnSplitP1WheelNext"),
+    splitP1BodyLabel: document.getElementById("splitP1BodyLabel"),
+    splitP1WheelLabel: document.getElementById("splitP1WheelLabel"),
+    splitP1CarPreviewCanvas: document.getElementById("splitP1CarPreviewCanvas"),
+    splitP1Colors: document.getElementById("splitP1Colors"),
+    splitP1ColorPicker: document.getElementById("splitP1ColorPicker"),
     btnSplitP1Ready: document.getElementById("btnSplitP1Ready"),
+
+    btnSplitP2BodyPrev: document.getElementById("btnSplitP2BodyPrev"),
+    btnSplitP2BodyNext: document.getElementById("btnSplitP2BodyNext"),
+    btnSplitP2WheelPrev: document.getElementById("btnSplitP2WheelPrev"),
+    btnSplitP2WheelNext: document.getElementById("btnSplitP2WheelNext"),
+    splitP2BodyLabel: document.getElementById("splitP2BodyLabel"),
+    splitP2WheelLabel: document.getElementById("splitP2WheelLabel"),
+    splitP2CarPreviewCanvas: document.getElementById("splitP2CarPreviewCanvas"),
+    splitP2Colors: document.getElementById("splitP2Colors"),
+    splitP2ColorPicker: document.getElementById("splitP2ColorPicker"),
     btnSplitP2Ready: document.getElementById("btnSplitP2Ready"),
 
     // In-game Standby Banner
@@ -1325,35 +1349,206 @@
     return { refresh: refreshPreviews };
   }
 
-  function initAllCustomizers() {
-    // Solo Customizer
-    soloCustomizer = setupCustomizerUI({
-      bodyContainer: el.soloBodyOptions,
-      wheelContainer: el.soloWheelOptions,
-      swatchesContainer: el.soloColorSwatches,
-      colorPicker: el.soloColorPicker,
-      colorNameEl: el.soloColorName,
-      previewCanvas: el.soloCarPreviewCanvas,
-      getValues: () => ({
-        bodyId: state.soloBodyId || 1,
-        wheelId: state.soloWheelId || 1,
-        color: state.soloColor || state.driverColor || "#ef4444",
-      }),
-      setValues: (v) => {
-        if (v.bodyId !== undefined) state.soloBodyId = v.bodyId;
-        if (v.wheelId !== undefined) state.soloWheelId = v.wheelId;
-        if (v.color !== undefined) {
-          state.soloColor = v.color;
-          state.driverColor = v.color;
-          localStorage.setItem("ts_driver_color", v.color);
-        }
-      },
-    });
+  function cycleOption(list, currentId, dir) {
+    const idx = list.findIndex(item => item.id === currentId);
+    const safeIdx = idx === -1 ? 0 : idx;
+    const nextIdx = (safeIdx + dir + list.length) % list.length;
+    return list[nextIdx];
+  }
 
-    // Splitscreen P1
-    splitP1Customizer = setupCustomizerUI({
-      bodyContainer: el.splitP1BodyOptions,
-      wheelContainer: el.splitP1WheelOptions,
+  function setupArrowCustomizerUI(config) {
+    const {
+      btnBodyPrev,
+      btnBodyNext,
+      bodyLabel,
+      btnWheelPrev,
+      btnWheelNext,
+      wheelLabel,
+      btnRandomize,
+      swatchesContainer,
+      colorPicker,
+      colorNameEl,
+      previewCanvas,
+      getValues, // () => ({ bodyId, wheelId, color })
+      setValues, // ({ bodyId, wheelId, color }) => void
+      compact = false,
+      onChanged,
+    } = config;
+
+    function refreshPreviews() {
+      const vals = getValues();
+      drawCarPreviewOnCanvas(previewCanvas, vals.bodyId, vals.wheelId, vals.color);
+
+      const curBody = BODY_DEFS.find(b => b.id === vals.bodyId) || BODY_DEFS[0];
+      if (bodyLabel) bodyLabel.textContent = curBody.name;
+
+      const curWheel = WHEEL_DEFS.find(w => w.id === vals.wheelId) || WHEEL_DEFS[0];
+      if (wheelLabel) wheelLabel.textContent = curWheel.name;
+
+      if (colorNameEl) {
+        const match = PALETTE.find(p => p.color.toLowerCase() === (vals.color || "").toLowerCase());
+        colorNameEl.textContent = match ? match.name : "Valgt lakk";
+        colorNameEl.style.color = vals.color;
+      }
+
+      if (swatchesContainer) {
+        swatchesContainer.querySelectorAll(".cc-color-dot").forEach(dot => {
+          const isCur = dot.dataset.color && dot.dataset.color.toLowerCase() === (vals.color || "").toLowerCase();
+          dot.classList.toggle("active", Boolean(isCur));
+        });
+      }
+
+      if (colorPicker && colorPicker.value.toLowerCase() !== (vals.color || "").toLowerCase()) {
+        colorPicker.value = vals.color || "#ef4444";
+      }
+    }
+
+    // 1. Karosseri Arrow Controls
+    if (btnBodyPrev) {
+      btnBodyPrev.addEventListener("click", (e) => {
+        e.preventDefault();
+        const next = cycleOption(BODY_DEFS, getValues().bodyId, -1);
+        setValues({ bodyId: next.id });
+        refreshPreviews();
+        playTone(340, 0.05, "sine", 0.15);
+        if (onChanged) onChanged();
+      });
+    }
+    if (btnBodyNext) {
+      btnBodyNext.addEventListener("click", (e) => {
+        e.preventDefault();
+        const next = cycleOption(BODY_DEFS, getValues().bodyId, 1);
+        setValues({ bodyId: next.id });
+        refreshPreviews();
+        playTone(380, 0.05, "sine", 0.15);
+        if (onChanged) onChanged();
+      });
+    }
+
+    // 2. Felger Arrow Controls
+    if (btnWheelPrev) {
+      btnWheelPrev.addEventListener("click", (e) => {
+        e.preventDefault();
+        const next = cycleOption(WHEEL_DEFS, getValues().wheelId, -1);
+        setValues({ wheelId: next.id });
+        refreshPreviews();
+        playTone(340, 0.05, "sine", 0.15);
+        if (onChanged) onChanged();
+      });
+    }
+    if (btnWheelNext) {
+      btnWheelNext.addEventListener("click", (e) => {
+        e.preventDefault();
+        const next = cycleOption(WHEEL_DEFS, getValues().wheelId, 1);
+        setValues({ wheelId: next.id });
+        refreshPreviews();
+        playTone(380, 0.05, "sine", 0.15);
+        if (onChanged) onChanged();
+      });
+    }
+
+    // 3. Randomize Button
+    if (btnRandomize) {
+      btnRandomize.addEventListener("click", (e) => {
+        e.preventDefault();
+        btnRandomize.classList.remove("spin");
+        void btnRandomize.offsetWidth;
+        btnRandomize.classList.add("spin");
+
+        const randBody = BODY_DEFS[Math.floor(Math.random() * BODY_DEFS.length)];
+        const randWheel = WHEEL_DEFS[Math.floor(Math.random() * WHEEL_DEFS.length)];
+        const randPalette = PALETTE[Math.floor(Math.random() * PALETTE.length)];
+        setValues({
+          bodyId: randBody.id,
+          wheelId: randWheel.id,
+          color: randPalette.color,
+        });
+        refreshPreviews();
+        playTone(480, 0.1, "triangle", 0.25);
+        if (onChanged) onChanged();
+      });
+    }
+
+    // 4. Color Swatches
+    if (swatchesContainer) {
+      swatchesContainer.innerHTML = "";
+      const paletteToUse = compact ? PALETTE.slice(0, 8) : PALETTE;
+      paletteToUse.forEach(item => {
+        const dot = document.createElement("button");
+        dot.type = "button";
+        const isCur = item.color.toLowerCase() === (getValues().color || "").toLowerCase();
+        dot.className = "cc-color-dot" + (isCur ? " active" : "");
+        dot.style.backgroundColor = item.color;
+        dot.style.color = item.color;
+        dot.dataset.color = item.color;
+        dot.title = item.name;
+        dot.addEventListener("click", () => {
+          swatchesContainer.querySelectorAll(".cc-color-dot").forEach(x => x.classList.remove("active"));
+          dot.classList.add("active");
+          if (colorPicker) colorPicker.value = item.color;
+          setValues({ color: item.color });
+          refreshPreviews();
+          playTone(420, 0.06, "sine", 0.15);
+          if (onChanged) onChanged();
+        });
+        swatchesContainer.appendChild(dot);
+      });
+    }
+
+    // 5. Color Picker Input
+    if (colorPicker) {
+      colorPicker.value = getValues().color || "#ef4444";
+      colorPicker.addEventListener("input", (e) => {
+        const newCol = e.target.value;
+        if (swatchesContainer) {
+          swatchesContainer.querySelectorAll(".cc-color-dot").forEach(x => x.classList.remove("active"));
+        }
+        setValues({ color: newCol });
+        refreshPreviews();
+        if (onChanged) onChanged();
+      });
+    }
+
+    refreshPreviews();
+    return { refresh: refreshPreviews };
+  }
+
+  function initAllCustomizers() {
+    // Solo Customizer (if fallback elements exist)
+    if (el.soloBodyOptions) {
+      soloCustomizer = setupCustomizerUI({
+        bodyContainer: el.soloBodyOptions,
+        wheelContainer: el.soloWheelOptions,
+        swatchesContainer: el.soloColorSwatches,
+        colorPicker: el.soloColorPicker,
+        colorNameEl: el.soloColorName,
+        previewCanvas: el.soloCarPreviewCanvas,
+        getValues: () => ({
+          bodyId: state.soloBodyId || 1,
+          wheelId: state.soloWheelId || 1,
+          color: state.soloColor || state.driverColor || "#ef4444",
+        }),
+        setValues: (v) => {
+          if (v.bodyId !== undefined) state.soloBodyId = v.bodyId;
+          if (v.wheelId !== undefined) state.soloWheelId = v.wheelId;
+          if (v.color !== undefined) {
+            state.soloColor = v.color;
+            state.driverColor = v.color;
+            localStorage.setItem("ts_driver_color", v.color);
+          }
+        },
+      });
+    }
+
+    // Splitscreen P1 (Character-creator Arrow controls)
+    splitP1Customizer = setupArrowCustomizerUI({
+      btnBodyPrev: el.btnSplitP1BodyPrev,
+      btnBodyNext: el.btnSplitP1BodyNext,
+      bodyLabel: el.splitP1BodyLabel,
+      btnWheelPrev: el.btnSplitP1WheelPrev,
+      btnWheelNext: el.btnSplitP1WheelNext,
+      wheelLabel: el.splitP1WheelLabel,
+      btnRandomize: null,
       swatchesContainer: el.splitP1Colors,
       colorPicker: el.splitP1ColorPicker,
       colorNameEl: null,
@@ -1380,10 +1575,15 @@
       },
     });
 
-    // Splitscreen P2
-    splitP2Customizer = setupCustomizerUI({
-      bodyContainer: el.splitP2BodyOptions,
-      wheelContainer: el.splitP2WheelOptions,
+    // Splitscreen P2 (Character-creator Arrow controls)
+    splitP2Customizer = setupArrowCustomizerUI({
+      btnBodyPrev: el.btnSplitP2BodyPrev,
+      btnBodyNext: el.btnSplitP2BodyNext,
+      bodyLabel: el.splitP2BodyLabel,
+      btnWheelPrev: el.btnSplitP2WheelPrev,
+      btnWheelNext: el.btnSplitP2WheelNext,
+      wheelLabel: el.splitP2WheelLabel,
+      btnRandomize: null,
       swatchesContainer: el.splitP2Colors,
       colorPicker: el.splitP2ColorPicker,
       colorNameEl: null,
@@ -1410,10 +1610,15 @@
       },
     });
 
-    // In-game Garage Customizer (Singleplayer & Online)
-    inGameCustomizer = setupCustomizerUI({
-      bodyContainer: el.inGameBodyOptions,
-      wheelContainer: el.inGameWheelOptions,
+    // In-game Garage Customizer (Singleplayer & Online - Character-creator Arrow controls)
+    inGameCustomizer = setupArrowCustomizerUI({
+      btnBodyPrev: el.btnInGameBodyPrev,
+      btnBodyNext: el.btnInGameBodyNext,
+      bodyLabel: el.inGameBodyLabel,
+      btnWheelPrev: el.btnInGameWheelPrev,
+      btnWheelNext: el.btnInGameWheelNext,
+      wheelLabel: el.inGameWheelLabel,
+      btnRandomize: el.btnInGameRandomize,
       swatchesContainer: el.inGameColorSwatches,
       colorPicker: el.inGameColorPicker,
       colorNameEl: el.inGameColorName,
@@ -1736,6 +1941,37 @@
   }
 
   function updateCarPhysics(car, track, dt) {
+    // Lock car stationary before start (in garage phase, lobby standby, or countdown)
+    if (state.isGaragePhase || state.roomStatus === "lobby" || state.roomStatus === "countdown") {
+      car.vx = 0;
+      car.vy = 0;
+      car.speed = 0;
+      car.accelInput = 0;
+      car.brakeInput = 0;
+      if (state.roomStatus !== "countdown") {
+        car.steerInput = 0;
+      }
+      return;
+    }
+
+    // Finished car coasting: smoothly coast to a gentle stop without ever reversing
+    if (car.finished) {
+      car.vx *= Math.pow(0.92, dt * 60);
+      car.vy *= Math.pow(0.92, dt * 60);
+      car.speed = Math.hypot(car.vx, car.vy);
+      if (car.speed < 2) {
+        car.vx = 0;
+        car.vy = 0;
+        car.speed = 0;
+      }
+      car.accelInput = 0;
+      car.brakeInput = 0;
+      car.steerInput = 0;
+      car.x += car.vx * dt;
+      car.y += car.vy * dt;
+      return;
+    }
+
     const throttle = car.accelInput;
     const brake = car.brakeInput;
     const steer = car.steerInput;
@@ -2778,16 +3014,16 @@
       if (state.mode === "splitscreen" && state.car1 && state.car2) {
         if (state.isGaragePhase || state.roomStatus !== "racing") {
           state.car1.accelInput = 0;
-          state.car1.brakeInput = 0.5;
+          state.car1.brakeInput = 0;
           state.car1.steerInput = 0;
           state.car2.accelInput = 0;
-          state.car2.brakeInput = 0.5;
+          state.car2.brakeInput = 0;
           state.car2.steerInput = 0;
         } else {
           // Player 1 inputs (WASD for LEFT screen)
           if (state.car1.finished) {
             state.car1.accelInput = 0;
-            state.car1.brakeInput = 0.3;
+            state.car1.brakeInput = 0;
             state.car1.steerInput = 0;
           } else {
             state.car1.accelInput = state.keysP1.up ? 1 : 0;
@@ -2798,7 +3034,7 @@
           // Player 2 inputs (Arrows for RIGHT screen)
           if (state.car2.finished) {
             state.car2.accelInput = 0;
-            state.car2.brakeInput = 0.3;
+            state.car2.brakeInput = 0;
             state.car2.steerInput = 0;
           } else {
             state.car2.accelInput = state.keysP2.up ? 1 : 0;
@@ -2895,32 +3131,43 @@
           ctx.restore();
         }
 
-        // Splitscreen race finished handling: sisteplass trenger ikke komme i mål
+        // Splitscreen race finished handling: gi nestemann tid til å komme i mål, og litt tid før pallen vises!
         if (state.car1.finished || state.car2.finished) {
-          if (!state.splitFinishTriggered) {
-            state.splitFinishTriggered = true;
-            setTimeout(() => {
-              const racers = [
-                { name: state.splitP1.name, color: state.splitP1.color, finishTime: state.car1.finishTime, bestLap: state.car1.bestLap, lap: state.car1.lap, finished: state.car1.finished },
-                { name: state.splitP2.name, color: state.splitP2.color, finishTime: state.car2.finishTime, bestLap: state.car2.bestLap, lap: state.car2.lap, finished: state.car2.finished },
-              ];
-              racers.sort((a, b) => {
-                if (a.finished && b.finished) return a.finishTime - b.finishTime;
-                if (a.finished) return -1;
-                if (b.finished) return 1;
-                if (a.lap !== b.lap) return b.lap - a.lap;
-                return (a.finishTime || 9999) - (b.finishTime || 9999);
-              });
-              showGameOverPodium(racers);
-            }, 800);
+          if (!state.splitFirstFinishTime) {
+            state.splitFirstFinishTime = performance.now();
           }
-          return;
+          if (state.car1.finished && state.car2.finished && !state.splitSecondFinishTime) {
+            state.splitSecondFinishTime = performance.now();
+          }
+
+          const now = performance.now();
+          // Avslutt hvis begge er i mål (3.5s etter nestemann) ELLER etter 12s grace period for nestemann
+          const shouldEnd =
+            (state.splitSecondFinishTime && now - state.splitSecondFinishTime >= 3500) ||
+            (!state.splitSecondFinishTime && now - state.splitFirstFinishTime >= 12000);
+
+          if (shouldEnd && !state.splitPodiumShown) {
+            state.splitPodiumShown = true;
+            const racers = [
+              { name: state.splitP1.name, color: state.splitP1.color, finishTime: state.car1.finishTime, bestLap: state.car1.bestLap, lap: state.car1.lap, finished: state.car1.finished },
+              { name: state.splitP2.name, color: state.splitP2.color, finishTime: state.car2.finishTime, bestLap: state.car2.bestLap, lap: state.car2.lap, finished: state.car2.finished },
+            ];
+            racers.sort((a, b) => {
+              if (a.finished && b.finished) return a.finishTime - b.finishTime;
+              if (a.finished) return -1;
+              if (b.finished) return 1;
+              if (a.lap !== b.lap) return b.lap - a.lap;
+              return (a.finishTime || 9999) - (b.finishTime || 9999);
+            });
+            showGameOverPodium(racers);
+            return;
+          }
         }
       } else {
         // Normal Singleplayer / Online Mode
         if (state.myCar.finished) {
           state.myCar.accelInput = 0;
-          state.myCar.brakeInput = 0.25;
+          state.myCar.brakeInput = 0;
           state.myCar.steerInput = 0;
         } else if (!state.isGaragePhase && state.roomStatus === "racing") {
           state.myCar.accelInput = state.keys.up ? 1 : 0;
@@ -2933,7 +3180,7 @@
           state.myCar.steerInput = (state.keys.right ? 1 : 0) - (state.keys.left ? 1 : 0);
         } else {
           state.myCar.accelInput = 0;
-          state.myCar.brakeInput = 0.5;
+          state.myCar.brakeInput = 0;
           state.myCar.steerInput = 0;
         }
 
@@ -3032,7 +3279,7 @@
               showGameOverPodium([
                 { name: state.driverName, color: state.driverColor, finishTime: state.myCar.finishTime, bestLap: state.myCar.bestLap, lap: state.myCar.lap, finished: true },
               ]);
-            }, 1200);
+            }, 3500);
           }
         }
       }
@@ -3457,6 +3704,9 @@
     state.skidmarks = [];
     state.particles = [];
     state.splitFinishTriggered = false;
+    state.splitFirstFinishTime = null;
+    state.splitSecondFinishTime = null;
+    state.splitPodiumShown = false;
     state.keysP1 = { up: false, down: false, left: false, right: false };
     state.keysP2 = { up: false, down: false, left: false, right: false };
 
@@ -3810,6 +4060,24 @@
     function handleKey(e, isDown) {
       const k = e.key;
       const c = e.code;
+
+      // In-game garage keyboard navigation
+      if (el.inGameGarage && !el.inGameGarage.classList.contains("hidden") && isDown) {
+        if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
+        if (k === "ArrowLeft" || c === "ArrowLeft") {
+          if (el.btnInGameBodyPrev) { el.btnInGameBodyPrev.click(); e.preventDefault(); return; }
+        } else if (k === "ArrowRight" || c === "ArrowRight") {
+          if (el.btnInGameBodyNext) { el.btnInGameBodyNext.click(); e.preventDefault(); return; }
+        } else if (k === "ArrowUp" || c === "ArrowUp") {
+          if (el.btnInGameWheelPrev) { el.btnInGameWheelPrev.click(); e.preventDefault(); return; }
+        } else if (k === "ArrowDown" || c === "ArrowDown") {
+          if (el.btnInGameWheelNext) { el.btnInGameWheelNext.click(); e.preventDefault(); return; }
+        } else if (k === "r" || k === "R" || c === "KeyR") {
+          if (el.btnInGameRandomize) { el.btnInGameRandomize.click(); e.preventDefault(); return; }
+        } else if (k === "Enter" || k === " ") {
+          if (el.btnInGameReady) { el.btnInGameReady.click(); e.preventDefault(); return; }
+        }
+      }
 
       if (state.mode === "splitscreen") {
         let matched = false;

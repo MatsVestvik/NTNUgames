@@ -130,6 +130,7 @@ class TurbosladdRoom:
         self.countdown_start: Optional[float] = None
         self.race_start: Optional[float] = None
         self.finish_timeout: Optional[float] = None
+        self.race_end_time: Optional[float] = None
 
         self.players: Dict[str, Dict[str, Any]] = {}
         self.host_id: str = f"p_{uuid.uuid4().hex[:8]}"
@@ -181,21 +182,26 @@ class TurbosladdRoom:
             still_driving = [p for p in self.players.values() if not p.get("left") and not p.get("forfeit") and not p.get("finished")]
             total_players = len(self.players)
 
-            # In multiplayer (2+ racers started), if only 1 (or 0) racer is left driving, the race is finished!
-            if total_players >= 2 and len(still_driving) <= 1:
-                self.status = "finished"
-                self.bump()
-            # If 0 racers are left driving (e.g. 1-player mode and finished)
-            elif len(still_driving) == 0:
-                self.status = "finished"
-                self.bump()
-            # Fallback timeout after first finisher (15s grace period)
+            # Check if all or all but 1 driver have finished
+            is_race_done = (total_players >= 2 and len(still_driving) <= 1) or (len(still_driving) == 0)
+
+            if is_race_done:
+                if not self.race_end_time:
+                    # Give a 4.0 second grace period after next driver finishes so players see finish line and celebration!
+                    self.race_end_time = now + 4.0
+                elif now >= self.race_end_time:
+                    self.status = "finished"
+                    self.bump()
             elif any(p.get("finished") for p in self.players.values() if not p.get("left") and not p.get("forfeit")):
+                # 15s grace period timeout after first finisher
                 if not self.finish_timeout:
                     self.finish_timeout = now + 15.0
                 elif now >= self.finish_timeout:
-                    self.status = "finished"
-                    self.bump()
+                    if not self.race_end_time:
+                        self.race_end_time = now + 3.0
+                    elif now >= self.race_end_time:
+                        self.status = "finished"
+                        self.bump()
 
     def add_player(self, name: str, color: str, car_model: str = "gt", avatar: str = "", body_id: int = 1, wheel_id: int = 1) -> Optional[Dict[str, Any]]:
         with self.lock:
@@ -321,6 +327,7 @@ class TurbosladdRoom:
                         self.countdown_start = time.time()
                         self.race_start = None
                         self.finish_timeout = None
+                        self.race_end_time = None
                         for p in active:
                             p["lap"] = 1
                             p["checkpoint"] = 0
@@ -389,6 +396,7 @@ class TurbosladdRoom:
             self.countdown_start = time.time()
             self.race_start = None
             self.finish_timeout = None
+            self.race_end_time = None
 
             # Reset racer progress
             for p in active:
@@ -441,6 +449,7 @@ class TurbosladdRoom:
             self.countdown_start = None
             self.race_start = None
             self.finish_timeout = None
+            self.race_end_time = None
             for p in self.players.values():
                 p["isReady"] = p.get("isHost", False)
                 p["lap"] = 1
@@ -556,7 +565,7 @@ class TurbosladdAPI:
         TurbosladdAPI._clean_expired_rooms()
 
         if path == "/api/turbosladd/state":
-            room_code = (query.get("room") or query.get("code") or [""])[0].strip().upper()
+            room_code = (query.get("roomCode") or query.get("room") or query.get("code") or [""])[0].strip().upper()
             player_id = (query.get("player") or query.get("playerId") or [""])[0].strip()
 
             with _rooms_lock:
