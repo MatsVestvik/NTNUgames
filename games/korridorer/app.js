@@ -517,7 +517,7 @@
     panelBot: document.getElementById("panelBot"),
 
     // Online Lobby Form & Character Widget
-    createPlayerName: document.getElementById("createPlayerName"),
+    createPlayerName: document.getElementById("inputPartyHostName") || document.getElementById("createPlayerName"),
     onlineAvatarPreview: document.getElementById("onlineAvatarPreview"),
     btnPreviewAvatarClick: document.getElementById("btnPreviewAvatarClick"),
     btnOpenCharCreator: document.getElementById("btnOpenCharCreator"),
@@ -525,12 +525,12 @@
     cpwQuickColors: document.getElementById("cpwQuickColors"),
     pickerCreateSprite: document.getElementById("pickerCreateSprite"),
     controlPlayerCount: document.getElementById("controlPlayerCount"),
-    btnSubmitCreate: document.getElementById("btnSubmitCreate"),
+    btnSubmitCreate: document.getElementById("btnCreatePartyRoom") || document.getElementById("btnSubmitCreate"),
 
-    joinRoomCode: document.getElementById("joinRoomCode"),
-    joinPlayerName: document.getElementById("joinPlayerName"),
+    joinRoomCode: document.getElementById("inputPartyRoomCode") || document.getElementById("joinRoomCode"),
+    joinPlayerName: document.getElementById("inputPartyJoinName") || document.getElementById("joinPlayerName"),
     pickerJoinSprite: document.getElementById("pickerJoinSprite"),
-    btnSubmitJoin: document.getElementById("btnSubmitJoin"),
+    btnSubmitJoin: document.getElementById("btnJoinPartyRoom") || document.getElementById("btnSubmitJoin"),
 
     // Waiting Room
     dispRoomCode: document.getElementById("dispRoomCode"),
@@ -984,12 +984,23 @@
       createMaxPlayers = val;
     });
 
-    el.btnSubmitCreate.addEventListener("click", handleCreateOnlineRoom);
-    el.btnSubmitJoin.addEventListener("click", handleJoinOnlineRoom);
-    el.btnCopyInviteLink.addEventListener("click", handleCopyInviteLink);
-    el.btnHostStartOnline.addEventListener("click", handleHostStartOnline);
+    if (el.btnSubmitCreate) el.btnSubmitCreate.addEventListener("click", handleCreateOnlineRoom);
+    if (el.btnSubmitJoin) el.btnSubmitJoin.addEventListener("click", handleJoinOnlineRoom);
+    if (el.btnCopyInviteLink) el.btnCopyInviteLink.addEventListener("click", handleCopyInviteLink);
+    if (el.btnHostStartOnline) el.btnHostStartOnline.addEventListener("click", handleHostStartOnline);
     if (el.btnAddBotOnline) {
       el.btnAddBotOnline.addEventListener("click", handleAddBotOnline);
+    }
+
+    if (window.PartyConnect) {
+      window.PartyConnect.init({
+        gameId: "korridorer",
+        createBtnId: "btnCreatePartyRoom",
+        joinBtnId: "btnJoinPartyRoom",
+        hostInputId: "inputPartyHostName",
+        joinInputId: "inputPartyJoinName",
+        codeInputId: "inputPartyRoomCode",
+      });
     }
 
     // Local Mode Controls
