@@ -475,21 +475,24 @@
   // =========================================================================
 
   const state = {
-    view: "lobby", // "lobby" | "game"
-    mode: "ffa",   // "ffa"
+    view: "gateway", // "gateway" | "roomLobby" | "game"
+    mode: "ffa",     // "ffa"
     roomCode: null,
     playerId: null,
-    playerName: localStorage.getItem("kr_player_name") || "Soldat",
+    isHost: false,
+    isReady: false,
+    playerName: localStorage.getItem("kr_player_name") || localStorage.getItem("spillhjornet_name") || "Soldat",
     playerColor: localStorage.getItem("kr_player_color") || "#ffd166",
     playerAvatar: localStorage.getItem("kr_player_avatar") || localStorage.getItem("spillhjornet_character") || "char:h1:c_ffd166:r1:e1:m1",
 
-    isHost: false,
     roomStatus: "lobby", // "lobby" | "countdown" | "playing" | "finished"
     mapId: "gloshaugen_arena",
     currentMap: buildGloshaugenArena(),
     scoreLimit: 15,
     timeLimit: 300,
     timeRemaining: 300,
+
+    lobbyPollTimerId: null,
 
     // Local Player Character
     player: {
@@ -545,7 +548,9 @@
   // =========================================================================
 
   const el = {
-    viewLobby: document.getElementById("viewLobby"),
+    // Views
+    viewGateway: document.getElementById("viewGateway"),
+    viewRoomLobby: document.getElementById("viewRoomLobby"),
     viewGame: document.getElementById("viewGame"),
     combatCanvas: document.getElementById("combatCanvas"),
 
@@ -553,41 +558,32 @@
     btnHeaderBack: document.getElementById("btnHeaderBack"),
     btnPartyHub: document.getElementById("btnPartyHub"),
     btnSoundToggle: document.getElementById("btnSoundToggle"),
-    btnProfileTrigger: document.getElementById("btnProfileTrigger"),
-    headerPlayerName: document.getElementById("headerPlayerName"),
-    headerAvatarMini: document.getElementById("headerAvatarMini"),
     headGameStatus: document.getElementById("headGameStatus"),
     headClock: document.getElementById("headClock"),
     headTargetScore: document.getElementById("headTargetScore"),
 
-    // Lobby Elements
-    inputPlayerName: document.getElementById("inputPlayerName"),
-
-    tabBtnHost: document.getElementById("tabBtnHost"),
-    tabBtnJoin: document.getElementById("tabBtnJoin"),
-    tabPaneHost: document.getElementById("tabPaneHost"),
-    tabPaneJoin: document.getElementById("tabPaneJoin"),
-
-    selectHostMap: document.getElementById("selectHostMap"),
-    selectHostScoreLimit: document.getElementById("selectHostScoreLimit"),
-    selectHostTimeLimit: document.getElementById("selectHostTimeLimit"),
+    // Gateway Elements (View 1)
+    inputCreateName: document.getElementById("inputCreateName"),
     btnCreateRoom: document.getElementById("btnCreateRoom"),
-
-    inputJoinRoomCode: document.getElementById("inputJoinRoomCode"),
+    inputJoinCode: document.getElementById("inputJoinCode"),
+    inputJoinName: document.getElementById("inputJoinName"),
     btnJoinRoom: document.getElementById("btnJoinRoom"),
 
-    // In-game Standby Overlay
-    inGameStandby: document.getElementById("inGameStandby"),
-    standbyMapBadge: document.getElementById("standbyMapBadge"),
-    standbyRoomCodePill: document.getElementById("standbyRoomCodePill"),
-    standbyRoomCodeText: document.getElementById("standbyRoomCodeText"),
-    standbyWaitingText: document.getElementById("standbyWaitingText"),
-    standbyPlayersList: document.getElementById("standbyPlayersList"),
+    // Room Lobby Elements (View 2)
+    lobbyRoomCode: document.getElementById("lobbyRoomCode"),
+    btnCopyRoomCode: document.getElementById("btnCopyRoomCode"),
+    skribblCustomizerLobby: document.getElementById("skribblCustomizerLobby"),
+    inputLobbyPlayerName: document.getElementById("inputLobbyPlayerName"),
+    lobbyPlayersCount: document.getElementById("lobbyPlayersCount"),
+    lobbyStatusHint: document.getElementById("lobbyStatusHint"),
+    lobbyPlayersGrid: document.getElementById("lobbyPlayersGrid"),
+    selectLobbyMap: document.getElementById("selectLobbyMap"),
+    selectLobbyScoreLimit: document.getElementById("selectLobbyScoreLimit"),
     btnToggleReady: document.getElementById("btnToggleReady"),
-    btnHostForceStart: document.getElementById("btnHostForceStart"),
-    btnLeaveGame: document.getElementById("btnLeaveGame"),
+    btnHostStartMatch: document.getElementById("btnHostStartMatch"),
+    btnLeaveLobby: document.getElementById("btnLeaveLobby"),
 
-    // In-game HUD
+    // In-game HUD Elements (View 3)
     hudRankPill: document.getElementById("hudRankPill"),
     hudPosNum: document.getElementById("hudPosNum"),
     hudKillsText: document.getElementById("hudKillsText"),
@@ -621,7 +617,7 @@
     podiumDesc: document.getElementById("podiumDesc"),
     podiumStandings: document.getElementById("podiumStandings"),
     btnPodiumPlayAgain: document.getElementById("btnPodiumPlayAgain"),
-    btnPodiumReturnLobby: document.getElementById("btnPodiumReturnLobby"),
+    btnPodiumReturnGateway: document.getElementById("btnPodiumReturnGateway"),
   };
 
   // =========================================================================
@@ -656,9 +652,15 @@
 
   let lobbyWidget = null;
   function initLobbyCustomizer() {
-    const container = document.getElementById("skribblCustomizerLobby");
+    const container = el.skribblCustomizerLobby || document.getElementById("skribblCustomizerLobby");
     if (!window.CharacterCreator || !container) return;
-    if (lobbyWidget) return;
+
+    if (lobbyWidget) {
+      if (typeof lobbyWidget.setConfig === "function") {
+        lobbyWidget.setConfig(state.playerAvatar, true);
+      }
+      return;
+    }
 
     const initialRaw = state.playerAvatar ||
       (typeof CharacterCreator.getSavedConfigString === "function" ? CharacterCreator.getSavedConfigString() : "char:h1:c_ffd166:r1:e1:m1");
@@ -679,38 +681,28 @@
         localStorage.setItem("kr_player_avatar", encoded);
         localStorage.setItem("spillhjornet_character", encoded);
         clearAvatarCache();
-        updateProfileUI();
 
         if (state.roomCode && state.playerId) {
-          fetch("/api/kuleregn/color", {
+          fetch("/api/kuleregn/customize", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               roomCode: state.roomCode,
               playerId: state.playerId,
               color: state.playerColor,
-              avatar: encoded
+              avatar: encoded,
+              name: state.playerName
             }),
-          }).catch(() => {});
+          }).then(() => pollLobbyState()).catch(() => {});
         }
       },
     });
   }
 
   function updateProfileUI() {
-    if (el.headerPlayerName) el.headerPlayerName.textContent = state.playerName;
-    if (el.inputPlayerName) el.inputPlayerName.value = state.playerName;
-
-    if (el.headerAvatarMini && window.CharacterCreator) {
-      const src = CharacterCreator.getAvatarImgSrc(state.playerAvatar);
-      const ctx = el.headerAvatarMini.getContext("2d");
-      const img = new Image();
-      img.onload = () => {
-        ctx.clearRect(0, 0, el.headerAvatarMini.width, el.headerAvatarMini.height);
-        ctx.drawImage(img, 0, 0, el.headerAvatarMini.width, el.headerAvatarMini.height);
-      };
-      img.src = src;
-    }
+    if (el.inputCreateName) el.inputCreateName.value = state.playerName;
+    if (el.inputJoinName) el.inputJoinName.value = state.playerName;
+    if (el.inputLobbyPlayerName) el.inputLobbyPlayerName.value = state.playerName;
   }
 
   // =========================================================================
@@ -719,31 +711,31 @@
 
   function showView(viewName) {
     state.view = viewName;
-    if (viewName === "lobby") {
-      el.viewLobby.classList.remove("hidden");
-      el.viewGame.classList.add("hidden");
-      el.headGameStatus.classList.add("hidden");
+
+    if (el.viewGateway) el.viewGateway.classList.toggle("hidden", viewName !== "gateway");
+    if (el.viewRoomLobby) el.viewRoomLobby.classList.toggle("hidden", viewName !== "roomLobby");
+    if (el.viewGame) el.viewGame.classList.toggle("hidden", viewName !== "game");
+
+    if (viewName === "gateway") {
+      if (el.headGameStatus) el.headGameStatus.classList.add("hidden");
+      if (el.modalPodium) el.modalPodium.classList.add("hidden");
       stopSimulation();
       stopRoomSync();
+      stopLobbyPolling();
+      updateProfileUI();
+    } else if (viewName === "roomLobby") {
+      if (el.headGameStatus) el.headGameStatus.classList.add("hidden");
+      if (el.modalPodium) el.modalPodium.classList.add("hidden");
+      stopSimulation();
+      stopRoomSync();
+      initLobbyCustomizer();
+      startLobbyPolling();
+      updateProfileUI();
     } else if (viewName === "game") {
-      el.viewLobby.classList.add("hidden");
-      el.viewGame.classList.remove("hidden");
-      el.headGameStatus.classList.remove("hidden");
+      if (el.headGameStatus) el.headGameStatus.classList.remove("hidden");
+      if (el.modalPodium) el.modalPodium.classList.add("hidden");
+      stopLobbyPolling();
       resizeCanvas();
-    }
-  }
-
-  function showTab(tabId) {
-    [el.tabBtnHost, el.tabBtnJoin].forEach(b => b && b.classList.remove("active"));
-    [el.tabPaneHost, el.tabPaneJoin].forEach(p => p && p.classList.remove("active"));
-
-    if (tabId === "host") {
-      el.tabBtnHost?.classList.add("active");
-      el.tabPaneHost?.classList.add("active");
-    } else if (tabId === "join") {
-      el.tabBtnJoin?.classList.add("active");
-      el.tabPaneJoin?.classList.add("active");
-      if (el.inputJoinRoomCode) el.inputJoinRoomCode.focus();
     }
   }
 
@@ -1972,36 +1964,185 @@
       });
     }
 
-    // Ingest standby overlay lobby players
-    if (data.status === "lobby") {
-      updateStandbyUI(data.players || []);
+    // If server reset the room back to lobby, transition local client back to lobby view
+    if (data.status === "lobby" && (state.roomStatus === "finished" || state.view === "game")) {
+      stopSimulation();
+      stopRoomSync();
+      if (el.modalPodium) el.modalPodium.classList.add("hidden");
+      enterRoomLobby({
+        roomCode: state.roomCode,
+        playerId: state.playerId,
+        mapId: data.mapId || state.mapId,
+        scoreLimit: data.scoreLimit || state.scoreLimit,
+        timeLimit: data.timeLimit || state.timeLimit,
+      });
     }
   }
 
-  function updateStandbyUI(players) {
-    if (!el.standbyPlayersList) return;
-    el.standbyPlayersList.innerHTML = "";
+  // =========================================================================
+  // ROOM LOBBY POLLING & RENDERING
+  // =========================================================================
 
-    let allReady = players.length >= 1;
+  function startLobbyPolling() {
+    stopLobbyPolling();
+    pollLobbyState();
+    state.lobbyPollTimerId = setInterval(pollLobbyState, 500);
+  }
+
+  function stopLobbyPolling() {
+    if (state.lobbyPollTimerId) {
+      clearInterval(state.lobbyPollTimerId);
+      state.lobbyPollTimerId = null;
+    }
+  }
+
+  async function pollLobbyState() {
+    if (!state.roomCode || !state.playerId || state.view !== "roomLobby") return;
+
+    try {
+      const resp = await fetch(`/api/kuleregn/state?roomCode=${encodeURIComponent(state.roomCode)}&playerId=${encodeURIComponent(state.playerId)}`);
+      const data = await resp.json();
+      if (!data || !data.ok) return;
+
+      // Check if match started
+      if (data.status === "countdown" || data.status === "playing") {
+        stopLobbyPolling();
+        launchGameFromLobby(data);
+        return;
+      }
+
+      state.roomStatus = data.status;
+
+      // Update isHost flag
+      const me = (data.players || []).find(p => p.id === state.playerId);
+      if (me) {
+        state.isHost = Boolean(me.isHost);
+        state.isReady = Boolean(me.isReady);
+        if (el.btnHostStartMatch) el.btnHostStartMatch.classList.toggle("hidden", !state.isHost);
+        if (el.selectLobbyMap) el.selectLobbyMap.disabled = !state.isHost;
+        if (el.selectLobbyScoreLimit) el.selectLobbyScoreLimit.disabled = !state.isHost;
+      }
+
+      // Update map & score settings if changed remotely
+      if (data.mapId && data.mapId !== state.mapId) {
+        state.mapId = data.mapId;
+        state.currentMap = state.mapId === "cyber_hangar" ? buildCyberHangar() : buildGloshaugenArena();
+        if (el.selectLobbyMap) el.selectLobbyMap.value = state.mapId;
+      }
+      if (data.scoreLimit && data.scoreLimit !== state.scoreLimit) {
+        state.scoreLimit = data.scoreLimit;
+        if (el.selectLobbyScoreLimit) el.selectLobbyScoreLimit.value = String(state.scoreLimit);
+      }
+
+      renderLobbyPlayers(data.players || []);
+    } catch (e) {
+      // Network hiccup
+    }
+  }
+
+  function renderLobbyPlayers(players) {
+    if (el.lobbyPlayersCount) el.lobbyPlayersCount.textContent = String(players.length);
+
+    const readyCount = players.filter(p => p.isReady).length;
+    if (el.lobbyStatusHint) {
+      el.lobbyStatusHint.textContent = `${readyCount} av ${players.length} klare`;
+    }
+
+    // Disable colors selected by other players in the customizer widget
+    if (lobbyWidget && typeof lobbyWidget.setDisabledColors === "function") {
+      const disabledMap = {};
+      players.forEach(p => {
+        if (p.id !== state.playerId && p.color) {
+          disabledMap[p.color.toLowerCase()] = p.name;
+        }
+      });
+      lobbyWidget.setDisabledColors(disabledMap);
+    }
+
+    if (!el.lobbyPlayersGrid) return;
+    el.lobbyPlayersGrid.innerHTML = "";
+
     players.forEach(p => {
       const isMe = p.id === state.playerId;
-      if (!p.isReady) allReady = false;
+      const isReady = Boolean(p.isReady);
+      const tile = document.createElement("div");
+      tile.className = `player-tile ${p.isHost ? "is-host" : ""} ${isMe ? "is-me" : ""} ${isReady ? "is-ready" : ""}`;
 
-      const card = document.createElement("div");
-      card.className = "igs-player-pill" + (p.isReady ? " ready" : "");
-      card.innerHTML = `
-        <span class="igs-dot" style="background:${p.color || '#ffd166'}"></span>
-        <span class="igs-p-name">${escapeHtml(p.name)} ${isMe ? '(Deg)' : ''}</span>
-        <span class="igs-status">${p.isReady ? 'Klar ✓' : 'Venter...'}</span>
+      const avatarSrc = (window.CharacterCreator && typeof CharacterCreator.getAvatarImgSrc === "function")
+        ? CharacterCreator.getAvatarImgSrc(p.avatar || "char:h1:c_ffd166:r1:e1:m1")
+        : "";
+
+      tile.innerHTML = `
+        ${p.isHost ? '<span class="player-crown-badge">VERT</span>' : ''}
+        ${isMe ? '<span class="player-me-badge">DEG</span>' : ''}
+        <div class="player-avatar-circle" style="border-color: ${p.color || '#38bdf8'};">
+          ${avatarSrc ? `<img src="${avatarSrc}" alt="${escapeHtml(p.name)}" class="player-mon-img" />` : '👾'}
+        </div>
+        <div class="player-name-text">${escapeHtml(p.name)}</div>
+        <div class="player-status-badge ${isReady ? 'badge-ready' : 'badge-customizing'}">
+          ${isReady ? 'Klar ✓' : 'Tilpasser... 🛠️'}
+        </div>
       `;
-      el.standbyPlayersList.appendChild(card);
+      el.lobbyPlayersGrid.appendChild(tile);
     });
+  }
 
-    if (state.isHost) {
-      if (el.btnHostForceStart) {
-        el.btnHostForceStart.classList.toggle("hidden", players.length < 1);
-      }
+  function enterRoomLobby(data) {
+    state.roomStatus = "lobby";
+    state.isReady = false;
+
+    if (el.lobbyRoomCode) el.lobbyRoomCode.textContent = state.roomCode;
+    if (el.inputLobbyPlayerName) el.inputLobbyPlayerName.value = state.playerName;
+
+    if (el.selectLobbyMap) {
+      el.selectLobbyMap.value = state.mapId;
+      el.selectLobbyMap.disabled = !state.isHost;
     }
+    if (el.selectLobbyScoreLimit) {
+      el.selectLobbyScoreLimit.value = String(state.scoreLimit);
+      el.selectLobbyScoreLimit.disabled = !state.isHost;
+    }
+
+    if (el.btnHostStartMatch) {
+      el.btnHostStartMatch.classList.toggle("hidden", !state.isHost);
+    }
+
+    if (el.btnToggleReady) {
+      el.btnToggleReady.classList.remove("ready-active");
+      el.btnToggleReady.textContent = "Jeg er Klar! 👍";
+    }
+
+    showView("roomLobby");
+  }
+
+  function launchGameFromLobby(data) {
+    state.roomStatus = data.status;
+    state.mapId = data.mapId || state.mapId;
+    state.currentMap = state.mapId === "cyber_hangar" ? buildCyberHangar() : buildGloshaugenArena();
+    state.scoreLimit = data.scoreLimit || state.scoreLimit;
+    state.timeLimit = data.timeLimit || state.timeLimit;
+    state.timeRemaining = state.timeLimit;
+
+    spawnPlayer(state.player, state.currentMap);
+    state.player.name = state.playerName;
+    state.player.color = state.playerColor;
+
+    state.opponents = {};
+    state.bullets = [];
+    state.particles = [];
+
+    showView("game");
+    updateWeaponHUD();
+    updateVitalsHUD();
+
+    if (data.status === "countdown") {
+      if (el.countdownOverlay) el.countdownOverlay.classList.remove("hidden");
+      const rem = Math.ceil(data.countdownRemaining || 3);
+      if (el.countdownText) el.countdownText.textContent = rem > 0 ? String(rem) : "KJEMP! 💥";
+    }
+
+    startRoomSync();
+    startSimulation();
   }
 
   // =========================================================================
@@ -2009,9 +2150,9 @@
   // =========================================================================
 
   async function createOnlineRoom() {
-    const mapId = el.selectHostMap?.value || "gloshaugen_arena";
-    const scoreLimit = parseInt(el.selectHostScoreLimit?.value || "15", 10) || 15;
-    const timeLimit = parseInt(el.selectHostTimeLimit?.value || "300", 10) || 300;
+    const hostName = (el.inputCreateName?.value || state.playerName || "Vert").trim();
+    state.playerName = hostName;
+    localStorage.setItem("kr_player_name", hostName);
 
     try {
       const resp = await fetch("/api/kuleregn/create", {
@@ -2021,9 +2162,9 @@
           hostName: state.playerName,
           color: state.playerColor,
           avatar: state.playerAvatar,
-          mapId,
-          scoreLimit,
-          timeLimit,
+          mapId: "gloshaugen_arena",
+          scoreLimit: 15,
+          timeLimit: 300,
           botCount: 0,
           mode: "ffa",
         }),
@@ -2033,13 +2174,14 @@
         state.isHost = true;
         state.roomCode = data.roomCode;
         state.playerId = data.playerId;
-        state.mapId = data.mapId;
+        state.playerColor = data.color || state.playerColor;
+        state.mapId = data.mapId || "gloshaugen_arena";
         state.currentMap = state.mapId === "cyber_hangar" ? buildCyberHangar() : buildGloshaugenArena();
-        state.scoreLimit = data.scoreLimit;
-        state.timeLimit = data.timeLimit;
-        state.timeRemaining = data.timeLimit;
+        state.scoreLimit = data.scoreLimit || 15;
+        state.timeLimit = data.timeLimit || 300;
+        state.timeRemaining = data.timeLimit || 300;
 
-        enterOnlineLobby(data);
+        enterRoomLobby(data);
       } else {
         alert(data.error || "Kunne ikke opprette rom.");
       }
@@ -2049,11 +2191,15 @@
   }
 
   async function joinOnlineRoom(codeToJoin) {
-    const code = (codeToJoin || el.inputJoinRoomCode?.value || "").trim().toUpperCase();
+    const code = (codeToJoin || el.inputJoinCode?.value || "").trim().toUpperCase();
     if (!code || code.length < 3) {
-      alert("Vennligst skriv inn en gyldig romkode.");
+      alert("Vennligst skriv inn en gyldig romkode (f.eks. KULE).");
       return;
     }
+
+    const playerName = (el.inputJoinName?.value || state.playerName || "Spiller").trim();
+    state.playerName = playerName;
+    localStorage.setItem("kr_player_name", playerName);
 
     try {
       const resp = await fetch("/api/kuleregn/join", {
@@ -2071,41 +2217,20 @@
         state.isHost = false;
         state.roomCode = data.roomCode;
         state.playerId = data.playerId;
-        state.mapId = data.mapId;
+        state.playerColor = data.color || state.playerColor;
+        state.mapId = data.mapId || "gloshaugen_arena";
         state.currentMap = state.mapId === "cyber_hangar" ? buildCyberHangar() : buildGloshaugenArena();
-        state.scoreLimit = data.scoreLimit;
-        state.timeLimit = data.timeLimit;
-        state.timeRemaining = data.timeLimit;
+        state.scoreLimit = data.scoreLimit || 15;
+        state.timeLimit = data.timeLimit || 300;
+        state.timeRemaining = data.timeLimit || 300;
 
-        enterOnlineLobby(data);
+        enterRoomLobby(data);
       } else {
-        alert(data.error || "Kunne ikke bli med i rommet.");
+        alert(data.error || "Kunne ikke bli med i rommet. Sjekk koden og prøv igjen.");
       }
     } catch (e) {
       alert("Feil ved tilkobling til rommet.");
     }
-  }
-
-  function enterOnlineLobby(data) {
-    state.roomStatus = "lobby";
-    spawnPlayer(state.player, state.currentMap);
-    state.player.name = state.playerName;
-    state.player.color = state.playerColor;
-
-    state.opponents = {};
-    state.bullets = [];
-    state.particles = [];
-
-    if (el.standbyRoomCodeText) el.standbyRoomCodeText.textContent = state.roomCode;
-    if (el.standbyMapBadge) el.standbyMapBadge.textContent = state.currentMap.name;
-    if (el.inGameStandby) el.inGameStandby.classList.remove("hidden");
-
-    showView("game");
-    updateWeaponHUD();
-    updateVitalsHUD();
-
-    startRoomSync();
-    startSimulation();
   }
 
   // =========================================================================
@@ -2132,46 +2257,178 @@
   function initUI() {
     window.addEventListener("resize", resizeCanvas);
 
-    // Tab buttons
-    el.tabBtnHost?.addEventListener("click", () => showTab("host"));
-    el.tabBtnJoin?.addEventListener("click", () => showTab("join"));
+    // Initial values
+    if (el.inputCreateName) el.inputCreateName.value = state.playerName;
+    if (el.inputJoinName) el.inputJoinName.value = state.playerName;
+    if (el.inputLobbyPlayerName) el.inputLobbyPlayerName.value = state.playerName;
 
-    // Launch buttons
+    // Gateway name inputs
+    el.inputCreateName?.addEventListener("input", (e) => {
+      const val = e.target.value.trim() || "Vert";
+      state.playerName = val;
+      localStorage.setItem("kr_player_name", val);
+      if (el.inputJoinName) el.inputJoinName.value = val;
+      if (el.inputLobbyPlayerName) el.inputLobbyPlayerName.value = val;
+    });
+
+    el.inputCreateName?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") createOnlineRoom();
+    });
+
+    el.inputJoinName?.addEventListener("input", (e) => {
+      const val = e.target.value.trim() || "Spiller";
+      state.playerName = val;
+      localStorage.setItem("kr_player_name", val);
+      if (el.inputCreateName) el.inputCreateName.value = val;
+      if (el.inputLobbyPlayerName) el.inputLobbyPlayerName.value = val;
+    });
+
+    el.inputJoinCode?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") joinOnlineRoom();
+    });
+
+    el.inputJoinName?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") joinOnlineRoom();
+    });
+
+    // Gateway buttons
     el.btnCreateRoom?.addEventListener("click", createOnlineRoom);
     el.btnJoinRoom?.addEventListener("click", () => joinOnlineRoom());
 
-    // In-game Standby Ready & Start buttons
+    // Room Lobby name input
+    el.inputLobbyPlayerName?.addEventListener("input", (e) => {
+      const val = e.target.value.trim() || "Spiller";
+      state.playerName = val;
+      localStorage.setItem("kr_player_name", val);
+      if (el.inputCreateName) el.inputCreateName.value = val;
+      if (el.inputJoinName) el.inputJoinName.value = val;
+
+      if (state.roomCode && state.playerId) {
+        fetch("/api/kuleregn/customize", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            roomCode: state.roomCode,
+            playerId: state.playerId,
+            name: val,
+            color: state.playerColor,
+            avatar: state.playerAvatar,
+          }),
+        }).then(() => pollLobbyState()).catch(() => {});
+      }
+    });
+
+    // Copy room code button
+    el.btnCopyRoomCode?.addEventListener("click", () => {
+      if (!state.roomCode) return;
+      const inviteUrl = `${window.location.origin}/kuleregn/?room=${encodeURIComponent(state.roomCode)}`;
+      navigator.clipboard.writeText(inviteUrl).then(() => {
+        el.btnCopyRoomCode.textContent = "KOPIERT LENKE! ✓";
+        setTimeout(() => {
+          if (el.btnCopyRoomCode) el.btnCopyRoomCode.textContent = "Kopier lenke 📋";
+        }, 1500);
+      }).catch(() => {
+        navigator.clipboard.writeText(state.roomCode);
+        el.btnCopyRoomCode.textContent = "KOPIERT KODE! ✓";
+        setTimeout(() => {
+          if (el.btnCopyRoomCode) el.btnCopyRoomCode.textContent = "Kopier lenke 📋";
+        }, 1500);
+      });
+    });
+
+    // Ready toggle button in Room Lobby
     el.btnToggleReady?.addEventListener("click", async () => {
-      const isReadyNow = !el.btnToggleReady.classList.contains("ready-active");
-      el.btnToggleReady.classList.toggle("ready-active", isReadyNow);
-      el.btnToggleReady.textContent = isReadyNow ? "Klar! ✓" : "Jeg er Klar! 👍";
+      state.isReady = !state.isReady;
+      el.btnToggleReady.classList.toggle("ready-active", state.isReady);
+      el.btnToggleReady.textContent = state.isReady ? "Klar! ✓" : "Jeg er Klar! 👍";
 
       if (state.roomCode && state.playerId) {
         try {
           await fetch("/api/kuleregn/ready", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ roomCode: state.roomCode, playerId: state.playerId, ready: isReadyNow }),
+            body: JSON.stringify({
+              roomCode: state.roomCode,
+              playerId: state.playerId,
+              ready: state.isReady
+            }),
           });
+          pollLobbyState();
         } catch (e) {}
       }
     });
 
-    el.btnHostForceStart?.addEventListener("click", async () => {
+    // Host start button in Room Lobby
+    el.btnHostStartMatch?.addEventListener("click", async () => {
       if (state.roomCode && state.playerId) {
         try {
           await fetch("/api/kuleregn/start", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ roomCode: state.roomCode, playerId: state.playerId }),
+            body: JSON.stringify({
+              roomCode: state.roomCode,
+              playerId: state.playerId
+            }),
           });
+          pollLobbyState();
         } catch (e) {}
       }
     });
 
-    el.btnLeaveGame?.addEventListener("click", () => {
-      if (confirm("Vil du forlate kampen og gå tilbake til menyen?")) {
-        showView("lobby");
+    // Host settings change
+    el.selectLobbyMap?.addEventListener("change", (e) => {
+      if (!state.isHost || !state.roomCode || !state.playerId) return;
+      const mapId = e.target.value;
+      state.mapId = mapId;
+      state.currentMap = mapId === "cyber_hangar" ? buildCyberHangar() : buildGloshaugenArena();
+
+      fetch("/api/kuleregn/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roomCode: state.roomCode,
+          playerId: state.playerId,
+          settings: { mapId },
+        }),
+      }).catch(() => {});
+    });
+
+    el.selectLobbyScoreLimit?.addEventListener("change", (e) => {
+      if (!state.isHost || !state.roomCode || !state.playerId) return;
+      const scoreLimit = parseInt(e.target.value, 10);
+      state.scoreLimit = scoreLimit;
+
+      fetch("/api/kuleregn/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roomCode: state.roomCode,
+          playerId: state.playerId,
+          settings: { scoreLimit },
+        }),
+      }).catch(() => {});
+    });
+
+    // Leave room lobby button
+    el.btnLeaveLobby?.addEventListener("click", async () => {
+      if (confirm("Vil du forlate rommet?")) {
+        if (state.roomCode && state.playerId) {
+          try {
+            await fetch("/api/kuleregn/leave", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                roomCode: state.roomCode,
+                playerId: state.playerId
+              }),
+            });
+          } catch (e) {}
+        }
+        state.roomCode = null;
+        state.playerId = null;
+        state.isHost = false;
+        state.isReady = false;
+        showView("gateway");
       }
     });
 
@@ -2181,17 +2438,28 @@
       el.btnSoundToggle.textContent = soundEnabled ? "🔊" : "🔇";
     });
 
-    // Name change
-    el.inputPlayerName?.addEventListener("input", (e) => {
-      const val = e.target.value.trim() || "Spiller";
-      state.playerName = val;
-      localStorage.setItem("kr_player_name", val);
-      updateProfileUI();
-    });
-
-    // Profile Trigger Header
-    el.btnProfileTrigger?.addEventListener("click", () => {
-      showView("lobby");
+    // Header Back button
+    el.btnHeaderBack?.addEventListener("click", (e) => {
+      if (state.view === "game" || state.view === "roomLobby") {
+        e.preventDefault();
+        if (confirm("Vil du forlate rommet og gå tilbake til hovedmenyen?")) {
+          if (state.roomCode && state.playerId) {
+            fetch("/api/kuleregn/leave", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                roomCode: state.roomCode,
+                playerId: state.playerId
+              }),
+            }).catch(() => {});
+          }
+          state.roomCode = null;
+          state.playerId = null;
+          state.isHost = false;
+          state.isReady = false;
+          showView("gateway");
+        }
+      }
     });
 
     // Party Lobby Hub Button
@@ -2200,36 +2468,63 @@
     });
 
     // Podium Buttons
-    el.btnPodiumPlayAgain?.addEventListener("click", () => {
+    el.btnPodiumPlayAgain?.addEventListener("click", async () => {
       if (el.modalPodium) el.modalPodium.classList.add("hidden");
-      showView("lobby");
-    });
+      if (state.roomCode && state.playerId) {
+        try {
+          await fetch("/api/kuleregn/lobby", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              roomCode: state.roomCode,
+              playerId: state.playerId
+            }),
+          });
+        } catch (e) {}
 
-    el.btnPodiumReturnLobby?.addEventListener("click", () => {
-      if (el.modalPodium) el.modalPodium.classList.add("hidden");
-      showView("lobby");
-    });
-
-    // Copy room code pill
-    el.standbyRoomCodePill?.addEventListener("click", () => {
-      if (state.roomCode) {
-        navigator.clipboard.writeText(state.roomCode);
-        if (el.standbyRoomCodeText) {
-          el.standbyRoomCodeText.textContent = "KOPIERT!";
-          setTimeout(() => {
-            if (el.standbyRoomCodeText) el.standbyRoomCodeText.textContent = state.roomCode;
-          }, 1200);
-        }
+        stopSimulation();
+        stopRoomSync();
+        enterRoomLobby({
+          roomCode: state.roomCode,
+          playerId: state.playerId,
+          mapId: state.mapId,
+          scoreLimit: state.scoreLimit,
+          timeLimit: state.timeLimit,
+        });
+      } else {
+        showView("gateway");
       }
     });
 
-    // URL Query parameters (e.g. from Party Lobby: ?room=FJORD&player=p_1234)
+    el.btnPodiumReturnGateway?.addEventListener("click", async () => {
+      if (el.modalPodium) el.modalPodium.classList.add("hidden");
+      if (state.roomCode && state.playerId) {
+        try {
+          await fetch("/api/kuleregn/leave", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              roomCode: state.roomCode,
+              playerId: state.playerId
+            }),
+          });
+        } catch (e) {}
+      }
+      state.roomCode = null;
+      state.playerId = null;
+      state.isHost = false;
+      state.isReady = false;
+      showView("gateway");
+    });
+
+    // URL Query parameters (e.g. from Party Lobby or direct share: ?room=KULE)
     const params = new URLSearchParams(window.location.search);
     const roomParam = params.get("room") || params.get("code") || params.get("roomCode");
     if (roomParam) {
+      if (el.inputJoinCode) el.inputJoinCode.value = roomParam.toUpperCase();
       setTimeout(() => {
         joinOnlineRoom(roomParam);
-      }, 300);
+      }, 350);
     }
   }
 
@@ -2238,10 +2533,8 @@
   // =========================================================================
 
   window.addEventListener("DOMContentLoaded", () => {
-    initLobbyCustomizer();
-    updateProfileUI();
     initInputHandlers();
     initUI();
-    showView("lobby");
+    showView("gateway");
   });
 })();

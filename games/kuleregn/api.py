@@ -323,24 +323,42 @@ class KuleregnRoom:
             return True
 
     def change_color(self, player_id: str, color_hex: str) -> bool:
+        return self.update_profile(player_id, color=color_hex)
+
+    def update_profile(
+        self,
+        player_id: str,
+        color: Optional[str] = None,
+        avatar: Optional[str] = None,
+        name: Optional[str] = None,
+    ) -> bool:
         with self.lock:
-            if self.status != "lobby":
-                return False
             p = self.players.get(player_id)
             if not p:
                 return False
 
-            clean_hex = color_hex.strip().lower()
-            for other_id, other in self.players.items():
-                if other_id != player_id and other.get("color", "").lower() == clean_hex:
-                    return False
+            if color:
+                clean_hex = color.strip().lower()
+                conflict = False
+                for other_id, other in self.players.items():
+                    if other_id != player_id and other.get("color", "").lower() == clean_hex:
+                        conflict = True
+                        break
+                if not conflict:
+                    old_color = p.get("color")
+                    if old_color in self.color_assignments:
+                        del self.color_assignments[old_color]
+                    p["color"] = color
+                    self.color_assignments[color] = player_id
 
-            old_color = p.get("color")
-            if old_color in self.color_assignments:
-                del self.color_assignments[old_color]
+            if avatar:
+                p["avatar"] = str(avatar).strip()
 
-            p["color"] = color_hex
-            self.color_assignments[color_hex] = player_id
+            if name:
+                clean_name = str(name).strip()[:18]
+                if clean_name:
+                    p["name"] = clean_name
+
             self.bump()
             return True
 
@@ -402,6 +420,25 @@ class KuleregnRoom:
             self.race_end_time = None
             for pl in self.players.values():
                 pl["isReady"] = True
+                pl["kills"] = 0
+                pl["deaths"] = 0
+                pl["score"] = 0
+                pl["health"] = 100
+                pl["shield"] = 25
+                pl["weapon"] = "pistol"
+            self.kill_feed = []
+            self.recent_events = []
+            self.bump()
+            return True
+
+    def reset_to_lobby(self, player_id: Optional[str] = None) -> bool:
+        with self.lock:
+            self.status = "lobby"
+            self.countdown_start = None
+            self.match_start = None
+            self.race_end_time = None
+            for pl in self.players.values():
+                pl["isReady"] = False
                 pl["kills"] = 0
                 pl["deaths"] = 0
                 pl["score"] = 0
@@ -761,18 +798,20 @@ class KuleregnAPI:
             ok = room.set_ready(player_id, ready)
             return 200, {"ok": ok}
 
-        # 4. Change Color
-        if path == "/api/kuleregn/color":
+        # 4. Customize Profile (Color, Avatar, Name)
+        if path in ("/api/kuleregn/color", "/api/kuleregn/customize", "/api/kuleregn/avatar"):
             code = str(body.get("roomCode", "")).strip().upper()
             player_id = str(body.get("playerId", "")).strip()
-            color = str(body.get("color", "")).strip()
+            color = str(body.get("color", "")).strip() or None
+            avatar = str(body.get("avatar", "")).strip() or None
+            name = str(body.get("name", "")).strip() or None
 
             with _rooms_lock:
                 room = _rooms.get(code)
             if not room:
                 return 404, {"error": "Fant ikke rommet."}
 
-            ok = room.change_color(player_id, color)
+            ok = room.update_profile(player_id, color=color, avatar=avatar, name=name)
             return 200, {"ok": ok}
 
         # 5. Update Settings (Host only)
@@ -827,6 +866,19 @@ class KuleregnAPI:
                 return 404, {"error": "Fant ikke rommet."}
 
             ok = room.restart_match(player_id)
+            return 200, {"ok": ok}
+
+        # 8b. Reset to Lobby (play again)
+        if path in ("/api/kuleregn/lobby", "/api/kuleregn/reset_lobby"):
+            code = str(body.get("roomCode", "")).strip().upper()
+            player_id = str(body.get("playerId", "")).strip()
+
+            with _rooms_lock:
+                room = _rooms.get(code)
+            if not room:
+                return 404, {"error": "Fant ikke rommet."}
+
+            ok = room.reset_to_lobby(player_id)
             return 200, {"ok": ok}
 
         # 9. Leave Room

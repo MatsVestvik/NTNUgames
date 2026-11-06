@@ -4,14 +4,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Kuleregn • Topp-ned 2D Skytespill (WASD + Mus)</title>
+  <title>Kuleregn • Topp-ned 2D Skytespill</title>
 
   <link rel="icon" type="image/png" href="/assets/icons/kuleregn.png" />
   <link rel="stylesheet" href="/hub.css" />
   <link rel="stylesheet" href="/game-lobby.css" />
   <link rel="stylesheet" href="/parallax-bg.css" />
   <link rel="stylesheet" href="/character/character-creator.css" />
-  <link rel="stylesheet" href="styles.css?v=1.0" />
+  <link rel="stylesheet" href="styles.css?v=2.0" />
 </head>
 
 <body class="kuleregn-page">
@@ -55,156 +55,186 @@
         <button type="button" class="btn-sound-toggle" id="btnSoundToggle" title="Slå av/på lyd">
           🔊
         </button>
-        <button type="button" class="btn-profile-trigger" id="btnProfileTrigger" title="Endre karakter">
-          <canvas id="headerAvatarMini" width="28" height="28"></canvas>
-          <span id="headerPlayerName">Spiller</span>
-        </button>
       </div>
     </header>
 
     <!-- Main Content Container -->
     <main class="kr-main">
       <!-- ================================================================= -->
-      <!-- VIEW 1: LOBBY & MENU                                              -->
+      <!-- VIEW 1: GATEWAY (Opprett eller Bli med i rom)                      -->
       <!-- ================================================================= -->
-      <section class="kr-view" id="viewLobby">
-        <div class="lobby-container">
-          <div class="lobby-grid">
-            <!-- Left Column: Combatant Profile & Weapon Arsenal -->
-            <div class="profile-card">
-              <div class="profile-card-header">
-                <h3>Din Soldat</h3>
-                <span class="profile-subtitle">Tilpass utseende og farger</span>
+      <section class="kr-view" id="viewGateway">
+        <div class="gateway-container">
+          <!-- Hero Header -->
+          <div class="gateway-hero">
+            <div class="hero-icon-bubble">
+              <img src="/hub/assets/icons/kuleregn.png" alt="Kuleregn blink" class="hero-icon-img" />
+            </div>
+            <h2 class="hero-title">Kuleregn</h2>
+            <p class="hero-desc">
+              Topp-ned arkadeskytespill med festfiguren din! Beveg deg med WASD/piltaster og skyt rett frem med mellomrom eller mus. Plukk opp spesialvåpen og dominer arenaen!
+            </p>
+          </div>
+
+          <!-- Action Split: Opprett Rom vs Bli Med -->
+          <div class="gateway-split">
+            <!-- Create Room Card -->
+            <div class="gateway-card card-create">
+              <div class="gw-card-header">
+                <span class="gw-badge badge-orange">Romvert 👑</span>
+                <h3>Opprett nytt rom</h3>
+                <p>Start et rom for vennegjengen og del koden for å kjempe sammen.</p>
               </div>
 
-              <!-- Character Creator Widget directly embedded in the lobby -->
-              <div class="lobby-character-wrap">
-                <div id="skribblCustomizerLobby"></div>
+              <div class="gw-form-group">
+                <label for="inputCreateName">Ditt kallenavn:</label>
+                <input type="text" id="inputCreateName" class="text-input" maxlength="18" placeholder="F.eks. Henrik" value="Vert" />
               </div>
 
-              <!-- Driver Name Input -->
-              <div class="field-group" style="margin-top: 0.75rem;">
-                <label for="inputPlayerName">Kallenavn:</label>
-                <input type="text" id="inputPlayerName" class="text-input" maxlength="16" placeholder="Kallenavn"
-                  value="Spiller" />
+              <button type="button" class="gw-btn btn-create primary-action" id="btnCreateRoom">
+                Opprett Rom 🚀
+              </button>
+            </div>
+
+            <!-- Join Room Card -->
+            <div class="gateway-card card-join">
+              <div class="gw-card-header">
+                <span class="gw-badge badge-purple">Bli med 🎯</span>
+                <h3>Bli med i et rom</h3>
+                <p>Tast inn den 4-bokstavers koden fra vennen din.</p>
               </div>
 
-              <!-- Arsenal Overview -->
-              <div class="field-group arsenal-preview-group">
-                <label>Våpenarsenal (Pickups):</label>
-                <div class="arsenal-pill-grid">
-                  <div class="arsenal-pill" title="Startvåpen: Presis og pålitelig">
-                    <span class="ap-icon">🔫</span>
-                    <span class="ap-name">Pistol</span>
-                  </div>
-                  <div class="arsenal-pill" title="Nærkampmonster: 6 hagl">
-                    <span class="ap-icon">💥</span>
-                    <span class="ap-name">Hagle</span>
-                  </div>
-                  <div class="arsenal-pill" title="Hurtigskytende: 9 skudd/sek">
-                    <span class="ap-icon">⚡</span>
-                    <span class="ap-name">Maskingevær</span>
-                  </div>
-                  <div class="arsenal-pill" title="Langdistanse: 85 skade">
-                    <span class="ap-icon">🎯</span>
-                    <span class="ap-name">Sniper</span>
-                  </div>
-                  <div class="arsenal-pill" title="Områdeskade: Eksplosiv!">
-                    <span class="ap-icon">🚀</span>
-                    <span class="ap-name">Rakettkaster</span>
-                  </div>
+              <div class="gw-form-group">
+                <label for="inputJoinCode">Romkode (4 bokstaver):</label>
+                <input type="text" id="inputJoinCode" class="text-input code-input" maxlength="6" placeholder="KODE" autocomplete="off" autocapitalize="characters" />
+              </div>
+
+              <div class="gw-form-group">
+                <label for="inputJoinName">Ditt kallenavn:</label>
+                <input type="text" id="inputJoinName" class="text-input" maxlength="18" placeholder="F.eks. Spiller" value="Spiller" />
+              </div>
+
+              <button type="button" class="gw-btn btn-join" id="btnJoinRoom">
+                Bli Med Nå 🎯
+              </button>
+            </div>
+          </div>
+
+          <!-- Controls Quick Reference Footer -->
+          <div class="controls-guide-bar">
+            <div class="cg-item">
+              <span class="cg-key">W A S D / PILER</span>
+              <span class="cg-desc">Bevegelse &amp; Retning</span>
+            </div>
+            <div class="cg-item">
+              <span class="cg-key">MELLOMROM / KLIKK</span>
+              <span class="cg-desc">Skyt</span>
+            </div>
+            <div class="cg-item">
+              <span class="cg-key">TAB</span>
+              <span class="cg-desc">Resultattavle</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- VIEW 2: ROOM LOBBY (Her lages karakteren før kamp!)                -->
+      <!-- ================================================================= -->
+      <section class="kr-view hidden" id="viewRoomLobby">
+        <div class="room-lobby-container">
+          <!-- Room Code Banner -->
+          <div class="room-banner">
+            <div class="room-code-group">
+              <span class="room-label">ROMKODE:</span>
+              <div class="room-code-display" id="lobbyRoomCode">----</div>
+              <button type="button" class="copy-btn" id="btnCopyRoomCode" title="Kopier romkode">
+                Kopier lenke 📋
+              </button>
+            </div>
+            <div class="room-instructions">
+              Del koden med venner slik at de kan bli med fra mobil eller PC!
+            </div>
+          </div>
+
+          <!-- Lobby Grid: Left = Character Creator, Right = Players & Settings -->
+          <div class="room-lobby-grid">
+            <!-- Left Column: Character Creator -->
+            <div class="lobby-col col-character">
+              <div class="lobby-card">
+                <div class="section-title-row">
+                  <h3 class="section-title">
+                    <span class="char-section-icon">🎨</span> Tilpass din soldat
+                  </h3>
+                  <span class="section-hint">Oppdateres direkte for alle</span>
+                </div>
+
+                <!-- Skribbl Character Creator Widget embedded in room lobby -->
+                <div class="lobby-character-wrap">
+                  <div id="skribblCustomizerLobby"></div>
+                </div>
+
+                <!-- Editable Name in Lobby -->
+                <div class="gw-form-group" style="margin-top: 1rem;">
+                  <label for="inputLobbyPlayerName">Ditt kallenavn:</label>
+                  <input type="text" id="inputLobbyPlayerName" class="text-input" maxlength="18" placeholder="Spillernavn" />
                 </div>
               </div>
             </div>
 
-            <!-- Right Column: Mode Select, Online Host & Join -->
-            <div class="modes-card">
-              <div class="mode-tabs">
-                <button type="button" class="mode-tab-btn active" id="tabBtnHost" data-tab="host">
-                  🌐 Opprett Rom
-                </button>
-                <button type="button" class="mode-tab-btn" id="tabBtnJoin" data-tab="join">
-                  🚀 Bli Med
-                </button>
+            <!-- Right Column: Connected Players & Match Settings -->
+            <div class="lobby-col col-players-settings">
+              <!-- Connected Players Section -->
+              <div class="lobby-card">
+                <div class="section-title-row">
+                  <h3 class="section-title">
+                    Tilkoblede spillere (<span id="lobbyPlayersCount">1</span>)
+                  </h3>
+                  <span class="section-hint" id="lobbyStatusHint">Venter på at alle er klare...</span>
+                </div>
+
+                <div class="players-grid" id="lobbyPlayersGrid">
+                  <!-- Rendered dynamically -->
+                </div>
               </div>
 
-              <!-- Tab 1: Host Online Room -->
-              <div class="tab-pane active" id="tabPaneHost">
-                <div class="tab-pane-content">
-                  <div class="pane-intro">
-                    <h4>Opprett Flerspiller-rom</h4>
-                    <p>Spill mot venner over nettet! Tast inn eller del romkoden for å starte.</p>
+              <!-- Match Settings & Launch Row -->
+              <div class="lobby-card">
+                <div class="section-title-row">
+                  <h3 class="section-title">Kampinnstillinger</h3>
+                  <span class="section-hint">Verten bestemmer</span>
+                </div>
+
+                <div class="field-row">
+                  <div class="field-group">
+                    <label for="selectLobbyMap">Bane:</label>
+                    <select id="selectLobbyMap" class="select-input">
+                      <option value="gloshaugen_arena" selected>Gløshaugen Arena 🏛️</option>
+                      <option value="cyber_hangar">Cyber Hangar 🚀</option>
+                    </select>
                   </div>
 
-                  <div class="field-row">
-                    <div class="field-group">
-                      <label for="selectHostMap">Bane:</label>
-                      <select id="selectHostMap" class="select-input">
-                        <option value="gloshaugen_arena" selected>Gløshaugen Arena 🏛️</option>
-                        <option value="cyber_hangar">Cyber Hangar 🚀</option>
-                      </select>
-                    </div>
-
-                    <div class="field-group">
-                      <label for="selectHostScoreLimit">Drap for seier:</label>
-                      <select id="selectHostScoreLimit" class="select-input">
-                        <option value="10">10 drap (Rask)</option>
-                        <option value="15" selected>15 drap (Standard)</option>
-                        <option value="25">25 drap (Lang)</option>
-                      </select>
-                    </div>
+                  <div class="field-group">
+                    <label for="selectLobbyScoreLimit">Drap for seier:</label>
+                    <select id="selectLobbyScoreLimit" class="select-input">
+                      <option value="10">10 drap (Rask)</option>
+                      <option value="15" selected>15 drap (Standard)</option>
+                      <option value="25">25 drap (Lang)</option>
+                    </select>
                   </div>
+                </div>
 
-                  <div class="field-row">
-                    <div class="field-group">
-                      <label for="selectHostTimeLimit">Tidsgrense:</label>
-                      <select id="selectHostTimeLimit" class="select-input">
-                        <option value="180">3 minutter</option>
-                        <option value="300" selected>5 minutter</option>
-                        <option value="600">10 minutter</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <button type="button" class="btn-launch-game primary-action" id="btnCreateRoom">
-                    <span>Opprett Rom &amp; Klargjør Kamp 🌐</span>
+                <!-- Action Buttons in Lobby -->
+                <div class="lobby-actions-row">
+                  <button type="button" class="btn-ready-toggle" id="btnToggleReady">
+                    Jeg er Klar! 👍
                   </button>
-                </div>
-              </div>
-
-              <!-- Tab 2: Join Online Room -->
-              <div class="tab-pane" id="tabPaneJoin">
-                <div class="tab-pane-content">
-                  <div class="pane-intro">
-                    <h4>Bli med i et eksisterende rom</h4>
-                    <p>Skriv inn den 4-bokstavers romkoden fra verten for å bli med i kampen umiddelbart.</p>
-                  </div>
-
-                  <div class="field-group" style="max-width:320px;margin:1rem auto 1.5rem;">
-                    <label for="inputJoinRoomCode" style="text-align:center;font-size:1rem;">ROMKODE:</label>
-                    <input type="text" id="inputJoinRoomCode" class="text-input room-code-input" maxlength="6"
-                      placeholder="KODE" autocomplete="off" autocorrect="off" autocapitalize="characters" />
-                  </div>
-
-                  <button type="button" class="btn-launch-game primary-action" id="btnJoinRoom">
-                    <span>Bli Med Nå 🚀</span>
+                  <button type="button" class="primary-btn btn-start-match hidden" id="btnHostStartMatch">
+                    Start Kamp 💥
                   </button>
-                </div>
-              </div>
-
-              <!-- Controls Quick Reference Footer -->
-              <div class="controls-guide-bar">
-                <div class="cg-item">
-                  <span class="cg-key">W A S D / PILER</span>
-                  <span class="cg-desc">Bevegelse &amp; Retning</span>
-                </div>
-                <div class="cg-item">
-                  <span class="cg-key">MELLOMROM / KLIKK</span>
-                  <span class="cg-desc">Skyt</span>
-                </div>
-                <div class="cg-item">
-                  <span class="cg-key">TAB</span>
-                  <span class="cg-desc">Resultattavle</span>
+                  <button type="button" class="secondary-btn btn-leave-lobby" id="btnLeaveLobby">
+                    ‹ Forlat rom
+                  </button>
                 </div>
               </div>
             </div>
@@ -213,7 +243,7 @@
       </section>
 
       <!-- ================================================================= -->
-      <!-- VIEW 2: ACTIVE GAME & ARENA CANVAS                                -->
+      <!-- VIEW 3: ACTIVE GAME & ARENA CANVAS                                -->
       <!-- ================================================================= -->
       <section class="kr-view hidden" id="viewGame">
         <!-- 60 FPS Tactical Combat Canvas -->
@@ -222,38 +252,7 @@
         <!-- Low Health Red Pulse Vignette Overlay -->
         <div class="low-health-vignette hidden" id="lowHealthVignette" aria-hidden="true"></div>
 
-        <!-- In-game Pre-Match Standby / Briefing Overlay (Lobby before start) -->
-        <div class="in-game-standby-overlay hidden" id="inGameStandby">
-          <div class="igs-card">
-            <div class="igs-header">
-              <span class="igs-badge" id="standbyMapBadge">Gløshaugen Arena</span>
-              <span class="igs-roomcode-pill" id="standbyRoomCodePill" title="Klikk for å kopiere">
-                Romkode: <strong id="standbyRoomCodeText">----</strong> 📋
-              </span>
-            </div>
-
-            <h3 class="igs-title">Klargjør til kamp! 💥</h3>
-            <p class="igs-desc" id="standbyWaitingText">Venter på at alle spillere trykker klar...</p>
-
-            <div class="igs-players-list" id="standbyPlayersList">
-              <!-- Player ready badges populated dynamically -->
-            </div>
-
-            <div class="igs-actions">
-              <button type="button" class="btn-ready-toggle" id="btnToggleReady">
-                Jeg er Klar! 👍
-              </button>
-              <button type="button" class="btn-force-start hidden" id="btnHostForceStart">
-                Start Kamp Nå ⚡
-              </button>
-              <button type="button" class="btn-standby-leave" id="btnLeaveGame">
-                Avslutt
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- In-Game HUD Elements (Fixed Screen Space) -->
+        <!-- In-Game HUD Elements -->
         <div class="hud-overlay" id="hudOverlay">
           <!-- Top Left: Leader / Personal Rank & Streaks -->
           <div class="hud-top-left">
@@ -276,7 +275,7 @@
             </div>
           </div>
 
-          <!-- Top Right: Real-Time Kill Feed & Leaderboard Trigger -->
+          <!-- Top Right: Real-Time Kill Feed -->
           <div class="hud-top-right">
             <div class="kill-feed-container" id="killFeedContainer">
               <!-- Dynamic kill feed notices -->
@@ -391,10 +390,10 @@
         <!-- Action Buttons -->
         <div class="podium-actions">
           <button type="button" class="primary-btn pulse-glow" id="btnPodiumPlayAgain">
-            🔄 Spill Igjen
+            🔄 Tilbake til Lobby
           </button>
-          <button type="button" class="secondary-btn" id="btnPodiumReturnLobby">
-            ‹ Tilbake til Meny
+          <button type="button" class="secondary-btn" id="btnPodiumReturnGateway">
+            ‹ Hovedmeny
           </button>
         </div>
       </div>
@@ -404,8 +403,7 @@
   <!-- Scripts -->
   <script src="/parallax-bg.js?v=2.1"></script>
   <script src="/character/character-creator.js"></script>
-  <script src="app.js?v=1.0"></script>
+  <script src="app.js?v=2.0"></script>
 </body>
 
 </html>
-
