@@ -755,7 +755,6 @@
       settings: () => ({
         mapId: el.selectMapKuleregn?.value || "gloshaugen_arena",
         scoreLimit: parseInt(el.selectScoreLimitKuleregn?.value || "15", 10) || 15,
-        botCount: parseInt(el.selectBotsKuleregn?.value || "2", 10) || 2,
         mode: "ffa",
       }),
     },

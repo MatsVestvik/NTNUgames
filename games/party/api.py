@@ -2687,7 +2687,7 @@ class PartyAPI:
                             map_id = str(settings.get("mapId", "gloshaugen_arena"))
                             score_limit = int(settings.get("scoreLimit", 15))
                             time_limit = int(settings.get("timeLimit", 300))
-                            bot_count = int(settings.get("botCount", 2))
+                            bot_count = int(settings.get("botCount", 0))
                             mode = str(settings.get("mode", "ffa"))
                             host_color = host_player.get("color") or extract_color_from_avatar(host_player.get("avatar", "")) or PLAYER_PALETTE[0]["color"]
 

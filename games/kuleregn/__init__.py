@@ -7,3 +7,4 @@ weapon synchronization, health/shield pickups, kill feed, and podium.
 from .api import KuleregnAPI, KuleregnRoom
 
 __all__ = ["KuleregnAPI", "KuleregnRoom"]
+

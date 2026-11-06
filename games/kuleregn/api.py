@@ -507,35 +507,6 @@ class KuleregnRoom:
                         weapon_id=ev.get("weapon", "pistol"),
                     )
 
-            # Ingest bot telemetry if reported by host
-            if p.get("isHost") and "bots" in telemetry:
-                for b in telemetry["bots"]:
-                    bid = b.get("id")
-                    if bid:
-                        self.players[bid] = {
-                            "id": bid,
-                            "name": b.get("name", "Bot"),
-                            "color": b.get("color", "#94a3b8"),
-                            "avatar": b.get("avatar", ""),
-                            "isHost": False,
-                            "isReady": True,
-                            "isBot": True,
-                            "slot": b.get("slot", 99),
-                            "x": b.get("x", 0.0),
-                            "y": b.get("y", 0.0),
-                            "angle": b.get("angle", 0.0),
-                            "vx": b.get("vx", 0.0),
-                            "vy": b.get("vy", 0.0),
-                            "speed": b.get("speed", 0.0),
-                            "health": b.get("health", 100),
-                            "shield": b.get("shield", 0),
-                            "weapon": b.get("weapon", "pistol"),
-                            "kills": b.get("kills", 0),
-                            "deaths": b.get("deaths", 0),
-                            "score": b.get("score", 0),
-                            "lastSeen": time.time(),
-                        }
-
             self._check_status_transitions()
             self.bump()
 
@@ -872,3 +843,4 @@ class KuleregnAPI:
             return 200, {"ok": ok}
 
         return None
+

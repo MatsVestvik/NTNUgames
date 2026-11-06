@@ -543,6 +543,14 @@ body.kuleregn-page {
   color: #94a3b8;
 }
 
+.lobby-character-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin: 0.5rem auto;
+}
+
 /* ========================================================================= */
 /* ACTIVE GAME VIEW & CANVAS                                                 */
 /* ========================================================================= */
@@ -553,7 +561,7 @@ body.kuleregn-page {
   width: 100%;
   height: 100%;
   background: #090d16;
-  cursor: crosshair;
+  cursor: default;
 }
 
 #combatCanvas {
@@ -1357,3 +1365,4 @@ body.kuleregn-page {
 .secondary-btn:hover {
   background: rgba(255, 255, 255, 0.16);
 }
+

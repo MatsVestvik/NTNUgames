@@ -77,29 +77,16 @@
                 <span class="profile-subtitle">Tilpass utseende og farger</span>
               </div>
 
-              <!-- Character Preview Bubble with CharacterCreator integration -->
-              <div class="avatar-preview-box">
-                <div class="avatar-bubble" id="avatarBubble">
-                  <canvas id="playerAvatarCanvas" width="96" height="96"></canvas>
-                </div>
-                <button type="button" class="btn-edit-avatar" id="btnOpenCharacterCreator">
-                  🎨 Tilpass Karakter
-                </button>
+              <!-- Character Creator Widget directly embedded in the lobby -->
+              <div class="lobby-character-wrap">
+                <div id="skribblCustomizerLobby"></div>
               </div>
 
               <!-- Driver Name Input -->
-              <div class="field-group">
+              <div class="field-group" style="margin-top: 0.75rem;">
                 <label for="inputPlayerName">Kallenavn:</label>
                 <input type="text" id="inputPlayerName" class="text-input" maxlength="16" placeholder="Kallenavn"
                   value="Spiller" />
-              </div>
-
-              <!-- Tactical Color Swatches -->
-              <div class="field-group">
-                <label>Draktfarge:</label>
-                <div class="color-palette-row" id="colorPaletteRow">
-                  <!-- Populated by JS -->
-                </div>
               </div>
 
               <!-- Arsenal Overview -->
@@ -130,13 +117,10 @@
               </div>
             </div>
 
-            <!-- Right Column: Mode Select, Solo vs Online Tabs -->
+            <!-- Right Column: Mode Select, Online Host & Join -->
             <div class="modes-card">
               <div class="mode-tabs">
-                <button type="button" class="mode-tab-btn active" id="tabBtnSolo" data-tab="solo">
-                  🤖 Spill Solo (Boter)
-                </button>
-                <button type="button" class="mode-tab-btn" id="tabBtnHost" data-tab="host">
+                <button type="button" class="mode-tab-btn active" id="tabBtnHost" data-tab="host">
                   🌐 Opprett Rom
                 </button>
                 <button type="button" class="mode-tab-btn" id="tabBtnJoin" data-tab="join">
@@ -144,66 +128,12 @@
                 </button>
               </div>
 
-              <!-- Tab 1: Solo vs AI Bots -->
-              <div class="tab-pane active" id="tabPaneSolo">
-                <div class="tab-pane-content">
-                  <div class="pane-intro">
-                    <h4>Hurtigstart mot AI-boter</h4>
-                    <p>Hopp rett inn i en intens Free-For-All kamp mot datastyrte motstandere for å varme opp siktet!</p>
-                  </div>
-
-                  <div class="field-row">
-                    <div class="field-group">
-                      <label for="selectSoloMap">Bane:</label>
-                      <select id="selectSoloMap" class="select-input">
-                        <option value="gloshaugen_arena" selected>Gløshaugen Arena 🏛️</option>
-                        <option value="cyber_hangar">Cyber Hangar 🚀</option>
-                      </select>
-                    </div>
-
-                    <div class="field-group">
-                      <label for="selectSoloBots">Antall AI-boter:</label>
-                      <select id="selectSoloBots" class="select-input">
-                        <option value="1">1 bot (Duell)</option>
-                        <option value="3" selected>3 boter (4 spillere totalt)</option>
-                        <option value="5">5 boter (Kaos)</option>
-                        <option value="7">7 boter (Maksimal action)</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div class="field-row">
-                    <div class="field-group">
-                      <label for="selectSoloScoreLimit">Drap for seier:</label>
-                      <select id="selectSoloScoreLimit" class="select-input">
-                        <option value="10">10 drap (Rask match)</option>
-                        <option value="15" selected>15 drap (Standard)</option>
-                        <option value="25">25 drap (Lang kamp)</option>
-                      </select>
-                    </div>
-
-                    <div class="field-group">
-                      <label for="selectSoloTimeLimit">Tidsbegrensning:</label>
-                      <select id="selectSoloTimeLimit" class="select-input">
-                        <option value="180">3 minutter</option>
-                        <option value="300" selected>5 minutter</option>
-                        <option value="600">10 minutter</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <button type="button" class="btn-launch-game primary-action" id="btnStartSolo">
-                    <span>Start Kamp Mot Boter 💥</span>
-                  </button>
-                </div>
-              </div>
-
-              <!-- Tab 2: Host Online Room -->
-              <div class="tab-pane" id="tabPaneHost">
+              <!-- Tab 1: Host Online Room -->
+              <div class="tab-pane active" id="tabPaneHost">
                 <div class="tab-pane-content">
                   <div class="pane-intro">
                     <h4>Opprett Flerspiller-rom</h4>
-                    <p>Spill mot venner på tvers av PC, Mac og mobil! Du får en 4-bokstavers romkode vennene dine kan taste inn.</p>
+                    <p>Spill mot venner over nettet! Tast inn eller del romkoden for å starte.</p>
                   </div>
 
                   <div class="field-row">
@@ -218,23 +148,14 @@
                     <div class="field-group">
                       <label for="selectHostScoreLimit">Drap for seier:</label>
                       <select id="selectHostScoreLimit" class="select-input">
-                        <option value="10">10 drap</option>
-                        <option value="15" selected>15 drap</option>
-                        <option value="25">25 drap</option>
+                        <option value="10">10 drap (Rask)</option>
+                        <option value="15" selected>15 drap (Standard)</option>
+                        <option value="25">25 drap (Lang)</option>
                       </select>
                     </div>
                   </div>
 
                   <div class="field-row">
-                    <div class="field-group">
-                      <label for="selectHostBots">Fyll opp med boter:</label>
-                      <select id="selectHostBots" class="select-input">
-                        <option value="0">Ingen boter (Kun ekte spillere)</option>
-                        <option value="2" selected>2 boter som fyll</option>
-                        <option value="4">4 boter</option>
-                      </select>
-                    </div>
-
                     <div class="field-group">
                       <label for="selectHostTimeLimit">Tidsgrense:</label>
                       <select id="selectHostTimeLimit" class="select-input">
@@ -246,12 +167,12 @@
                   </div>
 
                   <button type="button" class="btn-launch-game primary-action" id="btnCreateRoom">
-                    <span>Opprett Rom &amp; Gå til Start 🌐</span>
+                    <span>Opprett Rom &amp; Klargjør Kamp 🌐</span>
                   </button>
                 </div>
               </div>
 
-              <!-- Tab 3: Join Online Room -->
+              <!-- Tab 2: Join Online Room -->
               <div class="tab-pane" id="tabPaneJoin">
                 <div class="tab-pane-content">
                   <div class="pane-intro">
@@ -274,24 +195,12 @@
               <!-- Controls Quick Reference Footer -->
               <div class="controls-guide-bar">
                 <div class="cg-item">
-                  <span class="cg-key">W A S D</span>
-                  <span class="cg-desc">Bevegelse</span>
+                  <span class="cg-key">W A S D / PILER</span>
+                  <span class="cg-desc">Bevegelse &amp; Retning</span>
                 </div>
                 <div class="cg-item">
-                  <span class="cg-key">MUS</span>
-                  <span class="cg-desc">Sikt</span>
-                </div>
-                <div class="cg-item">
-                  <span class="cg-key">VENSTREKLIKK</span>
+                  <span class="cg-key">MELLOMROM / KLIKK</span>
                   <span class="cg-desc">Skyt</span>
-                </div>
-                <div class="cg-item">
-                  <span class="cg-key">R</span>
-                  <span class="cg-desc">Lad om</span>
-                </div>
-                <div class="cg-item">
-                  <span class="cg-key">MELLOMROM / SHIFT</span>
-                  <span class="cg-desc">Unnamanøver (Dash)</span>
                 </div>
                 <div class="cg-item">
                   <span class="cg-key">TAB</span>
@@ -394,40 +303,25 @@
                 </div>
                 <div class="vital-value" id="vitalHealthNum">100</div>
               </div>
-
-              <!-- Tactical Dash / Roll Cooldown Meter -->
-              <div class="dash-cooldown-wrap" id="dashCooldownWrap">
-                <span class="dash-label">Unnamanøver (Shift / Space):</span>
-                <div class="dash-bar-track">
-                  <div class="dash-bar-fill" id="dashBarFill" style="width: 100%;"></div>
-                </div>
-              </div>
             </div>
           </div>
 
-          <!-- Bottom Right: Active Weapon, Ammo & Reload -->
+          <!-- Bottom Right: Active Weapon & Ammo -->
           <div class="hud-bottom-right">
             <div class="weapon-hud-card" id="weaponHudCard">
               <div class="whc-top">
                 <span class="whc-icon" id="weaponHudIcon">🔫</span>
                 <div class="whc-info">
                   <span class="whc-name" id="weaponHudName">P-99 Pistol</span>
-                  <span class="whc-type" id="weaponHudType">Semi-automatisk</span>
+                  <span class="whc-type" id="weaponHudType">Halvautomatisk</span>
                 </div>
               </div>
 
               <div class="whc-bottom">
                 <div class="ammo-display">
-                  <span class="ammo-current" id="ammoCurrent">12</span>
-                  <span class="ammo-slash">/</span>
-                  <span class="ammo-reserve" id="ammoReserve">∞</span>
+                  <span class="ammo-current" id="ammoCurrent">∞</span>
+                  <span class="ammo-label" id="ammoLabel" style="font-size:0.85rem; color:#94a3b8; margin-left:6px;">Uendelig</span>
                 </div>
-                <div class="reload-prompt" id="reloadPrompt">Trykk [R] for å lade</div>
-              </div>
-
-              <!-- Reload progress indicator bar -->
-              <div class="reload-progress-bar hidden" id="reloadProgressBar">
-                <div class="reload-bar-fill" id="reloadBarFill"></div>
               </div>
             </div>
           </div>
@@ -514,3 +408,4 @@
 </body>
 
 </html>
+
