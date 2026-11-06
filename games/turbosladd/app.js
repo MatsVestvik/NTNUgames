@@ -426,7 +426,8 @@
     get: (target, prop) => getTrack(prop, state.trackSeed)
   });
 
-  // Staggered starting grid slots on the spacious dirt start straightaway (1–16 players)
+  // Starting grid slots on the spacious dirt start straightaway (1–16 players)
+  // Generous spacing between starting blocks so cars have plenty of room
   function getStartGridSlots(track, count = 16) {
     const p0 = track.rawPoints[0];
     const p1 = track.rawPoints[1];
@@ -443,8 +444,8 @@
     for (let i = 0; i < count; i++) {
       const row = Math.floor(i / 2);
       const side = (i % 2 === 0) ? -1 : 1;
-      const distBack = 50 + row * 52;
-      const lateralOffset = side * 22;
+      const distBack = 70 + row * 95;
+      const lateralOffset = side * 36;
 
       slots.push({
         x: p0.x - forwardX * distBack + rightX * lateralOffset,
@@ -2361,13 +2362,13 @@
       ctx.translate(s.x, s.y);
       ctx.rotate(s.angle);
       ctx.strokeStyle = "rgba(254, 243, 199, 0.75)";
-      ctx.lineWidth = 2.5;
+      ctx.lineWidth = 2;
       ctx.strokeRect(-24, -16, 48, 32);
       ctx.fillStyle = "rgba(254, 243, 199, 0.85)";
-      ctx.font = "900 13px monospace";
+      ctx.font = "8px 'Press Start 2P', monospace";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(String(idx + 1), -16, 0);
+      ctx.fillText(String(idx + 1), -14, 0);
       ctx.restore();
     });
 
@@ -2492,56 +2493,41 @@
     const isInPreRacePhase = (state.roomStatus === "lobby" || state.isGaragePhase || state.roomStatus === "countdown");
 
     if (isInPreRacePhase) {
-      // In-game pre-race garage overhead tags:
-      // Shows "KLAR" over ready cars, and "TILPASSER..." over cars still in the garage!
+      // Compact pre-race ready tag hovering right above the car (no name, small pixel tag)
       ctx.save();
       const isReady = Boolean(isLocal ? (state.mode === "splitscreen" ? car.isReady : state.myCar.isReady) : car.isReady);
-      const badgeText = isReady ? "KLAR" : "TILPASSER...";
-      const badgeBg = isReady ? "rgba(16, 185, 129, 0.94)" : "rgba(249, 115, 22, 0.94)";
-      const badgeBorder = isReady ? "#34d399" : "#fb923c";
-      const displayName = name || (isLocal ? (state.driverName || "Deg") : "Sjåfør");
+      const badgeText = isReady ? "KLAR" : "VENTER...";
+      const badgeBg = isReady ? "rgba(16, 185, 129, 0.94)" : "rgba(245, 158, 11, 0.94)";
+      const badgeBorder = isReady ? "#34d399" : "#fbbf24";
 
-      ctx.font = "8px 'Press Start 2P', monospace";
+      ctx.font = "7px 'Press Start 2P', monospace";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
 
-      const nameW = ctx.measureText(displayName).width;
-      const badgeW = ctx.measureText(badgeText).width;
-      const boxW = Math.max(nameW, badgeW) + 26;
-      const boxH = 40;
-      const boxX = car.x - boxW / 2;
-      const boxY = car.y - 60;
+      const textW = ctx.measureText(badgeText).width;
+      const tagW = Math.round(textW + 12);
+      const tagH = 15;
+      const tagX = Math.round(car.x - tagW / 2);
+      const tagY = Math.round(car.y - 34);
 
-      // Dark card container
-      ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+      // Dark backing shadow
+      ctx.fillStyle = "rgba(15, 23, 42, 0.9)";
       ctx.beginPath();
-      ctx.roundRect(boxX, boxY, boxW, boxH, 8);
+      ctx.roundRect(tagX - 1, tagY - 1, tagW + 2, tagH + 2, 4);
       ctx.fill();
-      ctx.strokeStyle = color || "#38bdf8";
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
 
-      // Driver Name
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "8px 'Press Start 2P', monospace";
-      ctx.fillText(displayName, car.x, boxY + 12);
-
-      // Status Badge Pill
-      const pillW = badgeW + 14;
-      const pillH = 17;
-      const pillX = car.x - pillW / 2;
-      const pillY = boxY + 20;
+      // Status pill
       ctx.fillStyle = badgeBg;
       ctx.beginPath();
-      ctx.roundRect(pillX, pillY, pillW, pillH, 9999);
+      ctx.roundRect(tagX, tagY, tagW, tagH, 3);
       ctx.fill();
       ctx.strokeStyle = badgeBorder;
       ctx.lineWidth = 1;
       ctx.stroke();
 
+      // Status text
       ctx.fillStyle = "#ffffff";
-      ctx.font = "8px 'Press Start 2P', monospace";
-      ctx.fillText(badgeText, car.x, pillY + 9);
+      ctx.fillText(badgeText, car.x, tagY + tagH / 2 + 1);
 
       ctx.restore();
     } else if (!isLocal) {
