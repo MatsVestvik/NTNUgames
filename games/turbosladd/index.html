@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="/game-lobby.css" />
   <link rel="stylesheet" href="/parallax-bg.css" />
   <link rel="stylesheet" href="/character/character-creator.css" />
-  <link rel="stylesheet" href="styles.css?v=3.2" />
+  <link rel="stylesheet" href="styles.css?v=3.3" />
 </head>
 
 <body class="turbosladd-page">
@@ -308,7 +308,7 @@
               <div class="loc-field">
                 <label for="selectLoungeTrack">Rallyetappe</label>
                 <select id="selectLoungeTrack" class="text-input select-input">
-                  <option value="rally_random">🎲 Tilfeldig Rallyetappe</option>
+                  <option value="rally_random">Tilfeldig Rallyetappe</option>
                   <option value="grand_prix">Skogsrally Grand Prix</option>
                   <option value="fjord_drift">Fjordsvingen Rally</option>
                   <option value="fjellpasset">Fjellpasset Rally</option>
@@ -336,10 +336,10 @@
           <!-- Action Buttons -->
           <div class="room-lounge-actions">
             <button type="button" class="primary-btn pulse-glow hidden" id="btnHostStartRace">
-              Start løp nå! 🏁
+              Start løp nå
             </button>
             <button type="button" class="primary-btn" id="btnToggleReady">
-              Jeg er klar! 👍
+              Jeg er klar
             </button>
             <button type="button" class="secondary-btn" id="btnLeaveLobbyRoom">
               Forlat rommet
@@ -394,7 +394,14 @@
 
                 <!-- Randomize button -->
                 <button type="button" class="skribbl-randomize-btn" id="btnInGameRandomize" title="Tilfeldig styling">
-                  <span class="skribbl-dice-icon">🎲</span>
+                  <svg class="skribbl-dice-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="3" ry="3"/>
+                    <circle cx="8" cy="8" r="1.5" fill="currentColor"/>
+                    <circle cx="16" cy="8" r="1.5" fill="currentColor"/>
+                    <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+                    <circle cx="8" cy="16" r="1.5" fill="currentColor"/>
+                    <circle cx="16" cy="16" r="1.5" fill="currentColor"/>
+                  </svg>
                 </button>
               </div>
 
@@ -526,7 +533,7 @@
   <script src="/parallax-bg.js?v=2.1"></script>
   <script src="/character/character-creator.js"></script>
   <script src="/game-lobby.js"></script>
-  <script src="app.js?v=3.1"></script>
+  <script src="app.js?v=3.2"></script>
 </body>
 
 </html>

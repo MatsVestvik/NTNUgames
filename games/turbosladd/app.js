@@ -383,12 +383,12 @@
   }
 
   const TRACK_PRESETS = {
-    rally_random: { name: "Tilfeldig Rallyetappe 🎲", seed: null, type: "random" },
+    rally_random: { name: "Tilfeldig Rallyetappe", seed: null, type: "random" },
     grand_prix: { name: "Skogsrally Grand Prix", seed: 4281, type: "gp" },
     fjord_drift: { name: "Fjordsvingen Rally", seed: 7719, type: "fjord" },
     fjellpasset: { name: "Fjellpasset Rally", seed: 9942, type: "fjell" },
     // Compatibility aliases
-    f1_random: { name: "Tilfeldig Rallyetappe 🎲", seed: null, type: "random" },
+    f1_random: { name: "Tilfeldig Rallyetappe", seed: null, type: "random" },
     f1_gp_classic: { name: "Skogsrally Grand Prix", seed: 4281, type: "gp" },
     f1_fjordsvingen: { name: "Fjordsvingen Rally", seed: 7719, type: "fjord" },
     f1_monza: { name: "Skogsrally Grand Prix", seed: 4281, type: "gp" },
@@ -858,11 +858,21 @@
 
   function showView(viewName) {
     if (el.viewLobby) el.viewLobby.classList.add("hidden");
-    if (el.viewGame) el.viewGame.classList.add("hidden");
+    if (el.viewGame) {
+      el.viewGame.classList.add("hidden");
+      el.viewGame.classList.remove("splitscreen-active");
+    }
     if (el.viewRoom) el.viewRoom.classList.add("hidden");
 
     if (viewName === "game") {
-      if (el.viewGame) el.viewGame.classList.remove("hidden");
+      if (el.viewGame) {
+        el.viewGame.classList.remove("hidden");
+        if (state.mode === "splitscreen") {
+          el.viewGame.classList.add("splitscreen-active");
+        } else {
+          el.viewGame.classList.remove("splitscreen-active");
+        }
+      }
       // Only keep 1 leave button in race: hide left back button
       if (el.btnHeaderBack) el.btnHeaderBack.classList.add("hidden");
       if (el.btnHeaderLeave) {
@@ -2564,47 +2574,65 @@
     const offsetX = (canvas.width - worldW * scale) / 2;
     const offsetY = (canvas.height - worldH * scale) / 2;
 
-    // Forest background
-    ctx.fillStyle = "#10210f";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Timber barrier walls outline
+    // Track path (radar outline - no card background or border)
     const pts = track.points;
-    ctx.beginPath();
-    ctx.moveTo(offsetX + pts[0].x * scale, offsetY + pts[0].y * scale);
-    for (let i = 1; i < pts.length; i++) {
-      ctx.lineTo(offsetX + pts[i].x * scale, offsetY + pts[i].y * scale);
-    }
-    ctx.closePath();
-    const rw = track.roadWidth || 140;
-    const offroadW = track.offroadWidth || 24;
-    ctx.lineWidth = Math.max(5, Math.round((rw + offroadW * 2) * scale));
-    ctx.strokeStyle = "#27170c";
-    ctx.stroke();
+    if (pts && pts.length > 0) {
+      ctx.beginPath();
+      ctx.moveTo(offsetX + pts[0].x * scale, offsetY + pts[0].y * scale);
+      for (let i = 1; i < pts.length; i++) {
+        ctx.lineTo(offsetX + pts[i].x * scale, offsetY + pts[i].y * scale);
+      }
+      ctx.closePath();
 
-    // Dirt road ribbon
-    ctx.lineWidth = Math.max(3, Math.round(rw * scale));
-    ctx.strokeStyle = "#8d5b2f";
-    ctx.stroke();
+      // High-contrast dark casing behind track so it pops over any background
+      const rw = track.roadWidth || 140;
+      ctx.lineWidth = Math.max(6, Math.round((rw + 36) * scale));
+      ctx.strokeStyle = "rgba(15, 23, 42, 0.85)";
+      ctx.stroke();
+
+      // Bright radar ribbon
+      ctx.lineWidth = Math.max(3, Math.round(rw * scale));
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";
+      ctx.stroke();
+    }
 
     // Start / Finish line marker
-    const p0 = track.rawPoints[0];
-    ctx.fillStyle = "#fef3c7";
-    ctx.beginPath();
-    ctx.arc(offsetX + p0.x * scale, offsetY + p0.y * scale, 3.5, 0, Math.PI * 2);
-    ctx.fill();
-
-    allCars.forEach(c => {
-      ctx.fillStyle = c.color || "#38bdf8";
+    const p0 = (track.rawPoints && track.rawPoints[0]) || (track.points && track.points[0]);
+    if (p0) {
       ctx.beginPath();
-      ctx.arc(offsetX + c.x * scale, offsetY + c.y * scale, c.isMe ? 5 : 3.5, 0, Math.PI * 2);
+      ctx.arc(offsetX + p0.x * scale, offsetY + p0.y * scale, 4, 0, Math.PI * 2);
+      ctx.fillStyle = "#fbbf24";
       ctx.fill();
-      if (c.isMe) {
-        ctx.strokeStyle = "#ffffff";
-        ctx.lineWidth = 1.8;
-        ctx.stroke();
-      }
-    });
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = "#0f172a";
+      ctx.stroke();
+    }
+
+    if (Array.isArray(allCars)) {
+      allCars.forEach(c => {
+        const cx = offsetX + c.x * scale;
+        const cy = offsetY + c.y * scale;
+        const r = c.isMe ? 5 : 3.5;
+
+        // Dark halo for crisp contrast
+        ctx.beginPath();
+        ctx.arc(cx, cy, r + 1.8, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(15, 23, 42, 0.9)";
+        ctx.fill();
+
+        // Car dot
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fillStyle = c.color || "#38bdf8";
+        ctx.fill();
+
+        if (c.isMe) {
+          ctx.strokeStyle = "#ffffff";
+          ctx.lineWidth = 1.8;
+          ctx.stroke();
+        }
+      });
+    }
   }
 
   function formatTime(seconds) {
@@ -2623,7 +2651,7 @@
     const kmh = Math.round(state.myCar.speed * 0.48);
     if (el.hudSpeedNum) el.hudSpeedNum.textContent = String(kmh);
     if (el.hudLapText) {
-      el.hudLapText.textContent = state.myCar.finished ? "MÅL! 🏁" : `${state.myCar.lap}/${state.laps}`;
+      el.hudLapText.textContent = state.myCar.finished ? "MÅL" : `${state.myCar.lap}/${state.laps}`;
     }
 
     const pct = Math.round(state.myCar.driftBoostCharge * 100);
@@ -2638,13 +2666,13 @@
 
     if (el.driftMeterWrap && el.driftMeterLabel) {
       if (state.myCar.turboTimer > 0) {
-        el.driftMeterLabel.textContent = "🚀 TURBO BOOST!";
+        el.driftMeterLabel.textContent = "TURBO BOOST!";
         el.driftMeterWrap.style.boxShadow = "0 0 16px rgba(56, 189, 248, 0.95)";
       } else if (state.myCar.driftBoostCharge > 0.75) {
-        el.driftMeterLabel.textContent = "⚡ BOOST KLAR! (RETT OPP)";
+        el.driftMeterLabel.textContent = "BOOST KLAR! (RETT OPP)";
         el.driftMeterWrap.style.boxShadow = "0 0 14px rgba(251, 191, 36, 0.9)";
       } else if (state.myCar.isDrifting) {
-        el.driftMeterLabel.textContent = `🏎️ RALLY SLADD! ${pct}%`;
+        el.driftMeterLabel.textContent = `RALLY SLADD ${pct}%`;
         el.driftMeterWrap.style.boxShadow = "0 0 12px rgba(56, 189, 248, 0.8)";
       } else {
         el.driftMeterLabel.textContent = "RALLY SLADD BOOST";
@@ -2676,76 +2704,58 @@
 
   function drawSplitscreenHUD(ctx, vx, vy, vw, vh, car, name, color, playerNum, totalLaps) {
     ctx.save();
-    // Top-left player badge
-    const badgeX = vx + 16;
+
+    // Symmetrical outer corner badge (P1 on far-left, P2 on far-right)
+    const badgeW = Math.min(210, Math.max(140, vw - 32));
+    const badgeH = 34;
+    const badgeX = playerNum === 1 ? vx + 16 : vx + vw - badgeW - 16;
     const badgeY = vy + 14;
-    const ctrlLabel = playerNum === 1 ? "WASD" : "Piltaster";
-    ctx.fillStyle = "rgba(15, 23, 42, 0.88)";
+
+    ctx.fillStyle = "rgba(15, 23, 42, 0.9)";
     ctx.beginPath();
-    ctx.roundRect(badgeX, badgeY, 220, 42, 8);
+    ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 6);
     ctx.fill();
     ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // Player name & color dot
+    // Player color indicator dot
     ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.arc(badgeX + 16, badgeY + 16, 6, 0, Math.PI * 2);
+    ctx.arc(badgeX + 13, badgeY + badgeH / 2, 4.5, 0, Math.PI * 2);
     ctx.fill();
 
+    // Name & player label
     ctx.fillStyle = "#ffffff";
     ctx.font = "8px 'Press Start 2P', monospace";
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    ctx.fillText(`P${playerNum} (${ctrlLabel}): ${name}`, badgeX + 28, badgeY + 16);
+    const displayName = (name && name.length > 9) ? name.substring(0, 8) + ".." : (name || `P${playerNum}`);
+    ctx.fillText(`P${playerNum}: ${displayName}`, badgeX + 24, badgeY + 11);
 
-    // Lap badge or finish status
+    // Lap status / Finish time
     if (car.finished) {
       ctx.fillStyle = "#22c55e";
-      ctx.font = "8px 'Press Start 2P', monospace";
-      ctx.fillText(`MÅL! ${formatTime(car.finishTime)}`, badgeX + 28, badgeY + 31);
+      ctx.font = "7px 'Press Start 2P', monospace";
+      ctx.fillText(`MÅL! ${formatTime(car.finishTime)}`, badgeX + 24, badgeY + 23);
     } else {
       ctx.fillStyle = "#94a3b8";
-      ctx.font = "8px 'Press Start 2P', monospace";
-      ctx.fillText(`RUNDE: `, badgeX + 28, badgeY + 31);
+      ctx.font = "7px 'Press Start 2P', monospace";
+      ctx.fillText("RUNDE: ", badgeX + 24, badgeY + 23);
       ctx.fillStyle = "#38bdf8";
-      ctx.fillText(`${car.lap}/${totalLaps}`, badgeX + 85, badgeY + 31);
+      ctx.fillText(`${car.lap}/${totalLaps}`, badgeX + 72, badgeY + 23);
     }
 
-    // Top-right Speedometer
-    const speedX = vx + vw - 120;
-    const speedY = vy + 14;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.88)";
-    ctx.beginPath();
-    ctx.roundRect(speedX, speedY, 104, 42, 8);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    const kmh = Math.round(car.speed * 0.48);
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "13px 'Press Start 2P', monospace";
-    ctx.textAlign = "right";
-    ctx.fillText(String(kmh), speedX + 58, speedY + 23);
-    ctx.fillStyle = "#94a3b8";
-    ctx.font = "7px 'Press Start 2P', monospace";
-    ctx.fillText("KM/T", speedX + 96, speedY + 23);
-
-    // Bottom-center Drift Boost Meter
-    const barW = Math.min(220, Math.max(130, vw * 0.32));
-    const barH = 12;
+    // Bottom-center Drift Boost Meter (sleek, minimal bar)
+    const barW = Math.min(180, Math.max(110, vw * 0.32));
+    const barH = 6;
     const barX = vx + (vw - barW) / 2;
-    const barY = vy + vh - 22;
+    const barY = vy + vh - 18;
 
-    ctx.fillStyle = "rgba(15, 23, 42, 0.88)";
+    ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
     ctx.beginPath();
-    ctx.roundRect(barX - 2, barY - 2, barW + 4, barH + 4, 6);
+    ctx.roundRect(barX - 2, barY - 2, barW + 4, barH + 4, 4);
     ctx.fill();
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
-    ctx.lineWidth = 1;
-    ctx.stroke();
 
     const pct = Math.max(0, Math.min(1, car.driftBoostCharge));
     if (pct > 0) {
@@ -2753,14 +2763,17 @@
         ? "#f97316"
         : (pct > 0.75 ? "#fbbf24" : "#38bdf8");
       ctx.beginPath();
-      ctx.roundRect(barX, barY, barW * pct, barH, 4);
+      ctx.roundRect(barX, barY, barW * pct, barH, 3);
       ctx.fill();
     }
 
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "7px 'Press Start 2P', monospace";
-    ctx.textAlign = "center";
-    ctx.fillText(car.turboTimer > 0 ? "TURBO BOOST!" : (car.isDrifting ? "RALLY SLADD" : "DRIFT BOOST"), barX + barW / 2, barY + 9);
+    if (car.turboTimer > 0 || car.isDrifting || pct > 0.75) {
+      ctx.fillStyle = car.turboTimer > 0 ? "#f97316" : (pct > 0.75 ? "#fbbf24" : "#38bdf8");
+      ctx.font = "6px 'Press Start 2P', monospace";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "bottom";
+      ctx.fillText(car.turboTimer > 0 ? "TURBO!" : (pct >= 1 ? "BOOST KLAR" : "SLADD"), barX + barW / 2, barY - 4);
+    }
 
     // Splitscreen Winner / Finish Banner Overlay
     if (car.finished) {
@@ -2777,7 +2790,7 @@
       ctx.font = "16px 'Press Start 2P', monospace";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText("FINISH!", vx + vw / 2, bannerY + 24);
+      ctx.fillText("MÅLGANG!", vx + vw / 2, bannerY + 24);
 
       ctx.font = "8px 'Press Start 2P', monospace";
       ctx.fillStyle = "#38bdf8";
@@ -2921,6 +2934,12 @@
           ctx.fillRect(halfW - 2, 0, 4, h);
           ctx.shadowBlur = 0;
           ctx.restore();
+
+          // Splitscreen felles radar-minimap i midten på delelinjen
+          drawMinimap(track, [
+            { x: state.car1.x, y: state.car1.y, color: state.splitP1.color, isMe: true },
+            { x: state.car2.x, y: state.car2.y, color: state.splitP2.color, isMe: true }
+          ]);
         }
 
         // Splitscreen race finished handling: gi nestemann tid til å komme i mål, og litt tid før pallen vises!
@@ -3532,9 +3551,9 @@
         <div class="racer-info-wrap">
           <div class="racer-name" style="display:flex;align-items:center;gap:0.4rem;">
             <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};box-shadow:0 0 6px ${color};"></span>
-            <span>${escapeHtml(p.name)}${p.isHost ? " (Vert 👑)" : ""}${p.id === state.playerId ? " (Deg)" : ""}</span>
+            <span>${escapeHtml(p.name)}${p.isHost ? " (Vert)" : ""}${p.id === state.playerId ? " (Deg)" : ""}</span>
           </div>
-          <div class="racer-subtext">${escapeHtml(wheelDef.name)} • ${escapeHtml(accText)} 🏁</div>
+          <div class="racer-subtext">${escapeHtml(wheelDef.name)} • ${escapeHtml(accText)}</div>
         </div>
         <span class="racer-ready-tag ${p.isReady ? "ready" : "waiting"}">
           ${p.isReady ? "KLAR" : "VENTER..."}
@@ -3859,8 +3878,8 @@
   // =========================================================================
 
   function updateLoungeSettingsUI() {
-        const trackNames = {
-      rally_random: "Tilfeldig Rallyetappe 🎲",
+    const trackNames = {
+      rally_random: "Tilfeldig Rallyetappe",
       grand_prix: "Skogsrally Grand Prix",
       fjord_drift: "Fjordsvingen Rally",
       fjellpasset: "Fjellpasset Rally",
@@ -4098,8 +4117,8 @@
         state.trackId = "rally_random";
         if (el.selectSoloTrack) el.selectSoloTrack.value = "rally_random";
         playTone(660, 0.1, "triangle", 0.2);
-        el.btnRegenSoloTrack.textContent = "✓ Ny bane!";
-        setTimeout(() => { if (el.btnRegenSoloTrack) el.btnRegenSoloTrack.textContent = "🎲 Ny bane"; }, 750);
+        el.btnRegenSoloTrack.textContent = "Generert!";
+        setTimeout(() => { if (el.btnRegenSoloTrack) el.btnRegenSoloTrack.textContent = "Ny bane"; }, 750);
       });
     }
 
@@ -4109,8 +4128,8 @@
         state.trackId = "rally_random";
         if (el.selectSplitTrack) el.selectSplitTrack.value = "rally_random";
         playTone(660, 0.1, "triangle", 0.2);
-        el.btnRegenSplitTrack.textContent = "✓ Ny bane!";
-        setTimeout(() => { if (el.btnRegenSplitTrack) el.btnRegenSplitTrack.textContent = "🎲 Ny bane"; }, 750);
+        el.btnRegenSplitTrack.textContent = "Generert!";
+        setTimeout(() => { if (el.btnRegenSplitTrack) el.btnRegenSplitTrack.textContent = "Ny bane"; }, 750);
       });
     }
 
@@ -4294,7 +4313,7 @@
       let isReady = false;
       el.btnToggleReady.addEventListener("click", async () => {
         isReady = !isReady;
-        el.btnToggleReady.textContent = isReady ? "Klar! (Venter)" : "Jeg er klar!";
+        el.btnToggleReady.textContent = isReady ? "KLAR (VENTER)" : "JEG ER KLAR";
         el.btnToggleReady.classList.toggle("btn-orange-accent", isReady);
         try {
           await fetch("/api/turbosladd/ready", {
@@ -4476,6 +4495,7 @@
 
     // Single Direct Exit/Forfeit Handler
     function handleForfeitAndLeave() {
+      if (el.viewGame) el.viewGame.classList.remove("splitscreen-active");
       stopEngineSound();
       stopSimulation();
       stopRoomSync();
