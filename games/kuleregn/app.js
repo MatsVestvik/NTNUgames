@@ -475,15 +475,15 @@
   // =========================================================================
 
   const state = {
-    view: "gateway", // "gateway" | "roomLobby" | "game"
-    mode: "ffa",     // "ffa"
+    view: "lobby", // "lobby" | "game"
+    mode: "ffa",   // "ffa"
     roomCode: null,
     playerId: null,
     isHost: false,
-    isReady: false,
-    playerName: localStorage.getItem("kr_player_name") || localStorage.getItem("spillhjornet_name") || "Soldat",
+    isSolo: false,
+    playerName: localStorage.getItem("spillhjornet_player_name") || localStorage.getItem("party_player_name") || localStorage.getItem("kr_player_name") || "Soldat",
     playerColor: localStorage.getItem("kr_player_color") || "#ffd166",
-    playerAvatar: localStorage.getItem("kr_player_avatar") || localStorage.getItem("spillhjornet_character") || "char:h1:c_ffd166:r1:e1:m1",
+    playerAvatar: localStorage.getItem("party_avatar") || localStorage.getItem("kr_player_avatar") || localStorage.getItem("spillhjornet_character") || "char:h1:c_ffd166:r1:e1:m1",
 
     roomStatus: "lobby", // "lobby" | "countdown" | "playing" | "finished"
     mapId: "gloshaugen_arena",
@@ -491,8 +491,6 @@
     scoreLimit: 15,
     timeLimit: 300,
     timeRemaining: 300,
-
-    lobbyPollTimerId: null,
 
     // Local Player Character
     player: {
@@ -549,41 +547,37 @@
 
   const el = {
     // Views
-    viewGateway: document.getElementById("viewGateway"),
-    viewRoomLobby: document.getElementById("viewRoomLobby"),
+    viewLobby: document.getElementById("viewLobby"),
     viewGame: document.getElementById("viewGame"),
     combatCanvas: document.getElementById("combatCanvas"),
 
     // Header Elements
     btnHeaderBack: document.getElementById("btnHeaderBack"),
+    backBtnText: document.getElementById("backBtnText"),
     btnPartyHub: document.getElementById("btnPartyHub"),
     btnSoundToggle: document.getElementById("btnSoundToggle"),
     headGameStatus: document.getElementById("headGameStatus"),
     headClock: document.getElementById("headClock"),
     headTargetScore: document.getElementById("headTargetScore"),
 
-    // Gateway Elements (View 1)
-    inputCreateName: document.getElementById("inputCreateName"),
-    btnCreateRoom: document.getElementById("btnCreateRoom"),
-    inputJoinCode: document.getElementById("inputJoinCode"),
-    inputJoinName: document.getElementById("inputJoinName"),
-    btnJoinRoom: document.getElementById("btnJoinRoom"),
+    // Mode Navigation Tabs & Panels
+    tabOnline: document.getElementById("tabOnline"),
+    tabSolo: document.getElementById("tabSolo"),
+    panelOnline: document.getElementById("panelOnline"),
+    panelSolo: document.getElementById("panelSolo"),
 
-    // Room Lobby Elements (View 2)
-    lobbyRoomCode: document.getElementById("lobbyRoomCode"),
-    btnCopyRoomCode: document.getElementById("btnCopyRoomCode"),
-    skribblCustomizerLobby: document.getElementById("skribblCustomizerLobby"),
-    inputLobbyPlayerName: document.getElementById("inputLobbyPlayerName"),
-    lobbyPlayersCount: document.getElementById("lobbyPlayersCount"),
-    lobbyStatusHint: document.getElementById("lobbyStatusHint"),
-    lobbyPlayersGrid: document.getElementById("lobbyPlayersGrid"),
-    selectLobbyMap: document.getElementById("selectLobbyMap"),
-    selectLobbyScoreLimit: document.getElementById("selectLobbyScoreLimit"),
-    btnToggleReady: document.getElementById("btnToggleReady"),
-    btnHostStartMatch: document.getElementById("btnHostStartMatch"),
-    btnLeaveLobby: document.getElementById("btnLeaveLobby"),
+    // Standard PartyConnect Elements (Nettspill fane)
+    inputPartyHostName: document.getElementById("inputPartyHostName"),
+    btnCreatePartyRoom: document.getElementById("btnCreatePartyRoom"),
+    inputPartyRoomCode: document.getElementById("inputPartyRoomCode"),
+    inputPartyJoinName: document.getElementById("inputPartyJoinName"),
+    btnJoinPartyRoom: document.getElementById("btnJoinPartyRoom"),
 
-    // In-game HUD Elements (View 3)
+    // Solo Practice Elements
+    selectSoloMap: document.getElementById("selectSoloMap"),
+    btnStartSoloPractice: document.getElementById("btnStartSoloPractice"),
+
+    // In-game HUD Elements (View 2)
     hudRankPill: document.getElementById("hudRankPill"),
     hudPosNum: document.getElementById("hudPosNum"),
     hudKillsText: document.getElementById("hudKillsText"),
@@ -616,7 +610,7 @@
     podiumTitle: document.getElementById("podiumTitle"),
     podiumDesc: document.getElementById("podiumDesc"),
     podiumStandings: document.getElementById("podiumStandings"),
-    btnPodiumPlayAgain: document.getElementById("btnPodiumPlayAgain"),
+    btnPodiumReturnLobby: document.getElementById("btnPodiumReturnLobby"),
     btnPodiumReturnGateway: document.getElementById("btnPodiumReturnGateway"),
   };
 
@@ -650,61 +644,6 @@
     avatarCanvasCache.clear();
   }
 
-  let lobbyWidget = null;
-  function initLobbyCustomizer() {
-    const container = el.skribblCustomizerLobby || document.getElementById("skribblCustomizerLobby");
-    if (!window.CharacterCreator || !container) return;
-
-    if (lobbyWidget) {
-      if (typeof lobbyWidget.setConfig === "function") {
-        lobbyWidget.setConfig(state.playerAvatar, true);
-      }
-      return;
-    }
-
-    const initialRaw = state.playerAvatar ||
-      (typeof CharacterCreator.getSavedConfigString === "function" ? CharacterCreator.getSavedConfigString() : "char:h1:c_ffd166:r1:e1:m1");
-
-    state.playerAvatar = initialRaw;
-
-    lobbyWidget = window.CharacterCreator.renderSkribblWidget(container, {
-      initialConfig: initialRaw,
-      showRandomize: true,
-      autoSave: true,
-      onChange: (encoded, dataUrl, cfg) => {
-        state.playerAvatar = encoded;
-        if (cfg && cfg.headColor) {
-          state.playerColor = cfg.headColor;
-          state.player.color = cfg.headColor;
-          localStorage.setItem("kr_player_color", state.playerColor);
-        }
-        localStorage.setItem("kr_player_avatar", encoded);
-        localStorage.setItem("spillhjornet_character", encoded);
-        clearAvatarCache();
-
-        if (state.roomCode && state.playerId) {
-          fetch("/api/kuleregn/customize", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              roomCode: state.roomCode,
-              playerId: state.playerId,
-              color: state.playerColor,
-              avatar: encoded,
-              name: state.playerName
-            }),
-          }).then(() => pollLobbyState()).catch(() => {});
-        }
-      },
-    });
-  }
-
-  function updateProfileUI() {
-    if (el.inputCreateName) el.inputCreateName.value = state.playerName;
-    if (el.inputJoinName) el.inputJoinName.value = state.playerName;
-    if (el.inputLobbyPlayerName) el.inputLobbyPlayerName.value = state.playerName;
-  }
-
   // =========================================================================
   // VIEW SWITCHER
   // =========================================================================
@@ -712,29 +651,23 @@
   function showView(viewName) {
     state.view = viewName;
 
-    if (el.viewGateway) el.viewGateway.classList.toggle("hidden", viewName !== "gateway");
-    if (el.viewRoomLobby) el.viewRoomLobby.classList.toggle("hidden", viewName !== "roomLobby");
+    if (el.viewLobby) el.viewLobby.classList.toggle("hidden", viewName !== "lobby");
     if (el.viewGame) el.viewGame.classList.toggle("hidden", viewName !== "game");
 
-    if (viewName === "gateway") {
+    if (viewName === "lobby") {
       if (el.headGameStatus) el.headGameStatus.classList.add("hidden");
       if (el.modalPodium) el.modalPodium.classList.add("hidden");
+      if (el.btnHeaderBack) {
+        el.btnHeaderBack.href = "/";
+      }
+      if (el.backBtnText) {
+        el.backBtnText.textContent = "Hub";
+      }
       stopSimulation();
       stopRoomSync();
-      stopLobbyPolling();
-      updateProfileUI();
-    } else if (viewName === "roomLobby") {
-      if (el.headGameStatus) el.headGameStatus.classList.add("hidden");
-      if (el.modalPodium) el.modalPodium.classList.add("hidden");
-      stopSimulation();
-      stopRoomSync();
-      initLobbyCustomizer();
-      startLobbyPolling();
-      updateProfileUI();
     } else if (viewName === "game") {
       if (el.headGameStatus) el.headGameStatus.classList.remove("hidden");
       if (el.modalPodium) el.modalPodium.classList.add("hidden");
-      stopLobbyPolling();
       resizeCanvas();
     }
   }
@@ -1222,6 +1155,18 @@
 
       // 2. Update Local Player Physics & Aiming
       updatePlayer(dt, map);
+
+      // 2b. If Solo Practice, update target dummies respawn
+      if (state.isSolo) {
+        for (const opp of Object.values(state.opponents)) {
+          if (opp.isDead) {
+            opp.respawnTimer -= dt;
+            if (opp.respawnTimer <= 0) {
+              spawnPlayer(opp, map);
+            }
+          }
+        }
+      }
 
       // 3. Update Projectiles & Bullets
       const allCombatants = [state.player, ...Object.values(state.opponents)];
@@ -1850,7 +1795,7 @@
   }
 
   async function syncWithServer() {
-    if (!state.roomCode || !state.playerId) return;
+    if (!state.roomCode || !state.playerId || state.isSolo) return;
 
     try {
       const payload = {
@@ -1964,168 +1909,107 @@
       });
     }
 
-    // If server reset the room back to lobby, transition local client back to lobby view
+    // If server reset the room back to lobby, transition local client back to lobby/lounge
     if (data.status === "lobby" && (state.roomStatus === "finished" || state.view === "game")) {
-      stopSimulation();
-      stopRoomSync();
-      if (el.modalPodium) el.modalPodium.classList.add("hidden");
-      enterRoomLobby({
-        roomCode: state.roomCode,
-        playerId: state.playerId,
-        mapId: data.mapId || state.mapId,
-        scoreLimit: data.scoreLimit || state.scoreLimit,
-        timeLimit: data.timeLimit || state.timeLimit,
-      });
+      handleForfeitAndLeave();
     }
   }
 
   // =========================================================================
-  // ROOM LOBBY POLLING & RENDERING
+  // MATCH LAUNCHERS & NAVIGATION
   // =========================================================================
 
-  function startLobbyPolling() {
-    stopLobbyPolling();
-    pollLobbyState();
-    state.lobbyPollTimerId = setInterval(pollLobbyState, 500);
-  }
-
-  function stopLobbyPolling() {
-    if (state.lobbyPollTimerId) {
-      clearInterval(state.lobbyPollTimerId);
-      state.lobbyPollTimerId = null;
-    }
-  }
-
-  async function pollLobbyState() {
-    if (!state.roomCode || !state.playerId || state.view !== "roomLobby") return;
-
-    try {
-      const resp = await fetch(`/api/kuleregn/state?roomCode=${encodeURIComponent(state.roomCode)}&playerId=${encodeURIComponent(state.playerId)}`);
-      const data = await resp.json();
-      if (!data || !data.ok) return;
-
-      // Check if match started
-      if (data.status === "countdown" || data.status === "playing") {
-        stopLobbyPolling();
-        launchGameFromLobby(data);
-        return;
-      }
-
-      state.roomStatus = data.status;
-
-      // Update isHost flag
-      const me = (data.players || []).find(p => p.id === state.playerId);
-      if (me) {
-        state.isHost = Boolean(me.isHost);
-        state.isReady = Boolean(me.isReady);
-        if (el.btnHostStartMatch) el.btnHostStartMatch.classList.toggle("hidden", !state.isHost);
-        if (el.selectLobbyMap) el.selectLobbyMap.disabled = !state.isHost;
-        if (el.selectLobbyScoreLimit) el.selectLobbyScoreLimit.disabled = !state.isHost;
-      }
-
-      // Update map & score settings if changed remotely
-      if (data.mapId && data.mapId !== state.mapId) {
-        state.mapId = data.mapId;
-        state.currentMap = state.mapId === "cyber_hangar" ? buildCyberHangar() : buildGloshaugenArena();
-        if (el.selectLobbyMap) el.selectLobbyMap.value = state.mapId;
-      }
-      if (data.scoreLimit && data.scoreLimit !== state.scoreLimit) {
-        state.scoreLimit = data.scoreLimit;
-        if (el.selectLobbyScoreLimit) el.selectLobbyScoreLimit.value = String(state.scoreLimit);
-      }
-
-      renderLobbyPlayers(data.players || []);
-    } catch (e) {
-      // Network hiccup
-    }
-  }
-
-  function renderLobbyPlayers(players) {
-    if (el.lobbyPlayersCount) el.lobbyPlayersCount.textContent = String(players.length);
-
-    const readyCount = players.filter(p => p.isReady).length;
-    if (el.lobbyStatusHint) {
-      el.lobbyStatusHint.textContent = `${readyCount} av ${players.length} klare`;
-    }
-
-    // Disable colors selected by other players in the customizer widget
-    if (lobbyWidget && typeof lobbyWidget.setDisabledColors === "function") {
-      const disabledMap = {};
-      players.forEach(p => {
-        if (p.id !== state.playerId && p.color) {
-          disabledMap[p.color.toLowerCase()] = p.name;
-        }
-      });
-      lobbyWidget.setDisabledColors(disabledMap);
-    }
-
-    if (!el.lobbyPlayersGrid) return;
-    el.lobbyPlayersGrid.innerHTML = "";
-
-    players.forEach(p => {
-      const isMe = p.id === state.playerId;
-      const isReady = Boolean(p.isReady);
-      const tile = document.createElement("div");
-      tile.className = `player-tile ${p.isHost ? "is-host" : ""} ${isMe ? "is-me" : ""} ${isReady ? "is-ready" : ""}`;
-
-      const avatarSrc = (window.CharacterCreator && typeof CharacterCreator.getAvatarImgSrc === "function")
-        ? CharacterCreator.getAvatarImgSrc(p.avatar || "char:h1:c_ffd166:r1:e1:m1")
-        : "";
-
-      tile.innerHTML = `
-        ${p.isHost ? '<span class="player-crown-badge">VERT</span>' : ''}
-        ${isMe ? '<span class="player-me-badge">DEG</span>' : ''}
-        <div class="player-avatar-circle" style="border-color: ${p.color || '#38bdf8'};">
-          ${avatarSrc ? `<img src="${avatarSrc}" alt="${escapeHtml(p.name)}" class="player-mon-img" />` : '👾'}
-        </div>
-        <div class="player-name-text">${escapeHtml(p.name)}</div>
-        <div class="player-status-badge ${isReady ? 'badge-ready' : 'badge-customizing'}">
-          ${isReady ? 'Klar ✓' : 'Tilpasser... 🛠️'}
-        </div>
-      `;
-      el.lobbyPlayersGrid.appendChild(tile);
+  function spawnSoloDummies(map) {
+    state.opponents = {};
+    const center = { x: map.width / 2, y: map.height / 2 };
+    const dummyConfigs = [
+      { id: "dummy_1", name: "Blink 1 🎯", color: "#f43f5e", avatar: "char:h1:c_f43f5e:r1:e1:m1", offset: { x: -140, y: -100 } },
+      { id: "dummy_2", name: "Blink 2 🎯", color: "#38bdf8", avatar: "char:h2:c_38bdf8:r2:e2:m2", offset: { x: 140, y: -100 } },
+      { id: "dummy_3", name: "Blink 3 🎯", color: "#a855f7", avatar: "char:h3:c_a855f7:r3:e3:m3", offset: { x: 0, y: 140 } },
+    ];
+    dummyConfigs.forEach(d => {
+      state.opponents[d.id] = {
+        id: d.id,
+        name: d.name,
+        color: d.color,
+        avatar: d.avatar,
+        x: center.x + d.offset.x,
+        y: center.y + d.offset.y,
+        angle: 0,
+        vx: 0,
+        vy: 0,
+        speed: 0,
+        health: 100,
+        shield: 25,
+        weapon: "pistol",
+        kills: 0,
+        deaths: 0,
+        score: 0,
+        streak: 0,
+        highestStreak: 0,
+        isDead: false,
+        respawnTimer: 0,
+        invulnerableUntil: 0,
+      };
     });
   }
 
-  function enterRoomLobby(data) {
-    state.roomStatus = "lobby";
-    state.isReady = false;
+  function launchSoloPractice() {
+    state.isSolo = true;
+    state.roomCode = null;
+    state.playerId = "solo_player";
+    const selectedMapId = el.selectSoloMap ? el.selectSoloMap.value : "gloshaugen_arena";
+    state.mapId = selectedMapId;
+    state.currentMap = selectedMapId === "cyber_hangar" ? buildCyberHangar() : buildGloshaugenArena();
+    state.scoreLimit = 999;
+    state.timeLimit = 3600;
+    state.timeRemaining = 3600;
+    state.roomStatus = "playing";
 
-    if (el.lobbyRoomCode) el.lobbyRoomCode.textContent = state.roomCode;
-    if (el.inputLobbyPlayerName) el.inputLobbyPlayerName.value = state.playerName;
+    // Spawn player
+    spawnPlayer(state.player, state.currentMap);
+    state.player.name = state.playerName || "Soldat";
+    state.player.color = state.playerColor || "#ffd166";
+    state.player.avatar = state.playerAvatar || "char:h1:c_ffd166:r1:e1:m1";
+    state.player.kills = 0;
+    state.player.deaths = 0;
+    state.player.score = 0;
+    state.player.streak = 0;
 
-    if (el.selectLobbyMap) {
-      el.selectLobbyMap.value = state.mapId;
-      el.selectLobbyMap.disabled = !state.isHost;
+    state.bullets = [];
+    state.particles = [];
+
+    // Spawn shooting practice targets
+    spawnSoloDummies(state.currentMap);
+
+    showView("game");
+    updateWeaponHUD();
+    updateVitalsHUD();
+
+    if (el.countdownOverlay) el.countdownOverlay.classList.add("hidden");
+    if (el.btnHeaderBack) {
+      el.btnHeaderBack.href = "#";
     }
-    if (el.selectLobbyScoreLimit) {
-      el.selectLobbyScoreLimit.value = String(state.scoreLimit);
-      el.selectLobbyScoreLimit.disabled = !state.isHost;
+    if (el.backBtnText) {
+      el.backBtnText.textContent = "Meny";
     }
 
-    if (el.btnHostStartMatch) {
-      el.btnHostStartMatch.classList.toggle("hidden", !state.isHost);
-    }
-
-    if (el.btnToggleReady) {
-      el.btnToggleReady.classList.remove("ready-active");
-      el.btnToggleReady.textContent = "Jeg er Klar! 👍";
-    }
-
-    showView("roomLobby");
+    startSimulation();
   }
 
-  function launchGameFromLobby(data) {
-    state.roomStatus = data.status;
+  function launchOnlineMatch(data) {
+    state.isSolo = false;
+    state.roomStatus = data.status || "playing";
     state.mapId = data.mapId || state.mapId;
     state.currentMap = state.mapId === "cyber_hangar" ? buildCyberHangar() : buildGloshaugenArena();
     state.scoreLimit = data.scoreLimit || state.scoreLimit;
     state.timeLimit = data.timeLimit || state.timeLimit;
-    state.timeRemaining = state.timeLimit;
+    state.timeRemaining = data.timeRemaining !== undefined ? data.timeRemaining : state.timeLimit;
 
     spawnPlayer(state.player, state.currentMap);
     state.player.name = state.playerName;
     state.player.color = state.playerColor;
+    state.player.avatar = state.playerAvatar;
 
     state.opponents = {};
     state.bullets = [];
@@ -2139,98 +2023,157 @@
       if (el.countdownOverlay) el.countdownOverlay.classList.remove("hidden");
       const rem = Math.ceil(data.countdownRemaining || 3);
       if (el.countdownText) el.countdownText.textContent = rem > 0 ? String(rem) : "KJEMP! 💥";
+    } else {
+      if (el.countdownOverlay) el.countdownOverlay.classList.add("hidden");
     }
 
     startRoomSync();
     startSimulation();
   }
 
-  // =========================================================================
-  // MATCH CREATION & JOINING
-  // =========================================================================
+  function handleForfeitAndLeave() {
+    stopSimulation();
+    stopRoomSync();
 
-  async function createOnlineRoom() {
-    const hostName = (el.inputCreateName?.value || state.playerName || "Vert").trim();
-    state.playerName = hostName;
-    localStorage.setItem("kr_player_name", hostName);
-
-    try {
-      const resp = await fetch("/api/kuleregn/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          hostName: state.playerName,
-          color: state.playerColor,
-          avatar: state.playerAvatar,
-          mapId: "gloshaugen_arena",
-          scoreLimit: 15,
-          timeLimit: 300,
-          botCount: 0,
-          mode: "ffa",
-        }),
-      });
-      const data = await resp.json();
-      if (data.ok) {
-        state.isHost = true;
-        state.roomCode = data.roomCode;
-        state.playerId = data.playerId;
-        state.playerColor = data.color || state.playerColor;
-        state.mapId = data.mapId || "gloshaugen_arena";
-        state.currentMap = state.mapId === "cyber_hangar" ? buildCyberHangar() : buildGloshaugenArena();
-        state.scoreLimit = data.scoreLimit || 15;
-        state.timeLimit = data.timeLimit || 300;
-        state.timeRemaining = data.timeLimit || 300;
-
-        enterRoomLobby(data);
-      } else {
-        alert(data.error || "Kunne ikke opprette rom.");
-      }
-    } catch (e) {
-      alert("Feil ved tilkobling til server.");
-    }
-  }
-
-  async function joinOnlineRoom(codeToJoin) {
-    const code = (codeToJoin || el.inputJoinCode?.value || "").trim().toUpperCase();
-    if (!code || code.length < 3) {
-      alert("Vennligst skriv inn en gyldig romkode (f.eks. KULE).");
+    if (state.isSolo) {
+      showView("lobby");
       return;
     }
 
-    const playerName = (el.inputJoinName?.value || state.playerName || "Spiller").trim();
-    state.playerName = playerName;
-    localStorage.setItem("kr_player_name", playerName);
-
-    try {
-      const resp = await fetch("/api/kuleregn/join", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          roomCode: code,
-          playerName: state.playerName,
-          color: state.playerColor,
-          avatar: state.playerAvatar,
-        }),
+    if (window.PartyBridge && typeof window.PartyBridge.leaveToLounge === "function") {
+      window.PartyBridge.leaveToLounge({
+        roomCode: state.roomCode,
+        playerId: state.playerId,
+        beforeLeave: () => {
+          if (state.roomCode && state.playerId) {
+            try {
+              fetch("/api/kuleregn/leave", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                keepalive: true,
+                body: JSON.stringify({ roomCode: state.roomCode, playerId: state.playerId, forfeit: true }),
+              });
+            } catch (_) {}
+          }
+        },
       });
-      const data = await resp.json();
-      if (data.ok) {
-        state.isHost = false;
-        state.roomCode = data.roomCode;
-        state.playerId = data.playerId;
-        state.playerColor = data.color || state.playerColor;
-        state.mapId = data.mapId || "gloshaugen_arena";
-        state.currentMap = state.mapId === "cyber_hangar" ? buildCyberHangar() : buildGloshaugenArena();
-        state.scoreLimit = data.scoreLimit || 15;
-        state.timeLimit = data.timeLimit || 300;
-        state.timeRemaining = data.timeLimit || 300;
-
-        enterRoomLobby(data);
-      } else {
-        alert(data.error || "Kunne ikke bli med i rommet. Sjekk koden og prøv igjen.");
-      }
-    } catch (e) {
-      alert("Feil ved tilkobling til rommet.");
+      return;
     }
+
+    const code = state.roomCode;
+    const pid = state.playerId;
+    if (code) {
+      try {
+        fetch("/api/kuleregn/leave", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          keepalive: true,
+          body: JSON.stringify({ roomCode: code, playerId: pid, forfeit: true }),
+        });
+        fetch("/api/party/to-lounge", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          keepalive: true,
+          body: JSON.stringify({ roomCode: code, playerId: pid }),
+        });
+      } catch (_) {}
+
+      state.roomCode = null;
+      state.playerId = null;
+
+      try {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } catch (_) {}
+
+      window.location.replace(`/party/?room=${encodeURIComponent(code)}&player=${encodeURIComponent(pid)}`);
+      return;
+    }
+
+    showView("lobby");
+  }
+
+  function initTabs() {
+    const tabs = [
+      { btn: el.tabOnline, panel: el.panelOnline },
+      { btn: el.tabSolo, panel: el.panelSolo },
+    ];
+    tabs.forEach(({ btn, panel }) => {
+      if (!btn || !panel) return;
+      btn.addEventListener("click", () => {
+        tabs.forEach(t => {
+          t.btn.classList.remove("active");
+          t.btn.setAttribute("aria-selected", "false");
+          t.panel.classList.add("hidden");
+          t.panel.classList.remove("active");
+        });
+        btn.classList.add("active");
+        btn.setAttribute("aria-selected", "true");
+        panel.classList.remove("hidden");
+        panel.classList.add("active");
+      });
+    });
+  }
+
+  async function initPartyBridge() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomParam = (urlParams.get("room") || urlParams.get("code") || urlParams.get("roomCode") || "").trim().toUpperCase();
+    const playerParam = (
+      urlParams.get("player") ||
+      urlParams.get("playerId") ||
+      sessionStorage.getItem("party_player_id") ||
+      localStorage.getItem("party_player_id") ||
+      ""
+    ).trim();
+
+    if (roomParam) {
+      state.roomCode = roomParam;
+      state.playerId = playerParam;
+
+      try {
+        const resp = await fetch(`/api/kuleregn/state?roomCode=${encodeURIComponent(roomParam)}&playerId=${encodeURIComponent(playerParam)}`);
+        const data = await resp.json();
+        if (data && data.ok) {
+          state.isHost = Boolean(data.isHost);
+          state.mapId = data.mapId || "gloshaugen_arena";
+          state.scoreLimit = data.scoreLimit || 15;
+          state.timeLimit = data.timeLimit || 300;
+          state.timeRemaining = data.timeRemaining !== undefined ? data.timeRemaining : (data.timeLimit || 300);
+
+          if (el.btnHeaderBack) {
+            el.btnHeaderBack.href = `/party/?room=${encodeURIComponent(roomParam)}`;
+          }
+          if (el.backBtnText) {
+            el.backBtnText.textContent = "Lounge";
+          }
+
+          let myPlayer = (data.players || []).find(p => p.id === state.playerId || p.isMe);
+          if (!myPlayer && (data.isHost || state.isHost)) {
+            myPlayer = (data.players || []).find(p => p.isHost) || (data.players || [])[0];
+          }
+          if (!myPlayer) {
+            const savedName = (state.playerName || "").toLowerCase();
+            myPlayer = (data.players || []).find(p => (p.name || "").toLowerCase() === savedName) || (data.players || [])[0];
+          }
+
+          if (myPlayer) {
+            state.playerId = myPlayer.id;
+            if (myPlayer.name) state.playerName = myPlayer.name;
+            if (myPlayer.color) state.playerColor = myPlayer.color;
+            if (myPlayer.avatar) state.playerAvatar = myPlayer.avatar;
+          }
+
+          launchOnlineMatch(data);
+          return;
+        } else {
+          window.location.href = `/party/?room=${encodeURIComponent(roomParam)}`;
+          return;
+        }
+      } catch (e) {
+        console.error("Init online room error:", e);
+      }
+    }
+
+    showView("lobby");
   }
 
   // =========================================================================
@@ -2257,179 +2200,24 @@
   function initUI() {
     window.addEventListener("resize", resizeCanvas);
 
-    // Initial values
-    if (el.inputCreateName) el.inputCreateName.value = state.playerName;
-    if (el.inputJoinName) el.inputJoinName.value = state.playerName;
-    if (el.inputLobbyPlayerName) el.inputLobbyPlayerName.value = state.playerName;
+    // Standard Tab Switching (Nettspill / Solo)
+    initTabs();
 
-    // Gateway name inputs
-    el.inputCreateName?.addEventListener("input", (e) => {
-      const val = e.target.value.trim() || "Vert";
-      state.playerName = val;
-      localStorage.setItem("kr_player_name", val);
-      if (el.inputJoinName) el.inputJoinName.value = val;
-      if (el.inputLobbyPlayerName) el.inputLobbyPlayerName.value = val;
-    });
-
-    el.inputCreateName?.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") createOnlineRoom();
-    });
-
-    el.inputJoinName?.addEventListener("input", (e) => {
-      const val = e.target.value.trim() || "Spiller";
-      state.playerName = val;
-      localStorage.setItem("kr_player_name", val);
-      if (el.inputCreateName) el.inputCreateName.value = val;
-      if (el.inputLobbyPlayerName) el.inputLobbyPlayerName.value = val;
-    });
-
-    el.inputJoinCode?.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") joinOnlineRoom();
-    });
-
-    el.inputJoinName?.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") joinOnlineRoom();
-    });
-
-    // Gateway buttons
-    el.btnCreateRoom?.addEventListener("click", createOnlineRoom);
-    el.btnJoinRoom?.addEventListener("click", () => joinOnlineRoom());
-
-    // Room Lobby name input
-    el.inputLobbyPlayerName?.addEventListener("input", (e) => {
-      const val = e.target.value.trim() || "Spiller";
-      state.playerName = val;
-      localStorage.setItem("kr_player_name", val);
-      if (el.inputCreateName) el.inputCreateName.value = val;
-      if (el.inputJoinName) el.inputJoinName.value = val;
-
-      if (state.roomCode && state.playerId) {
-        fetch("/api/kuleregn/customize", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            roomCode: state.roomCode,
-            playerId: state.playerId,
-            name: val,
-            color: state.playerColor,
-            avatar: state.playerAvatar,
-          }),
-        }).then(() => pollLobbyState()).catch(() => {});
-      }
-    });
-
-    // Copy room code button
-    el.btnCopyRoomCode?.addEventListener("click", () => {
-      if (!state.roomCode) return;
-      const inviteUrl = `${window.location.origin}/kuleregn/?room=${encodeURIComponent(state.roomCode)}`;
-      navigator.clipboard.writeText(inviteUrl).then(() => {
-        el.btnCopyRoomCode.textContent = "KOPIERT LENKE! ✓";
-        setTimeout(() => {
-          if (el.btnCopyRoomCode) el.btnCopyRoomCode.textContent = "Kopier lenke 📋";
-        }, 1500);
-      }).catch(() => {
-        navigator.clipboard.writeText(state.roomCode);
-        el.btnCopyRoomCode.textContent = "KOPIERT KODE! ✓";
-        setTimeout(() => {
-          if (el.btnCopyRoomCode) el.btnCopyRoomCode.textContent = "Kopier lenke 📋";
-        }, 1500);
+    // Standardized PartyConnect for "Nettspill" tab
+    if (window.PartyConnect) {
+      window.PartyConnect.init({
+        gameId: "kuleregn",
+        createBtnId: "btnCreatePartyRoom",
+        joinBtnId: "btnJoinPartyRoom",
+        hostInputId: "inputPartyHostName",
+        joinInputId: "inputPartyJoinName",
+        codeInputId: "inputPartyRoomCode",
       });
-    });
+    }
 
-    // Ready toggle button in Room Lobby
-    el.btnToggleReady?.addEventListener("click", async () => {
-      state.isReady = !state.isReady;
-      el.btnToggleReady.classList.toggle("ready-active", state.isReady);
-      el.btnToggleReady.textContent = state.isReady ? "Klar! ✓" : "Jeg er Klar! 👍";
-
-      if (state.roomCode && state.playerId) {
-        try {
-          await fetch("/api/kuleregn/ready", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              roomCode: state.roomCode,
-              playerId: state.playerId,
-              ready: state.isReady
-            }),
-          });
-          pollLobbyState();
-        } catch (e) {}
-      }
-    });
-
-    // Host start button in Room Lobby
-    el.btnHostStartMatch?.addEventListener("click", async () => {
-      if (state.roomCode && state.playerId) {
-        try {
-          await fetch("/api/kuleregn/start", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              roomCode: state.roomCode,
-              playerId: state.playerId
-            }),
-          });
-          pollLobbyState();
-        } catch (e) {}
-      }
-    });
-
-    // Host settings change
-    el.selectLobbyMap?.addEventListener("change", (e) => {
-      if (!state.isHost || !state.roomCode || !state.playerId) return;
-      const mapId = e.target.value;
-      state.mapId = mapId;
-      state.currentMap = mapId === "cyber_hangar" ? buildCyberHangar() : buildGloshaugenArena();
-
-      fetch("/api/kuleregn/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          roomCode: state.roomCode,
-          playerId: state.playerId,
-          settings: { mapId },
-        }),
-      }).catch(() => {});
-    });
-
-    el.selectLobbyScoreLimit?.addEventListener("change", (e) => {
-      if (!state.isHost || !state.roomCode || !state.playerId) return;
-      const scoreLimit = parseInt(e.target.value, 10);
-      state.scoreLimit = scoreLimit;
-
-      fetch("/api/kuleregn/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          roomCode: state.roomCode,
-          playerId: state.playerId,
-          settings: { scoreLimit },
-        }),
-      }).catch(() => {});
-    });
-
-    // Leave room lobby button
-    el.btnLeaveLobby?.addEventListener("click", async () => {
-      if (confirm("Vil du forlate rommet?")) {
-        if (state.roomCode && state.playerId) {
-          try {
-            await fetch("/api/kuleregn/leave", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                roomCode: state.roomCode,
-                playerId: state.playerId
-              }),
-            });
-          } catch (e) {}
-        }
-        state.roomCode = null;
-        state.playerId = null;
-        state.isHost = false;
-        state.isReady = false;
-        showView("gateway");
-      }
+    // Solo Practice Start Button
+    el.btnStartSoloPractice?.addEventListener("click", () => {
+      launchSoloPractice();
     });
 
     // Sound toggle
@@ -2440,25 +2228,9 @@
 
     // Header Back button
     el.btnHeaderBack?.addEventListener("click", (e) => {
-      if (state.view === "game" || state.view === "roomLobby") {
+      if (state.view === "game") {
         e.preventDefault();
-        if (confirm("Vil du forlate rommet og gå tilbake til hovedmenyen?")) {
-          if (state.roomCode && state.playerId) {
-            fetch("/api/kuleregn/leave", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                roomCode: state.roomCode,
-                playerId: state.playerId
-              }),
-            }).catch(() => {});
-          }
-          state.roomCode = null;
-          state.playerId = null;
-          state.isHost = false;
-          state.isReady = false;
-          showView("gateway");
-        }
+        handleForfeitAndLeave();
       }
     });
 
@@ -2467,65 +2239,22 @@
       window.location.href = "/party/";
     });
 
-    // Podium Buttons
-    el.btnPodiumPlayAgain?.addEventListener("click", async () => {
+    // Podium Return Buttons
+    el.btnPodiumReturnLobby?.addEventListener("click", () => {
       if (el.modalPodium) el.modalPodium.classList.add("hidden");
-      if (state.roomCode && state.playerId) {
-        try {
-          await fetch("/api/kuleregn/lobby", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              roomCode: state.roomCode,
-              playerId: state.playerId
-            }),
-          });
-        } catch (e) {}
-
-        stopSimulation();
-        stopRoomSync();
-        enterRoomLobby({
-          roomCode: state.roomCode,
-          playerId: state.playerId,
-          mapId: state.mapId,
-          scoreLimit: state.scoreLimit,
-          timeLimit: state.timeLimit,
-        });
+      if (state.isSolo) {
+        launchSoloPractice();
       } else {
-        showView("gateway");
+        handleForfeitAndLeave();
       }
     });
 
-    el.btnPodiumReturnGateway?.addEventListener("click", async () => {
+    el.btnPodiumReturnGateway?.addEventListener("click", () => {
       if (el.modalPodium) el.modalPodium.classList.add("hidden");
-      if (state.roomCode && state.playerId) {
-        try {
-          await fetch("/api/kuleregn/leave", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              roomCode: state.roomCode,
-              playerId: state.playerId
-            }),
-          });
-        } catch (e) {}
-      }
-      state.roomCode = null;
-      state.playerId = null;
-      state.isHost = false;
-      state.isReady = false;
-      showView("gateway");
+      stopSimulation();
+      stopRoomSync();
+      showView("lobby");
     });
-
-    // URL Query parameters (e.g. from Party Lobby or direct share: ?room=KULE)
-    const params = new URLSearchParams(window.location.search);
-    const roomParam = params.get("room") || params.get("code") || params.get("roomCode");
-    if (roomParam) {
-      if (el.inputJoinCode) el.inputJoinCode.value = roomParam.toUpperCase();
-      setTimeout(() => {
-        joinOnlineRoom(roomParam);
-      }, 350);
-    }
   }
 
   // =========================================================================
@@ -2535,6 +2264,6 @@
   window.addEventListener("DOMContentLoaded", () => {
     initInputHandlers();
     initUI();
-    showView("gateway");
+    initPartyBridge();
   });
 })();

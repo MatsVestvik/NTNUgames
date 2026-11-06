@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="/game-lobby.css" />
   <link rel="stylesheet" href="/parallax-bg.css" />
   <link rel="stylesheet" href="/character/character-creator.css" />
-  <link rel="stylesheet" href="styles.css?v=2.0" />
+  <link rel="stylesheet" href="styles.css?v=2.2" />
 </head>
 
 <body class="kuleregn-page">
@@ -29,7 +29,7 @@
     <!-- Top Sticky Header -->
     <header class="app-header">
       <div class="header-left">
-        <a href="/" class="btn-back" id="btnHeaderBack" title="Tilbake til Hub">
+        <a href="/" class="btn-back" id="btnHeaderBack" title="Tilbake">
           <span class="back-arrow" aria-hidden="true">←</span> <span id="backBtnText">Hub</span>
         </a>
         <div class="header-branding">
@@ -61,67 +61,149 @@
     <!-- Main Content Container -->
     <main class="kr-main">
       <!-- ================================================================= -->
-      <!-- VIEW 1: GATEWAY (Opprett eller Bli med i rom)                      -->
+      <!-- VIEW 1: LOBBY & GAME MODE SELECTION (Standard NTNU Games Lobby)    -->
       <!-- ================================================================= -->
-      <section class="kr-view" id="viewGateway">
-        <div class="gateway-container">
+      <section class="view-panel" id="viewLobby">
+        <div class="lobby-card">
           <!-- Hero Header -->
-          <div class="gateway-hero">
-            <div class="hero-icon-bubble">
-              <img src="/hub/assets/icons/kuleregn.png" alt="Kuleregn blink" class="hero-icon-img" />
+          <div class="lobby-hero">
+            <div class="hero-icon-wrap">
+              <img src="/hub/assets/icons/kuleregn.png" alt="Kuleregn blink" class="hero-icon" />
             </div>
             <h2 class="hero-title">Kuleregn</h2>
             <p class="hero-desc">
-              Topp-ned arkadeskytespill med festfiguren din! Beveg deg med WASD/piltaster og skyt rett frem med mellomrom eller mus. Plukk opp spesialvåpen og dominer arenaen!
+              Topp-ned 2D arkadeskytespill med festfiguren din! Beveg deg med WASD/piltaster og skyt rett frem med mellomrom eller mus. Plukk opp spesialvåpen og dominer arenaen!
             </p>
           </div>
 
-          <!-- Action Split: Opprett Rom vs Bli Med -->
-          <div class="gateway-split">
-            <!-- Create Room Card -->
-            <div class="gateway-card card-create">
-              <div class="gw-card-header">
-                <span class="gw-badge badge-orange">Romvert 👑</span>
-                <h3>Opprett nytt rom</h3>
-                <p>Start et rom for vennegjengen og del koden for å kjempe sammen.</p>
-              </div>
+          <!-- Mode Navigation Tabs -->
+          <div class="lobby-tabs" role="tablist">
+            <button type="button" class="lobby-tab-btn active" id="tabOnline" role="tab" aria-selected="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              </svg>
+              <span>Nettspill (1–16 spillere)</span>
+            </button>
+            <button type="button" class="lobby-tab-btn" id="tabSolo" role="tab" aria-selected="false">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="7"></circle>
+                <polyline points="12 9 12 12 13.5 13.5"></polyline>
+                <path d="M16.51 17.35l-.35 3.83a2 2 0 0 1-2 1.82H9.83a2 2 0 0 1-2-1.82l-.35-3.83m.01-10.7l.35-3.83A2 2 0 0 1 9.83 1h4.35a2 2 0 0 1 2 1.82l.35 3.83"></path>
+              </svg>
+              <span>Skytebane (Solo)</span>
+            </button>
+          </div>
 
-              <div class="gw-form-group">
-                <label for="inputCreateName">Ditt kallenavn:</label>
-                <input type="text" id="inputCreateName" class="text-input" maxlength="18" placeholder="F.eks. Henrik" value="Vert" />
-              </div>
+          <!-- TAB 1: Online Multiplayer Panel (Standard PartyConnect) -->
+          <div class="tab-panel active" id="panelOnline">
+            <div class="online-lobby-deck">
+              <!-- Action Cards: Create vs Join Standardized Party Room -->
+              <div class="online-split">
+                <!-- Create Party Card -->
+                <div class="action-box card-theme-orange">
+                  <div class="action-box-header">
+                    <div class="box-badge-row">
+                      <span class="action-card-badge badge-orange">Romvert</span>
+                    </div>
+                    <h3 class="box-title">Opprett party</h3>
+                    <p class="box-desc">Start et felles party-rom for alle venner på mobil eller PC. I rommet kan du velge og bytte mellom alle spill fritt!</p>
+                  </div>
 
-              <button type="button" class="gw-btn btn-create primary-action" id="btnCreateRoom">
-                Opprett Rom 🚀
-              </button>
+                  <div class="action-box-content">
+                    <div class="form-group">
+                      <label for="inputPartyHostName">Ditt kallenavn</label>
+                      <input type="text" id="inputPartyHostName" class="text-input" maxlength="18"
+                        placeholder="F.eks. Henrik (Vert)" value="Vert" required />
+                    </div>
+                  </div>
+
+                  <button type="button" class="primary-btn pulse-glow" id="btnCreatePartyRoom">
+                    Opprett party-rom 🎉
+                  </button>
+                </div>
+
+                <!-- Join Party Card -->
+                <div class="action-box card-theme-purple">
+                  <div class="action-box-header">
+                    <div class="box-badge-row">
+                      <span class="action-card-badge badge-purple">Bli med</span>
+                    </div>
+                    <h3 class="box-title">Bli med i party</h3>
+                    <p class="box-desc">Tast inn 4-bokstavskoden fra storskjermen eller vennen din.</p>
+                  </div>
+
+                  <div class="action-box-content">
+                    <div class="form-group">
+                      <label for="inputPartyRoomCode">Romkode (4 bokstaver)</label>
+                      <input type="text" id="inputPartyRoomCode" class="text-input code-input" maxlength="6"
+                        placeholder="FEST" autocomplete="off" autocorrect="off" autocapitalize="characters" required />
+                    </div>
+
+                    <div class="form-group">
+                      <label for="inputPartyJoinName">Ditt kallenavn</label>
+                      <input type="text" id="inputPartyJoinName" class="text-input" maxlength="18"
+                        placeholder="F.eks. Spiller" value="Spiller" required />
+                    </div>
+                  </div>
+
+                  <button type="button" class="btn-cyan-accent" id="btnJoinPartyRoom">
+                    Bli med i festen 🚀
+                  </button>
+                </div>
+              </div>
             </div>
+          </div>
 
-            <!-- Join Room Card -->
-            <div class="gateway-card card-join">
-              <div class="gw-card-header">
-                <span class="gw-badge badge-purple">Bli med 🎯</span>
-                <h3>Bli med i et rom</h3>
-                <p>Tast inn den 4-bokstavers koden fra vennen din.</p>
+          <!-- TAB 2: Solo Practice / Skytebane Panel -->
+          <div class="tab-panel hidden" id="panelSolo">
+            <div class="action-box single-box card-theme-cyan">
+              <div class="action-box-header">
+                <div class="box-badge-row">
+                  <span class="action-card-badge badge-cyan">Skytebane</span>
+                </div>
+                <h3 class="box-title">Solo treningsskyting</h3>
+                <p class="box-desc">
+                  Test våpnene, prøv bevegelse og øv på treffsikkerhet på egen hånd i arenaen!
+                </p>
               </div>
 
-              <div class="gw-form-group">
-                <label for="inputJoinCode">Romkode (4 bokstaver):</label>
-                <input type="text" id="inputJoinCode" class="text-input code-input" maxlength="6" placeholder="KODE" autocomplete="off" autocapitalize="characters" />
+              <div class="action-box-content">
+                <div class="form-group">
+                  <label for="selectSoloMap">Velg arena</label>
+                  <select id="selectSoloMap" class="text-input select-input">
+                    <option value="gloshaugen_arena" selected>Gløshaugen Arena 🏛️</option>
+                    <option value="cyber_hangar">Cyber Hangar 🚀</option>
+                  </select>
+                </div>
+
+                <div class="stat-pills-row">
+                  <div class="stat-pill">
+                    <span class="stat-pill-label">Styring</span>
+                    <strong class="stat-pill-val">WASD / Piltaster</strong>
+                  </div>
+                  <div class="stat-pill">
+                    <span class="stat-pill-label">Skyt</span>
+                    <strong class="stat-pill-val">Mellomrom / Klikk</strong>
+                  </div>
+                  <div class="stat-pill">
+                    <span class="stat-pill-label">Figur</span>
+                    <strong class="stat-pill-val">Spillfigur 🎨</strong>
+                  </div>
+                </div>
               </div>
 
-              <div class="gw-form-group">
-                <label for="inputJoinName">Ditt kallenavn:</label>
-                <input type="text" id="inputJoinName" class="text-input" maxlength="18" placeholder="F.eks. Spiller" value="Spiller" />
-              </div>
-
-              <button type="button" class="gw-btn btn-join" id="btnJoinRoom">
-                Bli Med Nå 🎯
+              <button type="button" class="primary-btn pulse-glow" id="btnStartSoloPractice">
+                Start Skytebane 🎯
               </button>
             </div>
           </div>
 
           <!-- Controls Quick Reference Footer -->
-          <div class="controls-guide-bar">
+          <div class="controls-guide-bar" style="margin-top: 2rem;">
             <div class="cg-item">
               <span class="cg-key">W A S D / PILER</span>
               <span class="cg-desc">Bevegelse &amp; Retning</span>
@@ -139,111 +221,7 @@
       </section>
 
       <!-- ================================================================= -->
-      <!-- VIEW 2: ROOM LOBBY (Her lages karakteren før kamp!)                -->
-      <!-- ================================================================= -->
-      <section class="kr-view hidden" id="viewRoomLobby">
-        <div class="room-lobby-container">
-          <!-- Room Code Banner -->
-          <div class="room-banner">
-            <div class="room-code-group">
-              <span class="room-label">ROMKODE:</span>
-              <div class="room-code-display" id="lobbyRoomCode">----</div>
-              <button type="button" class="copy-btn" id="btnCopyRoomCode" title="Kopier romkode">
-                Kopier lenke 📋
-              </button>
-            </div>
-            <div class="room-instructions">
-              Del koden med venner slik at de kan bli med fra mobil eller PC!
-            </div>
-          </div>
-
-          <!-- Lobby Grid: Left = Character Creator, Right = Players & Settings -->
-          <div class="room-lobby-grid">
-            <!-- Left Column: Character Creator -->
-            <div class="lobby-col col-character">
-              <div class="lobby-card">
-                <div class="section-title-row">
-                  <h3 class="section-title">
-                    <span class="char-section-icon">🎨</span> Tilpass din soldat
-                  </h3>
-                  <span class="section-hint">Oppdateres direkte for alle</span>
-                </div>
-
-                <!-- Skribbl Character Creator Widget embedded in room lobby -->
-                <div class="lobby-character-wrap">
-                  <div id="skribblCustomizerLobby"></div>
-                </div>
-
-                <!-- Editable Name in Lobby -->
-                <div class="gw-form-group" style="margin-top: 1rem;">
-                  <label for="inputLobbyPlayerName">Ditt kallenavn:</label>
-                  <input type="text" id="inputLobbyPlayerName" class="text-input" maxlength="18" placeholder="Spillernavn" />
-                </div>
-              </div>
-            </div>
-
-            <!-- Right Column: Connected Players & Match Settings -->
-            <div class="lobby-col col-players-settings">
-              <!-- Connected Players Section -->
-              <div class="lobby-card">
-                <div class="section-title-row">
-                  <h3 class="section-title">
-                    Tilkoblede spillere (<span id="lobbyPlayersCount">1</span>)
-                  </h3>
-                  <span class="section-hint" id="lobbyStatusHint">Venter på at alle er klare...</span>
-                </div>
-
-                <div class="players-grid" id="lobbyPlayersGrid">
-                  <!-- Rendered dynamically -->
-                </div>
-              </div>
-
-              <!-- Match Settings & Launch Row -->
-              <div class="lobby-card">
-                <div class="section-title-row">
-                  <h3 class="section-title">Kampinnstillinger</h3>
-                  <span class="section-hint">Verten bestemmer</span>
-                </div>
-
-                <div class="field-row">
-                  <div class="field-group">
-                    <label for="selectLobbyMap">Bane:</label>
-                    <select id="selectLobbyMap" class="select-input">
-                      <option value="gloshaugen_arena" selected>Gløshaugen Arena 🏛️</option>
-                      <option value="cyber_hangar">Cyber Hangar 🚀</option>
-                    </select>
-                  </div>
-
-                  <div class="field-group">
-                    <label for="selectLobbyScoreLimit">Drap for seier:</label>
-                    <select id="selectLobbyScoreLimit" class="select-input">
-                      <option value="10">10 drap (Rask)</option>
-                      <option value="15" selected>15 drap (Standard)</option>
-                      <option value="25">25 drap (Lang)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <!-- Action Buttons in Lobby -->
-                <div class="lobby-actions-row">
-                  <button type="button" class="btn-ready-toggle" id="btnToggleReady">
-                    Jeg er Klar! 👍
-                  </button>
-                  <button type="button" class="primary-btn btn-start-match hidden" id="btnHostStartMatch">
-                    Start Kamp 💥
-                  </button>
-                  <button type="button" class="secondary-btn btn-leave-lobby" id="btnLeaveLobby">
-                    ‹ Forlat rom
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ================================================================= -->
-      <!-- VIEW 3: ACTIVE GAME & ARENA CANVAS                                -->
+      <!-- VIEW 2: ACTIVE GAME & ARENA CANVAS                                -->
       <!-- ================================================================= -->
       <section class="kr-view hidden" id="viewGame">
         <!-- 60 FPS Tactical Combat Canvas -->
@@ -389,11 +367,11 @@
 
         <!-- Action Buttons -->
         <div class="podium-actions">
-          <button type="button" class="primary-btn pulse-glow" id="btnPodiumPlayAgain">
-            🔄 Tilbake til Lobby
+          <button type="button" class="primary-btn pulse-glow" id="btnPodiumReturnLobby">
+            ‹ Tilbake til lounge
           </button>
           <button type="button" class="secondary-btn" id="btnPodiumReturnGateway">
-            ‹ Hovedmeny
+            Hovedmeny
           </button>
         </div>
       </div>
@@ -403,7 +381,8 @@
   <!-- Scripts -->
   <script src="/parallax-bg.js?v=2.1"></script>
   <script src="/character/character-creator.js"></script>
-  <script src="app.js?v=2.0"></script>
+  <script src="/game-lobby.js"></script>
+  <script src="app.js?v=2.2"></script>
 </body>
 
 </html>
