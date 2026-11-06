@@ -335,7 +335,12 @@ class GameGatewayHandler(BaseHTTPRequestHandler):
                     full_path = ts_car
                 elif os.path.isfile(os.path.join(HUB_DIR, "assets", "bil.png")):
                     full_path = os.path.join(HUB_DIR, "assets", "bil.png")
-            elif safe_rel.startswith("body/") or safe_rel.startswith("wheels/"):
+            elif (
+                safe_rel == "body.png"
+                or safe_rel.startswith("body/")
+                or safe_rel.startswith("wheels/")
+                or safe_rel.startswith("accessories/")
+            ):
                 car_cand = os.path.join(GAMES_DIR, "turbosladd", "assets", safe_rel)
                 if os.path.isfile(car_cand):
                     full_path = car_cand

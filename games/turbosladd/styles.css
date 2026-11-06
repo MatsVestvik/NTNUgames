@@ -1988,3 +1988,135 @@ body.turbosladd-page {
   padding: 0.2rem 0.5rem;
 }
 
+/* Single arrow column vertically centered beside car preview */
+.skribbl-arrows-col.single-arrow {
+  height: auto;
+  min-height: 48px;
+  justify-content: center;
+  align-items: center;
+}
+
+.skribbl-stage-box.compact-stage .skribbl-arrows-col.single-arrow {
+  height: auto;
+  min-height: 40px;
+}
+
+/* Color dot indicator inside car pill */
+.color-dot-indicator {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
+  flex-shrink: 0;
+}
+
+/* Accessories Selection Section */
+.accessories-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 0.65rem;
+}
+
+.accessories-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.accessories-header .accessories-icon {
+  font-size: 1rem;
+}
+
+.accessories-header .accessories-title {
+  color: #e2e8f0;
+}
+
+.accessories-header .accessories-subtitle {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.accessories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.45rem;
+  width: 100%;
+}
+
+.accessories-grid.compact-grid {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.35rem;
+}
+
+.accessory-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  padding: 0.45rem 0.6rem;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: #94a3b8;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.accessory-chip:hover {
+  background: rgba(30, 41, 59, 0.95);
+  border-color: rgba(56, 189, 248, 0.4);
+  color: #f1f5f9;
+  transform: translateY(-1px);
+}
+
+.accessory-chip.active {
+  background: rgba(56, 189, 248, 0.16);
+  border-color: #38bdf8;
+  color: #38bdf8;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+}
+
+.accessory-chip .acc-icon {
+  font-size: 0.92rem;
+  flex-shrink: 0;
+}
+
+.accessory-chip .acc-name {
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.accessory-chip .acc-check {
+  font-size: 0.75rem;
+  opacity: 0;
+  transform: scale(0.6);
+  transition: all 0.15s ease;
+  font-weight: 900;
+}
+
+.accessory-chip.active .acc-check {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.accessories-grid.compact-grid .accessory-chip {
+  padding: 0.35rem 0.5rem;
+  font-size: 0.72rem;
+  border-radius: 8px;
+}
+
+

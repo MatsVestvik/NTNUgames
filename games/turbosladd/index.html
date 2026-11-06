@@ -386,18 +386,17 @@
                     <span class="igg-badge">🏎️ Garasje</span>
                     <span class="hidden" id="inGameRoomCodePill" style="font-size:0.75rem;font-weight:700;background:rgba(56,189,248,0.15);color:#38bdf8;padding:0.2rem 0.55rem;border-radius:9999px;border:1px solid rgba(56,189,248,0.35);cursor:pointer;" title="Klikk for å kopiere romkode">Romkode: <strong id="inGameRoomCodeText">----</strong> 📋</span>
                   </div>
-                  <h3 class="igg-title">Velg bil på startstreken</h3>
-                  <p class="igg-desc">Bruk pilene for å velge karosseri og felger. Bilen din oppdateres direkte på banen!</p>
+                  <h3 class="igg-title">Tilpass bilen på startstreken</h3>
+                  <p class="igg-desc">Fargen er hentet fra din karakter. Velg felger og legg til ekstrautstyr!</p>
                 </div>
               </div>
 
-              <!-- Skribbl-style Car Stage Box: Left arrows, Large Car, Right arrows -->
+              <!-- Car Stage Box: Wheel navigation arrow on left and right, Large Car preview in center -->
               <div class="skribbl-stage-box">
                 <div class="skribbl-stage-content">
-                  <!-- Left Arrows (stacked vertically beside car) -->
-                  <div class="skribbl-arrows-col col-left">
-                    <button type="button" class="skribbl-nav-btn" id="btnInGameBodyPrev" title="Forrige karosseri (W / pil opp)" aria-label="Forrige karosseri">‹</button>
-                    <button type="button" class="skribbl-nav-btn" id="btnInGameWheelPrev" title="Forrige felger (S / pil ned)" aria-label="Forrige felger">‹</button>
+                  <!-- Left Arrow for Felger -->
+                  <div class="skribbl-arrows-col single-arrow col-left">
+                    <button type="button" class="skribbl-nav-btn" id="btnInGameWheelPrev" title="Forrige felger (A / pil venstre)" aria-label="Forrige felger">‹</button>
                   </div>
 
                   <!-- Center Car Preview Bubble -->
@@ -405,44 +404,42 @@
                     <canvas id="inGameCarPreviewCanvas" width="64" height="64" class="skribbl-canvas"></canvas>
                   </div>
 
-                  <!-- Right Arrows (stacked vertically beside car) -->
-                  <div class="skribbl-arrows-col col-right">
-                    <button type="button" class="skribbl-nav-btn" id="btnInGameBodyNext" title="Neste karosseri" aria-label="Neste karosseri">›</button>
-                    <button type="button" class="skribbl-nav-btn" id="btnInGameWheelNext" title="Neste felger" aria-label="Neste felger">›</button>
+                  <!-- Right Arrow for Felger -->
+                  <div class="skribbl-arrows-col single-arrow col-right">
+                    <button type="button" class="skribbl-nav-btn" id="btnInGameWheelNext" title="Neste felger (D / pil høyre)" aria-label="Neste felger">›</button>
                   </div>
                 </div>
 
                 <!-- Part description pills -->
                 <div class="car-part-pills-row">
-                  <div class="car-part-pill" title="Valgt karosseri">
-                    <span class="cpp-icon">🏎️</span>
-                    <span class="cpp-label">Karosseri:</span>
-                    <strong class="cpp-val" id="inGameBodyLabel">Klassisk</strong>
-                  </div>
                   <div class="car-part-pill" title="Valgte felger">
                     <span class="cpp-icon">⚙️</span>
                     <span class="cpp-label">Felger:</span>
-                    <strong class="cpp-val" id="inGameWheelLabel">Stålfelg</strong>
+                    <strong class="cpp-val" id="inGameWheelLabel">Stålfelger</strong>
+                  </div>
+                  <div class="car-part-pill" id="inGameColorPill" title="Lakkfarge hentet fra din lobby-karakter">
+                    <span class="cpp-icon">🎨</span>
+                    <span class="cpp-label">Lakk:</span>
+                    <span class="color-dot-indicator" id="inGameColorDot"></span>
+                    <strong class="cpp-val" id="inGameColorLabel">Karakterfarge</strong>
                   </div>
                 </div>
 
-                <!-- Randomize button like in character creator -->
-                <button type="button" class="skribbl-randomize-btn" id="btnInGameRandomize" title="Få en helt tilfeldig kul bil!">
+                <!-- Randomize button -->
+                <button type="button" class="skribbl-randomize-btn" id="btnInGameRandomize" title="Få en helt tilfeldig kul styling!">
                   <span class="skribbl-dice-icon">🎲</span>
-                  <span class="skribbl-dice-text">Tilfeldig bil</span>
+                  <span class="skribbl-dice-text">Tilfeldig styling</span>
                 </button>
               </div>
 
-              <!-- Color Selector -->
-              <div class="cc-section" style="margin-top:0.75rem;">
-                <div class="cc-color-header">
-                  <label class="cc-section-label">Lakkfarge:</label>
-                  <span class="cc-color-name" id="inGameColorName">Rød Turbo</span>
+              <!-- Accessories Section (Toggle chips: velg så mange du vil) -->
+              <div class="accessories-section">
+                <div class="accessories-header">
+                  <span class="accessories-icon">🔧</span>
+                  <span class="accessories-title">Ekstrautstyr:</span>
+                  <span class="accessories-subtitle">(velg så mange du vil)</span>
                 </div>
-                <div class="cc-color-row">
-                  <div class="cc-color-swatches" id="inGameColorSwatches"></div>
-                  <input type="color" id="inGameColorPicker" class="cc-color-picker-input" value="#ef4444" title="Egendefinert farge" />
-                </div>
+                <div class="accessories-grid" id="inGameAccessoriesGrid"></div>
               </div>
 
               <div class="igg-footer">
@@ -467,34 +464,31 @@
 
                 <div class="skribbl-stage-box compact-stage">
                   <div class="skribbl-stage-content">
-                    <div class="skribbl-arrows-col col-left">
-                      <button type="button" class="skribbl-nav-btn" id="btnSplitP1BodyPrev" title="Forrige karosseri">‹</button>
-                      <button type="button" class="skribbl-nav-btn" id="btnSplitP1WheelPrev" title="Forrige felger">‹</button>
+                    <div class="skribbl-arrows-col single-arrow col-left">
+                      <button type="button" class="skribbl-nav-btn" id="btnSplitP1WheelPrev" title="Forrige felger (A)">‹</button>
                     </div>
                     <div class="skribbl-canvas-bubble">
                       <canvas id="splitP1CarPreviewCanvas" width="64" height="64" class="skribbl-canvas"></canvas>
                     </div>
-                    <div class="skribbl-arrows-col col-right">
-                      <button type="button" class="skribbl-nav-btn" id="btnSplitP1BodyNext" title="Neste karosseri">›</button>
-                      <button type="button" class="skribbl-nav-btn" id="btnSplitP1WheelNext" title="Neste felger">›</button>
+                    <div class="skribbl-arrows-col single-arrow col-right">
+                      <button type="button" class="skribbl-nav-btn" id="btnSplitP1WheelNext" title="Neste felger (D)">›</button>
                     </div>
                   </div>
 
                   <div class="car-part-pills-row">
                     <div class="car-part-pill">
-                      <span class="cpp-val" id="splitP1BodyLabel">Klassisk</span>
-                    </div>
-                    <div class="car-part-pill">
-                      <span class="cpp-val" id="splitP1WheelLabel">Stålfelg</span>
+                      <span class="cpp-icon">⚙️</span>
+                      <span class="cpp-val" id="splitP1WheelLabel">Stålfelger</span>
                     </div>
                   </div>
                 </div>
 
-                <div class="cc-section">
-                  <div class="cc-color-row">
-                    <div class="cc-color-swatches" id="splitP1Colors"></div>
-                    <input type="color" id="splitP1ColorPicker" class="cc-color-picker-input" value="#ef4444" />
+                <div class="accessories-section">
+                  <div class="accessories-header">
+                    <span class="accessories-icon">🔧</span>
+                    <span class="accessories-title" style="font-size:0.8rem;">Utstyr:</span>
                   </div>
+                  <div class="accessories-grid compact-grid" id="splitP1AccessoriesGrid"></div>
                 </div>
 
                 <button type="button" class="igg-btn-ready" id="btnSplitP1Ready">
@@ -513,34 +507,31 @@
 
                 <div class="skribbl-stage-box compact-stage">
                   <div class="skribbl-stage-content">
-                    <div class="skribbl-arrows-col col-left">
-                      <button type="button" class="skribbl-nav-btn" id="btnSplitP2BodyPrev" title="Forrige karosseri">‹</button>
-                      <button type="button" class="skribbl-nav-btn" id="btnSplitP2WheelPrev" title="Forrige felger">‹</button>
+                    <div class="skribbl-arrows-col single-arrow col-left">
+                      <button type="button" class="skribbl-nav-btn" id="btnSplitP2WheelPrev" title="Forrige felger (Venstre)">‹</button>
                     </div>
                     <div class="skribbl-canvas-bubble">
                       <canvas id="splitP2CarPreviewCanvas" width="64" height="64" class="skribbl-canvas"></canvas>
                     </div>
-                    <div class="skribbl-arrows-col col-right">
-                      <button type="button" class="skribbl-nav-btn" id="btnSplitP2BodyNext" title="Neste karosseri">›</button>
-                      <button type="button" class="skribbl-nav-btn" id="btnSplitP2WheelNext" title="Neste felger">›</button>
+                    <div class="skribbl-arrows-col single-arrow col-right">
+                      <button type="button" class="skribbl-nav-btn" id="btnSplitP2WheelNext" title="Neste felger (Høyre)">›</button>
                     </div>
                   </div>
 
                   <div class="car-part-pills-row">
                     <div class="car-part-pill">
-                      <span class="cpp-val" id="splitP2BodyLabel">Coupe GT</span>
-                    </div>
-                    <div class="car-part-pill">
-                      <span class="cpp-val" id="splitP2WheelLabel">Sportsfelg</span>
+                      <span class="cpp-icon">⚙️</span>
+                      <span class="cpp-val" id="splitP2WheelLabel">Sportsfelger</span>
                     </div>
                   </div>
                 </div>
 
-                <div class="cc-section">
-                  <div class="cc-color-row">
-                    <div class="cc-color-swatches" id="splitP2Colors"></div>
-                    <input type="color" id="splitP2ColorPicker" class="cc-color-picker-input" value="#06b6d4" />
+                <div class="accessories-section">
+                  <div class="accessories-header">
+                    <span class="accessories-icon">🔧</span>
+                    <span class="accessories-title" style="font-size:0.8rem;">Utstyr:</span>
                   </div>
+                  <div class="accessories-grid compact-grid" id="splitP2AccessoriesGrid"></div>
                 </div>
 
                 <button type="button" class="igg-btn-ready" id="btnSplitP2Ready">

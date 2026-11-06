@@ -99,6 +99,28 @@ def resolve_track_id(tid: Optional[str]) -> str:
     return mapped if mapped in TRACK_CONFIGS else "rally_random"
 
 
+def clean_accessories(raw_accs: Any) -> List[int]:
+    if not raw_accs:
+        return []
+    if isinstance(raw_accs, str):
+        try:
+            parts = [int(x.strip()) for x in raw_accs.split(",") if x.strip().isdigit()]
+            return sorted(list({x for x in parts if 1 <= x <= 6}))
+        except Exception:
+            return []
+    if isinstance(raw_accs, (list, tuple, set)):
+        result = []
+        for x in raw_accs:
+            try:
+                ix = int(x)
+                if 1 <= ix <= 6:
+                    result.append(ix)
+            except Exception:
+                pass
+        return sorted(list(set(result)))
+    return []
+
+
 class TurbosladdRoom:
     def __init__(
         self,
@@ -113,6 +135,7 @@ class TurbosladdRoom:
         host_avatar: str = "",
         host_body_id: int = 1,
         host_wheel_id: int = 1,
+        host_accessories: Optional[Any] = None,
     ):
         self.code = code
         self.created_at = time.time()
@@ -143,8 +166,9 @@ class TurbosladdRoom:
             "color": host_color or PLAYER_PALETTE[0]["color"],
             "avatar": host_avatar or "",
             "carModel": "gt",
-            "bodyId": max(1, min(4, int(host_body_id or 1))),
-            "wheelId": max(1, min(4, int(host_wheel_id or 1))),
+            "bodyId": 1,
+            "wheelId": max(1, min(6, int(host_wheel_id or 1))),
+            "accessories": clean_accessories(host_accessories),
             "isHost": True,
             "isReady": False,
             "slot": 0,
@@ -203,7 +227,16 @@ class TurbosladdRoom:
                         self.status = "finished"
                         self.bump()
 
-    def add_player(self, name: str, color: str, car_model: str = "gt", avatar: str = "", body_id: int = 1, wheel_id: int = 1) -> Optional[Dict[str, Any]]:
+    def add_player(
+        self,
+        name: str,
+        color: Optional[str] = None,
+        car_model: str = "gt",
+        avatar: str = "",
+        body_id: int = 1,
+        wheel_id: int = 1,
+        accessories: Optional[Any] = None,
+    ) -> Optional[Dict[str, Any]]:
         with self.lock:
             active_count = len([p for p in self.players.values() if not p.get("left")])
             if active_count >= self.max_players:
@@ -243,8 +276,9 @@ class TurbosladdRoom:
                 "color": assigned_color,
                 "avatar": avatar or "",
                 "carModel": "gt",
-                "bodyId": max(1, min(4, int(body_id or 1))),
-                "wheelId": max(1, min(4, int(wheel_id or 1))),
+                "bodyId": 1,
+                "wheelId": max(1, min(6, int(wheel_id or 1))),
+                "accessories": clean_accessories(accessories),
                 "isHost": False,
                 "isReady": False,
                 "slot": slot,
@@ -266,7 +300,14 @@ class TurbosladdRoom:
             self.bump()
             return player
 
-    def customize_car(self, player_id: str, body_id: Optional[int] = None, wheel_id: Optional[int] = None, color: Optional[str] = None) -> Tuple[bool, str]:
+    def customize_car(
+        self,
+        player_id: str,
+        body_id: Optional[int] = None,
+        wheel_id: Optional[int] = None,
+        color: Optional[str] = None,
+        accessories: Optional[Any] = None,
+    ) -> Tuple[bool, str]:
         with self.lock:
             if player_id not in self.players or self.players[player_id].get("left"):
                 return False, "Spilleren finnes ikke i rommet."
@@ -274,21 +315,18 @@ class TurbosladdRoom:
                 return False, "Kan ikke tilpasse bilen etter at løpet har startet."
 
             p = self.players[player_id]
-            if body_id is not None:
-                try:
-                    bid = int(body_id)
-                    if 1 <= bid <= 4:
-                        p["bodyId"] = bid
-                except (ValueError, TypeError):
-                    pass
+            p["bodyId"] = 1
 
             if wheel_id is not None:
                 try:
                     wid = int(wheel_id)
-                    if 1 <= wid <= 4:
+                    if 1 <= wid <= 6:
                         p["wheelId"] = wid
                 except (ValueError, TypeError):
                     pass
+
+            if accessories is not None:
+                p["accessories"] = clean_accessories(accessories)
 
             if color:
                 new_color_clean = str(color).strip()
@@ -481,8 +519,9 @@ class TurbosladdRoom:
                     "color": p["color"],
                     "avatar": p.get("avatar", ""),
                     "carModel": p.get("carModel", "gt"),
-                    "bodyId": p.get("bodyId", 1),
+                    "bodyId": 1,
                     "wheelId": p.get("wheelId", 1),
+                    "accessories": p.get("accessories", []),
                     "isHost": p["isHost"],
                     "isReady": p["isReady"],
                     "slot": p["slot"],
@@ -674,8 +713,8 @@ class TurbosladdAPI:
             host_name = str(body.get("hostName", "Sjåfør 1")).strip()[:18] or "Sjåfør 1"
             host_color = str(body.get("color", "")).strip()
             host_avatar = str(body.get("avatar", "")).strip()
-            host_body_id = int(body.get("bodyId", 1))
             host_wheel_id = int(body.get("wheelId", 1))
+            host_accessories = body.get("accessories", [])
             track_id = resolve_track_id(str(body.get("trackId", "rally_random")).strip())
             track_seed = body.get("trackSeed")
             laps = int(body.get("laps", 3))
@@ -692,8 +731,9 @@ class TurbosladdAPI:
                 laps=laps,
                 max_players=max_players,
                 host_avatar=host_avatar,
-                host_body_id=host_body_id,
+                host_body_id=1,
                 host_wheel_id=host_wheel_id,
+                host_accessories=host_accessories,
             )
 
             with _rooms_lock:
@@ -706,8 +746,9 @@ class TurbosladdAPI:
                 "hostToken": room.host_token,
                 "slot": 0,
                 "color": host_color,
-                "bodyId": host_body_id,
+                "bodyId": 1,
                 "wheelId": host_wheel_id,
+                "accessories": clean_accessories(host_accessories),
                 "trackId": room.track_id,
                 "trackSeed": room.track_seed,
                 "laps": room.laps,
@@ -719,15 +760,15 @@ class TurbosladdAPI:
             player_name = str(body.get("playerName", "Sjåfør")).strip()[:18] or "Sjåfør"
             color = str(body.get("color", "")).strip()
             avatar = str(body.get("avatar", "")).strip()
-            body_id = int(body.get("bodyId", 1))
             wheel_id = int(body.get("wheelId", 1))
+            accessories = body.get("accessories", [])
 
             with _rooms_lock:
                 room = _rooms.get(code)
             if not room:
                 return 404, {"error": "Fant ikke løpet. Sjekk koden og prøv igjen."}
 
-            player = room.add_player(player_name, color, car_model="gt", avatar=avatar, body_id=body_id, wheel_id=wheel_id)
+            player = room.add_player(player_name, color, car_model="gt", avatar=avatar, body_id=1, wheel_id=wheel_id, accessories=accessories)
             if not player:
                 return 400, {"error": "Løpet er fullt (maks spillere nådd) eller allerede startet."}
 
@@ -737,8 +778,9 @@ class TurbosladdAPI:
                 "playerId": player["id"],
                 "slot": player["slot"],
                 "color": player["color"],
-                "bodyId": player.get("bodyId", 1),
+                "bodyId": 1,
                 "wheelId": player.get("wheelId", 1),
+                "accessories": player.get("accessories", []),
                 "trackId": room.track_id,
                 "laps": room.laps,
             }
@@ -774,12 +816,13 @@ class TurbosladdAPI:
 
             return 200, {"ok": True, "color": color, "message": msg}
 
-        # 3c. Customize Car (body, wheels, color)
+        # 3c. Customize Car (wheels, accessories, color)
         if path == "/api/turbosladd/customize":
             code = str(body.get("roomCode") or body.get("code", "")).strip().upper()
             player_id = str(body.get("playerId", "")).strip()
-            body_id = body.get("bodyId")
+            body_id = 1
             wheel_id = body.get("wheelId")
+            accessories = body.get("accessories")
             color = body.get("color")
 
             with _rooms_lock:
@@ -787,15 +830,16 @@ class TurbosladdAPI:
             if not room:
                 return 404, {"error": "Fant ikke løpet."}
 
-            ok, msg = room.customize_car(player_id, body_id=body_id, wheel_id=wheel_id, color=color)
+            ok, msg = room.customize_car(player_id, body_id=body_id, wheel_id=wheel_id, color=color, accessories=accessories)
             if not ok:
                 return 400, {"error": msg}
 
             p = room.players.get(player_id, {})
             return 200, {
                 "ok": True,
-                "bodyId": p.get("bodyId", 1),
+                "bodyId": 1,
                 "wheelId": p.get("wheelId", 1),
+                "accessories": p.get("accessories", []),
                 "color": p.get("color"),
                 "message": msg,
             }
