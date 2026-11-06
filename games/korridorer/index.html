@@ -96,65 +96,8 @@
             </button>
           </div>
 
-          <!-- TAB 1: Online Multiplayer Panel -->
-          <div class="tab-panel active" id="panelOnline">
-            <div class="online-lobby-deck">
-              <!-- Action Cards: Create vs Join Standardized Party Room -->
-              <div class="online-split">
-                <!-- Create Party Card -->
-                <div class="action-box card-theme-orange">
-                  <div class="action-box-header">
-                    <div class="box-badge-row">
-                      <span class="action-card-badge badge-orange">Romvert</span>
-                    </div>
-                    <h3 class="box-title">Opprett party</h3>
-                    <p class="box-desc">Start et felles party-rom for alle venner på mobil eller PC. I rommet kan du velge og bytte mellom alle spill fritt!</p>
-                  </div>
-
-                  <div class="action-box-content">
-                    <div class="form-group">
-                      <label for="inputPartyHostName">Ditt kallenavn</label>
-                      <input type="text" id="inputPartyHostName" class="text-input" maxlength="18"
-                        placeholder="F.eks. Henrik (Vert)" value="Vert" required />
-                    </div>
-                  </div>
-
-                  <button type="button" class="primary-btn pulse-glow" id="btnCreatePartyRoom">
-                    Opprett party-rom 🎉
-                  </button>
-                </div>
-
-                <!-- Join Party Card -->
-                <div class="action-box card-theme-purple">
-                  <div class="action-box-header">
-                    <div class="box-badge-row">
-                      <span class="action-card-badge badge-purple">Bli med</span>
-                    </div>
-                    <h3 class="box-title">Bli med i party</h3>
-                    <p class="box-desc">Tast inn 4-bokstavskoden fra storskjermen eller vennen din.</p>
-                  </div>
-
-                  <div class="action-box-content">
-                    <div class="form-group">
-                      <label for="inputPartyRoomCode">Romkode (4 bokstaver)</label>
-                      <input type="text" id="inputPartyRoomCode" class="text-input code-input" maxlength="6"
-                        placeholder="FEST" autocomplete="off" autocorrect="off" autocapitalize="characters" required />
-                    </div>
-
-                    <div class="form-group">
-                      <label for="inputPartyJoinName">Ditt kallenavn</label>
-                      <input type="text" id="inputPartyJoinName" class="text-input" maxlength="18"
-                        placeholder="F.eks. Spiller" value="Spiller" required />
-                    </div>
-                  </div>
-
-                  <button type="button" class="btn-cyan-accent" id="btnJoinPartyRoom">
-                    Bli med i festen 🚀
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <!-- TAB 1: Online Multiplayer Panel (Standardisert felles PartyConnect fane) -->
+          <div class="tab-panel active" id="panelOnline" data-party-panel="korridorer"></div>
 
           <!-- TAB 2: Local Pass & Play Panel -->
           <div class="tab-panel hidden" id="panelLocal">

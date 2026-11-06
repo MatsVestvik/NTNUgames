@@ -1665,10 +1665,10 @@
       window.PartyConnect.init({
         gameId: "ordbombe",
         createBtnId: "btnCreatePartyRoom",
-        joinBtnId: "btnSubmitJoinOrdbombeRoom",
+        joinBtnId: document.getElementById("btnSubmitJoinOrdbombeRoom") ? "btnSubmitJoinOrdbombeRoom" : "btnJoinPartyRoom",
         hostInputId: "inputPartyHostName",
         joinInputId: "inputPartyJoinName",
-        codeInputId: "inputOrdbombeRoomCode",
+        codeInputId: document.getElementById("inputOrdbombeRoomCode") ? "inputOrdbombeRoomCode" : "inputPartyRoomCode",
       });
     } else if (el.btnSubmitJoinOrdbombeRoom) {
       el.btnSubmitJoinOrdbombeRoom.addEventListener("click", () => {
