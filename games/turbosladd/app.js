@@ -1531,8 +1531,21 @@
 
   function renderProfileCarPreview() {
     const canvas = el.carPreviewCanvas;
-    if (!canvas) return;
-    drawCarPreviewOnCanvas(canvas, state.driverWheelId || 1, state.driverAccessories || [], state.driverColor);
+    if (canvas) {
+      drawCarPreviewOnCanvas(canvas, state.driverWheelId || 1, state.driverAccessories || [], state.driverColor);
+    }
+    const soloCanvas = document.getElementById("soloLobbyCarCanvas");
+    if (soloCanvas) {
+      drawCarPreviewOnCanvas(soloCanvas, state.driverWheelId || 1, state.driverAccessories || [], state.driverColor);
+    }
+    const p1Canvas = document.getElementById("splitP1LobbyCarCanvas");
+    if (p1Canvas) {
+      drawCarPreviewOnCanvas(p1Canvas, state.splitP1.wheelId || 1, state.splitP1.accessories || [], state.splitP1.color || "#f97316");
+    }
+    const p2Canvas = document.getElementById("splitP2LobbyCarCanvas");
+    if (p2Canvas) {
+      drawCarPreviewOnCanvas(p2Canvas, state.splitP2.wheelId || 2, state.splitP2.accessories || [], state.splitP2.color || "#06b6d4");
+    }
   }
 
   function renderLoungeCarPreview() {
@@ -2480,28 +2493,27 @@
 
     if (isInPreRacePhase) {
       // In-game pre-race garage overhead tags:
-      // Shows "✓ KLAR" over ready cars, and "🛠️ TILPASSER..." over cars still in the garage!
+      // Shows "KLAR" over ready cars, and "TILPASSER..." over cars still in the garage!
       ctx.save();
       const isReady = Boolean(isLocal ? (state.mode === "splitscreen" ? car.isReady : state.myCar.isReady) : car.isReady);
-      const badgeText = isReady ? "✓ KLAR" : "🛠️ TILPASSER...";
+      const badgeText = isReady ? "KLAR" : "TILPASSER...";
       const badgeBg = isReady ? "rgba(16, 185, 129, 0.94)" : "rgba(249, 115, 22, 0.94)";
       const badgeBorder = isReady ? "#34d399" : "#fb923c";
       const displayName = name || (isLocal ? (state.driverName || "Deg") : "Sjåfør");
 
-      ctx.font = "bold 11px sans-serif";
+      ctx.font = "8px 'Press Start 2P', monospace";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
 
       const nameW = ctx.measureText(displayName).width;
-      ctx.font = "bold 10px sans-serif";
       const badgeW = ctx.measureText(badgeText).width;
-      const boxW = Math.max(nameW, badgeW) + 20;
-      const boxH = 34;
+      const boxW = Math.max(nameW, badgeW) + 26;
+      const boxH = 40;
       const boxX = car.x - boxW / 2;
-      const boxY = car.y - 54;
+      const boxY = car.y - 60;
 
       // Dark card container
-      ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
+      ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
       ctx.beginPath();
       ctx.roundRect(boxX, boxY, boxW, boxH, 8);
       ctx.fill();
@@ -2511,14 +2523,14 @@
 
       // Driver Name
       ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 11px sans-serif";
-      ctx.fillText(displayName, car.x, boxY + 10);
+      ctx.font = "8px 'Press Start 2P', monospace";
+      ctx.fillText(displayName, car.x, boxY + 12);
 
       // Status Badge Pill
-      const pillW = badgeW + 12;
-      const pillH = 15;
+      const pillW = badgeW + 14;
+      const pillH = 17;
       const pillX = car.x - pillW / 2;
-      const pillY = boxY + 19;
+      const pillY = boxY + 20;
       ctx.fillStyle = badgeBg;
       ctx.beginPath();
       ctx.roundRect(pillX, pillY, pillW, pillH, 9999);
@@ -2528,8 +2540,8 @@
       ctx.stroke();
 
       ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 9px sans-serif";
-      ctx.fillText(badgeText, car.x, pillY + 8);
+      ctx.font = "8px 'Press Start 2P', monospace";
+      ctx.fillText(badgeText, car.x, pillY + 9);
 
       ctx.restore();
     } else if (!isLocal) {
@@ -2697,7 +2709,7 @@
     ctx.fill();
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 13px sans-serif";
+    ctx.font = "8px 'Press Start 2P', monospace";
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
     ctx.fillText(`P${playerNum} (${ctrlLabel}): ${name}`, badgeX + 28, badgeY + 16);
@@ -2705,14 +2717,14 @@
     // Lap badge or finish status
     if (car.finished) {
       ctx.fillStyle = "#22c55e";
-      ctx.font = "bold 11px sans-serif";
-      ctx.fillText(`MÅL! 🏁 ${formatTime(car.finishTime)}`, badgeX + 28, badgeY + 31);
+      ctx.font = "8px 'Press Start 2P', monospace";
+      ctx.fillText(`MÅL! ${formatTime(car.finishTime)}`, badgeX + 28, badgeY + 31);
     } else {
       ctx.fillStyle = "#94a3b8";
-      ctx.font = "bold 11px sans-serif";
-      ctx.fillText(`Runde: `, badgeX + 28, badgeY + 31);
+      ctx.font = "8px 'Press Start 2P', monospace";
+      ctx.fillText(`RUNDE: `, badgeX + 28, badgeY + 31);
       ctx.fillStyle = "#38bdf8";
-      ctx.fillText(`${car.lap}/${totalLaps}`, badgeX + 72, badgeY + 31);
+      ctx.fillText(`${car.lap}/${totalLaps}`, badgeX + 85, badgeY + 31);
     }
 
     // Top-right Speedometer
@@ -2728,12 +2740,12 @@
 
     const kmh = Math.round(car.speed * 0.48);
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 18px Courier New, monospace";
+    ctx.font = "13px 'Press Start 2P', monospace";
     ctx.textAlign = "right";
-    ctx.fillText(String(kmh), speedX + 64, speedY + 22);
+    ctx.fillText(String(kmh), speedX + 58, speedY + 23);
     ctx.fillStyle = "#94a3b8";
-    ctx.font = "bold 10px sans-serif";
-    ctx.fillText("km/t", speedX + 96, speedY + 22);
+    ctx.font = "7px 'Press Start 2P', monospace";
+    ctx.fillText("KM/T", speedX + 96, speedY + 23);
 
     // Bottom-center Drift Boost Meter
     const barW = Math.min(220, Math.max(130, vw * 0.32));
@@ -2760,7 +2772,7 @@
     }
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 9px sans-serif";
+    ctx.font = "7px 'Press Start 2P', monospace";
     ctx.textAlign = "center";
     ctx.fillText(car.turboTimer > 0 ? "TURBO BOOST!" : (car.isDrifting ? "RALLY SLADD" : "DRIFT BOOST"), barX + barW / 2, barY + 9);
 
@@ -2769,21 +2781,21 @@
       ctx.save();
       const bannerH = 74;
       const bannerY = vy + (vh - bannerH) / 2;
-      ctx.fillStyle = "rgba(15, 23, 42, 0.82)";
+      ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
       ctx.fillRect(vx, bannerY, vw, bannerH);
       ctx.strokeStyle = color;
       ctx.lineWidth = 2;
       ctx.strokeRect(vx, bannerY, vw, bannerH);
 
       ctx.fillStyle = "#ffffff";
-      ctx.font = "900 22px sans-serif";
+      ctx.font = "16px 'Press Start 2P', monospace";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText("🏁 FULLFØRT!", vx + vw / 2, bannerY + 24);
+      ctx.fillText("FINISH!", vx + vw / 2, bannerY + 24);
 
-      ctx.font = "bold 13px sans-serif";
+      ctx.font = "8px 'Press Start 2P', monospace";
       ctx.fillStyle = "#38bdf8";
-      ctx.fillText(`Tid: ${formatTime(car.finishTime)}  •  Beste: ${formatTime(car.bestLap)}`, vx + vw / 2, bannerY + 52);
+      ctx.fillText(`TID: ${formatTime(car.finishTime)}   BESTE: ${formatTime(car.bestLap)}`, vx + vw / 2, bannerY + 52);
       ctx.restore();
     }
 
@@ -3080,21 +3092,21 @@
             ctx.save();
             const bannerH = 76;
             const bannerY = (canvas.height - bannerH) / 2;
-            ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
+            ctx.fillStyle = "rgba(15, 23, 42, 0.88)";
             ctx.fillRect(0, bannerY, canvas.width, bannerH);
             ctx.strokeStyle = state.driverColor || "#38bdf8";
             ctx.lineWidth = 2;
             ctx.strokeRect(0, bannerY, canvas.width, bannerH);
 
             ctx.fillStyle = "#ffffff";
-            ctx.font = "900 24px sans-serif";
+            ctx.font = "18px 'Press Start 2P', monospace";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            ctx.fillText("🏁 FULLFØRT!", canvas.width / 2, bannerY + 26);
+            ctx.fillText("FINISH!", canvas.width / 2, bannerY + 26);
 
-            ctx.font = "bold 13px sans-serif";
+            ctx.font = "8px 'Press Start 2P', monospace";
             ctx.fillStyle = "#38bdf8";
-            ctx.fillText(`Tid: ${formatTime(state.myCar.finishTime)}  •  Beste runde: ${formatTime(state.myCar.bestLap)}`, canvas.width / 2, bannerY + 54);
+            ctx.fillText(`TID: ${formatTime(state.myCar.finishTime)}   BESTE: ${formatTime(state.myCar.bestLap)}`, canvas.width / 2, bannerY + 54);
             ctx.restore();
           }
         }
@@ -3175,11 +3187,11 @@
     if (data.status === "countdown") {
       el.countdownOverlay.classList.remove("hidden");
       const rem = Math.ceil(data.countdownRemaining || 3);
-      el.countdownText.textContent = rem > 0 ? String(rem) : "KJØR!";
+      el.countdownText.textContent = rem > 0 ? String(rem) : "GO";
     } else if (data.status === "racing") {
       if (prevStatus === "countdown") {
-        el.countdownText.textContent = "KJØR! 🏁";
-        playTone(880, 0.4, "triangle", 0.3);
+        el.countdownText.textContent = "GO";
+        playTone(880, 0.45, "triangle", 0.4);
         setTimeout(() => el.countdownOverlay.classList.add("hidden"), 700);
       } else {
         el.countdownOverlay.classList.add("hidden");
@@ -3605,12 +3617,21 @@
     state.cam1 = { x: state.car1.x, y: state.car1.y, zoom: 2.3 };
     state.cam2 = { x: state.car2.x, y: state.car2.y, zoom: 2.3 };
 
+    const p1Col = document.querySelector(".split-garage-col.card-p1");
+    const p2Col = document.querySelector(".split-garage-col.card-p2");
+    if (p1Col) p1Col.classList.remove("ready-closed");
+    if (p2Col) p2Col.classList.remove("ready-closed");
+    const p1Reopen = document.getElementById("btnSplitP1Reopen");
+    const p2Reopen = document.getElementById("btnSplitP2Reopen");
+    if (p1Reopen) p1Reopen.classList.add("hidden");
+    if (p2Reopen) p2Reopen.classList.add("hidden");
+
     if (el.btnSplitP1Ready) {
-      el.btnSplitP1Ready.textContent = "Spiller 1 Klar! 👍";
+      el.btnSplitP1Ready.textContent = "KLAR";
       el.btnSplitP1Ready.classList.remove("ready-active");
     }
     if (el.btnSplitP2Ready) {
-      el.btnSplitP2Ready.textContent = "Spiller 2 Klar! 👍";
+      el.btnSplitP2Ready.textContent = "KLAR";
       el.btnSplitP2Ready.classList.remove("ready-active");
     }
 
@@ -3811,7 +3832,7 @@
     if (el.podiumDesc) {
       const allOthersGaveUp = racers.length >= 2 && racers.slice(1).every(r => r.forfeit || r.left);
       if (allOthersGaveUp) {
-        el.podiumDesc.textContent = "Motstanderen ga opp! Du vant løpet! 🏆";
+        el.podiumDesc.textContent = "Motstanderen ga opp! Du vant løpet!";
       } else {
         el.podiumDesc.textContent = "Løpet er fullført. Her er resultatlisten:";
       }
@@ -3820,7 +3841,7 @@
     racers.forEach((r, idx) => {
       const row = document.createElement("div");
       row.className = "podium-row" + (idx === 0 ? " rank-1" : "");
-      const medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : `${idx + 1}.`;
+      const medal = idx === 0 ? "1ST" : idx === 1 ? "2ND" : idx === 2 ? "3RD" : `${idx + 1}TH`;
       let timeText = "";
       if (r.forfeit || r.left) {
         timeText = "Ga opp";
@@ -4325,12 +4346,13 @@
         if (state.mode === "solo") {
           state.myCar.isReady = true;
           if (el.inGameGarage) el.inGameGarage.classList.add("hidden");
+          playTone(520, 0.12, "triangle", 0.3);
           setTimeout(() => {
             runCountdown(() => {
               state.myCar.raceStartTime = performance.now();
               state.myCar.lapStartTime = performance.now();
             });
-          }, 350);
+          }, 400);
         } else if (state.mode === "online") {
           state.myCar.isReady = true;
           if (el.inGameGarage) el.inGameGarage.classList.add("hidden");
@@ -4391,28 +4413,64 @@
     // In-game Splitscreen Ready Buttons
     function checkSplitscreenBothReady() {
       if (state.car1 && state.car2 && state.car1.isReady && state.car2.isReady) {
-        if (el.inGameSplitGarage) el.inGameSplitGarage.classList.add("hidden");
-        runCountdown();
+        const p1Reopen = document.getElementById("btnSplitP1Reopen");
+        const p2Reopen = document.getElementById("btnSplitP2Reopen");
+        if (p1Reopen) p1Reopen.classList.add("hidden");
+        if (p2Reopen) p2Reopen.classList.add("hidden");
+        setTimeout(() => {
+          if (el.inGameSplitGarage) el.inGameSplitGarage.classList.add("hidden");
+          runCountdown();
+        }, 400);
       }
     }
 
     if (el.btnSplitP1Ready) {
       el.btnSplitP1Ready.addEventListener("click", () => {
         if (!state.car1) return;
-        state.car1.isReady = !state.car1.isReady;
-        el.btnSplitP1Ready.textContent = state.car1.isReady ? "Spiller 1 er klar! ✓" : "Spiller 1 Klar! 👍";
-        el.btnSplitP1Ready.classList.toggle("ready-active", state.car1.isReady);
+        state.car1.isReady = true;
+        const p1Col = document.querySelector(".split-garage-col.card-p1");
+        if (p1Col) p1Col.classList.add("ready-closed");
+        const p1Reopen = document.getElementById("btnSplitP1Reopen");
+        if (p1Reopen) p1Reopen.classList.remove("hidden");
+        playTone(520, 0.12, "triangle", 0.3);
         checkSplitscreenBothReady();
+      });
+    }
+
+    const p1ReopenBtn = document.getElementById("btnSplitP1Reopen");
+    if (p1ReopenBtn) {
+      p1ReopenBtn.addEventListener("click", () => {
+        if (!state.car1) return;
+        state.car1.isReady = false;
+        const p1Col = document.querySelector(".split-garage-col.card-p1");
+        if (p1Col) p1Col.classList.remove("ready-closed");
+        p1ReopenBtn.classList.add("hidden");
+        playTone(420, 0.1, "sine", 0.2);
       });
     }
 
     if (el.btnSplitP2Ready) {
       el.btnSplitP2Ready.addEventListener("click", () => {
         if (!state.car2) return;
-        state.car2.isReady = !state.car2.isReady;
-        el.btnSplitP2Ready.textContent = state.car2.isReady ? "Spiller 2 er klar! ✓" : "Spiller 2 Klar! 👍";
-        el.btnSplitP2Ready.classList.toggle("ready-active", state.car2.isReady);
+        state.car2.isReady = true;
+        const p2Col = document.querySelector(".split-garage-col.card-p2");
+        if (p2Col) p2Col.classList.add("ready-closed");
+        const p2Reopen = document.getElementById("btnSplitP2Reopen");
+        if (p2Reopen) p2Reopen.classList.remove("hidden");
+        playTone(520, 0.12, "triangle", 0.3);
         checkSplitscreenBothReady();
+      });
+    }
+
+    const p2ReopenBtn = document.getElementById("btnSplitP2Reopen");
+    if (p2ReopenBtn) {
+      p2ReopenBtn.addEventListener("click", () => {
+        if (!state.car2) return;
+        state.car2.isReady = false;
+        const p2Col = document.querySelector(".split-garage-col.card-p2");
+        if (p2Col) p2Col.classList.remove("ready-closed");
+        p2ReopenBtn.classList.add("hidden");
+        playTone(420, 0.1, "sine", 0.2);
       });
     }
 

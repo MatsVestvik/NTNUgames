@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="/game-lobby.css" />
   <link rel="stylesheet" href="/parallax-bg.css" />
   <link rel="stylesheet" href="/character/character-creator.css" />
-  <link rel="stylesheet" href="styles.css?v=2.9" />
+  <link rel="stylesheet" href="styles.css?v=3.2" />
 </head>
 
 <body class="turbosladd-page">
@@ -131,16 +131,27 @@
               </div>
 
               <div class="action-box-content">
+                <!-- Solo Lobby Car Preview -->
+                <div class="lobby-car-preview-card">
+                  <div class="lcp-canvas-wrap">
+                    <canvas id="soloLobbyCarCanvas" width="64" height="64" class="skribbl-canvas"></canvas>
+                  </div>
+                  <div class="lcp-info">
+                    <span class="lcp-badge">DIN BIL</span>
+                    <span class="lcp-hint">Garasjen åpner på startstreken</span>
+                  </div>
+                </div>
+
                 <div class="form-group">
                   <label for="selectSoloTrack">Rallyetappe for tidskjøring</label>
                   <div style="display:flex;gap:0.5rem;align-items:center;">
                     <select id="selectSoloTrack" class="text-input select-input" style="flex:1;">
-                      <option value="rally_random">🎲 Tilfeldig Rallyetappe</option>
+                      <option value="rally_random">Tilfeldig Rallyetappe</option>
                       <option value="grand_prix">Skogsrally Grand Prix</option>
                       <option value="fjord_drift">Fjordsvingen Rally</option>
                       <option value="fjellpasset">Fjellpasset Rally</option>
                     </select>
-                    <button type="button" class="btn-cyan-accent" id="btnRegenSoloTrack" style="padding:0.6rem 0.85rem;white-space:nowrap;font-size:0.85rem;" title="Generer ny tilfeldig rallyetappe">🎲 Ny bane</button>
+                    <button type="button" class="btn-cyan-accent" id="btnRegenSoloTrack" style="padding:0.6rem 0.85rem;white-space:nowrap;font-size:0.85rem;" title="Generer ny tilfeldig rallyetappe">Ny bane</button>
                   </div>
                 </div>
 
@@ -159,13 +170,13 @@
                   </div>
                   <div class="stat-pill">
                     <span class="stat-pill-label">Garasje</span>
-                    <strong class="stat-pill-val">Velges på startstreken 🛠️</strong>
+                    <strong class="stat-pill-val">På startstreken</strong>
                   </div>
                 </div>
               </div>
 
               <button type="button" class="primary-btn pulse-glow" id="btnStartSolo">
-                Kjør tidskjøring nå 🏁
+                KJØR TIDSKJØRING
               </button>
             </div>
           </div>
@@ -191,6 +202,11 @@
                       <span class="spc-badge badge-orange">Spiller 1 (Venstre)</span>
                       <input type="text" id="inputSplitP1Name" class="text-input" value="Spiller 1" maxlength="14" placeholder="Navn Spiller 1" />
                     </div>
+                    <div class="spc-car-preview-slot">
+                      <div class="spc-car-preview-bubble">
+                        <canvas id="splitP1LobbyCarCanvas" width="64" height="64" class="skribbl-canvas"></canvas>
+                      </div>
+                    </div>
                     <div class="spc-controls">
                       <span class="spc-controls-title">Styring (WASD):</span>
                       <div class="spc-key-tags">
@@ -199,7 +215,7 @@
                         <span><kbd>A</kbd><kbd>D</kbd> Sving</span>
                       </div>
                     </div>
-                    <p class="spc-subtext" style="margin:0;font-size:0.8rem;color:#94a3b8;">🏎️ Karosseri, felger og farge velges i garasjen ved start.</p>
+                    <p class="spc-subtext" style="margin:0;font-size:0.8rem;color:#94a3b8;">Garasjen åpner på startstreken.</p>
                   </div>
 
                   <!-- Player 2 Card (Right - Piltaster) -->
@@ -207,6 +223,11 @@
                     <div class="spc-header">
                       <span class="spc-badge badge-cyan">Spiller 2 (Høyre)</span>
                       <input type="text" id="inputSplitP2Name" class="text-input" value="Spiller 2" maxlength="14" placeholder="Navn Spiller 2" />
+                    </div>
+                    <div class="spc-car-preview-slot">
+                      <div class="spc-car-preview-bubble">
+                        <canvas id="splitP2LobbyCarCanvas" width="64" height="64" class="skribbl-canvas"></canvas>
+                      </div>
                     </div>
                     <div class="spc-controls">
                       <span class="spc-controls-title">Styring (Piltaster):</span>
@@ -216,7 +237,7 @@
                         <span><kbd>←</kbd><kbd>→</kbd> Sving</span>
                       </div>
                     </div>
-                    <p class="spc-subtext" style="margin:0;font-size:0.8rem;color:#94a3b8;">🏎️ Karosseri, felger og farge velges i garasjen ved start.</p>
+                    <p class="spc-subtext" style="margin:0;font-size:0.8rem;color:#94a3b8;">Garasjen åpner på startstreken.</p>
                   </div>
                 </div>
 
@@ -225,12 +246,12 @@
                     <label for="selectSplitTrack">Rallyetappe</label>
                     <div style="display:flex;gap:0.5rem;align-items:center;">
                       <select id="selectSplitTrack" class="text-input select-input" style="flex:1;">
-                        <option value="rally_random">🎲 Tilfeldig Rallyetappe</option>
+                        <option value="rally_random">Tilfeldig Rallyetappe</option>
                         <option value="grand_prix">Skogsrally Grand Prix</option>
                         <option value="fjord_drift">Fjordsvingen Rally</option>
                         <option value="fjellpasset">Fjellpasset Rally</option>
                       </select>
-                      <button type="button" class="btn-cyan-accent" id="btnRegenSplitTrack" style="padding:0.6rem 0.85rem;white-space:nowrap;font-size:0.85rem;" title="Generer ny tilfeldig rallyetappe">🎲 Ny bane</button>
+                      <button type="button" class="btn-cyan-accent" id="btnRegenSplitTrack" style="padding:0.6rem 0.85rem;white-space:nowrap;font-size:0.85rem;" title="Generer ny tilfeldig rallyetappe">Ny bane</button>
                     </div>
                   </div>
 
@@ -245,7 +266,7 @@
               </div>
 
               <button type="button" class="primary-btn pulse-glow" id="btnStartSplitscreen">
-                Start delt skjerm 🏁
+                START DELT SKJERM
               </button>
             </div>
           </div>
@@ -390,6 +411,8 @@
 
           <!-- IN-GAME SPLITSCREEN GARAGE MODAL -->
           <div class="in-game-split-garage-modal hidden" id="inGameSplitGarage">
+            <button type="button" class="btn-split-reopen p1-reopen hidden" id="btnSplitP1Reopen">ENDRE BIL</button>
+            <button type="button" class="btn-split-reopen p2-reopen hidden" id="btnSplitP2Reopen">ENDRE BIL</button>
             <div class="split-garage-columns">
               <!-- Player 1 Card (WASD) -->
               <div class="split-garage-col card-p1">
@@ -464,8 +487,8 @@
               <span class="igsb-pill" id="standbyReadyCount">1/1</span>
             </div>
             <div class="igsb-right">
-              <button type="button" class="igsb-btn-change" id="btnReopenGarage">🛠️ Endre bil</button>
-              <button type="button" class="igsb-btn-start hidden" id="btnHostForceStart">Start nå 🏁</button>
+              <button type="button" class="igsb-btn-change" id="btnReopenGarage">ENDRE BIL</button>
+              <button type="button" class="igsb-btn-start hidden" id="btnHostForceStart">START NÅ</button>
             </div>
           </div>
 
@@ -483,8 +506,7 @@
     <div class="modal-backdrop hidden" id="modalPodium">
       <div class="podium-modal-card">
         <div class="podium-header">
-          <span class="flag-icon">🏁</span>
-          <h2 class="podium-title" id="podiumTitle">Målgang!</h2>
+          <h2 class="podium-title" id="podiumTitle">MÅLGANG</h2>
           <p class="podium-desc" id="podiumDesc">Løpet er fullført. Her er resultatlisten:</p>
         </div>
 
@@ -493,8 +515,8 @@
         </div>
 
         <div class="podium-actions">
-          <button type="button" class="primary-btn pulse-glow" id="btnPodiumReturnLobby">
-            ‹ Tilbake til lobby
+          <button type="button" class="primary-btn btn-podium pulse-glow" id="btnPodiumReturnLobby">
+            TILBAKE TIL LOBBY
           </button>
         </div>
       </div>
@@ -504,7 +526,7 @@
   <script src="/parallax-bg.js?v=2.1"></script>
   <script src="/character/character-creator.js"></script>
   <script src="/game-lobby.js"></script>
-  <script src="app.js?v=2.7"></script>
+  <script src="app.js?v=3.0"></script>
 </body>
 
 </html>

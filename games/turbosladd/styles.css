@@ -975,14 +975,17 @@ body.turbosladd-page {
 }
 
 .podium-header .flag-icon {
-  font-size: 2.8rem;
+  display: none;
 }
 
 .podium-title {
-  font-size: 1.8rem;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 1.25rem;
   font-weight: 900;
-  margin: 0.25rem 0 0.5rem 0;
+  margin: 0.5rem 0 0.75rem 0;
   color: #fbbf24;
+  text-shadow: 0 0 14px rgba(251, 191, 36, 0.45);
+  letter-spacing: 0.05em;
 }
 
 .podium-desc {
@@ -1020,8 +1023,11 @@ body.turbosladd-page {
 }
 
 .podium-medal {
-  font-size: 1.3rem;
-  width: 28px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #fbbf24;
+  width: 48px;
   text-align: center;
 }
 
@@ -1039,9 +1045,9 @@ body.turbosladd-page {
 }
 
 .podium-time {
-  font-family: "Courier New", Courier, monospace;
-  font-weight: 800;
-  font-size: 0.95rem;
+  font-family: 'Press Start 2P', monospace;
+  font-weight: 700;
+  font-size: 0.72rem;
   color: #38bdf8;
 }
 
@@ -1051,6 +1057,12 @@ body.turbosladd-page {
   justify-content: center;
   gap: 0.85rem;
   flex-wrap: wrap;
+}
+
+.btn-podium {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
 }
 
 .btn-cyan-accent {
@@ -1767,7 +1779,8 @@ body.turbosladd-page {
 .in-game-garage-modal .igg-btn-ready {
   width: 100%;
   padding: 0.95rem;
-  font-size: 1.05rem;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.85rem;
   font-weight: 900;
   letter-spacing: 0.06em;
 }
@@ -1805,11 +1818,12 @@ body.turbosladd-page {
   display: inline-flex;
   align-items: center;
   align-self: flex-start;
-  padding: 0.15rem 0.55rem;
-  font-size: 0.7rem;
+  padding: 0.25rem 0.55rem;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.62rem;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   background: rgba(249, 115, 22, 0.2);
   border: 1px solid rgba(249, 115, 22, 0.5);
   color: #fb923c;
@@ -1916,9 +1930,11 @@ body.turbosladd-page {
 }
 
 .igsb-status-text {
-  font-size: 0.9rem;
-  font-weight: 800;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
   color: #34d399;
+  letter-spacing: 0.04em;
   white-space: nowrap;
 }
 
@@ -1935,10 +1951,11 @@ body.turbosladd-page {
   background: rgba(56, 189, 248, 0.2);
   border: 1px solid rgba(56, 189, 248, 0.4);
   color: #38bdf8;
-  font-weight: 800;
-  padding: 0.15rem 0.55rem;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.58rem;
+  font-weight: 700;
+  padding: 0.25rem 0.55rem;
   border-radius: 9999px;
-  font-size: 0.75rem;
 }
 
 .igsb-right {
@@ -1953,10 +1970,12 @@ body.turbosladd-page {
   color: #f1f5f9;
   border-radius: 9999px;
   padding: 0.35rem 0.85rem;
-  font-size: 0.8rem;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.6rem;
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
+  letter-spacing: 0.04em;
   transition: all 0.15s ease;
 }
 
@@ -1972,60 +1991,122 @@ body.turbosladd-page {
   color: #ffffff;
   border-radius: 9999px;
   padding: 0.35rem 0.85rem;
-  font-size: 0.8rem;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.62rem;
   font-weight: 800;
+  letter-spacing: 0.05em;
   cursor: pointer;
   white-space: nowrap;
 }
 
-/* In-game Splitscreen Garage Modal */
+/* In-game Splitscreen Garage Side Menus (Track & cars visible on startline) */
 .in-game-split-garage-modal {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(11, 15, 25, 0.78);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  inset: 0;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  pointer-events: none;
   z-index: 50;
-  padding: 1rem;
-  overflow-y: auto;
+  overflow: hidden;
+}
+
+.in-game-split-garage-modal.hidden {
+  display: none !important;
 }
 
 .split-garage-columns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.25rem;
-  width: 100%;
-  max-width: 820px;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
 
 .split-garage-col {
-  background: rgba(15, 23, 42, 0.95);
-  border-radius: 14px;
-  padding: 1.25rem;
+  position: absolute;
+  top: 1rem;
+  bottom: 1rem;
+  width: 300px;
+  max-width: 44vw;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.94) 0%, rgba(10, 15, 26, 0.98) 100%);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-radius: 16px;
+  padding: 1.1rem 0.95rem;
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 0.75rem;
+  overflow-y: auto;
+  pointer-events: auto;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
 }
 
 .split-garage-col.card-p1 {
+  left: 1rem;
   border: 1.5px solid rgba(249, 115, 22, 0.45);
-  box-shadow: 0 0 25px rgba(249, 115, 22, 0.15);
+  box-shadow: 10px 0 35px rgba(0, 0, 0, 0.7), 0 0 25px rgba(249, 115, 22, 0.15);
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.split-garage-col.card-p1.ready-closed {
+  transform: translateX(-120%);
+  opacity: 0;
+  pointer-events: none;
 }
 
 .split-garage-col.card-p2 {
+  right: 1rem;
   border: 1.5px solid rgba(6, 182, 212, 0.45);
-  box-shadow: 0 0 25px rgba(6, 182, 212, 0.15);
+  box-shadow: -10px 0 35px rgba(0, 0, 0, 0.7), 0 0 25px rgba(6, 182, 212, 0.15);
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.split-garage-col.card-p2.ready-closed {
+  transform: translateX(120%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.btn-split-reopen {
+  position: absolute;
+  bottom: 1.25rem;
+  z-index: 52;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.65rem;
+  padding: 0.45rem 0.85rem;
+  background: rgba(15, 23, 42, 0.92);
+  color: #ffffff;
+  border-radius: 9999px;
+  cursor: pointer;
+  pointer-events: auto;
+  letter-spacing: 0.05em;
+  transition: transform 0.15s ease, background 0.15s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+}
+
+.btn-split-reopen.p1-reopen {
+  left: 1.25rem;
+  border: 1.5px solid #fb923c;
+  color: #fb923c;
+}
+
+.btn-split-reopen.p2-reopen {
+  right: 1.25rem;
+  border: 1.5px solid #22d3ee;
+  color: #22d3ee;
+}
+
+.btn-split-reopen:hover {
+  transform: scale(1.05);
+  background: rgba(30, 41, 59, 0.95);
 }
 
 @media (max-width: 768px) {
-  .split-garage-columns {
-    grid-template-columns: 1fr;
+  .split-garage-col {
+    width: 250px;
+    max-width: 48vw;
+    padding: 0.75rem;
   }
 }
 
@@ -2249,5 +2330,119 @@ body.turbosladd-page {
   font-size: 1.25rem;
   line-height: 1;
 }
+
+/* ==========================================================================
+   PIXEL ARCADE UI STYLES (Press Start 2P)
+   ========================================================================== */
+
+.action-card-badge {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+}
+
+.spc-badge {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+}
+
+#btnStartSolo,
+#btnStartSplit {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  padding: 1rem 1.4rem;
+}
+
+#inGameRoomCodePill {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+}
+
+/* Lobby Car Preview Card */
+.lobby-car-preview-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 14px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.15rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+
+.lobby-car-preview-card .lcp-canvas-wrap {
+  width: 68px;
+  height: 68px;
+  background: radial-gradient(circle, #1e293b 0%, #0b0f19 100%);
+  border: 1.5px solid rgba(56, 189, 248, 0.45);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.2);
+}
+
+.lobby-car-preview-card .lcp-canvas-wrap canvas {
+  width: 58px;
+  height: 58px;
+  image-rendering: pixelated;
+}
+
+.lobby-car-preview-card .lcp-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.lobby-car-preview-card .lcp-badge {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.62rem;
+  color: #38bdf8;
+  letter-spacing: 0.05em;
+}
+
+.lobby-car-preview-card .lcp-hint {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.spc-car-preview-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0.6rem 0;
+}
+
+.spc-car-preview-bubble {
+  width: 64px;
+  height: 64px;
+  background: radial-gradient(circle, #1e293b 0%, #0b0f19 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spc-car-preview-bubble canvas {
+  width: 54px;
+  height: 54px;
+  image-rendering: pixelated;
+}
+
+.card-p1 .spc-car-preview-bubble {
+  border: 1.5px solid rgba(249, 115, 22, 0.5);
+  box-shadow: 0 0 14px rgba(249, 115, 22, 0.2);
+}
+
+.card-p2 .spc-car-preview-bubble {
+  border: 1.5px solid rgba(6, 182, 212, 0.5);
+  box-shadow: 0 0 14px rgba(6, 182, 212, 0.2);
+}
+
 
 
