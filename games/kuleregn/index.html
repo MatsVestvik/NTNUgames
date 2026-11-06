@@ -33,9 +33,11 @@
           <span class="back-arrow" aria-hidden="true">←</span> <span id="backBtnText">Hub</span>
         </a>
         <div class="header-branding">
-          <span class="kr-logo-icon">💥</span>
-          <span class="kr-logo-title">Kuleregn</span>
-          <span class="kr-badge-ffa">Free For All</span>
+          <img src="/hub/assets/icons/kuleregn.png" class="header-game-icon" alt="" aria-hidden="true" style="image-rendering: pixelated; object-fit: contain;" />
+          <div>
+            <h1 class="header-title">KULEREGN</h1>
+            <span class="header-badge">2D Skytespill</span>
+          </div>
         </div>
       </div>
 
@@ -49,11 +51,11 @@
       </div>
 
       <div class="header-right">
-        <button type="button" class="btn-party-link" id="btnPartyHub" title="Gå til felles Party Lobby">
-          🎉 Party Lobby
-        </button>
-        <button type="button" class="btn-sound-toggle" id="btnSoundToggle" title="Slå av/på lyd">
+        <button type="button" class="icon-btn" id="btnSoundToggle" title="Slå av/på lyd" aria-label="Lyd">
           🔊
+        </button>
+        <button type="button" class="btn-leave-room hidden" id="btnHeaderLeave">
+          Forlat kamp
         </button>
       </div>
     </header>
@@ -72,7 +74,7 @@
             </div>
             <h2 class="hero-title">Kuleregn</h2>
             <p class="hero-desc">
-              Topp-ned 2D arkadeskytespill med festfiguren din! Beveg deg med WASD/piltaster og skyt rett frem med mellomrom eller mus. Plukk opp spesialvåpen og dominer arenaen!
+              Topp-ned 2D arkadeskytespill med festfiguren din! Beveg deg med WASD/piltaster, sikt med musen og skyt med venstreklikk eller mellomrom. Plukk opp spesialvåpen og dominer arenaen!
             </p>
           </div>
 
@@ -126,15 +128,15 @@
                 <div class="stat-pills-row">
                   <div class="stat-pill">
                     <span class="stat-pill-label">Styring</span>
-                    <strong class="stat-pill-val">WASD / Piltaster</strong>
+                    <strong class="stat-pill-val">WASD / Piler</strong>
+                  </div>
+                  <div class="stat-pill">
+                    <span class="stat-pill-label">Sikt</span>
+                    <strong class="stat-pill-val">Mus 🎯</strong>
                   </div>
                   <div class="stat-pill">
                     <span class="stat-pill-label">Skyt</span>
-                    <strong class="stat-pill-val">Mellomrom / Klikk</strong>
-                  </div>
-                  <div class="stat-pill">
-                    <span class="stat-pill-label">Figur</span>
-                    <strong class="stat-pill-val">Spillfigur 🎨</strong>
+                    <strong class="stat-pill-val">Klikk / Space</strong>
                   </div>
                 </div>
               </div>
@@ -148,11 +150,15 @@
           <!-- Controls Quick Reference Footer -->
           <div class="controls-guide-bar" style="margin-top: 2rem;">
             <div class="cg-item">
-              <span class="cg-key">W A S D / PILER</span>
-              <span class="cg-desc">Bevegelse &amp; Retning</span>
+              <span class="cg-key">W A S D</span>
+              <span class="cg-desc">Bevegelse</span>
             </div>
             <div class="cg-item">
-              <span class="cg-key">MELLOMROM / KLIKK</span>
+              <span class="cg-key">MUS</span>
+              <span class="cg-desc">Sikt</span>
+            </div>
+            <div class="cg-item">
+              <span class="cg-key">KLIKK / MELLOMROM</span>
               <span class="cg-desc">Skyt</span>
             </div>
             <div class="cg-item">

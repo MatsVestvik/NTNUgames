@@ -531,7 +531,7 @@
 
     // Input States (WASD / Arrows + Shoot)
     keys: { w: false, a: false, s: false, d: false, shoot: false },
-    mouse: { down: false },
+    mouse: { down: false, screenX: 0, screenY: 0, hasMoved: false },
 
     // Networking
     syncTimerId: null,
@@ -556,6 +556,7 @@
     backBtnText: document.getElementById("backBtnText"),
     btnPartyHub: document.getElementById("btnPartyHub"),
     btnSoundToggle: document.getElementById("btnSoundToggle"),
+    btnHeaderLeave: document.getElementById("btnHeaderLeave"),
     headGameStatus: document.getElementById("headGameStatus"),
     headClock: document.getElementById("headClock"),
     headTargetScore: document.getElementById("headTargetScore"),
@@ -653,6 +654,7 @@
 
     if (el.viewLobby) el.viewLobby.classList.toggle("hidden", viewName !== "lobby");
     if (el.viewGame) el.viewGame.classList.toggle("hidden", viewName !== "game");
+    if (el.btnHeaderLeave) el.btnHeaderLeave.classList.toggle("hidden", viewName !== "game");
 
     if (viewName === "lobby") {
       if (el.headGameStatus) el.headGameStatus.classList.add("hidden");
@@ -1003,10 +1005,29 @@
   }
 
   // =========================================================================
-  // INPUT HANDLING (WASD / ARROWS + SPACE / MOUSE TO SHOOT)
+  // INPUT HANDLING (WASD / ARROWS + SPACE / MOUSE AIMING & SHOOTING)
   // =========================================================================
 
   function initInputHandlers() {
+    const canvas = el.combatCanvas;
+
+    function updateMousePos(e) {
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : null);
+      const clientY = e.clientY !== undefined ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : null);
+      if (clientX == null || clientY == null) return;
+
+      const scaleX = canvas.width / (rect.width || 1);
+      const scaleY = canvas.height / (rect.height || 1);
+      state.mouse.screenX = (clientX - rect.left) * scaleX;
+      state.mouse.screenY = (clientY - rect.top) * scaleY;
+      state.mouse.hasMoved = true;
+    }
+
+    window.addEventListener("mousemove", updateMousePos);
+    window.addEventListener("touchmove", updateMousePos, { passive: true });
+
     window.addEventListener("keydown", (e) => {
       if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
       const k = e.key.toLowerCase();
@@ -1047,6 +1068,7 @@
 
     window.addEventListener("mousedown", (e) => {
       if (state.view !== "game") return;
+      updateMousePos(e);
       if (e.button === 0) {
         state.mouse.down = true;
         if (state.roomStatus === "playing") {
@@ -1061,10 +1083,15 @@
       }
     });
 
+    window.addEventListener("blur", () => {
+      state.mouse.down = false;
+      state.keys = { w: false, a: false, s: false, d: false, shoot: false };
+    });
+
     // Touch Support: Tap canvas to shoot
-    const canvas = el.combatCanvas;
     if (canvas) {
-      canvas.addEventListener("touchstart", () => {
+      canvas.addEventListener("touchstart", (e) => {
+        updateMousePos(e);
         state.mouse.down = true;
         if (state.roomStatus === "playing") {
           firePlayerWeapon();
@@ -1219,18 +1246,25 @@
 
     if (p.fireTimer > 0) p.fireTimer = Math.max(0, p.fireTimer - dt);
 
-    // Movement & Facing Direction (WASD / Arrows)
+    // Movement (WASD / Arrows)
     let mx = (state.keys.d ? 1 : 0) - (state.keys.a ? 1 : 0);
     let my = (state.keys.s ? 1 : 0) - (state.keys.w ? 1 : 0);
 
-    if (mx !== 0 || my !== 0) {
-      // Soldier faces the movement direction!
-      p.angle = Math.atan2(my, mx);
+    if (mx !== 0 && my !== 0) {
+      mx *= 0.7071;
+      my *= 0.7071;
+    }
 
-      if (mx !== 0 && my !== 0) {
-        mx *= 0.7071;
-        my *= 0.7071;
-      }
+    // Aiming / Facing Direction: Dictated by mouse cursor
+    if (state.mouse.hasMoved && el.combatCanvas) {
+      const cw = el.combatCanvas.width;
+      const ch = el.combatCanvas.height;
+      const pScreenX = cw / 2 + (p.x - state.camera.x) * state.camera.zoom;
+      const pScreenY = ch / 2 + (p.y - state.camera.y) * state.camera.zoom;
+      p.angle = Math.atan2(state.mouse.screenY - pScreenY, state.mouse.screenX - pScreenX);
+    } else if (mx !== 0 || my !== 0) {
+      // Fallback: Soldier faces movement direction if mouse hasn't moved yet
+      p.angle = Math.atan2(my, mx);
     }
 
     p.vx = mx * p.speed;
@@ -2232,6 +2266,11 @@
         e.preventDefault();
         handleForfeitAndLeave();
       }
+    });
+
+    // Header Leave button
+    el.btnHeaderLeave?.addEventListener("click", () => {
+      handleForfeitAndLeave();
     });
 
     // Party Lobby Hub Button
