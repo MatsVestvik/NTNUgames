@@ -105,7 +105,7 @@ def clean_accessories(raw_accs: Any) -> List[int]:
     if isinstance(raw_accs, str):
         try:
             parts = [int(x.strip()) for x in raw_accs.split(",") if x.strip().isdigit()]
-            return sorted(list({x for x in parts if 1 <= x <= 6}))
+            return sorted(list({x for x in parts if 1 <= x <= 5}))
         except Exception:
             return []
     if isinstance(raw_accs, (list, tuple, set)):
@@ -113,7 +113,7 @@ def clean_accessories(raw_accs: Any) -> List[int]:
         for x in raw_accs:
             try:
                 ix = int(x)
-                if 1 <= ix <= 6:
+                if 1 <= ix <= 5:
                     result.append(ix)
             except Exception:
                 pass

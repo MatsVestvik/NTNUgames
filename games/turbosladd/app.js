@@ -684,10 +684,6 @@
     inGameCarPreviewCanvas: document.getElementById("inGameCarPreviewCanvas"),
     btnInGameWheelPrev: document.getElementById("btnInGameWheelPrev"),
     btnInGameWheelNext: document.getElementById("btnInGameWheelNext"),
-    inGameWheelLabel: document.getElementById("inGameWheelLabel"),
-    inGameColorPill: document.getElementById("inGameColorPill"),
-    inGameColorDot: document.getElementById("inGameColorDot"),
-    inGameColorLabel: document.getElementById("inGameColorLabel"),
     inGameAccessoriesGrid: document.getElementById("inGameAccessoriesGrid"),
     btnInGameRandomize: document.getElementById("btnInGameRandomize"),
     btnInGameReady: document.getElementById("btnInGameReady"),
@@ -698,14 +694,12 @@
     splitP2GarageName: document.getElementById("splitP2GarageName"),
     btnSplitP1WheelPrev: document.getElementById("btnSplitP1WheelPrev"),
     btnSplitP1WheelNext: document.getElementById("btnSplitP1WheelNext"),
-    splitP1WheelLabel: document.getElementById("splitP1WheelLabel"),
     splitP1AccessoriesGrid: document.getElementById("splitP1AccessoriesGrid"),
     splitP1CarPreviewCanvas: document.getElementById("splitP1CarPreviewCanvas"),
     btnSplitP1Ready: document.getElementById("btnSplitP1Ready"),
 
     btnSplitP2WheelPrev: document.getElementById("btnSplitP2WheelPrev"),
     btnSplitP2WheelNext: document.getElementById("btnSplitP2WheelNext"),
-    splitP2WheelLabel: document.getElementById("splitP2WheelLabel"),
     splitP2AccessoriesGrid: document.getElementById("splitP2AccessoriesGrid"),
     splitP2CarPreviewCanvas: document.getElementById("splitP2CarPreviewCanvas"),
     btnSplitP2Ready: document.getElementById("btnSplitP2Ready"),
@@ -917,11 +911,11 @@
   ];
 
   const ACCESSORY_DEFS = [
-    { id: 2, name: "Taklast", icon: "🎒", file: "/turbosladd/assets/accessories/accesory_0002.png" },
-    { id: 3, name: "Panser-scoop", icon: "⚡", file: "/turbosladd/assets/accessories/accesory_0003.png" },
-    { id: 4, name: "Sideskjørt", icon: "🏎️", file: "/turbosladd/assets/accessories/accesory_0004.png" },
-    { id: 5, name: "Hekkspoiler", icon: "🏁", file: "/turbosladd/assets/accessories/accesory_0005.png" },
-    { id: 6, name: "Dobbel eksos", icon: "🔥", file: "/turbosladd/assets/accessories/accesory_0006.png" },
+    { id: 1, file: "/turbosladd/assets/accessories/accesory_0001.png" },
+    { id: 2, file: "/turbosladd/assets/accessories/accesory_0002.png" },
+    { id: 3, file: "/turbosladd/assets/accessories/accesory_0003.png" },
+    { id: 4, file: "/turbosladd/assets/accessories/accesory_0004.png" },
+    { id: 5, file: "/turbosladd/assets/accessories/accesory_0005.png" },
   ];
 
   const bodyImage = new Image();
@@ -976,7 +970,7 @@
       accs = accs.split(",").map(x => parseInt(x.trim(), 10)).filter(x => !isNaN(x));
     }
     if (!Array.isArray(accs)) return [];
-    return Array.from(new Set(accs.map(x => parseInt(x, 10)).filter(x => x >= 2 && x <= 6))).sort((a, b) => a - b);
+    return Array.from(new Set(accs.map(x => parseInt(x, 10)).filter(x => x >= 1 && x <= 5))).sort((a, b) => a - b);
   }
 
   function getTintedBodyCanvas(hex) {
@@ -1082,7 +1076,7 @@
     }
 
     // 3. Draw active accessories on top (in aesthetic layering order)
-    const renderOrder = [4, 6, 3, 2, 5];
+    const renderOrder = [4, 3, 1, 2, 5];
     for (const accId of renderOrder) {
       if (normAccs.includes(accId)) {
         const aImg = accessoryImages[accId];
@@ -1333,9 +1327,9 @@
 
       if (accessoriesContainer) {
         const selAccs = vals.accessories || [];
-        accessoriesContainer.querySelectorAll(".accessory-chip").forEach(chip => {
-          const accId = parseInt(chip.dataset.accId, 10);
-          chip.classList.toggle("active", selAccs.includes(accId));
+        accessoriesContainer.querySelectorAll(".accessory-tile").forEach(tile => {
+          const accId = parseInt(tile.dataset.accId, 10);
+          tile.classList.toggle("active", selAccs.includes(accId));
         });
       }
     }
@@ -1362,22 +1356,18 @@
       });
     }
 
-    // 2. Accessories Toggle Chips
+    // 2. Accessories Toggle Tiles (pure pictures, no text labels, no emojis)
     if (accessoriesContainer) {
       accessoriesContainer.innerHTML = "";
       ACCESSORY_DEFS.forEach(acc => {
-        const chip = document.createElement("button");
-        chip.type = "button";
+        const tile = document.createElement("button");
+        tile.type = "button";
         const isSelected = (getValues().accessories || []).includes(acc.id);
-        chip.className = "accessory-chip" + (isSelected ? " active" : "");
-        chip.dataset.accId = acc.id;
-        chip.title = acc.name;
-        chip.innerHTML = `
-          <span class="acc-icon">${acc.icon}</span>
-          <span class="acc-name">${acc.name}</span>
-          <span class="acc-check">✓</span>
-        `;
-        chip.addEventListener("click", (e) => {
+        tile.className = "accessory-tile" + (isSelected ? " active" : "");
+        tile.dataset.accId = acc.id;
+        tile.setAttribute("aria-label", `Tilbehør ${acc.id}`);
+        tile.innerHTML = `<img src="${acc.file}" class="acc-tile-img" alt="" draggable="false" />`;
+        tile.addEventListener("click", (e) => {
           e.preventDefault();
           const curVals = getValues();
           let curAccs = [...(curVals.accessories || [])];
@@ -1392,7 +1382,7 @@
           refreshPreviews();
           if (onChanged) onChanged();
         });
-        accessoriesContainer.appendChild(chip);
+        accessoriesContainer.appendChild(tile);
       });
     }
 
@@ -1425,11 +1415,7 @@
     splitP1Customizer = setupArrowCustomizerUI({
       btnWheelPrev: el.btnSplitP1WheelPrev,
       btnWheelNext: el.btnSplitP1WheelNext,
-      wheelLabel: el.splitP1WheelLabel,
       accessoriesContainer: el.splitP1AccessoriesGrid,
-      colorDotEl: null,
-      colorLabelEl: null,
-      btnRandomize: null,
       previewCanvas: el.splitP1CarPreviewCanvas,
       compact: true,
       getValues: () => ({
@@ -1453,11 +1439,7 @@
     splitP2Customizer = setupArrowCustomizerUI({
       btnWheelPrev: el.btnSplitP2WheelPrev,
       btnWheelNext: el.btnSplitP2WheelNext,
-      wheelLabel: el.splitP2WheelLabel,
       accessoriesContainer: el.splitP2AccessoriesGrid,
-      colorDotEl: null,
-      colorLabelEl: null,
-      btnRandomize: null,
       previewCanvas: el.splitP2CarPreviewCanvas,
       compact: true,
       getValues: () => ({
@@ -1481,10 +1463,7 @@
     inGameCustomizer = setupArrowCustomizerUI({
       btnWheelPrev: el.btnInGameWheelPrev,
       btnWheelNext: el.btnInGameWheelNext,
-      wheelLabel: el.inGameWheelLabel,
       accessoriesContainer: el.inGameAccessoriesGrid,
-      colorDotEl: el.inGameColorDot,
-      colorLabelEl: el.inGameColorLabel,
       btnRandomize: el.btnInGameRandomize,
       previewCanvas: el.inGameCarPreviewCanvas,
       getValues: () => ({
@@ -3888,8 +3867,8 @@
           if (el.btnInGameWheelNext) { el.btnInGameWheelNext.click(); e.preventDefault(); return; }
         } else if (["1", "2", "3", "4", "5"].includes(k)) {
           const idx = parseInt(k, 10) - 1;
-          const chips = el.inGameAccessoriesGrid ? el.inGameAccessoriesGrid.querySelectorAll(".accessory-chip") : [];
-          if (chips[idx]) { chips[idx].click(); e.preventDefault(); return; }
+          const tiles = el.inGameAccessoriesGrid ? el.inGameAccessoriesGrid.querySelectorAll(".accessory-tile") : [];
+          if (tiles[idx]) { tiles[idx].click(); e.preventDefault(); return; }
         } else if (k === "r" || k === "R" || c === "KeyR") {
           if (el.btnInGameRandomize) { el.btnInGameRandomize.click(); e.preventDefault(); return; }
         } else if (k === "Enter" || k === " ") {

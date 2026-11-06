@@ -2012,111 +2012,114 @@ body.turbosladd-page {
   flex-shrink: 0;
 }
 
-/* Accessories Selection Section */
-.accessories-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  width: 100%;
-  margin-top: 0.65rem;
-}
-
-.accessories-header {
+/* Accessories Selection Row (pure picture buttons, no text, no emojis) */
+.accessories-row {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #94a3b8;
+  justify-content: center;
+  gap: 0.65rem;
+  width: 100%;
+  margin: 0.75rem 0 0.25rem;
+  flex-wrap: wrap;
 }
 
-.accessories-header .accessories-icon {
-  font-size: 1rem;
-}
-
-.accessories-header .accessories-title {
-  color: #e2e8f0;
-}
-
-.accessories-header .accessories-subtitle {
-  font-size: 0.75rem;
-  color: #64748b;
-  font-weight: 500;
-}
-
-.accessories-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+.accessories-row.compact-row {
   gap: 0.45rem;
-  width: 100%;
 }
 
-.accessories-grid.compact-grid {
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.35rem;
-}
-
-.accessory-chip {
-  display: inline-flex;
+.accessory-tile {
+  width: 56px;
+  height: 56px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.35rem;
-  padding: 0.45rem 0.6rem;
-  background: rgba(15, 23, 42, 0.75);
-  border: 1.5px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  color: #94a3b8;
-  font-size: 0.78rem;
-  font-weight: 700;
+  justify-content: center;
+  position: relative;
   cursor: pointer;
+  padding: 0;
   transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
-  user-select: none;
-}
-
-.accessory-chip:hover {
-  background: rgba(30, 41, 59, 0.95);
-  border-color: rgba(56, 189, 248, 0.4);
-  color: #f1f5f9;
-  transform: translateY(-1px);
-}
-
-.accessory-chip.active {
-  background: rgba(56, 189, 248, 0.16);
-  border-color: #38bdf8;
-  color: #38bdf8;
-  box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
-}
-
-.accessory-chip .acc-icon {
-  font-size: 0.92rem;
-  flex-shrink: 0;
-}
-
-.accessory-chip .acc-name {
-  flex: 1;
-  text-align: left;
-  white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.accessory-chip .acc-check {
-  font-size: 0.75rem;
-  opacity: 0;
-  transform: scale(0.6);
-  transition: all 0.15s ease;
-  font-weight: 900;
+.accessories-row.compact-row .accessory-tile {
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
 }
 
-.accessory-chip.active .acc-check {
-  opacity: 1;
-  transform: scale(1);
+.accessory-tile::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  background: url('/turbosladd/assets/bil.png') center/contain no-repeat;
+  opacity: 0.18;
+  pointer-events: none;
 }
 
-.accessories-grid.compact-grid .accessory-chip {
-  padding: 0.35rem 0.5rem;
+.accessory-tile .acc-tile-img {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  image-rendering: pixelated;
+  pointer-events: none;
+  transition: transform 0.15s ease;
+}
+
+.accessories-row.compact-row .accessory-tile .acc-tile-img {
+  width: 38px;
+  height: 38px;
+}
+
+.accessory-tile:hover {
+  background: rgba(30, 41, 59, 0.95);
+  border-color: rgba(56, 189, 248, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+}
+
+.accessory-tile:hover .acc-tile-img {
+  transform: scale(1.08);
+}
+
+.accessory-tile.active {
+  background: rgba(56, 189, 248, 0.18);
+  border-color: #38bdf8;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.45);
+}
+
+.accessory-tile.active::before {
+  opacity: 0.32;
+}
+
+.accessory-tile.active::after {
+  content: "✓";
+  position: absolute;
+  top: 3px;
+  right: 5px;
   font-size: 0.72rem;
-  border-radius: 8px;
+  font-weight: 900;
+  color: #38bdf8;
+  line-height: 1;
+}
+
+.accessory-tile:active {
+  transform: scale(0.94);
+}
+
+/* Compact randomize button in garage */
+.skribbl-stage-box .skribbl-randomize-btn {
+  padding: 0.4rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  justify-content: center;
+}
+
+.skribbl-stage-box .skribbl-randomize-btn .skribbl-dice-icon {
+  font-size: 1.25rem;
+  line-height: 1;
 }
 
 

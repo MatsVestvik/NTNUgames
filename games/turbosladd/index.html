@@ -382,12 +382,10 @@
             <div class="igg-card">
               <div class="igg-header">
                 <div class="igg-title-wrap">
-                  <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;">
-                    <span class="igg-badge">🏎️ Garasje</span>
-                    <span class="hidden" id="inGameRoomCodePill" style="font-size:0.75rem;font-weight:700;background:rgba(56,189,248,0.15);color:#38bdf8;padding:0.2rem 0.55rem;border-radius:9999px;border:1px solid rgba(56,189,248,0.35);cursor:pointer;" title="Klikk for å kopiere romkode">Romkode: <strong id="inGameRoomCodeText">----</strong> 📋</span>
+                  <div style="display:flex;align-items:center;gap:0.5rem;">
+                    <span class="igg-badge">Garasje</span>
+                    <span class="hidden" id="inGameRoomCodePill" style="font-size:0.75rem;font-weight:700;background:rgba(56,189,248,0.15);color:#38bdf8;padding:0.2rem 0.55rem;border-radius:9999px;border:1px solid rgba(56,189,248,0.35);cursor:pointer;" title="Klikk for å kopiere romkode">Romkode: <strong id="inGameRoomCodeText">----</strong></span>
                   </div>
-                  <h3 class="igg-title">Tilpass bilen på startstreken</h3>
-                  <p class="igg-desc">Fargen er hentet fra din karakter. Velg felger og legg til ekstrautstyr!</p>
                 </div>
               </div>
 
@@ -396,7 +394,7 @@
                 <div class="skribbl-stage-content">
                   <!-- Left Arrow for Felger -->
                   <div class="skribbl-arrows-col single-arrow col-left">
-                    <button type="button" class="skribbl-nav-btn" id="btnInGameWheelPrev" title="Forrige felger (A / pil venstre)" aria-label="Forrige felger">‹</button>
+                    <button type="button" class="skribbl-nav-btn" id="btnInGameWheelPrev" title="Forrige felger" aria-label="Forrige felger">‹</button>
                   </div>
 
                   <!-- Center Car Preview Bubble -->
@@ -406,45 +404,22 @@
 
                   <!-- Right Arrow for Felger -->
                   <div class="skribbl-arrows-col single-arrow col-right">
-                    <button type="button" class="skribbl-nav-btn" id="btnInGameWheelNext" title="Neste felger (D / pil høyre)" aria-label="Neste felger">›</button>
-                  </div>
-                </div>
-
-                <!-- Part description pills -->
-                <div class="car-part-pills-row">
-                  <div class="car-part-pill" title="Valgte felger">
-                    <span class="cpp-icon">⚙️</span>
-                    <span class="cpp-label">Felger:</span>
-                    <strong class="cpp-val" id="inGameWheelLabel">Stålfelger</strong>
-                  </div>
-                  <div class="car-part-pill" id="inGameColorPill" title="Lakkfarge hentet fra din lobby-karakter">
-                    <span class="cpp-icon">🎨</span>
-                    <span class="cpp-label">Lakk:</span>
-                    <span class="color-dot-indicator" id="inGameColorDot"></span>
-                    <strong class="cpp-val" id="inGameColorLabel">Karakterfarge</strong>
+                    <button type="button" class="skribbl-nav-btn" id="btnInGameWheelNext" title="Neste felger" aria-label="Neste felger">›</button>
                   </div>
                 </div>
 
                 <!-- Randomize button -->
-                <button type="button" class="skribbl-randomize-btn" id="btnInGameRandomize" title="Få en helt tilfeldig kul styling!">
+                <button type="button" class="skribbl-randomize-btn" id="btnInGameRandomize" title="Tilfeldig styling">
                   <span class="skribbl-dice-icon">🎲</span>
-                  <span class="skribbl-dice-text">Tilfeldig styling</span>
                 </button>
               </div>
 
-              <!-- Accessories Section (Toggle chips: velg så mange du vil) -->
-              <div class="accessories-section">
-                <div class="accessories-header">
-                  <span class="accessories-icon">🔧</span>
-                  <span class="accessories-title">Ekstrautstyr:</span>
-                  <span class="accessories-subtitle">(velg så mange du vil)</span>
-                </div>
-                <div class="accessories-grid" id="inGameAccessoriesGrid"></div>
-              </div>
+              <!-- Accessories Row (pure picture buttons, no text, no emojis) -->
+              <div class="accessories-row" id="inGameAccessoriesGrid"></div>
 
               <div class="igg-footer">
                 <button type="button" class="igg-btn-ready pulse-glow" id="btnInGameReady">
-                  Klar til start! 🏁
+                  KLAR
                 </button>
               </div>
             </div>
@@ -457,7 +432,7 @@
               <div class="split-garage-col card-p1">
                 <div class="igg-header">
                   <div class="igg-title-wrap">
-                    <span class="igg-badge" style="background:rgba(249,115,22,0.25);color:#fb923c;border-color:rgba(249,115,22,0.5);">Spiller 1 (WASD)</span>
+                    <span class="igg-badge" style="background:rgba(249,115,22,0.25);color:#fb923c;border-color:rgba(249,115,22,0.5);">P1 (WASD)</span>
                     <h4 class="igg-title" id="splitP1GarageName">Spiller 1</h4>
                   </div>
                 </div>
@@ -465,34 +440,21 @@
                 <div class="skribbl-stage-box compact-stage">
                   <div class="skribbl-stage-content">
                     <div class="skribbl-arrows-col single-arrow col-left">
-                      <button type="button" class="skribbl-nav-btn" id="btnSplitP1WheelPrev" title="Forrige felger (A)">‹</button>
+                      <button type="button" class="skribbl-nav-btn" id="btnSplitP1WheelPrev" title="Forrige felger">‹</button>
                     </div>
                     <div class="skribbl-canvas-bubble">
                       <canvas id="splitP1CarPreviewCanvas" width="64" height="64" class="skribbl-canvas"></canvas>
                     </div>
                     <div class="skribbl-arrows-col single-arrow col-right">
-                      <button type="button" class="skribbl-nav-btn" id="btnSplitP1WheelNext" title="Neste felger (D)">›</button>
-                    </div>
-                  </div>
-
-                  <div class="car-part-pills-row">
-                    <div class="car-part-pill">
-                      <span class="cpp-icon">⚙️</span>
-                      <span class="cpp-val" id="splitP1WheelLabel">Stålfelger</span>
+                      <button type="button" class="skribbl-nav-btn" id="btnSplitP1WheelNext" title="Neste felger">›</button>
                     </div>
                   </div>
                 </div>
 
-                <div class="accessories-section">
-                  <div class="accessories-header">
-                    <span class="accessories-icon">🔧</span>
-                    <span class="accessories-title" style="font-size:0.8rem;">Utstyr:</span>
-                  </div>
-                  <div class="accessories-grid compact-grid" id="splitP1AccessoriesGrid"></div>
-                </div>
+                <div class="accessories-row compact-row" id="splitP1AccessoriesGrid"></div>
 
                 <button type="button" class="igg-btn-ready" id="btnSplitP1Ready">
-                  Spiller 1 Klar! 👍
+                  KLAR
                 </button>
               </div>
 
@@ -500,7 +462,7 @@
               <div class="split-garage-col card-p2">
                 <div class="igg-header">
                   <div class="igg-title-wrap">
-                    <span class="igg-badge" style="background:rgba(6,182,212,0.25);color:#22d3ee;border-color:rgba(6,182,212,0.5);">Spiller 2 (Piltaster)</span>
+                    <span class="igg-badge" style="background:rgba(6,182,212,0.25);color:#22d3ee;border-color:rgba(6,182,212,0.5);">P2 (Piler)</span>
                     <h4 class="igg-title" id="splitP2GarageName">Spiller 2</h4>
                   </div>
                 </div>
@@ -508,34 +470,21 @@
                 <div class="skribbl-stage-box compact-stage">
                   <div class="skribbl-stage-content">
                     <div class="skribbl-arrows-col single-arrow col-left">
-                      <button type="button" class="skribbl-nav-btn" id="btnSplitP2WheelPrev" title="Forrige felger (Venstre)">‹</button>
+                      <button type="button" class="skribbl-nav-btn" id="btnSplitP2WheelPrev" title="Forrige felger">‹</button>
                     </div>
                     <div class="skribbl-canvas-bubble">
                       <canvas id="splitP2CarPreviewCanvas" width="64" height="64" class="skribbl-canvas"></canvas>
                     </div>
                     <div class="skribbl-arrows-col single-arrow col-right">
-                      <button type="button" class="skribbl-nav-btn" id="btnSplitP2WheelNext" title="Neste felger (Høyre)">›</button>
-                    </div>
-                  </div>
-
-                  <div class="car-part-pills-row">
-                    <div class="car-part-pill">
-                      <span class="cpp-icon">⚙️</span>
-                      <span class="cpp-val" id="splitP2WheelLabel">Sportsfelger</span>
+                      <button type="button" class="skribbl-nav-btn" id="btnSplitP2WheelNext" title="Neste felger">›</button>
                     </div>
                   </div>
                 </div>
 
-                <div class="accessories-section">
-                  <div class="accessories-header">
-                    <span class="accessories-icon">🔧</span>
-                    <span class="accessories-title" style="font-size:0.8rem;">Utstyr:</span>
-                  </div>
-                  <div class="accessories-grid compact-grid" id="splitP2AccessoriesGrid"></div>
-                </div>
+                <div class="accessories-row compact-row" id="splitP2AccessoriesGrid"></div>
 
                 <button type="button" class="igg-btn-ready" id="btnSplitP2Ready">
-                  Spiller 2 Klar! 👍
+                  KLAR
                 </button>
               </div>
             </div>
