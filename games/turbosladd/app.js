@@ -541,7 +541,7 @@
     soloFinishTimer: null,
 
     opponentCars: {},
-    camera: { x: 2000, y: 2900, zoom: 1.25 },
+    camera: { x: 2000, y: 2900, zoom: 2.75 },
     skidmarks: [],
     particles: [],
 
@@ -1694,7 +1694,7 @@
     // Immediately snap camera to the car
     state.camera.x = fresh.x;
     state.camera.y = fresh.y;
-    state.camera.zoom = 1.25;
+    state.camera.zoom = 2.75;
   }
 
   function resolveCarCarCollision(c1, c2) {
@@ -2848,6 +2848,13 @@
           const h = canvas.height;
           const halfW = Math.floor(w / 2);
 
+          // Splitscreen zoom: zoomed in during pre-race car customization, zooming out when ready
+          const splitGarageActive = Boolean(el.inGameSplitGarage && !el.inGameSplitGarage.classList.contains("hidden"));
+          const splitTargetZoom = splitGarageActive ? 2.3 : 1.15;
+          const splitZoomLerp = state.roomStatus === "countdown" ? 0.045 : 0.09;
+          state.cam1.zoom += (splitTargetZoom - state.cam1.zoom) * splitZoomLerp;
+          state.cam2.zoom += (splitTargetZoom - state.cam2.zoom) * splitZoomLerp;
+
           // P1 camera update
           const look1 = Math.min(100, state.car1.speed * 0.28);
           state.cam1.x += (state.car1.x + Math.cos(state.car1.angle) * look1 - state.cam1.x) * 0.16;
@@ -3001,12 +3008,47 @@
           ctx.fillStyle = "#193218";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-          // Smooth camera follow with look-ahead
-          const lookahead = Math.min(110, state.myCar.speed * 0.3);
-          const targetCamX = state.myCar.x + Math.cos(state.myCar.angle) * lookahead;
-          const targetCamY = state.myCar.y + Math.sin(state.myCar.angle) * lookahead;
-          state.camera.x += (targetCamX - state.camera.x) * 0.16;
-          state.camera.y += (targetCamY - state.camera.y) * 0.16;
+          // Dynamic camera zoom: zoomed in close (2.75x) on the startblocks during garage/pre-race,
+          // smoothly zooming out to normal (1.25x) when everyone is ready and countdown begins!
+          const NORMAL_ZOOM = 1.25;
+          const GARAGE_ZOOM = 2.75;
+
+          const isInPreRacePhase = (state.roomStatus === "lobby" || state.isGaragePhase);
+          const isCountdownOrRacing = (state.roomStatus === "countdown" || state.roomStatus === "racing");
+
+          let targetZoom = NORMAL_ZOOM;
+          if (isInPreRacePhase) {
+            targetZoom = GARAGE_ZOOM;
+          } else if (isCountdownOrRacing) {
+            targetZoom = NORMAL_ZOOM;
+          }
+
+          // Smooth zoom interpolation: slightly gentler rate during countdown for cinematic reveal
+          const zoomLerp = state.roomStatus === "countdown" ? 0.045 : 0.09;
+          state.camera.zoom += (targetZoom - state.camera.zoom) * zoomLerp;
+
+          // Camera follow target
+          let targetCamX = state.myCar.x;
+          let targetCamY = state.myCar.y;
+
+          if (isCountdownOrRacing) {
+            const lookahead = Math.min(110, state.myCar.speed * 0.3);
+            targetCamX += Math.cos(state.myCar.angle) * lookahead;
+            targetCamY += Math.sin(state.myCar.angle) * lookahead;
+          } else if (isInPreRacePhase) {
+            // When side garage menu is open, shift camera in world space
+            // so the car is visually centered in the remaining visible track area on the left!
+            const sideMenuOpen = el.inGameGarage && !el.inGameGarage.classList.contains("hidden");
+            if (sideMenuOpen) {
+              const sidebarW = el.inGameGarage.offsetWidth || 350;
+              if (canvas.width - sidebarW >= 250) {
+                targetCamX += (sidebarW * 0.5) / Math.max(0.5, state.camera.zoom);
+              }
+            }
+          }
+
+          state.camera.x += (targetCamX - state.camera.x) * 0.14;
+          state.camera.y += (targetCamY - state.camera.y) * 0.14;
 
           ctx.save();
           ctx.translate(canvas.width / 2, canvas.height / 2);
@@ -3223,6 +3265,7 @@
     if (countdownTimer) clearInterval(countdownTimer);
     state.roomStatus = "countdown";
     state.isGaragePhase = false;
+    if (el.viewGame) el.viewGame.classList.remove("pre-race-active");
 
     if (el.inGameGarage) el.inGameGarage.classList.add("hidden");
     if (el.inGameSplitGarage) el.inGameSplitGarage.classList.add("hidden");
@@ -3281,6 +3324,7 @@
     if (state.roomStatus === "racing") return;
     state.roomStatus = data.status || "countdown";
     state.isGaragePhase = false;
+    if (el.viewGame) el.viewGame.classList.remove("pre-race-active");
 
     if (el.inGameGarage) el.inGameGarage.classList.add("hidden");
     if (el.inGameSplitGarage) el.inGameSplitGarage.classList.add("hidden");
@@ -3527,8 +3571,8 @@
     state.car2 = createCarState(1, track, 1, state.splitP2.wheelId || 2, state.splitP2.color || "#06b6d4", state.splitP2.accessories || []);
     state.car1.isReady = false;
     state.car2.isReady = false;
-    state.cam1 = { x: state.car1.x, y: state.car1.y, zoom: 1.15 };
-    state.cam2 = { x: state.car2.x, y: state.car2.y, zoom: 1.15 };
+    state.cam1 = { x: state.car1.x, y: state.car1.y, zoom: 2.3 };
+    state.cam2 = { x: state.car2.x, y: state.car2.y, zoom: 2.3 };
 
     if (el.btnSplitP1Ready) {
       el.btnSplitP1Ready.textContent = "Spiller 1 Klar! 👍";
@@ -3637,6 +3681,9 @@
     if (el.raceCanvas) el.raceCanvas.focus();
 
     if (state.roomStatus === "lobby") {
+      state.isGaragePhase = true;
+      state.camera.zoom = 2.75;
+      if (el.viewGame) el.viewGame.classList.add("pre-race-active");
       if (state.myCar.isReady) {
         if (el.inGameGarage) el.inGameGarage.classList.add("hidden");
         if (el.inGameStandbyBanner) el.inGameStandbyBanner.classList.remove("hidden");
@@ -3691,6 +3738,9 @@
     }
 
     state.myCar.isReady = false;
+    state.isGaragePhase = true;
+    state.camera.zoom = 2.75;
+    if (el.viewGame) el.viewGame.classList.add("pre-race-active");
     state.myCar.finished = false;
     state.myCar.finishTime = 0;
     state.myCar.lap = 1;
@@ -4244,10 +4294,12 @@
         if (state.mode === "solo") {
           state.myCar.isReady = true;
           if (el.inGameGarage) el.inGameGarage.classList.add("hidden");
-          runCountdown(() => {
-            state.myCar.raceStartTime = performance.now();
-            state.myCar.lapStartTime = performance.now();
-          });
+          setTimeout(() => {
+            runCountdown(() => {
+              state.myCar.raceStartTime = performance.now();
+              state.myCar.lapStartTime = performance.now();
+            });
+          }, 350);
         } else if (state.mode === "online") {
           state.myCar.isReady = true;
           if (el.inGameGarage) el.inGameGarage.classList.add("hidden");
@@ -4268,6 +4320,8 @@
     if (el.btnReopenGarage) {
       el.btnReopenGarage.addEventListener("click", async () => {
         state.myCar.isReady = false;
+        state.isGaragePhase = true;
+        if (el.viewGame) el.viewGame.classList.add("pre-race-active");
         if (el.inGameGarage) el.inGameGarage.classList.remove("hidden");
         if (el.inGameStandbyBanner) el.inGameStandbyBanner.classList.add("hidden");
         if (inGameCustomizer) inGameCustomizer.refresh();

@@ -1637,40 +1637,135 @@ body.turbosladd-page {
    IN-GAME GARAGE OVERLAY & PRE-RACE STANDBY BANNER
    ========================================================================== */
 
+/* ==========================================================================
+   IN-GAME GARAGE SIDE MENU (Docked on right side, race track visible behind)
+   ========================================================================== */
+
 .in-game-garage-modal {
   position: absolute;
   top: 0;
-  left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(11, 15, 25, 0.76);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 350px;
+  max-width: 90vw;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.94) 0%, rgba(10, 15, 26, 0.98) 100%);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-left: 1.5px solid rgba(56, 189, 248, 0.3);
+  box-shadow: -15px 0 45px rgba(0, 0, 0, 0.75), 0 0 30px rgba(56, 189, 248, 0.12);
   z-index: 50;
-  padding: 1rem;
+  display: flex !important;
+  flex-direction: column;
+  padding: 1.25rem 1.15rem;
   overflow-y: auto;
-  animation: iggFadeIn 0.22s ease-out;
+  overflow-x: hidden;
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
 }
 
-@keyframes iggFadeIn {
-  from { opacity: 0; transform: scale(0.96); }
-  to { opacity: 1; transform: scale(1); }
+.in-game-garage-modal.hidden {
+  display: flex !important;
+  transform: translateX(105%);
+  opacity: 0;
+  pointer-events: none !important;
 }
 
 .igg-card {
   width: 100%;
-  max-width: 530px;
-  background: rgba(15, 23, 42, 0.95);
-  border: 1.5px solid rgba(56, 189, 248, 0.35);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.75), 0 0 35px rgba(56, 189, 248, 0.15);
-  border-radius: 16px;
-  padding: 1.35rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.1rem;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+.in-game-garage-modal .skribbl-stage-box {
+  background: rgba(30, 41, 59, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 0.85rem 0.75rem;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.in-game-garage-modal .skribbl-stage-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+}
+
+.in-game-garage-modal .skribbl-canvas-bubble {
+  width: 86px;
+  height: 86px;
+  background: radial-gradient(circle, #1e293b 0%, #0b0f19 100%);
+  border: 2px solid rgba(56, 189, 248, 0.4);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.15);
+}
+
+.in-game-garage-modal .skribbl-canvas {
+  width: 86px;
+  height: 86px;
+  image-rendering: pixelated;
+}
+
+.in-game-garage-modal .accessories-row {
+  max-width: 310px;
+  gap: 0.65rem;
+  margin: 0.35rem auto 0.25rem;
+}
+
+.in-game-garage-modal .accessory-tile {
+  width: 88px;
+  height: 88px;
+  border-radius: 13px;
+}
+
+.in-game-garage-modal .accessory-tile::before {
+  inset: 5px;
+}
+
+.in-game-garage-modal .accessory-tile .acc-tile-img {
+  width: 76px;
+  height: 76px;
+}
+
+.in-game-garage-modal .igg-footer {
+  margin-top: 0.5rem;
+}
+
+.in-game-garage-modal .igg-btn-ready {
+  width: 100%;
+  padding: 0.95rem;
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+
+/* In Pre-race garage phase: hide in-game race HUD and minimap so the track and car view is cinematic */
+.view-game-fullscreen.pre-race-active .race-hud,
+.view-game-fullscreen.pre-race-active .race-minimap-card {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.race-hud,
+.race-minimap-card {
+  transition: opacity 0.35s ease, transform 0.35s ease;
 }
 
 .igg-header {
