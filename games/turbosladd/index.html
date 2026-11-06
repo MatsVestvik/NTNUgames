@@ -7,11 +7,14 @@
   <title>Turbosladd • Topp-ned 2D Racing &amp; Drifting</title>
 
   <link rel="icon" type="image/svg+xml" href="/assets/icons/turbosladd.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/hub.css" />
   <link rel="stylesheet" href="/game-lobby.css" />
   <link rel="stylesheet" href="/parallax-bg.css" />
   <link rel="stylesheet" href="/character/character-creator.css" />
-  <link rel="stylesheet" href="styles.css?v=2.8" />
+  <link rel="stylesheet" href="styles.css?v=2.9" />
 </head>
 
 <body class="turbosladd-page">
@@ -329,46 +332,6 @@
       <!-- ============================================== -->
       <section class="view-panel hidden view-game-fullscreen" id="viewGame">
         <div class="race-viewport-wrapper">
-          <!-- Top HUD -->
-          <div class="race-hud">
-            <div class="hud-left">
-              <div class="hud-position-badge" id="hudPositionBadge">
-                <span class="pos-num" id="hudPosNum">1</span>
-                <span class="pos-suffix" id="hudPosSuffix">. plass</span>
-              </div>
-              <div class="hud-lap-badge">
-                <span class="hud-label">RUNDE</span>
-                <strong class="hud-val" id="hudLapText">1/3</strong>
-              </div>
-            </div>
-
-            <div class="hud-center">
-              <!-- Drift / Boost Meter -->
-              <div class="drift-meter-wrap" id="driftMeterWrap">
-                <div class="drift-meter-bar" id="driftMeterBar"></div>
-                <span class="drift-meter-label" id="driftMeterLabel">DRIFT BOOST</span>
-              </div>
-            </div>
-
-            <div class="hud-right">
-              <div class="hud-time-block">
-                <div class="hud-time-row">
-                  <span class="hud-label">TID:</span>
-                  <span class="hud-val-time" id="hudCurrentTime">00:00.0</span>
-                </div>
-                <div class="hud-time-row">
-                  <span class="hud-label">BESTE:</span>
-                  <span class="hud-val-time best" id="hudBestLap">--:--.-</span>
-                </div>
-              </div>
-
-              <div class="hud-speedometer">
-                <span class="speed-num" id="hudSpeedNum">0</span>
-                <span class="speed-unit">km/t</span>
-              </div>
-            </div>
-          </div>
-
           <!-- Minimap HUD widget -->
           <div class="race-minimap-card">
             <canvas id="minimapCanvas" width="160" height="110" class="minimap-canvas"></canvas>
@@ -506,11 +469,9 @@
             </div>
           </div>
 
-          <!-- Big Countdown Overlay: 3.. 2.. 1.. KJØR! -->
+          <!-- Pixel Countdown Overlay: 3.. 2.. 1.. GO -->
           <div class="race-countdown-overlay hidden" id="countdownOverlay">
-            <div class="countdown-circle" id="countdownCircle">
-              <span class="countdown-text" id="countdownText">3</span>
-            </div>
+            <span class="countdown-text" id="countdownText">3</span>
           </div>
         </div>
       </section>

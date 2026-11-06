@@ -3273,16 +3273,34 @@
 
     if (el.countdownOverlay) el.countdownOverlay.classList.remove("hidden");
     let count = 3;
-    if (el.countdownText) el.countdownText.textContent = "3";
+    if (el.countdownText) {
+      el.countdownText.textContent = "3";
+      el.countdownText.classList.remove("go");
+      el.countdownText.classList.remove("pop");
+      void el.countdownText.offsetWidth;
+      el.countdownText.classList.add("pop");
+    }
     playTone(440, 0.15, "triangle", 0.3);
 
     countdownTimer = setInterval(() => {
       count--;
       if (count > 0) {
-        if (el.countdownText) el.countdownText.textContent = String(count);
+        if (el.countdownText) {
+          el.countdownText.textContent = String(count);
+          el.countdownText.classList.remove("go");
+          el.countdownText.classList.remove("pop");
+          void el.countdownText.offsetWidth;
+          el.countdownText.classList.add("pop");
+        }
         playTone(440, 0.15, "triangle", 0.3);
       } else if (count === 0) {
-        if (el.countdownText) el.countdownText.textContent = "KJØR! 🏁";
+        if (el.countdownText) {
+          el.countdownText.textContent = "GO";
+          el.countdownText.classList.add("go");
+          el.countdownText.classList.remove("pop");
+          void el.countdownText.offsetWidth;
+          el.countdownText.classList.add("pop");
+        }
         playTone(880, 0.45, "triangle", 0.4);
       } else {
         clearInterval(countdownTimer);
@@ -3333,14 +3351,27 @@
     if (state.roomStatus === "countdown") {
       if (el.countdownOverlay) el.countdownOverlay.classList.remove("hidden");
       const rem = Math.ceil(data.countdownRemaining || 3);
-      if (el.countdownText) el.countdownText.textContent = rem > 0 ? String(rem) : "KJØR!";
+      if (el.countdownText) {
+        el.countdownText.textContent = rem > 0 ? String(rem) : "GO";
+        if (rem === 0) el.countdownText.classList.add("go");
+        else el.countdownText.classList.remove("go");
+        el.countdownText.classList.remove("pop");
+        void el.countdownText.offsetWidth;
+        el.countdownText.classList.add("pop");
+      }
       playTone(440, 0.15, "triangle", 0.3);
 
       const waitMs = Math.max(800, ((data.countdownRemaining || 3) * 1000) + 150);
       setTimeout(() => {
         if (state.roomStatus === "countdown") {
           state.roomStatus = "racing";
-          if (el.countdownText) el.countdownText.textContent = "KJØR! 🏁";
+          if (el.countdownText) {
+            el.countdownText.textContent = "GO";
+            el.countdownText.classList.add("go");
+            el.countdownText.classList.remove("pop");
+            void el.countdownText.offsetWidth;
+            el.countdownText.classList.add("pop");
+          }
           playTone(880, 0.45, "triangle", 0.4);
           setTimeout(() => {
             if (el.countdownOverlay) el.countdownOverlay.classList.add("hidden");
