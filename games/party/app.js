@@ -91,6 +91,10 @@
     btnStartTurbosladd: document.getElementById("btnStartTurbosladd"),
     selectTrackTurbosladd: document.getElementById("selectTrackTurbosladd"),
     selectLapsTurbosladd: document.getElementById("selectLapsTurbosladd"),
+    btnStartKuleregn: document.getElementById("btnStartKuleregn"),
+    selectMapKuleregn: document.getElementById("selectMapKuleregn"),
+    selectScoreLimitKuleregn: document.getElementById("selectScoreLimitKuleregn"),
+    selectBotsKuleregn: document.getElementById("selectBotsKuleregn"),
     btnLeaveRoom: document.getElementById("btnLeaveRoom"),
     connStatusText: document.getElementById("connStatusText"),
   };
@@ -298,6 +302,7 @@
       sessionStorage.removeItem("party_preferred_game");
       setTimeout(() => {
         const gameCardMap = {
+          kuleregn: "gameCardKuleregn",
           turbosladd: "gameCardTurbosladd",
           ordbombe: "gameCardOrdbombe",
           tegn_og_gjett: "gameCardTegnOgGjett",
@@ -742,6 +747,16 @@
       settings: () => ({
         laps: parseInt(el.selectLapsTurbosladd?.value || "3", 10) || 3,
         trackId: el.selectTrackTurbosladd?.value || "grand_prix",
+      }),
+    },
+    {
+      btn: el.btnStartKuleregn,
+      id: "kuleregn",
+      settings: () => ({
+        mapId: el.selectMapKuleregn?.value || "gloshaugen_arena",
+        scoreLimit: parseInt(el.selectScoreLimitKuleregn?.value || "15", 10) || 15,
+        botCount: parseInt(el.selectBotsKuleregn?.value || "2", 10) || 2,
+        mode: "ffa",
       }),
     },
   ];

@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="no">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Kuleregn • Topp-ned 2D Skytespill (WASD + Mus)</title>
+
+  <link rel="icon" type="image/png" href="/assets/icons/kuleregn.png" />
+  <link rel="stylesheet" href="/hub.css" />
+  <link rel="stylesheet" href="/game-lobby.css" />
+  <link rel="stylesheet" href="/parallax-bg.css" />
+  <link rel="stylesheet" href="/character/character-creator.css" />
+  <link rel="stylesheet" href="styles.css?v=1.0" />
+</head>
+
+<body class="kuleregn-page">
+  <!-- Dynamic Multilayered Parallax Background -->
+  <div class="dynamic-parallax-bg" id="dynamicParallaxBg" aria-hidden="true">
+    <div class="parallax-layer layer-1-sky" id="plSky" data-depth="0.04"></div>
+    <div class="parallax-layer layer-2-fjord" id="plFjord" data-depth="0.10"></div>
+    <div class="parallax-layer layer-3-campus" id="plCampus" data-depth="0.22"></div>
+    <div class="parallax-layer layer-4-lawn" id="plLawn" data-depth="0.50"></div>
+    <canvas class="ambient-sparkles-canvas" id="ambientSparklesCanvas"></canvas>
+    <div class="parallax-vignette-overlay"></div>
+  </div>
+
+  <div class="kr-app-shell">
+    <!-- Top Sticky Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <a href="/" class="btn-back" id="btnHeaderBack" title="Tilbake til Hub">
+          <span class="back-arrow" aria-hidden="true">←</span> <span id="backBtnText">Hub</span>
+        </a>
+        <div class="header-branding">
+          <span class="kr-logo-icon">💥</span>
+          <span class="kr-logo-title">Kuleregn</span>
+          <span class="kr-badge-ffa">Free For All</span>
+        </div>
+      </div>
+
+      <div class="header-center">
+        <!-- In-game compact HUD elements (shown during active game) -->
+        <div class="kr-head-status hidden" id="headGameStatus">
+          <span class="kr-head-clock" id="headClock">05:00</span>
+          <span class="kr-head-divider">•</span>
+          <span class="kr-head-target" id="headTargetScore">Første til 15 drap</span>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <button type="button" class="btn-party-link" id="btnPartyHub" title="Gå til felles Party Lobby">
+          🎉 Party Lobby
+        </button>
+        <button type="button" class="btn-sound-toggle" id="btnSoundToggle" title="Slå av/på lyd">
+          🔊
+        </button>
+        <button type="button" class="btn-profile-trigger" id="btnProfileTrigger" title="Endre karakter">
+          <canvas id="headerAvatarMini" width="28" height="28"></canvas>
+          <span id="headerPlayerName">Spiller</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="kr-main">
+      <!-- ================================================================= -->
+      <!-- VIEW 1: LOBBY & MENU                                              -->
+      <!-- ================================================================= -->
+      <section class="kr-view" id="viewLobby">
+        <div class="lobby-container">
+          <div class="lobby-grid">
+            <!-- Left Column: Combatant Profile & Weapon Arsenal -->
+            <div class="profile-card">
+              <div class="profile-card-header">
+                <h3>Din Soldat</h3>
+                <span class="profile-subtitle">Tilpass utseende og farger</span>
+              </div>
+
+              <!-- Character Preview Bubble with CharacterCreator integration -->
+              <div class="avatar-preview-box">
+                <div class="avatar-bubble" id="avatarBubble">
+                  <canvas id="playerAvatarCanvas" width="96" height="96"></canvas>
+                </div>
+                <button type="button" class="btn-edit-avatar" id="btnOpenCharacterCreator">
+                  🎨 Tilpass Karakter
+                </button>
+              </div>
+
+              <!-- Driver Name Input -->
+              <div class="field-group">
+                <label for="inputPlayerName">Kallenavn:</label>
+                <input type="text" id="inputPlayerName" class="text-input" maxlength="16" placeholder="Kallenavn"
+                  value="Spiller" />
+              </div>
+
+              <!-- Tactical Color Swatches -->
+              <div class="field-group">
+                <label>Draktfarge:</label>
+                <div class="color-palette-row" id="colorPaletteRow">
+                  <!-- Populated by JS -->
+                </div>
+              </div>
+
+              <!-- Arsenal Overview -->
+              <div class="field-group arsenal-preview-group">
+                <label>Våpenarsenal (Pickups):</label>
+                <div class="arsenal-pill-grid">
+                  <div class="arsenal-pill" title="Startvåpen: Presis og pålitelig">
+                    <span class="ap-icon">🔫</span>
+                    <span class="ap-name">Pistol</span>
+                  </div>
+                  <div class="arsenal-pill" title="Nærkampmonster: 6 hagl">
+                    <span class="ap-icon">💥</span>
+                    <span class="ap-name">Hagle</span>
+                  </div>
+                  <div class="arsenal-pill" title="Hurtigskytende: 9 skudd/sek">
+                    <span class="ap-icon">⚡</span>
+                    <span class="ap-name">Maskingevær</span>
+                  </div>
+                  <div class="arsenal-pill" title="Langdistanse: 85 skade">
+                    <span class="ap-icon">🎯</span>
+                    <span class="ap-name">Sniper</span>
+                  </div>
+                  <div class="arsenal-pill" title="Områdeskade: Eksplosiv!">
+                    <span class="ap-icon">🚀</span>
+                    <span class="ap-name">Rakettkaster</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column: Mode Select, Solo vs Online Tabs -->
+            <div class="modes-card">
+              <div class="mode-tabs">
+                <button type="button" class="mode-tab-btn active" id="tabBtnSolo" data-tab="solo">
+                  🤖 Spill Solo (Boter)
+                </button>
+                <button type="button" class="mode-tab-btn" id="tabBtnHost" data-tab="host">
+                  🌐 Opprett Rom
+                </button>
+                <button type="button" class="mode-tab-btn" id="tabBtnJoin" data-tab="join">
+                  🚀 Bli Med
+                </button>
+              </div>
+
+              <!-- Tab 1: Solo vs AI Bots -->
+              <div class="tab-pane active" id="tabPaneSolo">
+                <div class="tab-pane-content">
+                  <div class="pane-intro">
+                    <h4>Hurtigstart mot AI-boter</h4>
+                    <p>Hopp rett inn i en intens Free-For-All kamp mot datastyrte motstandere for å varme opp siktet!</p>
+                  </div>
+
+                  <div class="field-row">
+                    <div class="field-group">
+                      <label for="selectSoloMap">Bane:</label>
+                      <select id="selectSoloMap" class="select-input">
+                        <option value="gloshaugen_arena" selected>Gløshaugen Arena 🏛️</option>
+                        <option value="cyber_hangar">Cyber Hangar 🚀</option>
+                      </select>
+                    </div>
+
+                    <div class="field-group">
+                      <label for="selectSoloBots">Antall AI-boter:</label>
+                      <select id="selectSoloBots" class="select-input">
+                        <option value="1">1 bot (Duell)</option>
+                        <option value="3" selected>3 boter (4 spillere totalt)</option>
+                        <option value="5">5 boter (Kaos)</option>
+                        <option value="7">7 boter (Maksimal action)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="field-row">
+                    <div class="field-group">
+                      <label for="selectSoloScoreLimit">Drap for seier:</label>
+                      <select id="selectSoloScoreLimit" class="select-input">
+                        <option value="10">10 drap (Rask match)</option>
+                        <option value="15" selected>15 drap (Standard)</option>
+                        <option value="25">25 drap (Lang kamp)</option>
+                      </select>
+                    </div>
+
+                    <div class="field-group">
+                      <label for="selectSoloTimeLimit">Tidsbegrensning:</label>
+                      <select id="selectSoloTimeLimit" class="select-input">
+                        <option value="180">3 minutter</option>
+                        <option value="300" selected>5 minutter</option>
+                        <option value="600">10 minutter</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <button type="button" class="btn-launch-game primary-action" id="btnStartSolo">
+                    <span>Start Kamp Mot Boter 💥</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Tab 2: Host Online Room -->
+              <div class="tab-pane" id="tabPaneHost">
+                <div class="tab-pane-content">
+                  <div class="pane-intro">
+                    <h4>Opprett Flerspiller-rom</h4>
+                    <p>Spill mot venner på tvers av PC, Mac og mobil! Du får en 4-bokstavers romkode vennene dine kan taste inn.</p>
+                  </div>
+
+                  <div class="field-row">
+                    <div class="field-group">
+                      <label for="selectHostMap">Bane:</label>
+                      <select id="selectHostMap" class="select-input">
+                        <option value="gloshaugen_arena" selected>Gløshaugen Arena 🏛️</option>
+                        <option value="cyber_hangar">Cyber Hangar 🚀</option>
+                      </select>
+                    </div>
+
+                    <div class="field-group">
+                      <label for="selectHostScoreLimit">Drap for seier:</label>
+                      <select id="selectHostScoreLimit" class="select-input">
+                        <option value="10">10 drap</option>
+                        <option value="15" selected>15 drap</option>
+                        <option value="25">25 drap</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="field-row">
+                    <div class="field-group">
+                      <label for="selectHostBots">Fyll opp med boter:</label>
+                      <select id="selectHostBots" class="select-input">
+                        <option value="0">Ingen boter (Kun ekte spillere)</option>
+                        <option value="2" selected>2 boter som fyll</option>
+                        <option value="4">4 boter</option>
+                      </select>
+                    </div>
+
+                    <div class="field-group">
+                      <label for="selectHostTimeLimit">Tidsgrense:</label>
+                      <select id="selectHostTimeLimit" class="select-input">
+                        <option value="180">3 minutter</option>
+                        <option value="300" selected>5 minutter</option>
+                        <option value="600">10 minutter</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <button type="button" class="btn-launch-game primary-action" id="btnCreateRoom">
+                    <span>Opprett Rom &amp; Gå til Start 🌐</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Tab 3: Join Online Room -->
+              <div class="tab-pane" id="tabPaneJoin">
+                <div class="tab-pane-content">
+                  <div class="pane-intro">
+                    <h4>Bli med i et eksisterende rom</h4>
+                    <p>Skriv inn den 4-bokstavers romkoden fra verten for å bli med i kampen umiddelbart.</p>
+                  </div>
+
+                  <div class="field-group" style="max-width:320px;margin:1rem auto 1.5rem;">
+                    <label for="inputJoinRoomCode" style="text-align:center;font-size:1rem;">ROMKODE:</label>
+                    <input type="text" id="inputJoinRoomCode" class="text-input room-code-input" maxlength="6"
+                      placeholder="KODE" autocomplete="off" autocorrect="off" autocapitalize="characters" />
+                  </div>
+
+                  <button type="button" class="btn-launch-game primary-action" id="btnJoinRoom">
+                    <span>Bli Med Nå 🚀</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Controls Quick Reference Footer -->
+              <div class="controls-guide-bar">
+                <div class="cg-item">
+                  <span class="cg-key">W A S D</span>
+                  <span class="cg-desc">Bevegelse</span>
+                </div>
+                <div class="cg-item">
+                  <span class="cg-key">MUS</span>
+                  <span class="cg-desc">Sikt</span>
+                </div>
+                <div class="cg-item">
+                  <span class="cg-key">VENSTREKLIKK</span>
+                  <span class="cg-desc">Skyt</span>
+                </div>
+                <div class="cg-item">
+                  <span class="cg-key">R</span>
+                  <span class="cg-desc">Lad om</span>
+                </div>
+                <div class="cg-item">
+                  <span class="cg-key">MELLOMROM / SHIFT</span>
+                  <span class="cg-desc">Unnamanøver (Dash)</span>
+                </div>
+                <div class="cg-item">
+                  <span class="cg-key">TAB</span>
+                  <span class="cg-desc">Resultattavle</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- VIEW 2: ACTIVE GAME & ARENA CANVAS                                -->
+      <!-- ================================================================= -->
+      <section class="kr-view hidden" id="viewGame">
+        <!-- 60 FPS Tactical Combat Canvas -->
+        <canvas id="combatCanvas"></canvas>
+
+        <!-- Low Health Red Pulse Vignette Overlay -->
+        <div class="low-health-vignette hidden" id="lowHealthVignette" aria-hidden="true"></div>
+
+        <!-- In-game Pre-Match Standby / Briefing Overlay (Lobby before start) -->
+        <div class="in-game-standby-overlay hidden" id="inGameStandby">
+          <div class="igs-card">
+            <div class="igs-header">
+              <span class="igs-badge" id="standbyMapBadge">Gløshaugen Arena</span>
+              <span class="igs-roomcode-pill" id="standbyRoomCodePill" title="Klikk for å kopiere">
+                Romkode: <strong id="standbyRoomCodeText">----</strong> 📋
+              </span>
+            </div>
+
+            <h3 class="igs-title">Klargjør til kamp! 💥</h3>
+            <p class="igs-desc" id="standbyWaitingText">Venter på at alle spillere trykker klar...</p>
+
+            <div class="igs-players-list" id="standbyPlayersList">
+              <!-- Player ready badges populated dynamically -->
+            </div>
+
+            <div class="igs-actions">
+              <button type="button" class="btn-ready-toggle" id="btnToggleReady">
+                Jeg er Klar! 👍
+              </button>
+              <button type="button" class="btn-force-start hidden" id="btnHostForceStart">
+                Start Kamp Nå ⚡
+              </button>
+              <button type="button" class="btn-standby-leave" id="btnLeaveGame">
+                Avslutt
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- In-Game HUD Elements (Fixed Screen Space) -->
+        <div class="hud-overlay" id="hudOverlay">
+          <!-- Top Left: Leader / Personal Rank & Streaks -->
+          <div class="hud-top-left">
+            <div class="hud-rank-pill" id="hudRankPill">
+              <span class="hr-pos" id="hudPosNum">1.</span>
+              <span class="hr-label">Plass</span>
+              <span class="hr-divider">•</span>
+              <span class="hr-kills" id="hudKillsText">0 drap</span>
+            </div>
+            <div class="hud-streak-banner hidden" id="hudStreakBanner">
+              🔥 <span id="hudStreakCount">3x</span> Drapstrekk!
+            </div>
+          </div>
+
+          <!-- Top Center: Match Clock & Target Limit -->
+          <div class="hud-top-center">
+            <div class="hud-clock-box">
+              <span class="hud-clock-time" id="hudMatchTime">05:00</span>
+              <span class="hud-target-sub" id="hudTargetSub">Mål: 15 drap</span>
+            </div>
+          </div>
+
+          <!-- Top Right: Real-Time Kill Feed & Leaderboard Trigger -->
+          <div class="hud-top-right">
+            <div class="kill-feed-container" id="killFeedContainer">
+              <!-- Dynamic kill feed notices -->
+            </div>
+          </div>
+
+          <!-- Bottom Left: Health & Shield Gauges -->
+          <div class="hud-bottom-left">
+            <div class="vitals-container">
+              <!-- Shield Bar -->
+              <div class="vital-row shield-row">
+                <div class="vital-icon" title="Kevlar Skjold">🛡️</div>
+                <div class="vital-bar-track">
+                  <div class="vital-bar-fill shield-fill" id="vitalShieldFill" style="width: 25%;"></div>
+                </div>
+                <div class="vital-value" id="vitalShieldNum">25</div>
+              </div>
+
+              <!-- Health Bar -->
+              <div class="vital-row health-row">
+                <div class="vital-icon" title="Helse">❤️</div>
+                <div class="vital-bar-track">
+                  <div class="vital-bar-fill health-fill" id="vitalHealthFill" style="width: 100%;"></div>
+                </div>
+                <div class="vital-value" id="vitalHealthNum">100</div>
+              </div>
+
+              <!-- Tactical Dash / Roll Cooldown Meter -->
+              <div class="dash-cooldown-wrap" id="dashCooldownWrap">
+                <span class="dash-label">Unnamanøver (Shift / Space):</span>
+                <div class="dash-bar-track">
+                  <div class="dash-bar-fill" id="dashBarFill" style="width: 100%;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Right: Active Weapon, Ammo & Reload -->
+          <div class="hud-bottom-right">
+            <div class="weapon-hud-card" id="weaponHudCard">
+              <div class="whc-top">
+                <span class="whc-icon" id="weaponHudIcon">🔫</span>
+                <div class="whc-info">
+                  <span class="whc-name" id="weaponHudName">P-99 Pistol</span>
+                  <span class="whc-type" id="weaponHudType">Semi-automatisk</span>
+                </div>
+              </div>
+
+              <div class="whc-bottom">
+                <div class="ammo-display">
+                  <span class="ammo-current" id="ammoCurrent">12</span>
+                  <span class="ammo-slash">/</span>
+                  <span class="ammo-reserve" id="ammoReserve">∞</span>
+                </div>
+                <div class="reload-prompt" id="reloadPrompt">Trykk [R] for å lade</div>
+              </div>
+
+              <!-- Reload progress indicator bar -->
+              <div class="reload-progress-bar hidden" id="reloadProgressBar">
+                <div class="reload-bar-fill" id="reloadBarFill"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Center: Floating Pickup Notification -->
+          <div class="hud-bottom-center">
+            <div class="pickup-toast hidden" id="pickupToast">
+              <span class="pt-icon" id="pickupToastIcon">📦</span>
+              <span class="pt-text" id="pickupToastText">Plukket opp våpen</span>
+            </div>
+          </div>
+
+          <!-- Interactive Scoreboard Modal (Hold TAB or toggle) -->
+          <div class="scoreboard-modal hidden" id="scoreboardModal">
+            <div class="scoreboard-card">
+              <div class="sb-header">
+                <h3>Resultattavle • Free For All</h3>
+                <span class="sb-sub" id="sbTargetText">Første til 15 drap vinner</span>
+              </div>
+              <div class="sb-table-wrap">
+                <table class="sb-table">
+                  <thead>
+                    <tr>
+                      <th class="col-rank">#</th>
+                      <th class="col-name">Spiller</th>
+                      <th class="col-kills">Drap</th>
+                      <th class="col-deaths">Dødsfall</th>
+                      <th class="col-kd">K/D</th>
+                      <th class="col-score">Poeng</th>
+                    </tr>
+                  </thead>
+                  <tbody id="scoreboardBody">
+                    <!-- Populated dynamically -->
+                  </tbody>
+                </table>
+              </div>
+              <div class="sb-footer">
+                <span>Hold [TAB] for å vise/skjule</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3-2-1 Countdown Overlay -->
+        <div class="countdown-overlay hidden" id="countdownOverlay">
+          <div class="countdown-box">
+            <div class="countdown-number" id="countdownText">3</div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- =================================================================== -->
+    <!-- MODAL: VICTORY PODIUM / GAME OVER                                   -->
+    <!-- =================================================================== -->
+    <div class="modal-backdrop hidden" id="modalPodium">
+      <div class="podium-card">
+        <div class="podium-badge">🏆 MATCH FERDIG</div>
+        <h2 class="podium-title" id="podiumTitle">KAMPEN ER OVER!</h2>
+        <p class="podium-desc" id="podiumDesc">Vinneren har dominert arenaen!</p>
+
+        <!-- Podium Standings List -->
+        <div class="podium-standings" id="podiumStandings">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="podium-actions">
+          <button type="button" class="primary-btn pulse-glow" id="btnPodiumPlayAgain">
+            🔄 Spill Igjen
+          </button>
+          <button type="button" class="secondary-btn" id="btnPodiumReturnLobby">
+            ‹ Tilbake til Meny
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/parallax-bg.js?v=2.1"></script>
+  <script src="/character/character-creator.js"></script>
+  <script src="app.js?v=1.0"></script>
+</body>
+
+</html>

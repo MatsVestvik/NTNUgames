@@ -352,6 +352,61 @@
               </button>
             </div>
           </div>
+
+          <!-- Game 6: Kuleregn (1-16 spillere) -->
+          <div class="lobby-game-card active-playable" id="gameCardKuleregn" data-min-players="1">
+            <div class="lg-card-bg-icon">
+              <img src="/assets/icons/kuleregn.png" alt="Kuleregn blink" aria-hidden="true" />
+            </div>
+            <div class="lg-card-left">
+              <div>
+                <div class="lg-card-title-row">
+                  <h4 class="lg-card-title">Kuleregn</h4>
+                  <span class="lg-card-badge badge-ready">Nyhet! 💥</span>
+                </div>
+                <p class="lg-card-desc">
+                  Topp-ned skytespill med WASD og mus! Pickups for hagler, maskingevær, sniper og raketter. Free-For-All action.
+                </p>
+                <div class="lg-card-meta">
+                  <span>1–16 spillere</span> • <span>Free-For-All Skyting</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="lg-card-right">
+              <div class="lg-settings-inline">
+                <img src="/settings.png" class="party-gear-icon" alt="" />
+                <label>
+                  <span>Bane:</span>
+                  <select id="selectMapKuleregn" class="lg-select">
+                    <option value="gloshaugen_arena" selected>Gløshaugen Arena 🏛️</option>
+                    <option value="cyber_hangar">Cyber Hangar 🚀</option>
+                  </select>
+                </label>
+                <label style="margin-top:0.35rem;">
+                  <span>Drap for seier:</span>
+                  <select id="selectScoreLimitKuleregn" class="lg-select">
+                    <option value="10">10 drap</option>
+                    <option value="15" selected>15 drap</option>
+                    <option value="25">25 drap</option>
+                  </select>
+                </label>
+                <label style="margin-top:0.35rem;">
+                  <span>AI-boter:</span>
+                  <select id="selectBotsKuleregn" class="lg-select">
+                    <option value="0">0 boter</option>
+                    <option value="2" selected>2 boter</option>
+                    <option value="4">4 boter</option>
+                  </select>
+                </label>
+              </div>
+
+              <button type="button" class="party-btn start-game-btn" id="btnStartKuleregn"
+                style="background: linear-gradient(135deg, #e11d48, #f43f5e);">
+                Start Kuleregn 💥
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 

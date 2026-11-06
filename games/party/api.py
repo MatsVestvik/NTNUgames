@@ -158,6 +158,13 @@ PARTY_REGISTRY: Dict[str, Dict[str, Any]] = {
         "max_players": 16,
         "is_internal": False,
     },
+    "kuleregn": {
+        "name": "Kuleregn",
+        "url_path": "/kuleregn/",
+        "min_players": 1,
+        "max_players": 16,
+        "is_internal": False,
+    },
 }
 
 
@@ -206,6 +213,21 @@ def cleanup_external_game_session(code: str, game_id: Optional[str], player_id: 
                             t_room.bump()
         except Exception as err:
             print("Cleanup turbosladd error:", err)
+
+    elif game_id == "kuleregn":
+        try:
+            from games.kuleregn.api import _rooms as kr_rooms
+            with _rooms_lock:
+                k_room = kr_rooms.get(code)
+                if k_room:
+                    with k_room.lock:
+                        if player_id and player_id in k_room.players:
+                            k_room.remove_player(player_id, forfeit=True)
+                        else:
+                            k_room.status = "finished"
+                            k_room.bump()
+        except Exception as err:
+            print("Cleanup kuleregn error:", err)
 
     elif game_id == "wavelength":
         try:
@@ -365,6 +387,25 @@ class PartyRoom:
                                 self.bump()
                 except Exception as t_err:
                     print("Error checking turbosladd room state in party:", t_err)
+            elif self.current_game == "kuleregn":
+                effective_game_state = dict(self.game_state)
+                try:
+                    from games.kuleregn.api import _rooms as kr_rooms
+                    with _rooms_lock:
+                        kr_room = kr_rooms.get(self.code)
+                    if kr_room:
+                        with kr_room.lock:
+                            effective_game_state["status"] = kr_room.status
+                            if client_player_id:
+                                kr_p = kr_room.players.get(client_player_id)
+                                if kr_p and (kr_p.get("left") or kr_p.get("forfeit")):
+                                    effective_game_state["my_status"] = "left"
+                            if kr_room.status == "finished":
+                                self.current_game = None
+                                self.game_state = {}
+                                self.bump()
+                except Exception as k_err:
+                    print("Error checking kuleregn room state in party:", k_err)
             else:
                 effective_game_state = self.game_state
 
@@ -2172,9 +2213,20 @@ class PartyAPI:
                         "desc": "Legg bilen bredt gjennom svingene med piltastene og utfordre vennegjengen!",
                         "status": "ready",
                         "badge": "Klar til å spilles! 🏎️",
-                        "players": "2–4 spillere",
+                        "players": "2–16 spillere",
                         "icon": "/assets/icons/turbosladd.png",
                         "route": "/turbosladd/",
+                    },
+                    {
+                        "id": "kuleregn",
+                        "title": "Kuleregn",
+                        "subtitle": "Topp-ned skytespill (WASD + Mus)",
+                        "desc": "Intens Free-For-All skytterduell! Plukk opp hagler, maskingevær og raketter og dominer arenaen.",
+                        "status": "ready",
+                        "badge": "Nyhet! 💥",
+                        "players": "1–16 spillere",
+                        "icon": "/assets/icons/kuleregn.png",
+                        "route": "/kuleregn/",
                     },
                 ]
             }
@@ -2624,6 +2676,98 @@ class PartyAPI:
                             ts_rooms[code] = t_room
                     except Exception as err:
                         print("Error creating turbosladd party room bridge:", err)
+                    room.bump()
+                elif game_id == "kuleregn":
+                    room.current_game = "kuleregn"
+                    room.game_state = {"settings": settings, "status": "active"}
+                    try:
+                        from games.kuleregn.api import _rooms as kr_rooms, KuleregnRoom, PLAYER_PALETTE
+                        with _rooms_lock:
+                            host_player = room.players.get(room.host_id, {})
+                            map_id = str(settings.get("mapId", "gloshaugen_arena"))
+                            score_limit = int(settings.get("scoreLimit", 15))
+                            time_limit = int(settings.get("timeLimit", 300))
+                            bot_count = int(settings.get("botCount", 2))
+                            mode = str(settings.get("mode", "ffa"))
+                            host_color = host_player.get("color") or extract_color_from_avatar(host_player.get("avatar", "")) or PLAYER_PALETTE[0]["color"]
+
+                            k_room = KuleregnRoom(
+                                code=code,
+                                host_name=host_player.get("name", "Spiller 1"),
+                                host_color=host_color,
+                                map_id=map_id,
+                                score_limit=score_limit,
+                                time_limit=time_limit,
+                                bot_count=bot_count,
+                                mode=mode,
+                                host_avatar=host_player.get("avatar", ""),
+                            )
+                            k_room.host_id = room.host_id
+                            k_room.status = "lobby"
+                            k_room.countdown_start = None
+                            k_room.players = {}
+
+                            # Host
+                            k_room.players[room.host_id] = {
+                                "id": room.host_id,
+                                "name": host_player.get("name", "Spiller 1"),
+                                "color": host_color,
+                                "avatar": host_player.get("avatar", ""),
+                                "isHost": True,
+                                "isReady": False,
+                                "isBot": False,
+                                "slot": 0,
+                                "x": 400.0,
+                                "y": 400.0,
+                                "angle": 0.0,
+                                "vx": 0.0,
+                                "vy": 0.0,
+                                "speed": 0.0,
+                                "health": 100,
+                                "shield": 25,
+                                "weapon": "pistol",
+                                "kills": 0,
+                                "deaths": 0,
+                                "score": 0,
+                                "streak": 0,
+                                "highestStreak": 0,
+                                "lastSeen": time.time(),
+                            }
+
+                            slot = 1
+                            for pid, pdata in room.players.items():
+                                if pid != room.host_id and len(k_room.players) < 16:
+                                    pal = PLAYER_PALETTE[slot % len(PLAYER_PALETTE)]
+                                    p_color = pdata.get("color") or extract_color_from_avatar(pdata.get("avatar", "")) or pal["color"]
+                                    k_room.players[pid] = {
+                                        "id": pid,
+                                        "name": pdata.get("name", f"Spiller {slot + 1}"),
+                                        "color": p_color,
+                                        "avatar": pdata.get("avatar", ""),
+                                        "isHost": False,
+                                        "isReady": False,
+                                        "isBot": False,
+                                        "slot": slot,
+                                        "x": 400.0 + (slot % 4) * 80.0,
+                                        "y": 400.0 + (slot // 4) * 80.0,
+                                        "angle": 0.0,
+                                        "vx": 0.0,
+                                        "vy": 0.0,
+                                        "speed": 0.0,
+                                        "health": 100,
+                                        "shield": 25,
+                                        "weapon": "pistol",
+                                        "kills": 0,
+                                        "deaths": 0,
+                                        "score": 0,
+                                        "streak": 0,
+                                        "highestStreak": 0,
+                                        "lastSeen": time.time(),
+                                    }
+                                    slot += 1
+                            kr_rooms[code] = k_room
+                    except Exception as err:
+                        print("Error creating kuleregn party room bridge:", err)
                     room.bump()
                 elif game_id is None:
                     # Return to lobby

@@ -22,6 +22,7 @@ from games.sjakk import SjakkAPI
 from games.korridorer import KorridorerAPI
 from games.wavelength import WavelengthAPI
 from games.turbosladd import TurbosladdAPI
+from games.kuleregn import KuleregnAPI
 
 PORT = int(os.environ.get("PORT", "3000"))
 HOST = os.environ.get("HOST", "0.0.0.0")
@@ -141,7 +142,13 @@ class GameGatewayHandler(BaseHTTPRequestHandler):
                 if res:
                     return self._send_json(res[1], status=res[0])
 
-            # 10. Static files
+            # 10. Check Kuleregn API
+            if path.startswith("/api/kuleregn/"):
+                res = KuleregnAPI.handle_get(path, query)
+                if res:
+                    return self._send_json(res[1], status=res[0])
+
+            # 11. Static files
             self.serve_static(path, head_only=head_only)
 
         except Exception as exc:
@@ -219,6 +226,12 @@ class GameGatewayHandler(BaseHTTPRequestHandler):
             # 9. Check Turbosladd API
             if path.startswith("/api/turbosladd/"):
                 res = TurbosladdAPI.handle_post(path, body)
+                if res:
+                    return self._send_json(res[1], status=res[0])
+
+            # 10. Check Kuleregn API
+            if path.startswith("/api/kuleregn/"):
+                res = KuleregnAPI.handle_post(path, body)
                 if res:
                     return self._send_json(res[1], status=res[0])
 
@@ -396,6 +409,7 @@ def main() -> None:
     print(f"   • Sjakk:        http://{HOST}:{PORT}/sjakk/ (2 spillere)")
     print(f"   • Korridorer:   http://{HOST}:{PORT}/korridorer/ (2-4 spillere)")
     print(f"   • Turbosladd:   http://{HOST}:{PORT}/turbosladd/ (1-16 spillere)")
+    print(f"   • Kuleregn:     http://{HOST}:{PORT}/kuleregn/ (1-16 spillere)")
     print(f"   • NTNU guesser: http://{HOST}:{PORT}/geoguesser/ (under utvikling)\n")
 
     try:
