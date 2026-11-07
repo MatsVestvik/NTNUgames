@@ -1028,10 +1028,10 @@ body {
     overflow: hidden;
   }
 
-  /* LEFT SIDE IS MUCH LARGER, RIGHT SIDE HOLDS COMPACT GAME SELECTOR */
+  /* APPROXIMATELY EQUAL 50/50 LEFT AND RIGHT COLUMNS */
   .lobby-grid-layout {
     display: grid;
-    grid-template-columns: minmax(500px, 1.6fr) minmax(320px, 380px);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 1.25rem;
     flex: 1;
     min-height: 0;
@@ -1046,6 +1046,7 @@ body {
     min-height: 0;
     overflow-y: auto;
     padding-right: 0.35rem;
+    min-width: 0;
   }
 
   .lobby-right-col {
@@ -1163,45 +1164,134 @@ body.party-in-lobby .room-instruction-sub {
   font-size: 0.78rem;
 }
 
-/* Players Section in Lobby */
+/* Players Section in Lobby - Completely unclipped & beautifully padded */
 body.party-in-lobby .lobby-players-section {
   background: rgba(13, 19, 33, 0.6);
   border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 0.75rem 1.1rem;
+  padding: 0.75rem 1rem;
   margin-bottom: 0;
   flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 body.party-in-lobby .players-grid {
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: 0.55rem;
-  max-height: 135px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
+  gap: 0.65rem;
+  padding: 12px 10px 10px 10px; /* Room for badges at top: -7px and sides: -6px */
+  max-height: 180px;
+  min-height: 115px;
   overflow-y: auto;
-  padding-right: 0.3rem;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 body.party-in-lobby .player-tile {
-  padding: 0.45rem 0.35rem;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(28, 39, 66, 0.85);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 0.6rem 0.45rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  position: relative;
+  overflow: visible; /* Badges are NEVER clipped */
+  box-sizing: border-box;
+  min-height: 110px;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+body.party-in-lobby .player-tile:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
 }
 
 body.party-in-lobby .player-avatar-circle {
-  width: 38px;
-  height: 38px;
-  margin-bottom: 0.25rem;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #0d1322;
+  border: 2px solid var(--border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.15rem;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+body.party-in-lobby .player-avatar-circle .player-mon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  display: block;
 }
 
 body.party-in-lobby .player-name-text {
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  color: #f1f5f9;
+  line-height: 1.2;
 }
 
 body.party-in-lobby .player-status-badge {
-  font-size: 0.65rem;
-  padding: 0.12rem 0.35rem;
+  font-size: 0.66rem;
+  font-weight: 700;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+body.party-in-lobby .player-crown-badge {
+  position: absolute;
+  top: -7px;
+  right: -6px;
+  background: var(--accent-orange);
+  color: #000;
+  font-size: 0.68rem;
+  font-weight: 900;
+  padding: 0.12rem 0.42rem;
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  z-index: 2;
+  line-height: 1.2;
+}
+
+body.party-in-lobby .player-me-badge {
+  position: absolute;
+  top: -7px;
+  left: -6px;
+  background: #00b4d8;
+  color: #000;
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  padding: 0.12rem 0.42rem;
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  z-index: 2;
+  line-height: 1.2;
+}
+
+body.party-in-lobby .player-kick-btn {
+  position: absolute;
+  top: -7px;
+  right: -6px;
+  z-index: 3;
 }
 
 /* Character Customizer Section */
@@ -1225,7 +1315,7 @@ body.party-in-lobby #skribblCustomizerLobby {
 }
 
 body.party-in-lobby #skribblCustomizerLobby .skribbl-customizer-card {
-  max-width: 680px;
+  max-width: 580px;
   width: 100%;
   margin: 0 auto;
   display: flex;
@@ -1323,7 +1413,7 @@ body.party-in-lobby .leave-btn {
 }
 
 /* ========================================================== */
-/* COMPACT GAME CARDS IN RIGHT COLUMN (Never cropped!)        */
+/* GAME CARDS IN RIGHT COLUMN (Equal width, images clearly visible) */
 /* ========================================================== */
 body.party-in-lobby .lobby-games-section .section-title {
   font-size: 1.05rem;
@@ -1339,12 +1429,11 @@ body.party-in-lobby .lobby-games-section .section-hint {
 
 body.party-in-lobby .lobby-game-card {
   display: flex !important;
-  flex-direction: column !important;
-  align-items: stretch !important;
-  justify-content: flex-start !important;
-  gap: 0.42rem !important;
-  padding: 0.65rem 0.85rem !important;
-  border-radius: 12px !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 1rem !important;
+  padding: 0.85rem 1.2rem !important;
+  border-radius: 14px !important;
   min-width: 0 !important;
   width: 100% !important;
   box-sizing: border-box !important;
@@ -1378,8 +1467,9 @@ body.party-in-lobby .lobby-game-card.disabled-playable {
 
 /* Card Left Section (Title, Badge, Description, Meta) */
 body.party-in-lobby .lg-card-left {
-  display: block !important;
-  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
   min-width: 0 !important;
   box-sizing: border-box !important;
   position: relative !important;
@@ -1389,14 +1479,13 @@ body.party-in-lobby .lg-card-left {
 body.party-in-lobby .lg-card-title-row {
   display: flex !important;
   align-items: center !important;
-  justify-content: space-between !important;
-  gap: 0.35rem !important;
+  gap: 0.55rem !important;
   flex-wrap: wrap !important;
-  margin-bottom: 0.15rem !important;
+  margin-bottom: 0.2rem !important;
 }
 
 body.party-in-lobby .lg-card-title {
-  font-size: 1.02rem !important;
+  font-size: 1.12rem !important;
   font-weight: 800 !important;
   color: #ffffff !important;
   margin: 0 !important;
@@ -1405,29 +1494,24 @@ body.party-in-lobby .lg-card-title {
 }
 
 body.party-in-lobby .lg-card-badge {
-  font-size: 0.68rem !important;
-  padding: 0.12rem 0.45rem !important;
+  font-size: 0.7rem !important;
+  padding: 0.14rem 0.48rem !important;
   border-radius: 6px !important;
   font-weight: 700 !important;
   white-space: nowrap !important;
 }
 
 body.party-in-lobby .lg-card-desc {
-  font-size: 0.74rem !important;
-  line-height: 1.32 !important;
-  margin: 0 0 0.25rem 0 !important;
+  font-size: 0.78rem !important;
+  line-height: 1.35 !important;
+  margin: 0 0 0.3rem 0 !important;
   color: var(--text-muted) !important;
-  max-width: 100% !important;
+  max-width: 360px !important;
   word-break: break-word !important;
-  display: -webkit-box !important;
-  -webkit-line-clamp: 2 !important;
-  -webkit-box-orient: vertical !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
 }
 
 body.party-in-lobby .lg-card-meta {
-  font-size: 0.68rem !important;
+  font-size: 0.7rem !important;
   color: #94a3b8 !important;
   display: flex !important;
   align-items: center !important;
@@ -1441,12 +1525,11 @@ body.party-in-lobby .lg-card-meta {
 body.party-in-lobby .lg-card-right {
   display: flex !important;
   flex-direction: column !important;
-  align-items: stretch !important;
-  width: 100% !important;
-  min-width: 0 !important;
-  gap: 0.35rem !important;
-  padding-top: 0.35rem !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  align-items: flex-end !important;
+  flex: 0 0 auto !important;
+  min-width: 170px !important;
+  max-width: 220px !important;
+  gap: 0.45rem !important;
   position: relative !important;
   z-index: 1 !important;
   box-sizing: border-box !important;
@@ -1457,6 +1540,7 @@ body.party-in-lobby .lg-settings-inline {
   align-items: center !important;
   gap: 0.35rem !important;
   flex-wrap: wrap !important;
+  justify-content: flex-end !important;
   width: 100% !important;
   box-sizing: border-box !important;
   margin: 0 !important;
@@ -1467,44 +1551,39 @@ body.party-in-lobby .party-gear-icon {
   width: 14px !important;
   height: 14px !important;
   min-width: 14px !important;
-  opacity: 0.7 !important;
-  flex-shrink: 0 !important;
+  opacity: 0.75;
+  flex-shrink: 0;
 }
 
 body.party-in-lobby .lg-settings-inline label {
   display: inline-flex !important;
   align-items: center !important;
   gap: 0.25rem !important;
-  font-size: 0.7rem !important;
+  font-size: 0.72rem !important;
   color: #94a3b8 !important;
   margin: 0 !important;
-  flex: 1 1 120px !important;
-  min-width: 0 !important;
-  box-sizing: border-box !important;
 }
 
 body.party-in-lobby .lg-select {
-  padding: 0.2rem 0.38rem !important;
-  font-size: 0.72rem !important;
+  padding: 0.2rem 0.4rem !important;
+  font-size: 0.74rem !important;
   height: 26px !important;
   border-radius: 6px !important;
   background: rgba(10, 15, 28, 0.9) !important;
   border: 1px solid rgba(255, 255, 255, 0.18) !important;
   color: #f1f5f9 !important;
   font-weight: 600 !important;
-  flex: 1 !important;
-  min-width: 0 !important;
-  width: 100% !important;
   cursor: pointer !important;
   text-overflow: ellipsis !important;
   outline: none !important;
+  max-width: 140px !important;
 }
 
 body.party-in-lobby .start-game-btn {
   width: 100% !important;
-  min-width: 0 !important;
-  padding: 0.42rem 0.75rem !important;
-  font-size: 0.82rem !important;
+  min-width: 150px !important;
+  padding: 0.48rem 0.85rem !important;
+  font-size: 0.84rem !important;
   font-weight: 800 !important;
   letter-spacing: 0.02em !important;
   border-radius: 8px !important;
@@ -1523,23 +1602,34 @@ body.party-in-lobby .start-game-btn:hover {
   box-shadow: 0 4px 14px rgba(251, 133, 0, 0.35) !important;
 }
 
-/* Background decorative icon inside compact game card */
+/* Prominent Game Artwork / Image on Card (Fortsatt på spillekortet!) */
 body.party-in-lobby .lg-card-bg-icon {
   position: absolute !important;
-  right: 10px !important;
-  top: 8px !important;
-  transform: rotate(-4deg) !important;
-  width: 44px !important;
-  height: 44px !important;
-  opacity: 0.08 !important;
+  right: 185px !important;
+  top: 50% !important;
+  transform: translateY(-50%) rotate(-6deg) !important;
+  width: 110px !important;
+  height: 110px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   pointer-events: none !important;
   z-index: 0 !important;
-  transition: all 0.25s ease !important;
+  opacity: 0.26 !important;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+body.party-in-lobby .lg-card-bg-icon img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  image-rendering: pixelated !important;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.65)) !important;
 }
 
 body.party-in-lobby .lobby-game-card:hover .lg-card-bg-icon {
-  opacity: 0.16 !important;
-  transform: rotate(-1deg) scale(1.08) !important;
+  opacity: 0.46 !important;
+  transform: translateY(-50%) scale(1.1) rotate(-2deg) !important;
 }
 
 /* Sleek Scrollbars for Games List, Players, and Left Col */
