@@ -39,118 +39,37 @@
     { color: "#1e293b", name: "Kullsvart" },
   ];
 
+  // Standard Single Tank Cannon
+  const TANK_CANNON = {
+    id: "cannon",
+    name: "Stridsvognkanon",
+    type: "Kanon",
+    icon: "💣",
+    damage: 50,
+    fireRate: 0.65,
+    startingAmmo: Infinity,
+    bulletSpeed: 1100,
+    bulletLife: 1.2,
+    spread: 0.005,
+    bulletCount: 1,
+    isAutomatic: false,
+    recoilKick: 0,
+    screenShake: 0,
+    color: "#fde047",
+    length: 26,
+    barrelWidth: 5,
+    slot: "1",
+    desc: "Standard 75mm stridsvognkanon",
+    dps: "75 DPS",
+  };
+
   const WEAPONS = {
-    assault: {
-      id: "assault",
-      name: "Autokanon (AR-47)",
-      type: "Helautomatisk",
-      icon: "⚡",
-      damage: 17,
-      fireRate: 0.11, // ~9 rps
-      startingAmmo: Infinity,
-      bulletSpeed: 980,
-      bulletLife: 1.15,
-      spread: 0.06,
-      bulletCount: 1,
-      isAutomatic: true,
-      recoilKick: 0,
-      screenShake: 0,
-      color: "#38bdf8",
-      length: 28,
-      barrelWidth: 5,
-      slot: "1",
-      desc: "Hurtigskytende autokanon med solid skade",
-      dps: "155 DPS",
-    },
-    shotgun: {
-      id: "shotgun",
-      name: "Flak-kanon (SPAS-12)",
-      type: "Sprenghagl",
-      icon: "💥",
-      damage: 18, // 18 x 6 = 108 maks
-      fireRate: 0.65,
-      startingAmmo: Infinity,
-      bulletSpeed: 780,
-      bulletLife: 0.65,
-      spread: 0.22,
-      bulletCount: 6,
-      isAutomatic: false,
-      recoilKick: 0,
-      screenShake: 0,
-      color: "#fb923c",
-      length: 26,
-      barrelWidth: 6,
-      slot: "2",
-      desc: "Massiv nærkampskade med 6 flak-splinter",
-      dps: "108 Maks",
-    },
-    sniper: {
-      id: "sniper",
-      name: "Panserbryter (AWP Railgun)",
-      type: "Bolt-action",
-      icon: "🎯",
-      damage: 85,
-      fireRate: 0.85,
-      startingAmmo: Infinity,
-      bulletSpeed: 1500,
-      bulletLife: 1.2,
-      spread: 0.012,
-      bulletCount: 1,
-      isAutomatic: false,
-      recoilKick: 0,
-      screenShake: 0,
-      color: "#a855f7",
-      length: 36,
-      barrelWidth: 4,
-      slot: "3",
-      desc: "Lynrask panserbrytende granat med lasersikte",
-      dps: "85 Skade",
-    },
-    rocket: {
-      id: "rocket",
-      name: "HE-Rakettkanon (RPG)",
-      type: "Eksplosiv",
-      icon: "🚀",
-      damage: 115,
-      splashRadius: 140,
-      fireRate: 1.2,
-      startingAmmo: Infinity,
-      bulletSpeed: 520,
-      bulletLife: 2.2,
-      spread: 0.02,
-      bulletCount: 1,
-      isAutomatic: false,
-      recoilKick: 0,
-      screenShake: 0,
-      color: "#ef4444",
-      length: 32,
-      barrelWidth: 8,
-      slot: "4",
-      desc: "Flatestøt og kraftig eksplosjonsradius",
-      dps: "115 AOE",
-    },
-    pistol: {
-      id: "pistol",
-      name: "Standard Stridsvognkanon",
-      type: "Halvautomatisk",
-      icon: "🛡️",
-      damage: 22,
-      fireRate: 0.22,
-      startingAmmo: Infinity,
-      bulletSpeed: 900,
-      bulletLife: 1.1,
-      spread: 0.035,
-      bulletCount: 1,
-      isAutomatic: false,
-      recoilKick: 0,
-      screenShake: 0,
-      color: "#fde047",
-      length: 18,
-      barrelWidth: 4,
-      slot: "5",
-      desc: "Presis og pålitelig standardkanon",
-      dps: "100 DPS",
-    },
+    cannon: TANK_CANNON,
+    assault: TANK_CANNON,
+    shotgun: TANK_CANNON,
+    sniper: TANK_CANNON,
+    rocket: TANK_CANNON,
+    pistol: TANK_CANNON,
   };
 
   // =========================================================================
@@ -697,7 +616,7 @@
     playerColor: localStorage.getItem("kr_player_color") || "#ffd166",
     playerAvatar: localStorage.getItem("party_avatar") || localStorage.getItem("kr_player_avatar") || localStorage.getItem("spillhjornet_character") || "char:h1:c_ffd166:r1:e1:m1",
 
-    selectedWeapon: localStorage.getItem("kr_selected_weapon") || "assault",
+    selectedWeapon: "cannon",
     roomStatus: "lobby", // "lobby" | "countdown" | "playing" | "finished"
     mapId: "rust",
     currentMap: buildRustMap(),
@@ -718,12 +637,12 @@
       recoilVy: 0,
       vx: 0,
       vy: 0,
-      speed: 220,
+      speed: 160,
       health: 100,
       shield: 25,
       maxHealth: 100,
       maxShield: 100,
-      weapon: localStorage.getItem("kr_selected_weapon") || "assault",
+      weapon: "cannon",
       ammo: Infinity,
       fireTimer: 0,
       kills: 0,
@@ -923,7 +842,7 @@
     combatant.shield = 25;
     combatant.isDead = false;
     combatant.respawnTimer = 0;
-    combatant.weapon = combatant.chosenWeapon || state.selectedWeapon || "assault";
+    combatant.weapon = "cannon";
     combatant.ammo = Infinity;
     combatant.invulnerableUntil = performance.now() + 2500; // 2.5s spawn shield
   }
@@ -1294,38 +1213,22 @@
       if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
       const k = e.key.toLowerCase();
 
-      // If start weapon modal is open:
-      if (el.startWeaponOverlay && !el.startWeaponOverlay.classList.contains("hidden")) {
-        if (k === "1" || k === "2" || k === "3" || k === "4" || k === "5") {
-          const mapW = { "1": "assault", "2": "shotgun", "3": "sniper", "4": "rocket", "5": "pistol" };
-          selectPlayerWeapon(mapW[k]);
-          return;
-        }
-        if (k === " " || e.key === " " || k === "enter" || k === "escape") {
-          e.preventDefault();
-          hideStartWeaponOverlay();
-          return;
-        }
-      }
+      // WASD for Tank Driving
+      if (k === "w") state.keys.w = true;
+      if (k === "a") state.keys.a = true;
+      if (k === "s") state.keys.s = true;
+      if (k === "d") state.keys.d = true;
 
-      // WASD for Movement
-      if (k === "w") { state.keys.w = true; hideStartWeaponOverlay(); }
-      if (k === "a") { state.keys.a = true; hideStartWeaponOverlay(); }
-      if (k === "s") { state.keys.s = true; hideStartWeaponOverlay(); }
-      if (k === "d") { state.keys.d = true; hideStartWeaponOverlay(); }
-
-      // Left and Right Arrow Keys ONLY to pan the view
+      // Left and Right Arrow Keys to pan the turret
       if (e.key === "ArrowLeft") {
         e.preventDefault();
         state.keys.arrowLeft = true;
         state.mouse.hasMoved = false;
-        hideStartWeaponOverlay();
       }
       if (e.key === "ArrowRight") {
         e.preventDefault();
         state.keys.arrowRight = true;
         state.mouse.hasMoved = false;
-        hideStartWeaponOverlay();
       }
       if (e.key === "ArrowUp" || e.key === "ArrowDown") {
         e.preventDefault();
@@ -1334,24 +1237,9 @@
       // Space / Enter to Shoot
       if (k === " " || e.key === " " || k === "enter") {
         e.preventDefault();
-        hideStartWeaponOverlay();
         state.keys.shoot = true;
         if (state.roomStatus === "playing") {
           firePlayerWeapon();
-        }
-      }
-
-      if (k === "1") selectPlayerWeapon("assault");
-      if (k === "2") selectPlayerWeapon("shotgun");
-      if (k === "3") selectPlayerWeapon("sniper");
-      if (k === "4") selectPlayerWeapon("rocket");
-      if (k === "5") selectPlayerWeapon("pistol");
-
-      if (k === "b") {
-        if (el.startWeaponOverlay && el.startWeaponOverlay.classList.contains("hidden")) {
-          showStartWeaponOverlay();
-        } else {
-          hideStartWeaponOverlay();
         }
       }
 
@@ -1420,68 +1308,17 @@
     }
   }
 
-  function showStartWeaponOverlay() {
-    renderStartWeaponGrid();
-    if (el.startWeaponOverlay) {
-      el.startWeaponOverlay.classList.remove("hidden");
-    }
-  }
+  function showStartWeaponOverlay() {}
+  function hideStartWeaponOverlay() {}
 
-  function hideStartWeaponOverlay() {
-    if (el.startWeaponOverlay) {
-      el.startWeaponOverlay.classList.add("hidden");
-    }
-  }
-
-  function selectPlayerWeapon(weaponId, notify = true) {
-    if (!WEAPONS[weaponId]) return;
-    state.selectedWeapon = weaponId;
-    localStorage.setItem("kr_selected_weapon", weaponId);
-    state.player.weapon = weaponId;
+  function selectPlayerWeapon(weaponId, notify = false) {
+    state.selectedWeapon = "cannon";
+    state.player.weapon = "cannon";
     state.player.ammo = Infinity;
-    const w = WEAPONS[weaponId];
-    if (notify) {
-      showPickupToast(`${w.icon} Valgt: ${w.name}`);
-      playTone(520, 0.08, "triangle", 0.3);
-    }
     updateWeaponHUD();
-    renderStartWeaponGrid();
   }
 
-  function renderStartWeaponGrid() {
-    if (!el.startWeaponGrid) return;
-    el.startWeaponGrid.innerHTML = "";
-
-    const weaponsList = [
-      WEAPONS.assault,
-      WEAPONS.shotgun,
-      WEAPONS.sniper,
-      WEAPONS.rocket,
-      WEAPONS.pistol,
-    ];
-
-    weaponsList.forEach(w => {
-      const isSelected = (state.selectedWeapon === w.id);
-      const card = document.createElement("div");
-      card.className = `sw-card ${isSelected ? "selected" : ""}`;
-      card.dataset.weapon = w.id;
-
-      card.innerHTML = `
-        <span class="sw-hotkey">${w.slot}</span>
-        <span class="sw-icon">${w.icon}</span>
-        <span class="sw-name">${w.name}</span>
-        <span class="sw-type">${w.type}</span>
-        <span class="sw-stat">${w.dps || w.damage + " dmg"}</span>
-        <span class="sw-badge">✓ VALGT</span>
-      `;
-
-      card.addEventListener("click", () => {
-        selectPlayerWeapon(w.id, true);
-      });
-
-      el.startWeaponGrid.appendChild(card);
-    });
-  }
+  function renderStartWeaponGrid() {}
 
   function firePlayerWeapon() {
     const p = state.player;
@@ -1614,14 +1451,14 @@
 
     if (p.fireTimer > 0) p.fireTimer = Math.max(0, p.fireTimer - dt);
 
-    // 1. Tank Hull Steering & Driving with WASD
+    // 1. Tank Hull Steering & Driving with WASD (Lower sensitivity for controlled, heavy tank steering)
     const isDrivingForward = !!state.keys.w;
     const isDrivingReverse = !!state.keys.s;
     const isSteeringLeft = !!state.keys.a;
     const isSteeringRight = !!state.keys.d;
 
-    // Turn hull with A (left) and D (right)
-    const hullTurnSpeed = 3.6; // rad/s
+    // Turn hull with A (left) and D (right) - grounded tank turn speed
+    const hullTurnSpeed = 2.1; // rad/s (~120 deg/s)
     const steerDir = (isSteeringRight ? 1 : 0) - (isSteeringLeft ? 1 : 0);
     if (steerDir !== 0) {
       p.hullAngle = (p.hullAngle || 0) + steerDir * hullTurnSpeed * dt;
@@ -1629,14 +1466,14 @@
       while (p.hullAngle < -Math.PI) p.hullAngle += Math.PI * 2;
     }
 
-    // Drive forward / reverse along hullAngle
+    // Drive forward / reverse along hullAngle - controlled speed at 3x zoom
     let forwardThrottle = 0;
-    if (isDrivingForward) forwardThrottle += 220;
-    if (isDrivingReverse) forwardThrottle -= 130;
+    if (isDrivingForward) forwardThrottle += 160;
+    if (isDrivingReverse) forwardThrottle -= 95;
 
     // Animate tracks when driving or steering
     if (forwardThrottle !== 0 || steerDir !== 0) {
-      const treadSpeed = forwardThrottle !== 0 ? Math.abs(forwardThrottle) : 120;
+      const treadSpeed = forwardThrottle !== 0 ? Math.abs(forwardThrottle) : 100;
       p.trackDistance = (p.trackDistance || 0) + treadSpeed * dt;
       p.trackFrame = Math.floor(p.trackDistance / 10) % 3;
     }
@@ -1648,8 +1485,8 @@
     // Apply movement & obstacle collisions
     applyCombatantMovement(p, map, dt);
 
-    // 2. Turret Aiming with Arrow Keys (Left & Right)
-    const turretTurnSpeed = 4.4; // rad/s
+    // 2. Turret Aiming with Arrow Keys (Left & Right) - lowered sensitivity for steady aiming
+    const turretTurnSpeed = 2.2; // rad/s (~126 deg/s)
     if (state.keys.arrowLeft || state.keys.arrowRight) {
       const panDir = (state.keys.arrowRight ? 1 : 0) - (state.keys.arrowLeft ? 1 : 0);
       p.angle += panDir * turretTurnSpeed * dt;
@@ -1657,12 +1494,21 @@
       while (p.angle < -Math.PI) p.angle += Math.PI * 2;
       state.lastTurnAngle = p.angle;
     } else if (state.mouse.hasMoved && el.combatCanvas) {
-      // Mouse cursor aiming
+      // Smooth turret traversal towards mouse cursor (prevents instant angle snapping)
       const cw = el.combatCanvas.width;
       const ch = el.combatCanvas.height;
       const pScreenX = cw / 2 + (p.x - state.camera.x) * state.camera.zoom;
       const pScreenY = ch / 2 + (p.y - state.camera.y) * state.camera.zoom;
-      p.angle = Math.atan2(state.mouse.screenY - pScreenY, state.mouse.screenX - pScreenX);
+      const targetAngle = Math.atan2(state.mouse.screenY - pScreenY, state.mouse.screenX - pScreenX);
+      let diff = targetAngle - p.angle;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      const maxTurn = 2.8 * dt;
+      if (Math.abs(diff) <= maxTurn) {
+        p.angle = targetAngle;
+      } else {
+        p.angle += Math.sign(diff) * maxTurn;
+      }
       state.lastTurnAngle = p.angle;
     } else if (state.lastTurnAngle !== undefined) {
       p.angle = state.lastTurnAngle;
@@ -2521,18 +2367,6 @@
     if (el.ammoLabel) {
       el.ammoLabel.textContent = "Uendelig";
     }
-
-    // Synchronize quick weapon buttons highlight in HUD
-    if (el.quickWeaponBar) {
-      const btns = el.quickWeaponBar.querySelectorAll(".qw-btn");
-      btns.forEach(btn => {
-        if (btn.dataset.weapon === p.weapon) {
-          btn.classList.add("active");
-        } else {
-          btn.classList.remove("active");
-        }
-      });
-    }
   }
 
   function updateScoreboardTable() {
@@ -2795,7 +2629,6 @@
     showView("game");
     updateWeaponHUD();
     updateVitalsHUD();
-    showStartWeaponOverlay();
 
     if (el.countdownOverlay) el.countdownOverlay.classList.add("hidden");
     if (el.btnHeaderBack) {
@@ -2829,7 +2662,6 @@
     showView("game");
     updateWeaponHUD();
     updateVitalsHUD();
-    showStartWeaponOverlay();
 
     if (data.status === "countdown") {
       if (el.countdownOverlay) el.countdownOverlay.classList.remove("hidden");
@@ -3014,21 +2846,6 @@
 
     // Standard Tab Switching (Nettspill / Solo)
     initTabs();
-
-    // In-game Start Weapon Modal confirmation button
-    el.btnConfirmStartWeapon?.addEventListener("click", () => {
-      hideStartWeaponOverlay();
-    });
-
-    // In-game Quick Weapon Bar click handlers
-    if (el.quickWeaponBar) {
-      el.quickWeaponBar.addEventListener("click", (e) => {
-        const btn = e.target.closest(".qw-btn");
-        if (btn && btn.dataset.weapon) {
-          selectPlayerWeapon(btn.dataset.weapon, true);
-        }
-      });
-    }
 
     // Standardized PartyConnect for "Nettspill" tab
     if (window.PartyConnect) {

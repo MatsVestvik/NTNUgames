@@ -163,14 +163,6 @@
               <span class="cg-desc">Skyt</span>
             </div>
             <div class="cg-item">
-              <span class="cg-key">1 – 5</span>
-              <span class="cg-desc">Bytt kanon</span>
-            </div>
-            <div class="cg-item">
-              <span class="cg-key">B</span>
-              <span class="cg-desc">Kanonmeny</span>
-            </div>
-            <div class="cg-item">
               <span class="cg-key">TAB</span>
               <span class="cg-desc">Resultattavle</span>
             </div>
@@ -241,38 +233,14 @@
             </div>
           </div>
 
-          <!-- Bottom Right: Active Weapon & Quick Loadout Switcher -->
+          <!-- Bottom Right: Active Cannon HUD -->
           <div class="hud-bottom-right">
-            <!-- In-game quick loadout hotkey bar (1-5) -->
-            <div class="quick-weapon-bar" id="quickWeaponBar">
-              <button type="button" class="qw-btn active" data-weapon="assault" title="1: AR-47 Maskingevær">
-                <span class="qw-key">1</span>
-                <span class="qw-icon">⚡</span>
-              </button>
-              <button type="button" class="qw-btn" data-weapon="shotgun" title="2: SPAS-12 Hagle">
-                <span class="qw-key">2</span>
-                <span class="qw-icon">💥</span>
-              </button>
-              <button type="button" class="qw-btn" data-weapon="sniper" title="3: AWP Skarpskytter">
-                <span class="qw-key">3</span>
-                <span class="qw-icon">🎯</span>
-              </button>
-              <button type="button" class="qw-btn" data-weapon="rocket" title="4: RPG Rakettkaster">
-                <span class="qw-key">4</span>
-                <span class="qw-icon">🚀</span>
-              </button>
-              <button type="button" class="qw-btn" data-weapon="pistol" title="5: P-99 Pistol">
-                <span class="qw-key">5</span>
-                <span class="qw-icon">🔫</span>
-              </button>
-            </div>
-
             <div class="weapon-hud-card" id="weaponHudCard">
               <div class="whc-top">
-                <span class="whc-icon" id="weaponHudIcon">⚡</span>
+                <span class="whc-icon" id="weaponHudIcon">💣</span>
                 <div class="whc-info">
-                  <span class="whc-name" id="weaponHudName">AR-47 Maskingevær</span>
-                  <span class="whc-type" id="weaponHudType">Helautomatisk</span>
+                  <span class="whc-name" id="weaponHudName">Stridsvognkanon</span>
+                  <span class="whc-type" id="weaponHudType">75mm Panserkanon</span>
                 </div>
               </div>
 
@@ -330,25 +298,6 @@
             <div class="countdown-number" id="countdownText">3</div>
           </div>
         </div>
-
-        <!-- Start Weapon Selection Modal (Shown when match begins) -->
-        <div class="start-weapon-overlay hidden" id="startWeaponOverlay">
-          <div class="start-weapon-modal">
-            <div class="swm-badge">🛡️ VELG STRIDSVOGNKANON</div>
-            <h2 class="swm-title">Gjør tanksen klar til kamp!</h2>
-            <p class="swm-desc">Velg stridsvognkanon for denne runden (tast 1–5 eller klikk):</p>
-
-            <div class="start-weapon-grid" id="startWeaponGrid">
-              <!-- Populated by JS -->
-            </div>
-
-            <div class="swm-footer">
-              <button type="button" class="primary-btn swm-play-btn" id="btnConfirmStartWeapon">
-                Rull ut til kamp! 💥 [Mellomrom / Enter]
-              </button>
-            </div>
-          </div>
-        </div>
       </section>
     </main>
 
@@ -383,7 +332,7 @@
   <script src="/parallax-bg.js?v=2.1"></script>
   <script src="/character/character-creator.js"></script>
   <script src="/game-lobby.js"></script>
-  <script src="app.js?v=3.2"></script>
+  <script src="app.js?v=3.3"></script>
 </body>
 
 </html>
