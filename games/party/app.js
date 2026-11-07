@@ -44,9 +44,11 @@
     playerName: null,
     avatar: getInitialAvatar(),
     isHost: false,
-    version: 0,
+    version: -1,
     pollTimer: null,
     isPolling: false,
+    hasRenderedLobby: false,
+    lastPlayersKey: null,
   };
 
   // Elements
@@ -270,6 +272,9 @@
   }
 
   function enterLobbyView() {
+    state.hasRenderedLobby = false;
+    state.lastPlayersKey = null;
+    state.version = -1;
     document.body.classList.add("party-in-lobby");
     el.viewAuth.classList.add("hidden");
     el.viewLobby.classList.remove("hidden");
@@ -420,6 +425,7 @@
             return;
           }
 
+          const hasVersionChanged = (data.version !== state.version);
           state.version = data.version;
           state.isHost = Boolean(data.isHost);
           if (data.isHost && data.hostToken) {
@@ -429,8 +435,6 @@
               window.PartyBridge.saveSession({ hostToken: data.hostToken });
             }
           }
-
-          updateLobbyUI(data);
 
           // Check if active game was launched!
           // Only redirect if this player has not yet returned to the lounge (!meIsReady)
@@ -446,6 +450,12 @@
           if (shouldRedirectToGame && data.gameUrl) {
             window.location.href = data.gameUrl;
             return;
+          }
+
+          // Only mutate DOM if room state actually changed or initial render
+          if (hasVersionChanged || !state.hasRenderedLobby) {
+            state.hasRenderedLobby = true;
+            updateLobbyUI(data);
           }
         }
       } catch (err) {
@@ -501,37 +511,41 @@
       el.hostHint.textContent = state.isHost ? "Du er vert" : `Tilkoblet som ${state.playerName}`;
     }
 
-    // Render players grid
-    el.playersGrid.innerHTML = "";
-    (room.players || []).forEach((p) => {
-      const isMe = p.id === state.playerId;
-      const canKick = state.isHost && !isMe && !p.isHost;
-      const isReady = Boolean(p.isReady);
-      const tile = document.createElement("div");
-      tile.className = `player-tile ${p.isHost ? "is-host" : ""} ${isMe ? "is-me" : ""}`;
-      tile.innerHTML = `
-        ${p.isHost ? '<span class="player-crown-badge">VERT</span>' : ''}
-        ${isMe ? '<span class="player-me-badge">DEG</span>' : ''}
-        ${canKick ? `<button type="button" class="player-kick-btn" title="Fjern ${escapeHtml(p.name)} fra rommet" aria-label="Fjern ${escapeHtml(p.name)}">✕</button>` : ''}
-        <div class="player-avatar-circle" style="border-color: ${p.color || '#3b5080'}">${renderAvatarHtml(p.avatar)}</div>
-        <div class="player-name-text">${escapeHtml(p.name)}</div>
-        <div class="player-status-badge ${isReady ? 'status-ready' : 'status-waiting'}">
-          ${isReady ? 'Klar i lobby' : 'I spill…'}
-        </div>
-      `;
-      if (canKick) {
-        const kickBtn = tile.querySelector(".player-kick-btn");
-        if (kickBtn) {
-          kickBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            if (confirm(`Vil du fjerne ${p.name} fra party-rommet?`)) {
-              kickPlayer(p.id, p.name);
-            }
-          });
+    // Render players grid only if players list changed
+    const playersKey = JSON.stringify((room.players || []).map(p => [p.id, p.name, p.color, p.avatar, p.isHost, p.isReady]));
+    if (state.lastPlayersKey !== playersKey) {
+      state.lastPlayersKey = playersKey;
+      el.playersGrid.innerHTML = "";
+      (room.players || []).forEach((p) => {
+        const isMe = p.id === state.playerId;
+        const canKick = state.isHost && !isMe && !p.isHost;
+        const isReady = Boolean(p.isReady);
+        const tile = document.createElement("div");
+        tile.className = `player-tile ${p.isHost ? "is-host" : ""} ${isMe ? "is-me" : ""}`;
+        tile.innerHTML = `
+          ${p.isHost ? '<span class="player-crown-badge">VERT</span>' : ''}
+          ${isMe ? '<span class="player-me-badge">DEG</span>' : ''}
+          ${canKick ? `<button type="button" class="player-kick-btn" title="Fjern ${escapeHtml(p.name)} fra rommet" aria-label="Fjern ${escapeHtml(p.name)}">✕</button>` : ''}
+          <div class="player-avatar-circle" style="border-color: ${p.color || '#3b5080'}">${renderAvatarHtml(p.avatar)}</div>
+          <div class="player-name-text">${escapeHtml(p.name)}</div>
+          <div class="player-status-badge ${isReady ? 'status-ready' : 'status-waiting'}">
+            ${isReady ? 'Klar i lobby' : 'I spill…'}
+          </div>
+        `;
+        if (canKick) {
+          const kickBtn = tile.querySelector(".player-kick-btn");
+          if (kickBtn) {
+            kickBtn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              if (confirm(`Vil du fjerne ${p.name} fra party-rommet?`)) {
+                kickPlayer(p.id, p.name);
+              }
+            });
+          }
         }
-      }
-      el.playersGrid.appendChild(tile);
-    });
+        el.playersGrid.appendChild(tile);
+      });
+    }
 
     // Update games list based on current player count & move disabled games to the bottom
     state.lastPlayerCount = room.playerCount || (room.players ? room.players.length : 1);
@@ -566,42 +580,64 @@
       const hasEnough = playerCount >= minPlayers;
 
       if (!hasEnough) {
-        card.classList.add("disabled-playable");
-        card.classList.remove("active-playable");
-        card.style.order = "99";
-        card.dataset.allReady = "false";
-        card.title = `Trenger minst ${minPlayers} spillere for å starte`;
+        if (!card.classList.contains("disabled-playable")) {
+          card.classList.add("disabled-playable");
+        }
+        if (card.classList.contains("active-playable")) {
+          card.classList.remove("active-playable");
+        }
+        if (card.style.order !== "99") card.style.order = "99";
+        if (card.dataset.allReady !== "false") card.dataset.allReady = "false";
+        const titleMsg = `Trenger minst ${minPlayers} spillere for å starte`;
+        if (card.title !== titleMsg) card.title = titleMsg;
 
         if (badge) {
-          badge.className = "lg-card-badge badge-needed";
-          badge.textContent = `Trenger ${minPlayers} spillere`;
+          const badgeMsg = `Trenger ${minPlayers} spillere`;
+          if (badge.textContent !== badgeMsg) badge.textContent = badgeMsg;
+          if (badge.className !== "lg-card-badge badge-needed") badge.className = "lg-card-badge badge-needed";
         }
-        selects.forEach((s) => (s.disabled = true));
+        selects.forEach((s) => { if (!s.disabled) s.disabled = true; });
         disabledCards.push(card);
       } else {
-        card.classList.remove("disabled-playable");
-        card.classList.add("active-playable");
-        card.style.order = "1";
-        card.dataset.allReady = allReady ? "true" : "false";
+        if (card.classList.contains("disabled-playable")) {
+          card.classList.remove("disabled-playable");
+        }
+        if (!card.classList.contains("active-playable")) {
+          card.classList.add("active-playable");
+        }
+        if (card.style.order !== "1") card.style.order = "1";
+        const readyVal = allReady ? "true" : "false";
+        if (card.dataset.allReady !== readyVal) card.dataset.allReady = readyVal;
 
         if (badge) {
           if (!allReady) {
-            badge.className = "lg-card-badge badge-waiting";
-            badge.textContent = `Venter på retur (${readyCount}/${totalCount})`;
-            card.title = `Venter på at alle spillere er klare i party-loungen (${readyCount}/${totalCount})`;
+            const badgeMsg = `Venter på retur (${readyCount}/${totalCount})`;
+            if (badge.textContent !== badgeMsg) badge.textContent = badgeMsg;
+            if (badge.className !== "lg-card-badge badge-waiting") badge.className = "lg-card-badge badge-waiting";
+            const titleMsg = `Venter på at alle spillere er klare i party-loungen (${readyCount}/${totalCount})`;
+            if (card.title !== titleMsg) card.title = titleMsg;
           } else {
-            badge.className = "lg-card-badge badge-ready";
-            badge.textContent = isHost ? "Trykk for å starte" : (badge.dataset.origText || "Klar til spill");
-            card.title = isHost ? "Trykk for å starte dette spillet for hele rommet" : "Venter på at verten starter spillet";
+            const badgeMsg = isHost ? "Trykk for å starte" : (badge.dataset.origText || "Klar til spill");
+            if (badge.textContent !== badgeMsg) badge.textContent = badgeMsg;
+            if (badge.className !== "lg-card-badge badge-ready") badge.className = "lg-card-badge badge-ready";
+            const titleMsg = isHost ? "Trykk for å starte dette spillet for hele rommet" : "Venter på at verten starter spillet";
+            if (card.title !== titleMsg) card.title = titleMsg;
           }
         }
-        selects.forEach((s) => (s.disabled = !isHost || !allReady));
+        const shouldDisable = !isHost || !allReady;
+        selects.forEach((s) => { if (s.disabled !== shouldDisable) s.disabled = shouldDisable; });
         enabledCards.push(card);
       }
     });
 
-    // Move disabled games to bottom of the list in DOM
-    [...enabledCards, ...disabledCards].forEach((card) => container.appendChild(card));
+    // Check if DOM ordering actually needs to change!
+    const desiredOrder = [...enabledCards, ...disabledCards];
+    const currentOrder = Array.from(container.children);
+    const orderNeedsChange = desiredOrder.some((card, idx) => currentOrder[idx] !== card);
+
+    if (orderNeedsChange) {
+      desiredOrder.forEach((card) => container.appendChild(card));
+    }
   }
 
   async function kickPlayer(targetPlayerId, targetPlayerName) {
@@ -828,6 +864,9 @@
     state.hostToken = null;
     state.playerId = null;
     state.isHost = false;
+    state.hasRenderedLobby = false;
+    state.lastPlayersKey = null;
+    state.version = -1;
 
     el.viewLobby.classList.add("hidden");
     el.viewAuth.classList.remove("hidden");
