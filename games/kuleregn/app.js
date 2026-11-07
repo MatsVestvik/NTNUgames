@@ -159,7 +159,7 @@
   const FOV_HALF_ANGLE = 1.08; // ~62° each side (124° total forward vision cone)
   const FOV_MAX_DIST = 1350;   // maximum reach of flashlight / sight
   const FOV_CLOSE_RADIUS = 100;// 360° close proximity awareness circle
-  const FOV_DARKNESS = "rgba(7, 9, 15, 0.90)"; // Deep tactical shadow overlay
+  const FOV_DARKNESS = "rgba(7, 9, 15, 0.68)"; // Ambient shadow overlay (unseen areas are clearly visible but shaded)
 
   // =========================================================================
   // ARENA MAPS GENERATION (RUST / GLØSHAUGEN / CYBER HANGAR)
@@ -2160,8 +2160,8 @@
 
         // Subtle tactical flashlight beam illumination inside the lit area
         const fovGrad = ctx.createRadialGradient(p.x, p.y, 15, p.x, p.y, FOV_MAX_DIST);
-        fovGrad.addColorStop(0, "rgba(56, 189, 248, 0.12)");
-        fovGrad.addColorStop(0.35, "rgba(56, 189, 248, 0.05)");
+        fovGrad.addColorStop(0, "rgba(56, 189, 248, 0.16)");
+        fovGrad.addColorStop(0.35, "rgba(56, 189, 248, 0.07)");
         fovGrad.addColorStop(0.75, "rgba(56, 189, 248, 0.02)");
         fovGrad.addColorStop(1, "rgba(56, 189, 248, 0)");
 
@@ -2173,6 +2173,11 @@
         }
         ctx.closePath();
         ctx.fill();
+
+        // Soft perimeter rim along the FOV sightline boundary
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.12)";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
 
         ctx.restore();
       }
