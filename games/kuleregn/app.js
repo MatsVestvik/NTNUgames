@@ -153,6 +153,15 @@
   };
 
   // =========================================================================
+  // TACTICAL FOV & LINE-OF-SIGHT CONSTANTS
+  // =========================================================================
+
+  const FOV_HALF_ANGLE = 1.08; // ~62° each side (124° total forward vision cone)
+  const FOV_MAX_DIST = 1350;   // maximum reach of flashlight / sight
+  const FOV_CLOSE_RADIUS = 100;// 360° close proximity awareness circle
+  const FOV_DARKNESS = "rgba(7, 9, 15, 0.90)"; // Deep tactical shadow overlay
+
+  // =========================================================================
   // ARENA MAPS GENERATION (RUST / GLØSHAUGEN / CYBER HANGAR)
   // =========================================================================
 
@@ -1694,8 +1703,106 @@
   }
 
   // =========================================================================
-  // ARENA RENDERING
+  // ARENA RENDERING & DYNAMIC TACTICAL FOV VISIBILITY
   // =========================================================================
+
+  function normAngle(a) {
+    while (a > Math.PI) a -= Math.PI * 2;
+    while (a < -Math.PI) a += Math.PI * 2;
+    return a;
+  }
+
+  function getMapObstacleSegments(map) {
+    if (map._segments && map._segmentsMapId === map.id) return map._segments;
+    const list = [];
+    for (let i = 0; i < map.obstacles.length; i++) {
+      const obs = map.obstacles[i];
+      list.push({
+        x: obs.x, y: obs.y, w: obs.w, h: obs.h,
+        segs: [
+          { x1: obs.x, y1: obs.y, x2: obs.x + obs.w, y2: obs.y },
+          { x1: obs.x + obs.w, y1: obs.y, x2: obs.x + obs.w, y2: obs.y + obs.h },
+          { x1: obs.x + obs.w, y1: obs.y + obs.h, x2: obs.x, y2: obs.y + obs.h },
+          { x1: obs.x, y1: obs.y + obs.h, x2: obs.x, y2: obs.y }
+        ],
+        corners: [
+          { x: obs.x, y: obs.y },
+          { x: obs.x + obs.w, y: obs.y },
+          { x: obs.x + obs.w, y: obs.y + obs.h },
+          { x: obs.x, y: obs.y + obs.h }
+        ]
+      });
+    }
+    map._segments = list;
+    map._segmentsMapId = map.id;
+    return list;
+  }
+
+  function computeVisibilityPolygon(px, py, pAngle, map) {
+    const fovHalf = FOV_HALF_ANGLE;
+    const maxR = FOV_MAX_DIST;
+    const minR = FOV_CLOSE_RADIUS;
+    const angles = [];
+    const nearbySegs = [];
+    const obsList = getMapObstacleSegments(map);
+
+    for (let i = 0; i < obsList.length; i++) {
+      const o = obsList[i];
+      if (px < o.x - maxR || px > o.x + o.w + maxR ||
+          py < o.y - maxR || py > o.y + o.h + maxR) continue;
+
+      for (let s = 0; s < 4; s++) nearbySegs.push(o.segs[s]);
+
+      for (let c = 0; c < 4; c++) {
+        const corner = o.corners[c];
+        const dist = Math.hypot(corner.x - px, corner.y - py);
+        if (dist > maxR) continue;
+        const ang = Math.atan2(corner.y - py, corner.x - px);
+        angles.push(normAngle(ang - 0.0002));
+        angles.push(ang);
+        angles.push(normAngle(ang + 0.0002));
+      }
+    }
+
+    // 360 circle samples every 3 degrees (120 samples) for smooth circular vision boundary
+    for (let deg = -180; deg <= 180; deg += 3) {
+      angles.push((deg * Math.PI) / 180);
+    }
+    // FOV cone boundary rays
+    angles.push(normAngle(pAngle - fovHalf - 0.0002));
+    angles.push(normAngle(pAngle - fovHalf + 0.0002));
+    angles.push(normAngle(pAngle + fovHalf - 0.0002));
+    angles.push(normAngle(pAngle + fovHalf + 0.0002));
+
+    angles.sort((a, b) => a - b);
+
+    const points = [];
+    for (let i = 0; i < angles.length; i++) {
+      const a = angles[i];
+      const diff = Math.abs(normAngle(a - pAngle));
+      const rLimit = diff <= fovHalf ? maxR : minR;
+      const dx = Math.cos(a);
+      const dy = Math.sin(a);
+      let minT = rLimit;
+
+      for (let s = 0; s < nearbySegs.length; s++) {
+        const seg = nearbySegs[s];
+        const vx = seg.x2 - seg.x1;
+        const vy = seg.y2 - seg.y1;
+        const det = dx * vy - dy * vx;
+        if (Math.abs(det) < 0.000001) continue;
+        const qx = px - seg.x1;
+        const qy = py - seg.y1;
+        const u = (dx * qy - dy * qx) / det;
+        if (u < 0 || u > 1) continue;
+        const t = (vx * qy - vy * qx) / det;
+        if (t > 0.001 && t < minT) minT = t;
+      }
+
+      points.push({ x: px + dx * minT, y: py + dy * minT });
+    }
+    return points;
+  }
 
   function renderArena(map) {
     const canvas = el.combatCanvas;
@@ -1785,49 +1892,7 @@
     }
     ctx.stroke();
 
-    // 3. Tactical FOV Vision Beam (Player flashlight & vision cone)
-    const p = state.player;
-    if (!p.isDead) {
-      const fovHalfAngle = 0.96; // ~55° each side (~110° total cone)
-      const fovDist = 1250;
-      ctx.save();
-
-      // Forward directional cone
-      const coneGrad = ctx.createRadialGradient(p.x, p.y, 15, p.x, p.y, fovDist);
-      coneGrad.addColorStop(0, "rgba(56, 189, 248, 0.16)");
-      coneGrad.addColorStop(0.35, "rgba(56, 189, 248, 0.08)");
-      coneGrad.addColorStop(0.75, "rgba(56, 189, 248, 0.03)");
-      coneGrad.addColorStop(1, "rgba(56, 189, 248, 0)");
-
-      ctx.fillStyle = coneGrad;
-      ctx.beginPath();
-      ctx.moveTo(p.x, p.y);
-      ctx.arc(p.x, p.y, fovDist, p.angle - fovHalfAngle, p.angle + fovHalfAngle);
-      ctx.closePath();
-      ctx.fill();
-
-      // Close proximity awareness circle (140px)
-      const closeGrad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 140);
-      closeGrad.addColorStop(0, "rgba(56, 189, 248, 0.12)");
-      closeGrad.addColorStop(1, "rgba(56, 189, 248, 0)");
-      ctx.fillStyle = closeGrad;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 140, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Subtle dashed perimeter arc
-      ctx.strokeStyle = "rgba(56, 189, 248, 0.22)";
-      ctx.lineWidth = 1;
-      ctx.setLineDash([6, 6]);
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, fovDist * 0.95, p.angle - fovHalfAngle, p.angle + fovHalfAngle);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      ctx.restore();
-    }
-
-    // 4. Render Pickups (medkits and shields)
+    // 3. Render Pickups (medkits and shields)
     const nowTime = performance.now() / 1000;
     for (const pItem of map.pickups) {
       if (pItem.timer > 0) continue;
@@ -2030,6 +2095,53 @@
       ctx.restore();
     }
 
+    // 6. Tactical FOV Darkness Mask (Darkening all places not seen)
+    const p = state.player;
+    if (!p.isDead) {
+      const poly = computeVisibilityPolygon(p.x, p.y, p.angle, map);
+      if (poly.length >= 3) {
+        ctx.save();
+
+        // Fill all unseen areas with deep tactical darkness
+        ctx.fillStyle = FOV_DARKNESS;
+        ctx.beginPath();
+        const pad = 4000;
+        ctx.rect(-pad, -pad, map.width + pad * 2, map.height + pad * 2);
+
+        // Visibility polygon cutout
+        ctx.moveTo(poly[0].x, poly[0].y);
+        for (let i = 1; i < poly.length; i++) {
+          ctx.lineTo(poly[i].x, poly[i].y);
+        }
+        ctx.closePath();
+        ctx.fill("evenodd");
+
+        // Subtle tactical flashlight beam illumination inside the lit area
+        const fovGrad = ctx.createRadialGradient(p.x, p.y, 15, p.x, p.y, FOV_MAX_DIST);
+        fovGrad.addColorStop(0, "rgba(56, 189, 248, 0.12)");
+        fovGrad.addColorStop(0.35, "rgba(56, 189, 248, 0.05)");
+        fovGrad.addColorStop(0.75, "rgba(56, 189, 248, 0.02)");
+        fovGrad.addColorStop(1, "rgba(56, 189, 248, 0)");
+
+        ctx.fillStyle = fovGrad;
+        ctx.beginPath();
+        ctx.moveTo(poly[0].x, poly[0].y);
+        for (let i = 1; i < poly.length; i++) {
+          ctx.lineTo(poly[i].x, poly[i].y);
+        }
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.restore();
+      }
+    } else {
+      // Spectator death overlay
+      ctx.save();
+      ctx.fillStyle = "rgba(220, 38, 38, 0.22)";
+      ctx.fillRect(0, 0, map.width, map.height);
+      ctx.restore();
+    }
+
     // 7. Render Bullets & Rocket Trails
     for (const b of state.bullets) {
       ctx.save();
@@ -2063,25 +2175,29 @@
     }
 
     // 9. Tactical Line-of-Sight Check (Obstacles, containers and angles block vision)
-    const fovHalfAngle = 1.05; // ~120° forward vision cone
     for (const opp of Object.values(state.opponents)) {
       if (opp.isDead) continue;
-      const d = Math.hypot(opp.x - p.x, opp.y - p.y);
-      let diff = Math.atan2(opp.y - p.y, opp.x - p.x) - p.angle;
-      while (diff > Math.PI) diff -= Math.PI * 2;
-      while (diff < -Math.PI) diff += Math.PI * 2;
-      const absDiff = Math.abs(diff);
+      if (!p.isDead) {
+        const d = Math.hypot(opp.x - p.x, opp.y - p.y);
+        let diff = Math.atan2(opp.y - p.y, opp.x - p.x) - p.angle;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        const absDiff = Math.abs(diff);
 
-      const inVisionCone = (absDiff <= fovHalfAngle && d <= 1400) || (d <= 80);
-      const isBlocked = isLineBlockedByObstacles(p.x, p.y, opp.x, opp.y, map.obstacles);
+        const inVisionCone = (absDiff <= FOV_HALF_ANGLE && d <= FOV_MAX_DIST) || (d <= FOV_CLOSE_RADIUS);
+        const isBlocked = isLineBlockedByObstacles(p.x, p.y, opp.x, opp.y, map.obstacles);
 
-      // Opponent is ONLY visible if within vision cone AND not blocked by obstacles!
-      if (inVisionCone && !isBlocked) {
+        // Opponent is ONLY visible if within vision cone AND not blocked by obstacles!
+        if (inVisionCone && !isBlocked) {
+          drawCombatant(ctx, opp, false);
+        }
+      } else {
+        // While dead / spectating, alive opponents are visible
         drawCombatant(ctx, opp, false);
       }
     }
 
-    // Render local player on top
+    // 10. Render local player on top
     if (!state.player.isDead) {
       drawCombatant(ctx, state.player, true);
     }
