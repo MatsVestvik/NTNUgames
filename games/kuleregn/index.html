@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="/game-lobby.css" />
   <link rel="stylesheet" href="/parallax-bg.css" />
   <link rel="stylesheet" href="/character/character-creator.css" />
-  <link rel="stylesheet" href="styles.css?v=2.3" />
+  <link rel="stylesheet" href="styles.css?v=2.4" />
 </head>
 
 <body class="kuleregn-page">
@@ -74,22 +74,8 @@
             </div>
             <h2 class="hero-title">Kuleregn</h2>
             <p class="hero-desc">
-              Topp-ned taktisk 2D skytespill inspirert av klassisk CS / Rust! Beveg deg med WASD, sikt med musen og skyt med venstreklikk eller mellomrom. Velg startvåpen, bruk taktisk synsvinkel (FOV) til å oppdage fiender gjennom vegger, og dominer arenaen!
+              Topp-ned 2D arkadeskytespill på Rust ørkenarena! Beveg deg med WASD/piltaster, sikt med musen og skyt med venstreklikk eller mellomrom. Velg våpen når kampen starter og kjemp om seieren!
             </p>
-          </div>
-
-          <!-- Weapon Loadout Selection (Choose Gun at Start) -->
-          <div class="loadout-section">
-            <div class="loadout-header">
-              <div class="loadout-title-row">
-                <span class="action-card-badge badge-orange">Loadout</span>
-                <span class="loadout-title">Velg ditt startvåpen</span>
-              </div>
-              <span class="loadout-subtitle">Du starter alltid med valgt våpen (kan også byttes i kamp med 1–5)</span>
-            </div>
-            <div class="weapon-loadout-grid" id="weaponLoadoutGrid">
-              <!-- Populated dynamically by app.js -->
-            </div>
           </div>
 
           <!-- Mode Navigation Tabs -->
@@ -181,8 +167,8 @@
               <span class="cg-desc">Bytt våpen</span>
             </div>
             <div class="cg-item">
-              <span class="cg-key">👁️ FOV</span>
-              <span class="cg-desc">X-Ray Veggsyn</span>
+              <span class="cg-key">B</span>
+              <span class="cg-desc">Våpenmeny</span>
             </div>
             <div class="cg-item">
               <span class="cg-key">TAB</span>
@@ -211,10 +197,6 @@
               <span class="hr-label">Plass</span>
               <span class="hr-divider">•</span>
               <span class="hr-kills" id="hudKillsText">0 drap</span>
-            </div>
-            <div class="hud-fov-badge" id="hudFovBadge" title="Taktisk synsfelt: Se fiender gjennom vegger innenfor synskjeglen">
-              <span class="fov-dot"></span>
-              <span class="fov-text">X-RAY FOV</span>
             </div>
             <div class="hud-streak-banner hidden" id="hudStreakBanner">
               🔥 <span id="hudStreakCount">3x</span> Drapstrekk!
@@ -348,6 +330,25 @@
             <div class="countdown-number" id="countdownText">3</div>
           </div>
         </div>
+
+        <!-- Start Weapon Selection Modal (Shown when match begins) -->
+        <div class="start-weapon-overlay hidden" id="startWeaponOverlay">
+          <div class="start-weapon-modal">
+            <div class="swm-badge">🔫 VELG STARTVÅPEN</div>
+            <h2 class="swm-title">Gjør deg klar til kamp!</h2>
+            <p class="swm-desc">Velg våpenet ditt for denne runden (tast 1–5 eller klikk):</p>
+
+            <div class="start-weapon-grid" id="startWeaponGrid">
+              <!-- Populated by JS -->
+            </div>
+
+            <div class="swm-footer">
+              <button type="button" class="primary-btn swm-play-btn" id="btnConfirmStartWeapon">
+                Klar til kamp! 🎯 [Mellomrom / Enter]
+              </button>
+            </div>
+          </div>
+        </div>
       </section>
     </main>
 
@@ -382,7 +383,7 @@
   <script src="/parallax-bg.js?v=2.1"></script>
   <script src="/character/character-creator.js"></script>
   <script src="/game-lobby.js"></script>
-  <script src="app.js?v=2.3"></script>
+  <script src="app.js?v=2.4"></script>
 </body>
 
 </html>

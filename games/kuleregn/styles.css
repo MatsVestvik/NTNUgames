@@ -1188,155 +1188,190 @@ body.kuleregn-page {
 }
 
 /* ========================================================================== */
-/* WEAPON LOADOUT SELECTOR (Lobby)                                            */
+/* IN-GAME START WEAPON SELECTION OVERLAY (Choose when match begins)          */
 /* ========================================================================== */
 
-.loadout-section {
-  background: rgba(15, 23, 42, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  padding: 1.25rem 1.4rem;
-  margin: 1.25rem 0;
-  backdrop-filter: blur(10px);
-}
-
-.loadout-header {
-  margin-bottom: 1rem;
-}
-
-.loadout-title-row {
+.start-weapon-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 15, 29, 0.88);
+  backdrop-filter: blur(14px);
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  margin-bottom: 0.35rem;
+  justify-content: center;
+  z-index: 60;
+  padding: 1.5rem;
+  transition: opacity 0.25s ease, transform 0.25s ease;
 }
 
-.badge-orange {
-  background: rgba(249, 115, 22, 0.2);
-  color: #fb923c;
-  border: 1px solid rgba(249, 115, 22, 0.4);
+.start-weapon-overlay.hidden {
+  display: none !important;
 }
 
-.loadout-title {
-  font-size: 1.15rem;
-  font-weight: 800;
-  color: #fff;
-}
-
-.loadout-subtitle {
-  font-size: 0.85rem;
-  color: #94a3b8;
-  display: block;
-}
-
-.weapon-loadout-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  gap: 0.75rem;
-}
-
-.weapon-loadout-card {
-  position: relative;
-  background: rgba(30, 41, 59, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 14px;
-  padding: 0.85rem 0.75rem;
+.start-weapon-modal {
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+  border-radius: 20px;
+  padding: 1.75rem 2rem;
+  max-width: 780px;
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
+  animation: modalPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.swm-badge {
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  color: #fb923c;
+  background: rgba(249, 115, 22, 0.18);
+  border: 1px solid rgba(249, 115, 22, 0.4);
+  padding: 3px 10px;
+  border-radius: 999px;
+  margin-bottom: 0.5rem;
+}
+
+.swm-title {
+  margin: 0 0 0.4rem 0;
+  font-size: 1.65rem;
+  font-weight: 900;
+  color: #fff;
+}
+
+.swm-desc {
+  margin: 0 0 1.25rem 0;
+  font-size: 0.9rem;
+  color: #94a3b8;
+}
+
+.start-weapon-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.75rem;
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 640px) {
+  .start-weapon-grid {
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  }
+}
+
+.sw-card {
+  position: relative;
+  background: rgba(30, 41, 59, 0.7);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 1rem 0.6rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
 }
 
-.weapon-loadout-card:hover {
+.sw-card:hover {
   transform: translateY(-3px);
   border-color: rgba(249, 115, 22, 0.6);
-  background: rgba(30, 41, 59, 0.9);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  background: rgba(30, 41, 59, 0.95);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
 }
 
-.weapon-loadout-card.selected {
+.sw-card.selected {
   border-color: #f97316;
-  background: rgba(249, 115, 22, 0.16);
-  box-shadow: 0 0 20px rgba(249, 115, 22, 0.45);
+  background: rgba(249, 115, 22, 0.18);
+  box-shadow: 0 0 22px rgba(249, 115, 22, 0.5);
+  transform: translateY(-2px);
 }
 
-.wlc-hotkey {
+.sw-hotkey {
   position: absolute;
   top: 6px;
   left: 6px;
-  font-size: 0.65rem;
+  font-size: 0.7rem;
   font-weight: 900;
-  color: #94a3b8;
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-family: monospace;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fb923c;
+  border: 1px solid rgba(249, 115, 22, 0.4);
   padding: 1px 6px;
   border-radius: 6px;
-  font-family: monospace;
 }
 
-.weapon-loadout-card.selected .wlc-hotkey {
-  color: #fb923c;
-  border-color: rgba(249, 115, 22, 0.5);
-}
-
-.wlc-icon {
-  font-size: 2rem;
+.sw-icon {
+  font-size: 2.2rem;
   line-height: 1;
-  margin: 0.35rem 0 0.4rem 0;
+  margin: 0.4rem 0 0.5rem 0;
   filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
 }
 
-.wlc-name {
-  font-size: 0.88rem;
+.sw-name {
+  font-size: 0.85rem;
   font-weight: 800;
   color: #fff;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
 }
 
-.wlc-type {
-  font-size: 0.72rem;
-  font-weight: 600;
+.sw-type {
+  font-size: 0.7rem;
   color: #94a3b8;
   margin-top: 2px;
 }
 
-.wlc-stats-row {
-  display: flex;
-  gap: 0.35rem;
-  margin-top: 0.5rem;
+.sw-stat {
+  margin-top: 0.45rem;
   font-size: 0.68rem;
-  font-weight: 700;
-}
-
-.wlc-stat {
-  background: rgba(0, 0, 0, 0.35);
-  padding: 2px 5px;
+  font-weight: 800;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 2px 6px;
   border-radius: 4px;
   color: #e2e8f0;
 }
 
-.wlc-active-badge {
+.sw-badge {
   display: none;
-  margin-top: 0.5rem;
+  margin-top: 0.45rem;
   font-size: 0.65rem;
   font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   color: #fbbf24;
   background: rgba(251, 191, 36, 0.15);
-  border: 1px solid rgba(251, 191, 36, 0.35);
+  border: 1px solid rgba(251, 191, 36, 0.4);
   padding: 2px 8px;
   border-radius: 999px;
 }
 
-.weapon-loadout-card.selected .wlc-active-badge {
+.sw-card.selected .sw-badge {
   display: inline-block;
+}
+
+.swm-footer {
+  width: 100%;
+}
+
+.swm-play-btn {
+  width: 100%;
+  max-width: 320px;
+  padding: 0.85rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 800;
+  border-radius: 12px;
+  cursor: pointer;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: #fff;
+  border: none;
+  box-shadow: 0 4px 18px rgba(249, 115, 22, 0.5);
+  transition: all 0.15s ease;
+}
+
+.swm-play-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(249, 115, 22, 0.65);
 }
 
 /* ========================================================================== */

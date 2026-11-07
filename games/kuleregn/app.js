@@ -707,8 +707,10 @@
     inputPartyJoinName: document.getElementById("inputPartyJoinName"),
     btnJoinPartyRoom: document.getElementById("btnJoinPartyRoom"),
 
-    // Weapon Loadout Elements
-    weaponLoadoutGrid: document.getElementById("weaponLoadoutGrid"),
+    // In-game Start Weapon Modal Elements (Choose Gun when game starts)
+    startWeaponOverlay: document.getElementById("startWeaponOverlay"),
+    startWeaponGrid: document.getElementById("startWeaponGrid"),
+    btnConfirmStartWeapon: document.getElementById("btnConfirmStartWeapon"),
     quickWeaponBar: document.getElementById("quickWeaponBar"),
     hudFovBadge: document.getElementById("hudFovBadge"),
 
@@ -797,6 +799,7 @@
     if (viewName === "lobby") {
       if (el.headGameStatus) el.headGameStatus.classList.add("hidden");
       if (el.modalPodium) el.modalPodium.classList.add("hidden");
+      if (el.startWeaponOverlay) el.startWeaponOverlay.classList.add("hidden");
       if (el.btnHeaderBack) {
         el.btnHeaderBack.href = "/";
       }
@@ -868,6 +871,9 @@
   }
 
   function lineIntersectsRect(x1, y1, x2, y2, rx, ry, rw, rh) {
+    const midX = (x1 + x2) * 0.5;
+    const midY = (y1 + y2) * 0.5;
+    if (midX >= rx && midX <= rx + rw && midY >= ry && midY <= ry + rh) return true;
     if (lineIntersectsSegment(x1, y1, x2, y2, rx, ry, rx + rw, ry)) return true;
     if (lineIntersectsSegment(x1, y1, x2, y2, rx + rw, ry, rx + rw, ry + rh)) return true;
     if (lineIntersectsSegment(x1, y1, x2, y2, rx + rw, ry + rh, rx, ry + rh)) return true;
@@ -1190,13 +1196,28 @@
       if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
       const k = e.key.toLowerCase();
 
-      if (k === "w" || e.key === "ArrowUp") state.keys.w = true;
-      if (k === "a" || e.key === "ArrowLeft") state.keys.a = true;
-      if (k === "s" || e.key === "ArrowDown") state.keys.s = true;
-      if (k === "d" || e.key === "ArrowRight") state.keys.d = true;
+      // If start weapon modal is open:
+      if (el.startWeaponOverlay && !el.startWeaponOverlay.classList.contains("hidden")) {
+        if (k === "1" || k === "2" || k === "3" || k === "4" || k === "5") {
+          const mapW = { "1": "assault", "2": "shotgun", "3": "sniper", "4": "rocket", "5": "pistol" };
+          selectPlayerWeapon(mapW[k]);
+          return;
+        }
+        if (k === " " || e.key === " " || k === "enter" || k === "escape") {
+          e.preventDefault();
+          hideStartWeaponOverlay();
+          return;
+        }
+      }
+
+      if (k === "w" || e.key === "ArrowUp") { state.keys.w = true; hideStartWeaponOverlay(); }
+      if (k === "a" || e.key === "ArrowLeft") { state.keys.a = true; hideStartWeaponOverlay(); }
+      if (k === "s" || e.key === "ArrowDown") { state.keys.s = true; hideStartWeaponOverlay(); }
+      if (k === "d" || e.key === "ArrowRight") { state.keys.d = true; hideStartWeaponOverlay(); }
 
       if (k === " " || e.key === " " || k === "enter") {
         e.preventDefault();
+        hideStartWeaponOverlay();
         state.keys.shoot = true;
         if (state.roomStatus === "playing") {
           firePlayerWeapon();
@@ -1208,6 +1229,14 @@
       if (k === "3") selectPlayerWeapon("sniper");
       if (k === "4") selectPlayerWeapon("rocket");
       if (k === "5") selectPlayerWeapon("pistol");
+
+      if (k === "b") {
+        if (el.startWeaponOverlay && el.startWeaponOverlay.classList.contains("hidden")) {
+          showStartWeaponOverlay();
+        } else {
+          hideStartWeaponOverlay();
+        }
+      }
 
       if (e.key === "Tab") {
         e.preventDefault();
@@ -1267,6 +1296,19 @@
     }
   }
 
+  function showStartWeaponOverlay() {
+    renderStartWeaponGrid();
+    if (el.startWeaponOverlay) {
+      el.startWeaponOverlay.classList.remove("hidden");
+    }
+  }
+
+  function hideStartWeaponOverlay() {
+    if (el.startWeaponOverlay) {
+      el.startWeaponOverlay.classList.add("hidden");
+    }
+  }
+
   function selectPlayerWeapon(weaponId, notify = true) {
     if (!WEAPONS[weaponId]) return;
     state.selectedWeapon = weaponId;
@@ -1279,12 +1321,12 @@
       playTone(520, 0.08, "triangle", 0.3);
     }
     updateWeaponHUD();
-    renderWeaponLoadoutGrid();
+    renderStartWeaponGrid();
   }
 
-  function renderWeaponLoadoutGrid() {
-    if (!el.weaponLoadoutGrid) return;
-    el.weaponLoadoutGrid.innerHTML = "";
+  function renderStartWeaponGrid() {
+    if (!el.startWeaponGrid) return;
+    el.startWeaponGrid.innerHTML = "";
 
     const weaponsList = [
       WEAPONS.assault,
@@ -1297,25 +1339,23 @@
     weaponsList.forEach(w => {
       const isSelected = (state.selectedWeapon === w.id);
       const card = document.createElement("div");
-      card.className = `weapon-loadout-card ${isSelected ? "selected" : ""}`;
+      card.className = `sw-card ${isSelected ? "selected" : ""}`;
       card.dataset.weapon = w.id;
 
       card.innerHTML = `
-        <span class="wlc-hotkey">${w.slot}</span>
-        <span class="wlc-icon">${w.icon}</span>
-        <span class="wlc-name">${w.name}</span>
-        <span class="wlc-type">${w.type}</span>
-        <div class="wlc-stats-row">
-          <span class="wlc-stat">${w.dps || w.damage + " dmg"}</span>
-        </div>
-        <span class="wlc-active-badge">✓ VALGT</span>
+        <span class="sw-hotkey">${w.slot}</span>
+        <span class="sw-icon">${w.icon}</span>
+        <span class="sw-name">${w.name}</span>
+        <span class="sw-type">${w.type}</span>
+        <span class="sw-stat">${w.dps || w.damage + " dmg"}</span>
+        <span class="sw-badge">✓ VALGT</span>
       `;
 
       card.addEventListener("click", () => {
         selectPlayerWeapon(w.id, true);
       });
 
-      el.weaponLoadoutGrid.appendChild(card);
+      el.startWeaponGrid.appendChild(card);
     });
   }
 
@@ -2022,8 +2062,8 @@
       ctx.restore();
     }
 
-    // 9. Combatant Visibility & Wallhack FOV Raycast Check
-    const fovHalfAngle = 0.96;
+    // 9. Tactical Line-of-Sight Check (Obstacles, containers and angles block vision)
+    const fovHalfAngle = 1.05; // ~120° forward vision cone
     for (const opp of Object.values(state.opponents)) {
       if (opp.isDead) continue;
       const d = Math.hypot(opp.x - p.x, opp.y - p.y);
@@ -2032,19 +2072,12 @@
       while (diff < -Math.PI) diff += Math.PI * 2;
       const absDiff = Math.abs(diff);
 
-      const inFOV = d <= 140 || (d <= 1350 && absDiff <= fovHalfAngle);
+      const inVisionCone = (absDiff <= fovHalfAngle && d <= 1400) || (d <= 80);
       const isBlocked = isLineBlockedByObstacles(p.x, p.y, opp.x, opp.y, map.obstacles);
 
-      if (!isBlocked) {
-        // Direct line of sight: Draw opponent normally
+      // Opponent is ONLY visible if within vision cone AND not blocked by obstacles!
+      if (inVisionCone && !isBlocked) {
         drawCombatant(ctx, opp, false);
-      } else if (inFOV) {
-        // Occluded behind obstacle, BUT inside player's FOV!
-        // User: "add fov so you can see enemies through things"
-        // Draw glowing X-Ray tactical holographic silhouette through walls!
-        drawXRayCombatant(ctx, opp, d);
-      } else {
-        // Occluded and outside FOV: completely hidden from player
       }
     }
 
@@ -2052,87 +2085,6 @@
     if (!state.player.isDead) {
       drawCombatant(ctx, state.player, true);
     }
-
-    ctx.restore();
-  }
-
-  function drawXRayCombatant(ctx, c, dist) {
-    const now = performance.now();
-    const pulse = 0.8 + Math.sin(now * 0.009) * 0.2;
-
-    ctx.save();
-
-    // 1. Holographic X-Ray glow through obstacles
-    ctx.shadowColor = c.color || "#ef4444";
-    ctx.shadowBlur = 16 * pulse;
-
-    // 2. Translucent silhouette body
-    ctx.save();
-    ctx.translate(c.x, c.y);
-
-    const facingLeft = Math.cos(c.angle) < -0.1;
-    if (facingLeft) ctx.scale(-1, 1);
-
-    // Glowing ghostly body circle
-    ctx.beginPath();
-    ctx.arc(0, -2, 20, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(239, 68, 68, 0.35)";
-    ctx.fill();
-    ctx.strokeStyle = c.color || "#ef4444";
-    ctx.lineWidth = 2.5;
-    ctx.stroke();
-
-    // Tactical scanlines across silhouette
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.45)";
-    ctx.lineWidth = 1;
-    for (let sy = -16; sy <= 16; sy += 6) {
-      const w = Math.sqrt(Math.max(0, 400 - sy * sy));
-      ctx.beginPath();
-      ctx.moveTo(-w * 0.8, sy - 2);
-      ctx.lineTo(w * 0.8, sy - 2);
-      ctx.stroke();
-    }
-    ctx.restore();
-
-    // 3. Direction pointer / gun silhouette
-    ctx.save();
-    ctx.translate(c.x, c.y);
-    ctx.rotate(c.angle);
-    ctx.fillStyle = c.color || "#ef4444";
-    ctx.fillRect(12, -2, 22, 4);
-    ctx.restore();
-
-    // 4. Overhead Tactical HUD marker
-    ctx.save();
-    ctx.translate(c.x, c.y - 42);
-
-    // Tactical Diamond / Arrow
-    ctx.fillStyle = "#ef4444";
-    ctx.font = "bold 13px sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText("▼", 0, -8);
-
-    // X-Ray Distance & Name tag
-    ctx.font = "bold 10px monospace";
-    ctx.fillStyle = "#ffffff";
-    ctx.shadowColor = "#000000";
-    ctx.shadowBlur = 4;
-    const distMeters = Math.round(dist / 12);
-    ctx.fillText(`${c.name || "FIENDE"} [${distMeters}m]`, 0, -20);
-
-    // Health Bar
-    const barW = 38;
-    const barH = 4;
-    const hpPct = Math.max(0, Math.min(1, (c.health || 0) / (c.maxHealth || 100)));
-    ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
-    ctx.fillRect(-barW / 2, 2, barW, barH);
-    ctx.fillStyle = hpPct > 0.5 ? "#22c55e" : (hpPct > 0.25 ? "#eab308" : "#ef4444");
-    ctx.fillRect(-barW / 2, 2, barW * hpPct, barH);
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
-    ctx.lineWidth = 0.8;
-    ctx.strokeRect(-barW / 2, 2, barW, barH);
-
-    ctx.restore();
 
     ctx.restore();
   }
@@ -2550,6 +2502,7 @@
     showView("game");
     updateWeaponHUD();
     updateVitalsHUD();
+    showStartWeaponOverlay();
 
     if (el.countdownOverlay) el.countdownOverlay.classList.add("hidden");
     if (el.btnHeaderBack) {
@@ -2583,6 +2536,7 @@
     showView("game");
     updateWeaponHUD();
     updateVitalsHUD();
+    showStartWeaponOverlay();
 
     if (data.status === "countdown") {
       if (el.countdownOverlay) el.countdownOverlay.classList.remove("hidden");
@@ -2768,8 +2722,10 @@
     // Standard Tab Switching (Nettspill / Solo)
     initTabs();
 
-    // Render weapon loadout selection grid in lobby
-    renderWeaponLoadoutGrid();
+    // In-game Start Weapon Modal confirmation button
+    el.btnConfirmStartWeapon?.addEventListener("click", () => {
+      hideStartWeaponOverlay();
+    });
 
     // In-game Quick Weapon Bar click handlers
     if (el.quickWeaponBar) {
