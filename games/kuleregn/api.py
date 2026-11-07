@@ -542,7 +542,7 @@ class KuleregnRoom:
                 return
 
             p["lastSeen"] = time.time()
-            for key in ("x", "y", "angle", "vx", "vy", "speed", "weapon", "health", "shield", "isReloading"):
+            for key in ("x", "y", "angle", "hullAngle", "trackFrame", "vx", "vy", "speed", "weapon", "health", "shield", "isReloading"):
                 if key in telemetry:
                     p[key] = telemetry[key]
 

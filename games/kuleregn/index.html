@@ -4,14 +4,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Kuleregn • Topp-ned 2D Skytespill</title>
+  <title>Kuleregn Tanks • 2D Stridsvognkamp</title>
 
   <link rel="icon" type="image/png" href="/assets/icons/kuleregn.png" />
   <link rel="stylesheet" href="/hub.css" />
   <link rel="stylesheet" href="/game-lobby.css" />
   <link rel="stylesheet" href="/parallax-bg.css" />
   <link rel="stylesheet" href="/character/character-creator.css" />
-  <link rel="stylesheet" href="styles.css?v=2.8" />
+  <link rel="stylesheet" href="styles.css?v=3.0" />
 </head>
 
 <body class="kuleregn-page">
@@ -35,8 +35,8 @@
         <div class="header-branding">
           <img src="/hub/assets/icons/kuleregn.png" class="header-game-icon" alt="" aria-hidden="true" style="image-rendering: pixelated; object-fit: contain;" />
           <div>
-            <h1 class="header-title">KULEREGN</h1>
-            <span class="header-badge">2D Skytespill</span>
+            <h1 class="header-title">KULEREGN TANKS</h1>
+            <span class="header-badge">2D Stridsvognkamp</span>
           </div>
         </div>
       </div>
@@ -72,9 +72,9 @@
             <div class="hero-icon-wrap">
               <img src="/hub/assets/icons/kuleregn.png" alt="Kuleregn blink" class="hero-icon" />
             </div>
-            <h2 class="hero-title">Kuleregn</h2>
+            <h2 class="hero-title">Kuleregn Tanks</h2>
             <p class="hero-desc">
-              Topp-ned 2D arkadeskytespill på Rust ørkenarena! Beveg deg med WASD, panorer synsvinkelen med venstre/høyre piltast (◄ ►) og skyt med mellomrom eller venstreklikk. Velg våpen når kampen starter og kjemp om seieren!
+              Topp-ned 2D panserkamp på Rust ørkenarena! Kjør stridsvognen med WASD, roter kanontårnet med piltastene (◄ ►) og avfyr med mellomrom. Beltesporene er animerte og tanksen lakkeres i fargen til karakteren din!
             </p>
           </div>
 
@@ -112,7 +112,7 @@
                 </div>
                 <h3 class="box-title">Solo treningsskyting</h3>
                 <p class="box-desc">
-                  Test våpnene, prøv bevegelse og øv på treffsikkerhet på egen hånd i arenaen!
+                  Test kanonene, øv på styring av stridsvognen og sikt inn målene på egen hånd i arenaen!
                 </p>
               </div>
 
@@ -128,16 +128,16 @@
 
                 <div class="stat-pills-row">
                   <div class="stat-pill">
-                    <span class="stat-pill-label">Bevegelse</span>
+                    <span class="stat-pill-label">Kjør</span>
                     <strong class="stat-pill-val">W A S D</strong>
                   </div>
                   <div class="stat-pill">
-                    <span class="stat-pill-label">Panorer syn</span>
+                    <span class="stat-pill-label">Sikt tårn</span>
                     <strong class="stat-pill-val">◄  ► Piler</strong>
                   </div>
                   <div class="stat-pill">
                     <span class="stat-pill-label">Skyt</span>
-                    <strong class="stat-pill-val">Space / Klikk</strong>
+                    <strong class="stat-pill-val">Mellomrom</strong>
                   </div>
                 </div>
               </div>
@@ -152,23 +152,23 @@
           <div class="controls-guide-bar" style="margin-top: 2rem;">
             <div class="cg-item">
               <span class="cg-key">W A S D</span>
-              <span class="cg-desc">Bevegelse</span>
+              <span class="cg-desc">Kjør stridsvogn</span>
             </div>
             <div class="cg-item">
-              <span class="cg-key">MUS</span>
-              <span class="cg-desc">Sikt</span>
+              <span class="cg-key">◄  ►</span>
+              <span class="cg-desc">Roter tårn</span>
             </div>
             <div class="cg-item">
-              <span class="cg-key">KLIKK / MELLOMROM</span>
+              <span class="cg-key">MELLOMROM</span>
               <span class="cg-desc">Skyt</span>
             </div>
             <div class="cg-item">
               <span class="cg-key">1 – 5</span>
-              <span class="cg-desc">Bytt våpen</span>
+              <span class="cg-desc">Bytt kanon</span>
             </div>
             <div class="cg-item">
               <span class="cg-key">B</span>
-              <span class="cg-desc">Våpenmeny</span>
+              <span class="cg-desc">Kanonmeny</span>
             </div>
             <div class="cg-item">
               <span class="cg-key">TAB</span>
@@ -334,9 +334,9 @@
         <!-- Start Weapon Selection Modal (Shown when match begins) -->
         <div class="start-weapon-overlay hidden" id="startWeaponOverlay">
           <div class="start-weapon-modal">
-            <div class="swm-badge">🔫 VELG STARTVÅPEN</div>
-            <h2 class="swm-title">Gjør deg klar til kamp!</h2>
-            <p class="swm-desc">Velg våpenet ditt for denne runden (tast 1–5 eller klikk):</p>
+            <div class="swm-badge">🛡️ VELG STRIDSVOGNKANON</div>
+            <h2 class="swm-title">Gjør tanksen klar til kamp!</h2>
+            <p class="swm-desc">Velg stridsvognkanon for denne runden (tast 1–5 eller klikk):</p>
 
             <div class="start-weapon-grid" id="startWeaponGrid">
               <!-- Populated by JS -->
@@ -344,7 +344,7 @@
 
             <div class="swm-footer">
               <button type="button" class="primary-btn swm-play-btn" id="btnConfirmStartWeapon">
-                Klar til kamp! 🎯 [Mellomrom / Enter]
+                Rull ut til kamp! 💥 [Mellomrom / Enter]
               </button>
             </div>
           </div>
@@ -383,7 +383,7 @@
   <script src="/parallax-bg.js?v=2.1"></script>
   <script src="/character/character-creator.js"></script>
   <script src="/game-lobby.js"></script>
-  <script src="app.js?v=2.8"></script>
+  <script src="app.js?v=3.0"></script>
 </body>
 
 </html>

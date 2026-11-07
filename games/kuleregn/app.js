@@ -1,14 +1,15 @@
 /**
- * Kuleregn - Topp-ned 2D Arkadeskytespill
+ * Kuleregn Tanks - Topp-ned 2D Arkade Stridsvognspill
  *
  * Funksjoner:
  * - 60 FPS HTML5 Canvas med dynamisk kameratracking
- * - WASD / Piltaster for bevegelse og pekretning (retningsbasert skyting uten musesiktekors)
- * - Mellomrom eller Venstreklikk for å skyte rett frem (kontinuerlig skyting basert på skuddtakt)
- * - Ingen manuell omlading: Pistol har ubegrenset ammunisjon, spesialvåpen har ammunisjonspool som automatisk går tilbake til pistol når den er tom
- * - Karakteren du lager i lobbyen (med Skribbl.io-piler for hår, øyne, munn og farge) er soldaten din på slagmarken!
+ * - WASD for å kjøre stridsvognen (W frem, S revers, A/D sving chassis)
+ * - Piltaster (◄ ►) for å rotere og sikte kanontårnet
+ * - Mellomrom eller Venstreklikk for å avfyre kanonen med rekyl
+ * - Animerte beltespor (tracks) og fargetilpasning til karakterens farge
+ * - Karakteren din er vognkommandør med avatar på tårnluken
  * - Flerspiller over nettverk med romkoder og Party Lobby-bro
- * - Kart-pickups: Våpenkasser (Hagle, Maskingevær, Sniper, Raketter), Medkits, Kevlar-skjold og sprengbare tønner
+ * - Kart: Rust (Scrapyard), Gløshaugen Arena, Cyber Hangar
  * - Sanntids Kill Feed, overhead helse/skjold, resultattavle (TAB) og seierspodium
  */
 
@@ -41,7 +42,7 @@
   const WEAPONS = {
     assault: {
       id: "assault",
-      name: "AR-47 Maskingevær",
+      name: "Autokanon (AR-47)",
       type: "Helautomatisk",
       icon: "⚡",
       damage: 17,
@@ -58,13 +59,13 @@
       length: 28,
       barrelWidth: 5,
       slot: "1",
-      desc: "Høy skuddtakt og solid skade",
+      desc: "Hurtigskytende autokanon med solid skade",
       dps: "155 DPS",
     },
     shotgun: {
       id: "shotgun",
-      name: "SPAS-12 Hagle",
-      type: "Pumpehagle",
+      name: "Flak-kanon (SPAS-12)",
+      type: "Sprenghagl",
       icon: "💥",
       damage: 18, // 18 x 6 = 108 maks
       fireRate: 0.65,
@@ -80,12 +81,12 @@
       length: 26,
       barrelWidth: 6,
       slot: "2",
-      desc: "Massiv nærkampskade med 6 hagl",
+      desc: "Massiv nærkampskade med 6 flak-splinter",
       dps: "108 Maks",
     },
     sniper: {
       id: "sniper",
-      name: "AWP Skarpskytter",
+      name: "Panserbryter (AWP Railgun)",
       type: "Bolt-action",
       icon: "🎯",
       damage: 85,
@@ -102,12 +103,12 @@
       length: 36,
       barrelWidth: 4,
       slot: "3",
-      desc: "Lynrask kule med lasersikte",
+      desc: "Lynrask panserbrytende granat med lasersikte",
       dps: "85 Skade",
     },
     rocket: {
       id: "rocket",
-      name: "RPG Rakettkaster",
+      name: "HE-Rakettkanon (RPG)",
       type: "Eksplosiv",
       icon: "🚀",
       damage: 115,
@@ -125,14 +126,14 @@
       length: 32,
       barrelWidth: 8,
       slot: "4",
-      desc: "Flatestøt og eksplosiv sprutskade",
+      desc: "Flatestøt og kraftig eksplosjonsradius",
       dps: "115 AOE",
     },
     pistol: {
       id: "pistol",
-      name: "P-99 Pistol",
+      name: "Standard Stridsvognkanon",
       type: "Halvautomatisk",
-      icon: "🔫",
+      icon: "🛡️",
       damage: 22,
       fireRate: 0.22,
       startingAmmo: Infinity,
@@ -147,10 +148,80 @@
       length: 18,
       barrelWidth: 4,
       slot: "5",
-      desc: "Rask og presis reserveladning",
+      desc: "Presis og pålitelig standardkanon",
       dps: "100 DPS",
     },
   };
+
+  // =========================================================================
+  // TANK SPRITE ASSETS & DYNAMIC COLOR TINTING
+  // =========================================================================
+
+  const TANK_ASSET_PATHS = {
+    body: "/games/kuleregn/assets/tank/body.png",
+    turret: "/games/kuleregn/assets/tank/turret.png",
+    tracks: [
+      "/games/kuleregn/assets/tank/tracks_0001.png",
+      "/games/kuleregn/assets/tank/tracks_0002.png",
+      "/games/kuleregn/assets/tank/tracks_0003.png",
+    ],
+  };
+
+  const TANK_ASSETS = {
+    body: new Image(),
+    turret: new Image(),
+    tracks: [new Image(), new Image(), new Image()],
+  };
+
+  TANK_ASSETS.body.src = TANK_ASSET_PATHS.body;
+  TANK_ASSETS.turret.src = TANK_ASSET_PATHS.turret;
+  TANK_ASSETS.tracks[0].src = TANK_ASSET_PATHS.tracks[0];
+  TANK_ASSETS.tracks[1].src = TANK_ASSET_PATHS.tracks[1];
+  TANK_ASSETS.tracks[2].src = TANK_ASSET_PATHS.tracks[2];
+
+  const tintCache = new Map();
+
+  function getTintedSprite(img, hexColor) {
+    if (!img || !img.complete || img.naturalWidth === 0) return null;
+    const color = hexColor || "#ffd166";
+    const key = `${img.src}_${color}`;
+    if (tintCache.has(key)) return tintCache.get(key);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext("2d");
+
+    ctx.drawImage(img, 0, 0);
+
+    if (color.startsWith("#") && color.length === 7) {
+      const r = parseInt(color.slice(1, 3), 16);
+      const g = parseInt(color.slice(3, 5), 16);
+      const b = parseInt(color.slice(5, 7), 16);
+
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imgData.data;
+      for (let i = 0; i < data.length; i += 4) {
+        const alpha = data[i + 3];
+        if (alpha === 0) continue;
+        const gray = (data[i] + data[i + 1] + data[i + 2]) / 3;
+        if (gray < 25) {
+          data[i] = 18;
+          data[i + 1] = 22;
+          data[i + 2] = 30;
+        } else {
+          const factor = gray / 217;
+          data[i] = Math.min(255, Math.round(r * factor));
+          data[i + 1] = Math.min(255, Math.round(g * factor));
+          data[i + 2] = Math.min(255, Math.round(b * factor));
+        }
+      }
+      ctx.putImageData(imgData, 0, 0);
+    }
+
+    tintCache.set(key, canvas);
+    return canvas;
+  }
 
   // =========================================================================
   // TACTICAL FOV & LINE-OF-SIGHT CONSTANTS
@@ -634,14 +705,20 @@
     timeLimit: 300,
     timeRemaining: 300,
 
-    // Local Player Character
+    // Local Player Tank
     player: {
       x: 400,
       y: 400,
-      angle: 0,
+      angle: -Math.PI / 2,     // Turret facing angle (pointing UP initially)
+      hullAngle: -Math.PI / 2, // Tank chassis facing angle (pointing UP initially)
+      trackDistance: 0,
+      trackFrame: 0,
+      recoilOffset: 0,
+      recoilVx: 0,
+      recoilVy: 0,
       vx: 0,
       vy: 0,
-      speed: 260,
+      speed: 220,
       health: 100,
       shield: 25,
       maxHealth: 100,
@@ -671,7 +748,7 @@
     // Camera
     camera: { x: 400, y: 400, zoom: 1.0, shake: 0 },
 
-    // Input States (WASD Movement, Left/Right Arrows Pan View, Space/Click Shoot)
+    // Input States (WASD Tank Steering/Throttle, Left/Right Arrows Turret, Space/Click Shoot)
     keys: {
       w: false, a: false, s: false, d: false,
       arrowLeft: false, arrowRight: false,
@@ -835,6 +912,13 @@
     combatant.y = spawn.y + (Math.random() * 30 - 15);
     combatant.vx = 0;
     combatant.vy = 0;
+    combatant.hullAngle = combatant.hullAngle !== undefined ? combatant.hullAngle : -Math.PI / 2;
+    combatant.angle = combatant.angle !== undefined ? combatant.angle : combatant.hullAngle;
+    combatant.trackDistance = 0;
+    combatant.trackFrame = 0;
+    combatant.recoilOffset = 0;
+    combatant.recoilVx = 0;
+    combatant.recoilVy = 0;
     combatant.health = combatant.maxHealth || 100;
     combatant.shield = 25;
     combatant.isDead = false;
@@ -1408,13 +1492,15 @@
     p.ammo = Infinity;
     p.fireTimer = w.fireRate;
 
-    // Recoil impulse on player
-    p.vx -= Math.cos(p.angle) * w.recoilKick * 10;
-    p.vy -= Math.sin(p.angle) * w.recoilKick * 10;
+    // Tank turret recoil kick & hull impulse
+    p.recoilOffset = Math.min(10, (p.recoilOffset || 0) + (w.recoilKick > 8 ? 8 : 6));
+    p.recoilVx = (p.recoilVx || 0) - Math.cos(p.angle) * w.recoilKick * 7;
+    p.recoilVy = (p.recoilVy || 0) - Math.sin(p.angle) * w.recoilKick * 7;
     state.camera.shake = Math.min(18, state.camera.shake + w.screenShake);
 
-    const barrelX = p.x + Math.cos(p.angle) * w.length;
-    const barrelY = p.y + Math.sin(p.angle) * w.length;
+    const barrelDist = 26;
+    const barrelX = p.x + Math.cos(p.angle) * barrelDist;
+    const barrelY = p.y + Math.sin(p.angle) * barrelDist;
 
     for (let i = 0; i < w.bulletCount; i++) {
       const spreadAngle = (Math.random() - 0.5) * w.spread;
@@ -1534,20 +1620,54 @@
 
     if (p.fireTimer > 0) p.fireTimer = Math.max(0, p.fireTimer - dt);
 
-    // Movement: WASD only
-    let mx = (state.keys.d ? 1 : 0) - (state.keys.a ? 1 : 0);
-    let my = (state.keys.s ? 1 : 0) - (state.keys.w ? 1 : 0);
-
-    if (mx !== 0 && my !== 0) {
-      mx *= 0.7071;
-      my *= 0.7071;
+    // Recoil recovery for turret kick
+    if (p.recoilOffset > 0) {
+      p.recoilOffset = Math.max(0, p.recoilOffset - dt * 26);
     }
 
-    // Pan the view left/right with Left & Right arrow keys only
-    const panSpeed = 4.8; // radians per second (~275°/s smooth view panning)
+    // 1. Tank Hull Steering & Driving with WASD
+    const isDrivingForward = !!state.keys.w;
+    const isDrivingReverse = !!state.keys.s;
+    const isSteeringLeft = !!state.keys.a;
+    const isSteeringRight = !!state.keys.d;
+
+    // Turn hull with A (left) and D (right)
+    const hullTurnSpeed = 3.6; // rad/s
+    const steerDir = (isSteeringRight ? 1 : 0) - (isSteeringLeft ? 1 : 0);
+    if (steerDir !== 0) {
+      p.hullAngle = (p.hullAngle || 0) + steerDir * hullTurnSpeed * dt;
+      while (p.hullAngle > Math.PI) p.hullAngle -= Math.PI * 2;
+      while (p.hullAngle < -Math.PI) p.hullAngle += Math.PI * 2;
+    }
+
+    // Drive forward / reverse along hullAngle
+    let forwardThrottle = 0;
+    if (isDrivingForward) forwardThrottle += 220;
+    if (isDrivingReverse) forwardThrottle -= 130;
+
+    // Animate tracks when driving or steering
+    if (forwardThrottle !== 0 || steerDir !== 0) {
+      const treadSpeed = forwardThrottle !== 0 ? Math.abs(forwardThrottle) : 120;
+      p.trackDistance = (p.trackDistance || 0) + treadSpeed * dt;
+      p.trackFrame = Math.floor(p.trackDistance / 10) % 3;
+    }
+
+    // Combine drive velocity with shooting recoil momentum
+    const driveVx = Math.cos(p.hullAngle) * forwardThrottle;
+    const driveVy = Math.sin(p.hullAngle) * forwardThrottle;
+    p.vx = driveVx + (p.recoilVx || 0);
+    p.vy = driveVy + (p.recoilVy || 0);
+    if (p.recoilVx) p.recoilVx *= Math.pow(0.005, dt);
+    if (p.recoilVy) p.recoilVy *= Math.pow(0.005, dt);
+
+    // Apply movement & obstacle collisions
+    applyCombatantMovement(p, map, dt);
+
+    // 2. Turret Aiming with Arrow Keys (Left & Right)
+    const turretTurnSpeed = 4.4; // rad/s
     if (state.keys.arrowLeft || state.keys.arrowRight) {
       const panDir = (state.keys.arrowRight ? 1 : 0) - (state.keys.arrowLeft ? 1 : 0);
-      p.angle += panDir * panSpeed * dt;
+      p.angle += panDir * turretTurnSpeed * dt;
       while (p.angle > Math.PI) p.angle -= Math.PI * 2;
       while (p.angle < -Math.PI) p.angle += Math.PI * 2;
       state.lastTurnAngle = p.angle;
@@ -1558,19 +1678,14 @@
       const pScreenX = cw / 2 + (p.x - state.camera.x) * state.camera.zoom;
       const pScreenY = ch / 2 + (p.y - state.camera.y) * state.camera.zoom;
       p.angle = Math.atan2(state.mouse.screenY - pScreenY, state.mouse.screenX - pScreenX);
+      state.lastTurnAngle = p.angle;
     } else if (state.lastTurnAngle !== undefined) {
       p.angle = state.lastTurnAngle;
-    } else if (mx !== 0 || my !== 0) {
-      // Fallback: Soldier faces movement direction if no turn input yet
-      p.angle = Math.atan2(my, mx);
+    } else {
+      p.angle = p.hullAngle;
     }
 
-    p.vx = mx * p.speed;
-    p.vy = my * p.speed;
-
-    applyCombatantMovement(p, map, dt);
-
-    // Continuous weapon firing when holding mouse or space
+    // 3. Continuous weapon firing when holding mouse or space
     const isShooting = (state.mouse.down || state.keys.shoot) && state.roomStatus === "playing";
     if (isShooting) {
       const w = WEAPONS[p.weapon] || WEAPONS.pistol;
@@ -1579,7 +1694,7 @@
       }
     }
 
-    // Camera follow player smoothly and pan in the facing direction
+    // 4. Camera smoothly tracks player and pans ahead along turret sightline
     const lookahead = 90;
     const targetCamX = p.x + Math.cos(p.angle) * lookahead;
     const targetCamY = p.y + Math.sin(p.angle) * lookahead;
@@ -2259,12 +2374,18 @@
   function drawCombatant(ctx, c, isMe = false) {
     const now = performance.now();
     const isInvuln = c.invulnerableUntil && now < c.invulnerableUntil;
+    const tankSize = 58;
+    const hullAngle = c.hullAngle !== undefined ? c.hullAngle : (c.angle !== undefined ? c.angle : -Math.PI / 2);
+    const turretAngle = c.angle !== undefined ? c.angle : hullAngle;
+    const tankColor = c.color || "#ffd166";
 
-    // 1. Soft Drop Shadow under soldier's feet
+    // 1. Soft Drop Shadow under tank chassis (oriented with hullAngle)
     ctx.save();
+    ctx.translate(c.x, c.y + 4);
+    ctx.rotate(hullAngle);
     ctx.beginPath();
-    ctx.ellipse(c.x, c.y + 13, 16, 6, 0, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
+    ctx.ellipse(0, 0, tankSize * 0.44, tankSize * 0.32, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(0, 0, 0, 0.38)";
     ctx.fill();
     ctx.restore();
 
@@ -2272,8 +2393,8 @@
     if (isInvuln) {
       ctx.save();
       ctx.beginPath();
-      ctx.arc(c.x, c.y, 28, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(56, 189, 248, 0.25)";
+      ctx.arc(c.x, c.y, 34, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(56, 189, 248, 0.22)";
       ctx.fill();
       ctx.strokeStyle = "#38bdf8";
       ctx.lineWidth = 2.5;
@@ -2281,77 +2402,106 @@
       ctx.restore();
     }
 
-    // 3. Draw Character Avatar (Upright - flips horizontally when moving left)
-    ctx.save();
-    ctx.translate(c.x, c.y);
-
-    const facingLeft = Math.cos(c.angle) < -0.1;
-    if (facingLeft) {
-      ctx.scale(-1, 1);
+    // 3. Tank Tracks (Caterpillar Treads - animated frame 0, 1, or 2)
+    const frameIdx = Math.abs(c.trackFrame || 0) % 3;
+    const trackImg = TANK_ASSETS.tracks[frameIdx];
+    if (trackImg && trackImg.complete && trackImg.naturalWidth > 0) {
+      ctx.save();
+      ctx.translate(c.x, c.y);
+      ctx.rotate(hullAngle + Math.PI / 2);
+      ctx.drawImage(trackImg, -tankSize / 2, -tankSize / 2, tankSize, tankSize);
+      ctx.restore();
     }
 
-    const charCvs = getAvatarCanvas(c.avatar || state.playerAvatar, 64);
-    if (charCvs) {
-      const charSize = 42;
-      ctx.drawImage(charCvs, -charSize / 2, -charSize / 2 - 2, charSize, charSize);
+    // 4. Tank Hull / Body (Tinted to character color)
+    const bodyImg = getTintedSprite(TANK_ASSETS.body, tankColor);
+    if (bodyImg) {
+      ctx.save();
+      ctx.translate(c.x, c.y);
+      ctx.rotate(hullAngle + Math.PI / 2);
+      ctx.drawImage(bodyImg, -tankSize / 2, -tankSize / 2, tankSize, tankSize);
+
+      // Clean subtle indicator ring for local player
+      if (isMe) {
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.35)";
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(-tankSize * 0.34, -tankSize * 0.42, tankSize * 0.68, tankSize * 0.84);
+      }
+      ctx.restore();
     } else {
-      ctx.beginPath();
-      ctx.arc(0, 0, 18, 0, Math.PI * 2);
-      ctx.fillStyle = c.color || "#ffd166";
-      ctx.fill();
+      // Fallback while loading
+      ctx.save();
+      ctx.translate(c.x, c.y);
+      ctx.rotate(hullAngle);
+      ctx.fillStyle = tankColor;
+      ctx.fillRect(-22, -18, 44, 36);
+      ctx.restore();
     }
 
-    // Subtle outline around player
-    ctx.beginPath();
-    ctx.arc(0, -2, 19, 0, Math.PI * 2);
-    ctx.lineWidth = isMe ? 2.5 : 1.5;
-    ctx.strokeStyle = isMe ? "#ffffff" : "rgba(0, 0, 0, 0.45)";
-    ctx.stroke();
+    // 5. Tank Turret & Cannon Barrel (Rotated independently along turretAngle)
+    const turretImg = getTintedSprite(TANK_ASSETS.turret, tankColor);
+    const recoil = c.recoilOffset || 0;
+    const turretX = c.x - Math.cos(turretAngle) * recoil;
+    const turretY = c.y - Math.sin(turretAngle) * recoil;
 
-    ctx.restore();
-
-    // 4. Weapon & Hands rotated to EXACT firing direction (c.angle)
-    ctx.save();
-    ctx.translate(c.x, c.y);
-    ctx.rotate(c.angle);
-
-    const w = WEAPONS[c.weapon] || WEAPONS.pistol;
-
-    // Sniper Laser Sight
+    // Laser Sight for Sniper / Cannon
     if (c.weapon === "sniper") {
       ctx.save();
-      ctx.strokeStyle = isMe ? "rgba(244, 63, 94, 0.55)" : "rgba(239, 68, 68, 0.4)";
+      ctx.strokeStyle = isMe ? "rgba(244, 63, 94, 0.65)" : "rgba(239, 68, 68, 0.45)";
       ctx.lineWidth = 1.5;
       ctx.setLineDash([8, 8]);
       ctx.beginPath();
-      ctx.moveTo(w.length + 8, 0);
-      ctx.lineTo(w.length + 650, 0);
+      const tipX = turretX + Math.cos(turretAngle) * 26;
+      const tipY = turretY + Math.sin(turretAngle) * 26;
+      ctx.moveTo(tipX, tipY);
+      ctx.lineTo(tipX + Math.cos(turretAngle) * 650, tipY + Math.sin(turretAngle) * 650);
       ctx.stroke();
       ctx.restore();
     }
 
-    // Weapon barrel
-    ctx.fillStyle = "#1e293b";
-    ctx.fillRect(8, -w.barrelWidth / 2, w.length, w.barrelWidth);
-    ctx.strokeStyle = "#475569";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(8, -w.barrelWidth / 2, w.length, w.barrelWidth);
+    if (turretImg) {
+      ctx.save();
+      ctx.translate(turretX, turretY);
+      ctx.rotate(turretAngle + Math.PI / 2);
+      ctx.drawImage(turretImg, -tankSize / 2, -tankSize / 2, tankSize, tankSize);
+      ctx.restore();
+    } else {
+      // Fallback turret
+      ctx.save();
+      ctx.translate(turretX, turretY);
+      ctx.rotate(turretAngle);
+      ctx.fillStyle = "#1e293b";
+      ctx.fillRect(0, -3, 24, 6);
+      ctx.beginPath();
+      ctx.arc(0, 0, 12, 0, Math.PI * 2);
+      ctx.fillStyle = tankColor;
+      ctx.fill();
+      ctx.restore();
+    }
 
-    // Hands holding weapon
-    ctx.fillStyle = c.color || "#ffd166";
-    ctx.beginPath();
-    ctx.arc(10, -8, 5, 0, Math.PI * 2);
-    ctx.arc(14, 6, 5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "#000000";
-    ctx.lineWidth = 1;
-    ctx.stroke();
+    // Mini Commander Cupola / Hatch Badge
+    const charCvs = getAvatarCanvas(c.avatar || state.playerAvatar, 48);
+    if (charCvs) {
+      ctx.save();
+      ctx.translate(turretX, turretY);
+      ctx.beginPath();
+      ctx.arc(0, 0, 8, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.drawImage(charCvs, -8, -8, 16, 16);
+      ctx.restore();
+      ctx.save();
+      ctx.translate(turretX, turretY);
+      ctx.beginPath();
+      ctx.arc(0, 0, 8, 0, Math.PI * 2);
+      ctx.strokeStyle = "#1e293b";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.restore();
+    }
 
-    ctx.restore();
-
-    // 5. Overhead Name & Vitals Bar (Unrotated)
+    // 6. Overhead Name & Vitals Bar (Unrotated)
     ctx.save();
-    ctx.translate(c.x, c.y - 36);
+    ctx.translate(c.x, c.y - 38);
 
     // Name Tag
     ctx.font = "bold 12px sans-serif";
@@ -2363,7 +2513,7 @@
     ctx.shadowBlur = 0;
 
     // Mini Health & Shield Bars
-    const barW = 38;
+    const barW = 42;
     const barH = 5;
     ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
     ctx.fillRect(-barW / 2, 0, barW, barH);
@@ -2482,6 +2632,8 @@
           x: state.player.x,
           y: state.player.y,
           angle: state.player.angle,
+          hullAngle: state.player.hullAngle,
+          trackFrame: state.player.trackFrame,
           vx: state.player.vx,
           vy: state.player.vy,
           speed: state.player.speed,
@@ -2541,6 +2693,8 @@
             x: p.x,
             y: p.y,
             angle: p.angle,
+            hullAngle: p.hullAngle !== undefined ? p.hullAngle : p.angle,
+            trackFrame: p.trackFrame || 0,
             vx: p.vx,
             vy: p.vy,
             speed: p.speed,
@@ -2562,6 +2716,17 @@
           while (diff < -Math.PI) diff += Math.PI * 2;
           while (diff > Math.PI) diff -= Math.PI * 2;
           opp.angle += diff * 0.32;
+
+          if (p.hullAngle !== undefined) {
+            let hDiff = p.hullAngle - (opp.hullAngle || opp.angle);
+            while (hDiff < -Math.PI) hDiff += Math.PI * 2;
+            while (hDiff > Math.PI) hDiff -= Math.PI * 2;
+            opp.hullAngle = (opp.hullAngle || opp.angle) + hDiff * 0.32;
+          }
+          if (p.trackFrame !== undefined) {
+            opp.trackFrame = p.trackFrame;
+          }
+
           opp.weapon = p.weapon || opp.weapon;
           opp.health = p.health;
           opp.shield = p.shield;
@@ -2599,14 +2764,14 @@
     state.opponents = {};
     const center = { x: map.width / 2, y: map.height / 2 };
     const dummyConfigs = map.id === "rust" ? [
-      { id: "dummy_1", name: "Blink 1 🎯", color: "#f43f5e", avatar: "char:h1:c_f43f5e:r1:e1:m1", offset: { x: -620, y: -40 }, weapon: "shotgun" },
-      { id: "dummy_2", name: "Blink 2 🎯", color: "#38bdf8", avatar: "char:h2:c_38bdf8:r2:e2:m2", offset: { x: 540, y: -100 }, weapon: "sniper" },
-      { id: "dummy_3", name: "Blink 3 🎯", color: "#a855f7", avatar: "char:h3:c_a855f7:r3:e3:m3", offset: { x: 0, y: -590 }, weapon: "assault" },
-      { id: "dummy_4", name: "Blink 4 🎯", color: "#10b981", avatar: "char:h4:c_10b981:r1:e2:m1", offset: { x: -260, y: 320 }, weapon: "rocket" },
+      { id: "dummy_1", name: "Panser-Alfa 🎯", color: "#f43f5e", avatar: "char:h1:c_f43f5e:r1:e1:m1", offset: { x: -620, y: -40 }, weapon: "shotgun", hullAngle: 0.5 },
+      { id: "dummy_2", name: "Panser-Bravo 🎯", color: "#38bdf8", avatar: "char:h2:c_38bdf8:r2:e2:m2", offset: { x: 540, y: -100 }, weapon: "sniper", hullAngle: 2.2 },
+      { id: "dummy_3", name: "Panser-Charlie 🎯", color: "#a855f7", avatar: "char:h3:c_a855f7:r3:e3:m3", offset: { x: 0, y: -590 }, weapon: "assault", hullAngle: -1.2 },
+      { id: "dummy_4", name: "Panser-Delta 🎯", color: "#10b981", avatar: "char:h4:c_10b981:r1:e2:m1", offset: { x: -260, y: 320 }, weapon: "rocket", hullAngle: -2.8 },
     ] : [
-      { id: "dummy_1", name: "Blink 1 🎯", color: "#f43f5e", avatar: "char:h1:c_f43f5e:r1:e1:m1", offset: { x: -140, y: -100 }, weapon: "shotgun" },
-      { id: "dummy_2", name: "Blink 2 🎯", color: "#38bdf8", avatar: "char:h2:c_38bdf8:r2:e2:m2", offset: { x: 140, y: -100 }, weapon: "sniper" },
-      { id: "dummy_3", name: "Blink 3 🎯", color: "#a855f7", avatar: "char:h3:c_a855f7:r3:e3:m3", offset: { x: 0, y: 140 }, weapon: "assault" },
+      { id: "dummy_1", name: "Panser-Alfa 🎯", color: "#f43f5e", avatar: "char:h1:c_f43f5e:r1:e1:m1", offset: { x: -140, y: -100 }, weapon: "shotgun", hullAngle: 0.8 },
+      { id: "dummy_2", name: "Panser-Bravo 🎯", color: "#38bdf8", avatar: "char:h2:c_38bdf8:r2:e2:m2", offset: { x: 140, y: -100 }, weapon: "sniper", hullAngle: -1.8 },
+      { id: "dummy_3", name: "Panser-Charlie 🎯", color: "#a855f7", avatar: "char:h3:c_a855f7:r3:e3:m3", offset: { x: 0, y: 140 }, weapon: "assault", hullAngle: 2.5 },
     ];
 
     dummyConfigs.forEach(d => {
@@ -2617,7 +2782,11 @@
         avatar: d.avatar,
         x: center.x + d.offset.x,
         y: center.y + d.offset.y,
-        angle: 0,
+        angle: d.hullAngle || 0,
+        hullAngle: d.hullAngle || 0,
+        trackFrame: 0,
+        trackDistance: 0,
+        recoilOffset: 0,
         vx: 0,
         vy: 0,
         speed: 0,
