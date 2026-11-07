@@ -4074,8 +4074,8 @@
     // Lobby tabs
     const tabs = [
       { btn: el.tabOnline, panel: el.panelOnline },
-      { btn: el.tabSolo, panel: el.panelSolo },
       { btn: el.tabSplitscreen, panel: el.panelSplitscreen },
+      { btn: el.tabSolo, panel: el.panelSolo },
     ];
     tabs.forEach(({ btn, panel }) => {
       if (!btn || !panel) return;

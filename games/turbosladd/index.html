@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="/game-lobby.css" />
   <link rel="stylesheet" href="/parallax-bg.css" />
   <link rel="stylesheet" href="/character/character-creator.css" />
-  <link rel="stylesheet" href="styles.css?v=3.3" />
+  <link rel="stylesheet" href="styles.css?v=3.4" />
 </head>
 
 <body class="turbosladd-page">
@@ -70,7 +70,7 @@
       <!-- VIEW 1: LOBBY & GAME MODE SELECTION            -->
       <!-- ============================================== -->
       <section class="view-panel" id="viewLobby">
-        <div class="lobby-card">
+        <div class="lobby-card theme-orange">
           <!-- Hero Header -->
           <div class="lobby-hero">
             <div class="hero-icon-wrap hero-icon-racing">
@@ -117,76 +117,12 @@
           <!-- TAB 1: Online Multiplayer Panel (Standardisert felles PartyConnect fane) -->
           <div class="tab-panel active" id="panelOnline" data-party-panel="turbosladd"></div>
 
-          <!-- TAB 2: Solo Time-Trial Panel -->
-          <div class="tab-panel hidden" id="panelSolo">
-            <div class="action-box single-box card-theme-cyan">
-              <div class="action-box-header">
-                <div class="box-badge-row">
-                  <span class="action-card-badge badge-cyan">Tidskjøring</span>
-                </div>
-                <h3 class="box-title">Solo testkjøring &amp; banerekord</h3>
-                <p class="box-desc">
-                  Øv på drifteteknikken din på egen hånd! Finn det perfekte sporet, mestr motstyring og sett banens raskeste rundetid.
-                </p>
-              </div>
-
-              <div class="action-box-content">
-                <!-- Solo Lobby Car Preview -->
-                <div class="lobby-car-preview-card">
-                  <div class="lcp-canvas-wrap">
-                    <canvas id="soloLobbyCarCanvas" width="64" height="64" class="skribbl-canvas"></canvas>
-                  </div>
-                  <div class="lcp-info">
-                    <span class="lcp-badge">DIN BIL</span>
-                    <span class="lcp-hint">Garasjen åpner på startstreken</span>
-                  </div>
-                </div>
-
-                <div class="form-group">
-                  <label for="selectSoloTrack">Rallyetappe for tidskjøring</label>
-                  <div style="display:flex;gap:0.5rem;align-items:center;">
-                    <select id="selectSoloTrack" class="text-input select-input" style="flex:1;">
-                      <option value="rally_random">Tilfeldig Rallyetappe</option>
-                      <option value="grand_prix">Skogsrally Grand Prix</option>
-                      <option value="fjord_drift">Fjordsvingen Rally</option>
-                      <option value="fjellpasset">Fjellpasset Rally</option>
-                    </select>
-                    <button type="button" class="btn-cyan-accent" id="btnRegenSoloTrack" style="padding:0.6rem 0.85rem;white-space:nowrap;font-size:0.85rem;" title="Generer ny tilfeldig rallyetappe">Ny bane</button>
-                  </div>
-                </div>
-
-                <div class="form-group">
-                  <label>Antall runder</label>
-                  <div class="segmented-control" id="controlSoloLaps">
-                    <button type="button" class="seg-btn active" data-laps="3">3 runder</button>
-                    <button type="button" class="seg-btn" data-laps="5">5 runder</button>
-                  </div>
-                </div>
-
-                <div class="stat-pills-row">
-                  <div class="stat-pill">
-                    <span class="stat-pill-label">Styring</span>
-                    <strong class="stat-pill-val">Piltaster / WASD</strong>
-                  </div>
-                  <div class="stat-pill">
-                    <span class="stat-pill-label">Garasje</span>
-                    <strong class="stat-pill-val">På startstreken</strong>
-                  </div>
-                </div>
-              </div>
-
-              <button type="button" class="primary-btn pulse-glow" id="btnStartSolo">
-                KJØR TIDSKJØRING
-              </button>
-            </div>
-          </div>
-
-          <!-- TAB 3: Splitscreen 2-Player Panel -->
+          <!-- TAB 2: Splitscreen 2-Player Panel -->
           <div class="tab-panel hidden" id="panelSplitscreen">
-            <div class="action-box single-box card-theme-pink">
+            <div class="action-box single-box card-theme-orange">
               <div class="action-box-header">
                 <div class="box-badge-row">
-                  <span class="action-card-badge badge-pink">2 Spillere Lokalt</span>
+                  <span class="action-card-badge badge-orange">2 Spillere Lokalt</span>
                 </div>
                 <h3 class="box-title">Delt skjerm (Splitscreen)</h3>
                 <p class="box-desc">
@@ -267,6 +203,70 @@
 
               <button type="button" class="primary-btn pulse-glow" id="btnStartSplitscreen">
                 START DELT SKJERM
+              </button>
+            </div>
+          </div>
+
+          <!-- TAB 3: Solo Time-Trial Panel -->
+          <div class="tab-panel hidden" id="panelSolo">
+            <div class="action-box single-box card-theme-cyan">
+              <div class="action-box-header">
+                <div class="box-badge-row">
+                  <span class="action-card-badge badge-cyan">Tidskjøring</span>
+                </div>
+                <h3 class="box-title">Solo testkjøring &amp; banerekord</h3>
+                <p class="box-desc">
+                  Øv på drifteteknikken din på egen hånd! Finn det perfekte sporet, mestr motstyring og sett banens raskeste rundetid.
+                </p>
+              </div>
+
+              <div class="action-box-content">
+                <!-- Solo Lobby Car Preview -->
+                <div class="lobby-car-preview-card">
+                  <div class="lcp-canvas-wrap">
+                    <canvas id="soloLobbyCarCanvas" width="64" height="64" class="skribbl-canvas"></canvas>
+                  </div>
+                  <div class="lcp-info">
+                    <span class="lcp-badge">DIN BIL</span>
+                    <span class="lcp-hint">Garasjen åpner på startstreken</span>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="selectSoloTrack">Rallyetappe for tidskjøring</label>
+                  <div style="display:flex;gap:0.5rem;align-items:center;">
+                    <select id="selectSoloTrack" class="text-input select-input" style="flex:1;">
+                      <option value="rally_random">Tilfeldig Rallyetappe</option>
+                      <option value="grand_prix">Skogsrally Grand Prix</option>
+                      <option value="fjord_drift">Fjordsvingen Rally</option>
+                      <option value="fjellpasset">Fjellpasset Rally</option>
+                    </select>
+                    <button type="button" class="btn-cyan-accent" id="btnRegenSoloTrack" style="padding:0.6rem 0.85rem;white-space:nowrap;font-size:0.85rem;" title="Generer ny tilfeldig rallyetappe">Ny bane</button>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>Antall runder</label>
+                  <div class="segmented-control" id="controlSoloLaps">
+                    <button type="button" class="seg-btn active" data-laps="3">3 runder</button>
+                    <button type="button" class="seg-btn" data-laps="5">5 runder</button>
+                  </div>
+                </div>
+
+                <div class="stat-pills-row">
+                  <div class="stat-pill">
+                    <span class="stat-pill-label">Styring</span>
+                    <strong class="stat-pill-val">Piltaster / WASD</strong>
+                  </div>
+                  <div class="stat-pill">
+                    <span class="stat-pill-label">Garasje</span>
+                    <strong class="stat-pill-val">På startstreken</strong>
+                  </div>
+                </div>
+              </div>
+
+              <button type="button" class="primary-btn pulse-glow" id="btnStartSolo">
+                KJØR TIDSKJØRING
               </button>
             </div>
           </div>

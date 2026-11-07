@@ -68,14 +68,13 @@ body.turbosladd-page {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.45rem 0.85rem;
+  padding: 0.4rem 0.85rem;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid var(--ts-border);
   border-radius: 999px;
   color: #cbd5e1;
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.62rem;
-  letter-spacing: 0.04em;
+  font-size: 0.85rem;
+  font-weight: 700;
   text-decoration: none;
   transition: all 0.15s ease;
 }
@@ -101,21 +100,19 @@ body.turbosladd-page {
 
 .header-title {
   margin: 0;
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.85rem;
+  font-size: 1.05rem;
   font-weight: 900;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   color: #f8fafc;
-  line-height: 1.2;
+  line-height: 1.1;
 }
 
 .header-badge {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.52rem;
+  font-size: 0.68rem;
   font-weight: 800;
   text-transform: uppercase;
   color: #f97316;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
 }
 
 .header-right {
@@ -147,11 +144,9 @@ body.turbosladd-page {
   border: 1px solid rgba(239, 68, 68, 0.4);
   color: #fca5a5;
   border-radius: 999px;
-  padding: 0.45rem 0.85rem;
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.62rem;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.82rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -354,12 +349,12 @@ body.turbosladd-page {
 }
 
 .rc-code {
-  font-size: 1.25rem;
+  font-size: 1.8rem;
   font-weight: 900;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.15em;
   color: #38bdf8;
   text-shadow: 0 0 15px rgba(56, 189, 248, 0.5);
-  font-family: 'Press Start 2P', monospace;
+  font-family: "Courier New", Courier, monospace;
 }
 
 .btn-copy-code {
@@ -2367,65 +2362,6 @@ body.turbosladd-page {
    PIXEL ARCADE UI STYLES (Press Start 2P)
    ========================================================================== */
 
-.turbosladd-page .hero-title {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 1.45rem;
-  letter-spacing: 0.06em;
-  color: #f8fafc;
-  text-shadow: 0 0 16px rgba(249, 115, 22, 0.4);
-}
-
-.turbosladd-page .box-title {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.85rem;
-  letter-spacing: 0.04em;
-  line-height: 1.4;
-}
-
-.turbosladd-page .lobby-tab-btn {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.62rem;
-  letter-spacing: 0.03em;
-}
-
-#btnRegenSoloTrack,
-#btnRegenSplitTrack {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.62rem;
-  letter-spacing: 0.04em;
-}
-
-.turbosladd-page .segmented-control .seg-btn {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.62rem;
-  letter-spacing: 0.04em;
-}
-
-.turbosladd-page .stat-pill-val {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.62rem;
-}
-
-.action-card-badge {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.62rem;
-  letter-spacing: 0.05em;
-}
-
-.spc-badge {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.62rem;
-  letter-spacing: 0.04em;
-}
-
-#btnStartSolo,
-#btnStartSplit {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.85rem;
-  letter-spacing: 0.05em;
-  padding: 1rem 1.4rem;
-}
-
 #inGameRoomCodePill {
   font-family: 'Press Start 2P', monospace;
   font-size: 0.62rem;
@@ -2471,10 +2407,11 @@ body.turbosladd-page {
 }
 
 .lobby-car-preview-card .lcp-badge {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.62rem;
+  font-size: 0.72rem;
+  font-weight: 800;
   color: #38bdf8;
   letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .lobby-car-preview-card .lcp-hint {
