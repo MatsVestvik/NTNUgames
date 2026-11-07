@@ -473,7 +473,7 @@ body {
 /* Players Grid */
 .players-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 1rem;
 }
 
@@ -487,6 +487,7 @@ body {
   align-items: center;
   gap: 0.4rem;
   position: relative;
+  min-height: 188px;
   transition: transform 0.2s ease, border-color 0.2s ease;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
@@ -515,8 +516,8 @@ body {
 
 .player-avatar-circle,
 .player-avatar-wrap {
-  width: 72px;
-  height: 72px;
+  width: 144px;
+  height: 144px;
   border-radius: 0;
   background: transparent;
   border: none;
@@ -1196,11 +1197,11 @@ body.party-in-lobby .lobby-players-section {
 
 body.party-in-lobby .players-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
-  gap: 0.65rem;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.75rem;
   padding: 12px 10px 10px 10px; /* Room for badges at top: -7px and sides: -6px */
-  max-height: 220px;
-  min-height: 135px;
+  max-height: 280px;
+  min-height: 195px;
   overflow-y: auto;
   overflow-x: hidden;
   box-sizing: border-box;
@@ -1209,17 +1210,17 @@ body.party-in-lobby .players-grid {
 body.party-in-lobby .player-tile {
   background: rgba(28, 39, 66, 0.85);
   border: 1.5px solid var(--border);
-  border-radius: 12px;
-  padding: 0.65rem 0.5rem 0.55rem;
+  border-radius: 14px;
+  padding: 0.75rem 0.6rem 0.65rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.25rem;
+  gap: 0.35rem;
   position: relative;
   overflow: visible; /* Badges are NEVER clipped */
   box-sizing: border-box;
-  min-height: 116px;
+  min-height: 188px;
   transition: transform 0.15s ease, border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
 }
 
@@ -1241,7 +1242,7 @@ body.party-in-lobby .player-tile.is-ready:hover {
 }
 
 body.party-in-lobby .player-tile.is-ready .player-mon-img {
-  filter: drop-shadow(0 4px 10px rgba(16, 185, 129, 0.45)) !important;
+  filter: drop-shadow(0 6px 14px rgba(16, 185, 129, 0.5)) !important;
 }
 
 /* Red Hue for Not Ready Players */
@@ -1257,13 +1258,13 @@ body.party-in-lobby .player-tile.is-not-ready:hover {
 }
 
 body.party-in-lobby .player-tile.is-not-ready .player-mon-img {
-  filter: drop-shadow(0 4px 10px rgba(239, 68, 68, 0.4)) !important;
+  filter: drop-shadow(0 6px 14px rgba(239, 68, 68, 0.45)) !important;
 }
 
 body.party-in-lobby .player-avatar-circle,
 body.party-in-lobby .player-avatar-wrap {
-  width: 72px !important;
-  height: 72px !important;
+  width: 144px !important;
+  height: 144px !important;
   border-radius: 0 !important;
   background: transparent !important;
   border: none !important;
@@ -1271,7 +1272,7 @@ body.party-in-lobby .player-avatar-wrap {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  margin-bottom: 0.2rem !important;
+  margin-bottom: 0.25rem !important;
   overflow: visible !important;
   flex-shrink: 0 !important;
   box-sizing: border-box !important;
@@ -1286,11 +1287,11 @@ body.party-in-lobby .player-avatar-wrap .player-mon-img {
   image-rendering: -moz-crisp-edges !important;
   image-rendering: crisp-edges !important;
   display: block !important;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5)) !important;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.55)) !important;
 }
 
 body.party-in-lobby .player-name-text {
-  font-size: 0.82rem;
+  font-size: 0.92rem;
   font-weight: 800;
   text-align: center;
   white-space: nowrap;
@@ -1393,7 +1394,7 @@ body.party-in-lobby #skribblCustomizerLobby .skribbl-stage-content {
 }
 
 body.party-in-lobby #skribblCustomizerLobby .skribbl-arrows-col {
-  height: 125px;
+  height: 145px;
   width: 38px;
   display: flex;
   flex-direction: column;
@@ -1402,15 +1403,20 @@ body.party-in-lobby #skribblCustomizerLobby .skribbl-arrows-col {
 
 body.party-in-lobby #skribblCustomizerLobby .skribbl-nav-btn {
   width: 38px;
-  height: 36px;
+  height: 38px;
   min-width: 38px;
   font-size: 1.25rem;
   border-radius: 10px;
 }
 
 body.party-in-lobby #skribblCustomizerLobby .skribbl-canvas-bubble {
-  width: 120px;
-  height: 120px;
+  width: 150px;
+  height: 150px;
+}
+
+body.party-in-lobby #skribblCustomizerLobby .skribbl-canvas {
+  width: 150px;
+  height: 150px;
 }
 
 body.party-in-lobby .skribbl-randomize-btn,
