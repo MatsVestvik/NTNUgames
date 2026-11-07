@@ -270,6 +270,7 @@
   }
 
   function enterLobbyView() {
+    document.body.classList.add("party-in-lobby");
     el.viewAuth.classList.add("hidden");
     el.viewLobby.classList.remove("hidden");
 
@@ -800,6 +801,7 @@
       lobbyWidget = null;
     }
 
+    document.body.classList.remove("party-in-lobby");
     sessionStorage.clear();
     state.roomCode = null;
     state.hostToken = null;

@@ -984,6 +984,334 @@ body {
   transform: rotate(45deg);
 }
 
+/* ========================================================== */
+/* COMPRESSED 2-COLUMN PARTY LOUNGE                           */
+/* ========================================================== */
+
+#viewAuth {
+  max-width: 580px;
+  margin: 0 auto 2rem;
+  width: 100%;
+}
+
+@media (min-width: 900px) {
+  body.party-in-lobby {
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
+  }
+
+  body.party-in-lobby .party-shell {
+    max-width: 1400px;
+    width: 100%;
+    height: 100vh;
+    max-height: 100vh;
+    padding: 0.65rem 1.25rem 0.75rem;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  body.party-in-lobby .party-header {
+    margin-bottom: 0.65rem;
+    padding: 0.5rem 1.15rem;
+    flex-shrink: 0;
+  }
+
+  body.party-in-lobby .party-lobby-card {
+    flex: 1;
+    min-height: 0;
+    margin-bottom: 0;
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .lobby-grid-layout {
+    display: grid;
+    grid-template-columns: minmax(360px, 420px) 1fr;
+    gap: 1.25rem;
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+    align-items: stretch;
+  }
+
+  .lobby-left-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 0.35rem;
+  }
+
+  .lobby-right-col {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .lobby-games-section {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+    margin-bottom: 0;
+  }
+
+  .lobby-games-section .section-title-row {
+    flex-shrink: 0;
+    margin-bottom: 0.6rem;
+  }
+
+  .lobby-games-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    overflow-y: auto;
+    min-height: 0;
+    flex: 1;
+    padding-right: 0.4rem;
+    overscroll-behavior: contain;
+  }
+}
+
+/* Compact Left Column Styling in Lobby */
+body.party-in-lobby .room-banner {
+  padding: 0.65rem 1rem;
+  margin-bottom: 0;
+  border-radius: 12px;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+body.party-in-lobby .room-code-display {
+  font-size: 2.1rem;
+  letter-spacing: 0.12em;
+}
+
+body.party-in-lobby .room-instructions {
+  font-size: 0.82rem;
+  text-align: right;
+  line-height: 1.25;
+}
+
+body.party-in-lobby .lobby-players-section {
+  background: rgba(13, 19, 33, 0.55);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.65rem 0.85rem;
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+body.party-in-lobby .players-grid {
+  grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+  gap: 0.45rem;
+  max-height: 125px;
+  overflow-y: auto;
+  padding-right: 0.2rem;
+}
+
+body.party-in-lobby .player-tile {
+  padding: 0.4rem 0.3rem;
+  border-radius: 8px;
+}
+
+body.party-in-lobby .player-avatar-circle {
+  width: 36px;
+  height: 36px;
+  margin-bottom: 0.2rem;
+}
+
+body.party-in-lobby .player-name-text {
+  font-size: 0.78rem;
+}
+
+body.party-in-lobby .player-status-badge {
+  font-size: 0.65rem;
+  padding: 0.12rem 0.35rem;
+}
+
+body.party-in-lobby .lobby-character-section {
+  background: rgba(13, 19, 33, 0.65);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.65rem 0.85rem;
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+body.party-in-lobby #skribblCustomizerLobby .skribbl-customizer-card {
+  max-width: 340px;
+  gap: 0.45rem;
+}
+
+body.party-in-lobby #skribblCustomizerLobby .skribbl-stage-box {
+  padding: 0.5rem 0.75rem;
+  gap: 0.45rem;
+  border-radius: 12px;
+}
+
+body.party-in-lobby #skribblCustomizerLobby .skribbl-arrows-col {
+  height: 105px;
+  width: 34px;
+}
+
+body.party-in-lobby #skribblCustomizerLobby .skribbl-nav-btn {
+  width: 32px;
+  height: 30px;
+  font-size: 1.05rem;
+}
+
+body.party-in-lobby #skribblCustomizerLobby .skribbl-canvas-bubble {
+  width: 95px;
+  height: 95px;
+}
+
+body.party-in-lobby #skribblCustomizerLobby .skribbl-randomize-btn {
+  padding: 0.3rem 0.65rem;
+  font-size: 0.78rem;
+}
+
+body.party-in-lobby #skribblCustomizerLobby .skribbl-colors-section {
+  padding: 0.35rem;
+}
+
+body.party-in-lobby #skribblCustomizerLobby .skribbl-color-dot {
+  width: 22px;
+  height: 22px;
+}
+
+body.party-in-lobby .player-waiting-box {
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  margin-bottom: 0;
+}
+
+body.party-in-lobby .lobby-footer {
+  margin-top: auto;
+  padding-top: 0.25rem;
+  flex-shrink: 0;
+}
+
+body.party-in-lobby .leave-btn {
+  padding: 0.4rem 0.85rem;
+  font-size: 0.82rem;
+  width: 100%;
+  text-align: center;
+}
+
+/* Compact Game Cards in Right-hand Scrollable Catalog */
+body.party-in-lobby .lobby-game-card {
+  padding: 0.8rem 1.15rem;
+  border-radius: 12px;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+body.party-in-lobby .lg-card-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+body.party-in-lobby .lg-card-desc {
+  font-size: 0.82rem;
+  line-height: 1.35;
+  margin-bottom: 0.25rem;
+  max-width: 500px;
+}
+
+body.party-in-lobby .lg-card-meta {
+  font-size: 0.75rem;
+}
+
+body.party-in-lobby .lg-card-bg-icon {
+  width: 85px;
+  height: 85px;
+  right: 175px;
+  opacity: 0.12;
+}
+
+body.party-in-lobby .lg-settings-inline {
+  margin-bottom: 0.35rem;
+  gap: 0.5rem;
+}
+
+body.party-in-lobby .lg-settings-inline label {
+  font-size: 0.76rem;
+}
+
+body.party-in-lobby .lg-select {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.78rem;
+}
+
+body.party-in-lobby .start-game-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.88rem;
+  font-weight: 800;
+  min-width: 155px;
+}
+
+/* Sleek Scrollbars for Games List, Players, and Left Col */
+.lobby-games-list::-webkit-scrollbar,
+.players-grid::-webkit-scrollbar,
+.lobby-left-col::-webkit-scrollbar {
+  width: 6px;
+}
+
+.lobby-games-list::-webkit-scrollbar-track,
+.players-grid::-webkit-scrollbar-track,
+.lobby-left-col::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 999px;
+}
+
+.lobby-games-list::-webkit-scrollbar-thumb,
+.players-grid::-webkit-scrollbar-thumb,
+.lobby-left-col::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+}
+
+.lobby-games-list::-webkit-scrollbar-thumb:hover,
+.players-grid::-webkit-scrollbar-thumb:hover,
+.lobby-left-col::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-orange);
+}
+
+@media (max-width: 899px) {
+  body.party-in-lobby {
+    height: auto;
+    overflow-y: auto;
+  }
+  body.party-in-lobby .party-shell {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+  .lobby-grid-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+  .lobby-left-col {
+    overflow-y: visible;
+  }
+  .lobby-right-col {
+    height: auto;
+    overflow: visible;
+  }
+  .lobby-games-list {
+    max-height: 520px;
+  }
+}
+
 .hidden {
   display: none !important;
 }
