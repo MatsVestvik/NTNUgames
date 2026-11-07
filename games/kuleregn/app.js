@@ -2405,13 +2405,6 @@
       ctx.translate(c.x, c.y);
       ctx.rotate(hullAngle + Math.PI / 2);
       ctx.drawImage(bodyImg, -tankSize / 2, -tankSize / 2, tankSize, tankSize);
-
-      // Clean subtle indicator ring for local player
-      if (isMe) {
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.35)";
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(-tankSize * 0.34, -tankSize * 0.42, tankSize * 0.68, tankSize * 0.84);
-      }
       ctx.restore();
     } else {
       // Fallback while loading
@@ -2460,26 +2453,6 @@
       ctx.arc(0, 0, 12, 0, Math.PI * 2);
       ctx.fillStyle = tankColor;
       ctx.fill();
-      ctx.restore();
-    }
-
-    // Mini Commander Cupola / Hatch Badge
-    const charCvs = getAvatarCanvas(c.avatar || state.playerAvatar, 48);
-    if (charCvs) {
-      ctx.save();
-      ctx.translate(turretX, turretY);
-      ctx.beginPath();
-      ctx.arc(0, 0, 8, 0, Math.PI * 2);
-      ctx.clip();
-      ctx.drawImage(charCvs, -8, -8, 16, 16);
-      ctx.restore();
-      ctx.save();
-      ctx.translate(turretX, turretY);
-      ctx.beginPath();
-      ctx.arc(0, 0, 8, 0, Math.PI * 2);
-      ctx.strokeStyle = "#1e293b";
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
       ctx.restore();
     }
 
