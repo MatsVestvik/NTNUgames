@@ -671,8 +671,13 @@
     // Camera
     camera: { x: 400, y: 400, zoom: 1.0, shake: 0 },
 
-    // Input States (WASD / Arrows + Shoot)
-    keys: { w: false, a: false, s: false, d: false, shoot: false },
+    // Input States (WASD Movement, Arrows Turn, Space/Click Shoot)
+    keys: {
+      w: false, a: false, s: false, d: false,
+      arrowUp: false, arrowDown: false, arrowLeft: false, arrowRight: false,
+      shoot: false
+    },
+    lastTurnAngle: 0,
     mouse: { down: false, screenX: 0, screenY: 0, hasMoved: false },
 
     // Networking
@@ -1219,11 +1224,19 @@
         }
       }
 
-      if (k === "w" || e.key === "ArrowUp") { state.keys.w = true; hideStartWeaponOverlay(); }
-      if (k === "a" || e.key === "ArrowLeft") { state.keys.a = true; hideStartWeaponOverlay(); }
-      if (k === "s" || e.key === "ArrowDown") { state.keys.s = true; hideStartWeaponOverlay(); }
-      if (k === "d" || e.key === "ArrowRight") { state.keys.d = true; hideStartWeaponOverlay(); }
+      // WASD for Movement
+      if (k === "w") { state.keys.w = true; hideStartWeaponOverlay(); }
+      if (k === "a") { state.keys.a = true; hideStartWeaponOverlay(); }
+      if (k === "s") { state.keys.s = true; hideStartWeaponOverlay(); }
+      if (k === "d") { state.keys.d = true; hideStartWeaponOverlay(); }
 
+      // Arrow Keys for Turning / Aiming
+      if (e.key === "ArrowUp") { e.preventDefault(); state.keys.arrowUp = true; state.mouse.hasMoved = false; hideStartWeaponOverlay(); }
+      if (e.key === "ArrowDown") { e.preventDefault(); state.keys.arrowDown = true; state.mouse.hasMoved = false; hideStartWeaponOverlay(); }
+      if (e.key === "ArrowLeft") { e.preventDefault(); state.keys.arrowLeft = true; state.mouse.hasMoved = false; hideStartWeaponOverlay(); }
+      if (e.key === "ArrowRight") { e.preventDefault(); state.keys.arrowRight = true; state.mouse.hasMoved = false; hideStartWeaponOverlay(); }
+
+      // Space / Enter to Shoot
       if (k === " " || e.key === " " || k === "enter") {
         e.preventDefault();
         hideStartWeaponOverlay();
@@ -1256,11 +1269,19 @@
 
     window.addEventListener("keyup", (e) => {
       const k = e.key.toLowerCase();
-      if (k === "w" || e.key === "ArrowUp") state.keys.w = false;
-      if (k === "a" || e.key === "ArrowLeft") state.keys.a = false;
-      if (k === "s" || e.key === "ArrowDown") state.keys.s = false;
-      if (k === "d" || e.key === "ArrowRight") state.keys.d = false;
+      // WASD for Movement
+      if (k === "w") state.keys.w = false;
+      if (k === "a") state.keys.a = false;
+      if (k === "s") state.keys.s = false;
+      if (k === "d") state.keys.d = false;
 
+      // Arrow Keys for Turning
+      if (e.key === "ArrowUp") state.keys.arrowUp = false;
+      if (e.key === "ArrowDown") state.keys.arrowDown = false;
+      if (e.key === "ArrowLeft") state.keys.arrowLeft = false;
+      if (e.key === "ArrowRight") state.keys.arrowRight = false;
+
+      // Space to Shoot
       if (k === " " || e.key === " " || k === "enter") state.keys.shoot = false;
 
       if (e.key === "Tab") {
@@ -1503,7 +1524,7 @@
 
     if (p.fireTimer > 0) p.fireTimer = Math.max(0, p.fireTimer - dt);
 
-    // Movement (WASD / Arrows)
+    // Movement: WASD only
     let mx = (state.keys.d ? 1 : 0) - (state.keys.a ? 1 : 0);
     let my = (state.keys.s ? 1 : 0) - (state.keys.w ? 1 : 0);
 
@@ -1512,15 +1533,24 @@
       my *= 0.7071;
     }
 
-    // Aiming / Facing Direction: Dictated by mouse cursor
-    if (state.mouse.hasMoved && el.combatCanvas) {
+    // Aiming / Turning: Arrow keys have dedicated priority
+    const turnX = (state.keys.arrowRight ? 1 : 0) - (state.keys.arrowLeft ? 1 : 0);
+    const turnY = (state.keys.arrowDown ? 1 : 0) - (state.keys.arrowUp ? 1 : 0);
+
+    if (turnX !== 0 || turnY !== 0) {
+      p.angle = Math.atan2(turnY, turnX);
+      state.lastTurnAngle = p.angle;
+    } else if (state.mouse.hasMoved && el.combatCanvas) {
+      // Mouse cursor aiming
       const cw = el.combatCanvas.width;
       const ch = el.combatCanvas.height;
       const pScreenX = cw / 2 + (p.x - state.camera.x) * state.camera.zoom;
       const pScreenY = ch / 2 + (p.y - state.camera.y) * state.camera.zoom;
       p.angle = Math.atan2(state.mouse.screenY - pScreenY, state.mouse.screenX - pScreenX);
+    } else if (state.lastTurnAngle !== undefined) {
+      p.angle = state.lastTurnAngle;
     } else if (mx !== 0 || my !== 0) {
-      // Fallback: Soldier faces movement direction if mouse hasn't moved yet
+      // Fallback: Soldier faces movement direction if no turn input yet
       p.angle = Math.atan2(my, mx);
     }
 
@@ -2097,8 +2127,9 @@
 
     // 6. Tactical FOV Darkness Mask (Darkening all places not seen)
     const p = state.player;
+    let poly = null;
     if (!p.isDead) {
-      const poly = computeVisibilityPolygon(p.x, p.y, p.angle, map);
+      poly = computeVisibilityPolygon(p.x, p.y, p.angle, map);
       if (poly.length >= 3) {
         ctx.save();
 
@@ -2174,25 +2205,29 @@
       ctx.restore();
     }
 
-    // 9. Tactical Line-of-Sight Check (Obstacles, containers and angles block vision)
-    for (const opp of Object.values(state.opponents)) {
-      if (opp.isDead) continue;
-      if (!p.isDead) {
+    // 9. Opponent Rendering (Clipped strictly to Visibility Polygon for Realistic Partial Peeking)
+    if (!p.isDead && poly && poly.length >= 3) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(poly[0].x, poly[0].y);
+      for (let i = 1; i < poly.length; i++) {
+        ctx.lineTo(poly[i].x, poly[i].y);
+      }
+      ctx.closePath();
+      ctx.clip(); // ONLY pixels inside the lit sightline can be rendered!
+
+      for (const opp of Object.values(state.opponents)) {
+        if (opp.isDead) continue;
         const d = Math.hypot(opp.x - p.x, opp.y - p.y);
-        let diff = Math.atan2(opp.y - p.y, opp.x - p.x) - p.angle;
-        while (diff > Math.PI) diff -= Math.PI * 2;
-        while (diff < -Math.PI) diff += Math.PI * 2;
-        const absDiff = Math.abs(diff);
+        if (d > FOV_MAX_DIST + 150) continue; // Skip far-away entities for performance
 
-        const inVisionCone = (absDiff <= FOV_HALF_ANGLE && d <= FOV_MAX_DIST) || (d <= FOV_CLOSE_RADIUS);
-        const isBlocked = isLineBlockedByObstacles(p.x, p.y, opp.x, opp.y, map.obstacles);
-
-        // Opponent is ONLY visible if within vision cone AND not blocked by obstacles!
-        if (inVisionCone && !isBlocked) {
-          drawCombatant(ctx, opp, false);
-        }
-      } else {
-        // While dead / spectating, alive opponents are visible
+        drawCombatant(ctx, opp, false);
+      }
+      ctx.restore();
+    } else {
+      // While dead / spectating, all alive opponents are visible
+      for (const opp of Object.values(state.opponents)) {
+        if (opp.isDead) continue;
         drawCombatant(ctx, opp, false);
       }
     }
