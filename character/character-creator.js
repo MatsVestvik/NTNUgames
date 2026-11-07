@@ -536,10 +536,12 @@
           </div>
 
           <!-- Randomize Button under head -->
+          ${options.showRandomize !== false ? `
           <button type="button" class="skribbl-randomize-btn" title="Lag en helt tilfeldig figur!" aria-label="Tilfeldig figur">
             <span class="skribbl-dice-icon">🎲</span>
             <span class="skribbl-dice-text">Tilfeldig figur</span>
           </button>
+          ` : ""}
         </div>
 
         <!-- Color Palette Tray -->
@@ -678,13 +680,15 @@
     });
 
     // 🎲 Dice button randomizer
-    diceBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      triggerDiceSpin();
-      currentConfig = getRandomConfig({ excludeColors: Object.keys(disabledColorsMap) });
-      applyUpdate(false);
-    });
+    if (diceBtn) {
+      diceBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        triggerDiceSpin();
+        currentConfig = getRandomConfig({ excludeColors: Object.keys(disabledColorsMap) });
+        applyUpdate(false);
+      });
+    }
 
     async function applyUpdate(skipSave = false) {
       if (isUpdating) return;

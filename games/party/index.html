@@ -8,8 +8,8 @@
   <link rel="icon" type="image/x-icon" href="/favicon.ico" />
   <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png" />
   <link rel="apple-touch-icon" href="/favicon.png" />
-  <link rel="stylesheet" href="/party/styles.css?v=2.4" />
-  <link rel="stylesheet" href="/character/character-creator.css" />
+  <link rel="stylesheet" href="/party/styles.css?v=2.5" />
+  <link rel="stylesheet" href="/character/character-creator.css?v=2.1" />
   <link rel="stylesheet" href="/parallax-bg.css?v=2.1" />
 </head>
 
@@ -32,11 +32,6 @@
         <div class="brand-info">
           <h1 class="brand-title"><img src="" class="party-header-icon" id="partyHeaderIcon" alt="" /> Party Lounge</h1>
           <span class="brand-badge">Lobby & Multi-enhet</span>
-        </div>
-      </div>
-      <div class="header-actions">
-        <div class="conn-status" id="connStatus">
-          <span class="status-dot"></span> <span id="connStatusText">Klar</span>
         </div>
       </div>
     </header>
@@ -99,12 +94,6 @@
             <div class="room-code-group">
               <span class="room-label">ROMKODE:</span>
               <div class="room-code-display" id="roomCodeDisplay">----</div>
-              <button type="button" class="copy-btn" id="btnCopyLink" title="Kopier invitasjonslenke">
-                Kopier lenke
-              </button>
-            </div>
-            <div class="room-instructions">
-              Gå til <strong id="domainHostDisplay">ntnugames.no/party</strong> på mobilen og tast inn koden!
             </div>
           </div>
 
@@ -127,7 +116,6 @@
               <h3 class="section-title">
                 Tilpass din festfigur
               </h3>
-              <span class="section-hint" id="charColorHint">Én farge per spiller</span>
             </div>
             <div class="lobby-character-wrap">
               <div id="skribblCustomizerLobby"></div>
@@ -406,8 +394,8 @@
 </main>
   </div>
 
-  <script src="/character/character-creator.js"></script>
-  <script src="/party/app.js?v=2.1"></script>
+  <script src="/character/character-creator.js?v=2.1"></script>
+  <script src="/party/app.js?v=2.2"></script>
   <script src="/parallax-bg.js?v=2.1"></script>
 </body>
 

@@ -328,7 +328,7 @@
 
     lobbyWidget = window.CharacterCreator.renderSkribblWidget(lobbyContainer, {
       initialConfig: state.avatar,
-      showRandomize: true,
+      showRandomize: false,
       autoSave: true,
       onChange: (encoded, dataUrl, cfg) => {
         state.avatar = encoded;
@@ -450,7 +450,7 @@
         }
       } catch (err) {
         console.warn("Poll connection hiccup:", err);
-        el.connStatusText.textContent = "Kobler til på nytt…";
+        if (el.connStatusText) el.connStatusText.textContent = "Kobler til på nytt…";
       }
 
       state.pollTimer = setTimeout(poll, 800);
@@ -468,7 +468,7 @@
   }
 
   function updateLobbyUI(room) {
-    el.connStatusText.textContent = "Live";
+    if (el.connStatusText) el.connStatusText.textContent = "Live";
     el.playersCountNum.textContent = String(room.playerCount || 1);
 
     const me = (room.players || []).find((p) => p.id === state.playerId);
@@ -787,17 +787,19 @@
   });
 
   // Copy invitation link
-  el.btnCopyLink.addEventListener("click", async () => {
-    const joinUrl = `${window.location.origin}/party/?code=${encodeURIComponent(state.roomCode)}`;
-    try {
-      await navigator.clipboard.writeText(joinUrl);
-      const originalText = el.btnCopyLink.textContent;
-      el.btnCopyLink.textContent = "✓ Kopiert!";
-      setTimeout(() => el.btnCopyLink.textContent = originalText, 2000);
-    } catch (e) {
-      prompt("Kopier denne lenken:", joinUrl);
-    }
-  });
+  if (el.btnCopyLink) {
+    el.btnCopyLink.addEventListener("click", async () => {
+      const joinUrl = `${window.location.origin}/party/?code=${encodeURIComponent(state.roomCode)}`;
+      try {
+        await navigator.clipboard.writeText(joinUrl);
+        const originalText = el.btnCopyLink.textContent;
+        el.btnCopyLink.textContent = "✓ Kopiert!";
+        setTimeout(() => el.btnCopyLink.textContent = originalText, 2000);
+      } catch (e) {
+        prompt("Kopier denne lenken:", joinUrl);
+      }
+    });
+  }
 
   // Leave room
   async function leaveRoom() {
