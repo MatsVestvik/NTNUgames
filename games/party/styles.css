@@ -496,6 +496,18 @@ body {
   border-color: var(--border-strong);
 }
 
+.player-tile.is-ready {
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.15) 0%, rgba(20, 36, 52, 0.9) 100%);
+  border-color: rgba(16, 185, 129, 0.55);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 0 14px rgba(16, 185, 129, 0.18);
+}
+
+.player-tile.is-not-ready {
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.15) 0%, rgba(36, 20, 32, 0.9) 100%);
+  border-color: rgba(239, 68, 68, 0.5);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 0 14px rgba(239, 68, 68, 0.16);
+}
+
 .player-tile.is-host {
   border-color: var(--accent-orange);
   box-shadow: 0 0 16px rgba(251, 133, 0, 0.25);
@@ -1207,13 +1219,45 @@ body.party-in-lobby .player-tile {
   position: relative;
   overflow: visible; /* Badges are NEVER clipped */
   box-sizing: border-box;
-  min-height: 130px;
-  transition: transform 0.15s ease, border-color 0.15s ease;
+  min-height: 116px;
+  transition: transform 0.15s ease, border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
 }
 
 body.party-in-lobby .player-tile:hover {
   transform: translateY(-2px);
   border-color: var(--border-strong);
+}
+
+/* Green Hue for Ready Players */
+body.party-in-lobby .player-tile.is-ready {
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.16) 0%, rgba(18, 34, 50, 0.9) 100%) !important;
+  border-color: rgba(16, 185, 129, 0.6) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 0 14px rgba(16, 185, 129, 0.2) !important;
+}
+
+body.party-in-lobby .player-tile.is-ready:hover {
+  border-color: #10b981 !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45), 0 0 18px rgba(16, 185, 129, 0.35) !important;
+}
+
+body.party-in-lobby .player-tile.is-ready .player-mon-img {
+  filter: drop-shadow(0 4px 10px rgba(16, 185, 129, 0.45)) !important;
+}
+
+/* Red Hue for Not Ready Players */
+body.party-in-lobby .player-tile.is-not-ready {
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.16) 0%, rgba(36, 18, 28, 0.9) 100%) !important;
+  border-color: rgba(239, 68, 68, 0.55) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 0 14px rgba(239, 68, 68, 0.18) !important;
+}
+
+body.party-in-lobby .player-tile.is-not-ready:hover {
+  border-color: #ef4444 !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45), 0 0 18px rgba(239, 68, 68, 0.3) !important;
+}
+
+body.party-in-lobby .player-tile.is-not-ready .player-mon-img {
+  filter: drop-shadow(0 4px 10px rgba(239, 68, 68, 0.4)) !important;
 }
 
 body.party-in-lobby .player-avatar-circle,
@@ -1258,15 +1302,7 @@ body.party-in-lobby .player-name-text {
 }
 
 body.party-in-lobby .player-status-badge {
-  font-size: 0.66rem;
-  font-weight: 700;
-  padding: 0.12rem 0.45rem;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  line-height: 1.2;
-  white-space: nowrap;
+  display: none !important;
 }
 
 body.party-in-lobby .player-crown-badge {
