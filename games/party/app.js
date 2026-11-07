@@ -526,7 +526,7 @@
           ${p.isHost ? '<span class="player-crown-badge">VERT</span>' : ''}
           ${isMe ? '<span class="player-me-badge">DEG</span>' : ''}
           ${canKick ? `<button type="button" class="player-kick-btn" title="Fjern ${escapeHtml(p.name)} fra rommet" aria-label="Fjern ${escapeHtml(p.name)}">✕</button>` : ''}
-          <div class="player-avatar-circle" style="border-color: ${p.color || '#3b5080'}">${renderAvatarHtml(p.avatar)}</div>
+          <div class="player-avatar-wrap">${renderAvatarHtml(p.avatar)}</div>
           <div class="player-name-text">${escapeHtml(p.name)}</div>
           <div class="player-status-badge ${isReady ? 'status-ready' : 'status-waiting'}">
             ${isReady ? 'Klar i lobby' : 'I spill…'}
