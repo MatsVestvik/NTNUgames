@@ -44,7 +44,7 @@ PLAYER_PALETTE = [
 TRACK_CONFIGS = {
     "rally_random": {
         "id": "rally_random",
-        "name": "Tilfeldig Rallyetappe 🎲",
+        "name": "Tilfeldig Rallyetappe",
         "desc": "Kjempestor, tilfeldig generert rallyetappe med grusvei, offroad-skuldre og mange krevende svinger og hårnåler.",
         "difficulty": "Variert",
         "lapsDefault": 3,

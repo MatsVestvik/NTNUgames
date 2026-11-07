@@ -113,7 +113,7 @@
     if (obHs && parseInt(obHs, 10) > 0) {
       const score = parseInt(obHs, 10);
       if (ordbombeStatus) {
-        ordbombeStatus.textContent = `Beste solo: ${score} ord 🔥`;
+        ordbombeStatus.textContent = `Beste solo: ${score} ord`;
       }
     }
   } catch (e) {

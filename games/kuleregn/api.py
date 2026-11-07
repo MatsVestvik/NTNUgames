@@ -45,7 +45,7 @@ WEAPONS_SPEC = {
     "pistol": {
         "id": "pistol",
         "name": "P-99 Pistol",
-        "icon": "🔫",
+        "icon": "",
         "damage": 22,
         "fireRate": 0.22, # seconds per shot
         "magSize": 12,
@@ -60,7 +60,7 @@ WEAPONS_SPEC = {
     "shotgun": {
         "id": "shotgun",
         "name": "SPAS-12 Hagle",
-        "icon": "💥",
+        "icon": "",
         "damage": 18,     # per pellet (x6 = 108 max)
         "fireRate": 0.72,
         "magSize": 6,
@@ -75,7 +75,7 @@ WEAPONS_SPEC = {
     "assault": {
         "id": "assault",
         "name": "AR-47 Maskingevær",
-        "icon": "⚡",
+        "icon": "",
         "damage": 17,
         "fireRate": 0.11, # 9 rounds/sec
         "magSize": 30,
@@ -90,7 +90,7 @@ WEAPONS_SPEC = {
     "sniper": {
         "id": "sniper",
         "name": "AWP Skarpskytter",
-        "icon": "🎯",
+        "icon": "",
         "damage": 85,
         "fireRate": 1.25,
         "magSize": 5,
@@ -105,7 +105,7 @@ WEAPONS_SPEC = {
     "rocket": {
         "id": "rocket",
         "name": "RPG Rakettkaster",
-        "icon": "🚀",
+        "icon": "",
         "damage": 115,    # AOE explosion
         "splashRadius": 140,
         "fireRate": 1.5,
@@ -123,7 +123,7 @@ WEAPONS_SPEC = {
 MAP_CONFIGS = {
     "rust": {
         "id": "rust",
-        "name": "Rust (Scrapyard) 🏜️",
+        "name": "Rust (Scrapyard)",
         "desc": "Kompakt og intens ørkenarena inspirert av klassisk Rust / CS. Sentralt tårn, containere, rørgater og dekningskasser.",
         "width": 2200,
         "height": 2200,
@@ -131,7 +131,7 @@ MAP_CONFIGS = {
     },
     "gloshaugen_arena": {
         "id": "gloshaugen_arena",
-        "name": "Gløshaugen Arena 🏛️",
+        "name": "Gløshaugen Arena",
         "desc": "Taktisk campusarena med sentral gårdplass, dekningsmurer, kasser og eksplosive tønner.",
         "width": 2400,
         "height": 1800,
@@ -139,7 +139,7 @@ MAP_CONFIGS = {
     },
     "cyber_hangar": {
         "id": "cyber_hangar",
-        "name": "Cyber Hangar 🚀",
+        "name": "Cyber Hangar",
         "desc": "Industrielt høyteknologisk lagerbygg med shippingcontainere, trange ganger og intense skuddvekslinger.",
         "width": 2600,
         "height": 2000,
@@ -509,7 +509,7 @@ class KuleregnRoom:
                 killer_color = killer.get("color", "#ef4444")
 
             w_name = WEAPONS_SPEC.get(weapon_id, {}).get("name", weapon_id.title())
-            w_icon = WEAPONS_SPEC.get(weapon_id, {}).get("icon", "💥")
+            w_icon = WEAPONS_SPEC.get(weapon_id, {}).get("icon", "")
 
             event = {
                 "id": uuid.uuid4().hex[:6],

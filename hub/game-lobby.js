@@ -98,7 +98,7 @@
       </div>
 
       <button type="button" class="primary-btn pulse-glow" id="btnCreatePartyRoom">
-        Opprett party-rom 🎉
+        Opprett party-rom
       </button>
     </div>
 
@@ -127,7 +127,7 @@
       </div>
 
       <button type="button" class="btn-cyan-accent" id="btnJoinPartyRoom">
-        Bli med i festen 🚀
+        Bli med i festen
       </button>
     </div>
   </div>
@@ -163,7 +163,7 @@
         alert(data.error || "Kunne ikke opprette party-rom.");
         if (btnElement) {
           btnElement.disabled = false;
-          btnElement.textContent = oldText || "Opprett party-rom 🎉";
+          btnElement.textContent = oldText || "Opprett party-rom";
         }
         isCreating = false;
         return;
@@ -193,7 +193,7 @@
       alert("Nettverksfeil ved opprettelse av rom.");
       if (btnElement) {
         btnElement.disabled = false;
-        btnElement.textContent = oldText || "Opprett party-rom 🎉";
+        btnElement.textContent = oldText || "Opprett party-rom";
       }
       isCreating = false;
     }
@@ -232,7 +232,7 @@
         alert(data.error || "Fant ikke party-rommet. Sjekk koden og prøv igjen.");
         if (btnElement) {
           btnElement.disabled = false;
-          btnElement.textContent = oldText || "Bli med i festen 🚀";
+          btnElement.textContent = oldText || "Bli med i festen";
         }
         isJoining = false;
         return;
@@ -257,7 +257,7 @@
       alert("Nettverksfeil ved tilkobling til rom.");
       if (btnElement) {
         btnElement.disabled = false;
-        btnElement.textContent = oldText || "Bli med i festen 🚀";
+        btnElement.textContent = oldText || "Bli med i festen";
       }
       isJoining = false;
     }

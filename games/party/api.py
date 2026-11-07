@@ -531,7 +531,7 @@ class PartyRoom:
                 self.game_state["winner"] = winner
                 self.game_state["last_event"] = {
                     "type": "game_over",
-                    "text": f"👑 {winner['name']} vant Ordbombe!",
+                    "text": f"{winner['name']} vant Ordbombe!",
                     "winner": winner,
                     "timestamp": time.time(),
                 }
@@ -606,7 +606,7 @@ class PartyRoom:
                     self.game_state["winner"] = winner
                     self.game_state["last_event"] = {
                         "type": "game_over",
-                        "text": f"💥 Bomben smalt! 👑 {winner['name'] if winner else 'Vinner'} overlevde og vant!",
+                        "text": f"Bomben smalt! {winner['name'] if winner else 'Vinner'} overlevde og vant!",
                         "loser": player["name"] if player else "Spiller",
                         "winner": winner,
                         "timestamp": now,
@@ -620,7 +620,7 @@ class PartyRoom:
                 self.game_state["explosion_until"] = now + 2.4
                 self.game_state["last_event"] = {
                     "type": "explosion",
-                    "text": f"💥 BOOM! Bomben eksploderte hos {player['name'] if player else 'spiller'}!",
+                    "text": f"BOOM! Bomben eksploderte hos {player['name'] if player else 'spiller'}!",
                     "player_name": player["name"] if player else "Spiller",
                     "lives_left": player["lives"] if player else 0,
                     "timestamp": now,
@@ -761,7 +761,7 @@ class PartyRoom:
                         "id": 1,
                         "type": "system",
                         "sender": "System",
-                        "text": f"🎨 Velkommen til Tegn & Gjett! Runde 1 av {rounds}. {first_drawer_name} velger et ord…",
+                        "text": f"Velkommen til Tegn & Gjett! Runde 1 av {rounds}. {first_drawer_name} velger et ord…",
                         "timestamp": now,
                     }
                 ],
@@ -842,7 +842,7 @@ class PartyRoom:
             "id": msg_id,
             "type": "system",
             "sender": "System",
-            "text": f"🎨 {drawer_name} har valgt et ord ({letter_count} bokstaver, {category})! Begynn å gjette!",
+            "text": f"{drawer_name} har valgt et ord ({letter_count} bokstaver, {category})! Begynn å gjette!",
             "timestamp": now,
         })
         gs["next_msg_id"] = msg_id + 1
@@ -859,9 +859,9 @@ class PartyRoom:
         msg_id = gs.get("next_msg_id", 1)
 
         if reason == "all_guessed":
-            text = f"🌟 Fantastisk! Alle gjettet ordet: «{word}»!"
+            text = f"Fantastisk! Alle gjettet ordet: «{word}»!"
         else:
-            text = f"⏰ Tiden er ute! Ordet var «{word}». {guessed_count} spiller(e) gjettet riktig."
+            text = f"Tiden er ute! Ordet var «{word}». {guessed_count} spiller(e) gjettet riktig."
 
         gs["chat_messages"].append({
             "id": msg_id,
@@ -924,7 +924,7 @@ class PartyRoom:
             "id": msg_id,
             "type": "system",
             "sender": "System",
-            "text": f"🔔 Runde {curr_round} av {total_rounds}: {drawer_name} velger et ord…",
+            "text": f"Runde {curr_round} av {total_rounds}: {drawer_name} velger et ord…",
             "timestamp": now,
         })
         gs["next_msg_id"] = msg_id + 1
@@ -964,7 +964,7 @@ class PartyRoom:
             "id": msg_id,
             "type": "winner",
             "sender": "System",
-            "text": f"🏆 Spillet er over! Gratulerer til {winner_name} som vant med {winner_score} poeng!",
+            "text": f"Spillet er over! Gratulerer til {winner_name} som vant med {winner_score} poeng!",
             "timestamp": now,
         })
         gs["next_msg_id"] = msg_id + 1
@@ -1271,7 +1271,7 @@ class PartyRoom:
                         "id": 1,
                         "type": "system",
                         "sender": "System",
-                        "text": f"🕵️ Imposter har startet! Kategori: «{pair['category']}». Alle får tegne én strek hver per runde. {first_drawer_name} starter!",
+                        "text": f"Imposter har startet! Kategori: «{pair['category']}». Alle får tegne én strek hver per runde. {first_drawer_name} starter!",
                         "timestamp": now,
                     }
                 ],
@@ -1344,7 +1344,7 @@ class PartyRoom:
                 "id": msg_id,
                 "type": "system_highlight",
                 "sender": "System",
-                "text": f"🗳️ Strekrunde {gs.get('stroke_round', 1)} er ferdig! Diskuter i chatten og stem på hvem dere tror er Imposter – eller stem for en ny runde med streker!",
+                "text": f"Strekrunde {gs.get('stroke_round', 1)} er ferdig! Diskuter i chatten og stem på hvem dere tror er Imposter – eller stem for en ny runde med streker!",
                 "timestamp": now,
             })
             gs["next_msg_id"] = msg_id + 1
@@ -1366,7 +1366,7 @@ class PartyRoom:
             "id": msg_id,
             "type": "system",
             "sender": "System",
-            "text": f"✏️ Det er {next_drawer_name} sin tur til å tegne én strek!",
+            "text": f"Det er {next_drawer_name} sin tur til å tegne én strek!",
             "timestamp": now,
         })
         gs["next_msg_id"] = msg_id + 1
@@ -1413,7 +1413,7 @@ class PartyRoom:
                 "id": msg_id,
                 "type": "system_highlight",
                 "sender": "System",
-                "text": f"🎨 {reason_txt} Strekrunde {gs['stroke_round']} starter – {first_name} tegner først!",
+                "text": f"{reason_txt} Strekrunde {gs['stroke_round']} starter – {first_name} tegner først!",
                 "timestamp": now,
             })
             gs["next_msg_id"] = msg_id + 1
@@ -1436,7 +1436,7 @@ class PartyRoom:
                 "id": msg_id,
                 "type": "system_highlight",
                 "sender": "System",
-                "text": f"🚨 Crew avslørte {accused_name} som Imposter! {accused_name} får nå 20 sekunder og ett siste forsøk på å gjette Crew-ordet!",
+                "text": f"Crew avslørte {accused_name} som Imposter! {accused_name} får nå 20 sekunder og ett siste forsøk på å gjette Crew-ordet!",
                 "timestamp": now,
             })
             gs["next_msg_id"] = msg_id + 1
@@ -1477,13 +1477,13 @@ class PartyRoom:
         if winner_team == "imposter":
             if imposter_player:
                 imposter_player["score"] = imposter_player.get("score", 0) + 300
-            headline = f"🕵️ Imposteren ({imposter_name}) vant! {reason}"
+            headline = f"Imposteren ({imposter_name}) vant! {reason}"
         else:
             for pid, p in self.players.items():
                 if pid != imposter_id:
                     bonus = 50 if votes_map.get(pid) == imposter_id else 0
                     p["score"] = p.get("score", 0) + 150 + bonus
-            headline = f"🎉 Crew vant! {reason}"
+            headline = f"Crew vant! {reason}"
 
         msg_id = gs.get("next_msg_id", 1)
         gs["chat_messages"].append({
@@ -1653,7 +1653,7 @@ class PartyRoom:
                         "id": msg_id,
                         "type": "system_highlight",
                         "sender": "System",
-                        "text": f"🕵️ Imposteren prøvde å gjette Crew-ordet med «{guess_text}» – FEIL! ({guesses_left} forsøk igjen)",
+                        "text": f"Imposteren prøvde å gjette Crew-ordet med «{guess_text}» – FEIL! ({guesses_left} forsøk igjen)",
                         "timestamp": now,
                     })
                     gs["next_msg_id"] = msg_id + 1
@@ -2168,7 +2168,7 @@ class PartyAPI:
                         "subtitle": "Norsk Word Bomb med tikkende lunte",
                         "desc": "Tast inn et ord med stavelsen før bomben eksploderer på mobilen din!",
                         "status": "ready",
-                        "badge": "Klar til å spilles! 💣",
+                        "badge": "Klar til å spilles",
                         "players": "2–16 spillere",
                         "icon": "/assets/icons/ordbombe.png",
                         "route": "/ordbombe/",
@@ -2179,7 +2179,7 @@ class PartyAPI:
                         "subtitle": "Klassisk tegne- og gjettespill (skribbl-stil)",
                         "desc": "Én tegner et hemmelig ord på mobilen, resten gjetter i lynrask sanntidschat!",
                         "status": "ready",
-                        "badge": "Klar til å spilles! 🎨",
+                        "badge": "Klar til å spilles",
                         "players": "2–16 spillere",
                         "icon": "/assets/icons/tegn_og_gjett.png",
                         "route": "/tegn-og-gjett/",
@@ -2190,7 +2190,7 @@ class PartyAPI:
                         "subtitle": "Klassisk 2-spillers sjakkduell",
                         "desc": "Utfordre en venn i pikselkunststil med klokke og tilskuere!",
                         "status": "ready",
-                        "badge": "Klar til å spilles! ♟️",
+                        "badge": "Klar til å spilles",
                         "players": "2 spillere + tilskuere",
                         "icon": "/assets/icons/sjakk.png",
                         "route": "/sjakk/",
@@ -2201,7 +2201,7 @@ class PartyAPI:
                         "subtitle": "Taktisk labyrintduell",
                         "desc": "Flytt monsteret ditt eller sett opp vegger for å sperre motstanderne ute!",
                         "status": "ready",
-                        "badge": "Klar til å spilles! 👾",
+                        "badge": "Klar til å spilles",
                         "players": "2–16 spillere",
                         "icon": "/assets/icons/korridorer.png",
                         "route": "/korridorer/",
@@ -2212,7 +2212,7 @@ class PartyAPI:
                         "subtitle": "Topp-ned 2D arkaderacing & drifting",
                         "desc": "Legg bilen bredt gjennom svingene med piltastene og utfordre vennegjengen!",
                         "status": "ready",
-                        "badge": "Klar til å spilles! 🏎️",
+                        "badge": "Klar til å spilles",
                         "players": "2–16 spillere",
                         "icon": "/assets/icons/turbosladd.png",
                         "route": "/turbosladd/",
@@ -2220,10 +2220,10 @@ class PartyAPI:
                     {
                         "id": "kuleregn",
                         "title": "Kuleregn",
-                        "subtitle": "Topp-ned skytespill (WASD + Mus)",
-                        "desc": "Intens Free-For-All skytterduell! Plukk opp hagler, maskingevær og raketter og dominer arenaen.",
+                        "subtitle": "2D Stridsvognkamp (WASD + Piltaster)",
+                        "desc": "Intens panserkamp på Rust-arenaen! Styr stridsvognen med WASD, sikt med piltastene og skyt med mellomrom.",
                         "status": "ready",
-                        "badge": "Nyhet! 💥",
+                        "badge": "Klar til å spilles",
                         "players": "1–16 spillere",
                         "icon": "/assets/icons/kuleregn.png",
                         "route": "/kuleregn/",

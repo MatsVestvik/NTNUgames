@@ -178,7 +178,7 @@
       alert("Nettverksfeil ved oppretting av rom.");
     } finally {
       el.btnSubmitCreate.disabled = false;
-      el.btnSubmitCreate.textContent = "Opprett rom 🎉";
+      el.btnSubmitCreate.textContent = "Opprett rom";
     }
   });
 
@@ -274,7 +274,7 @@
     el.viewLobby.classList.remove("hidden");
 
     el.roomCodeDisplay.textContent = state.roomCode;
-    el.hostHint.textContent = state.isHost ? "Du er vert 👑" : `Tilkoblet som ${state.playerName}`;
+    el.hostHint.textContent = state.isHost ? "Du er vert" : `Tilkoblet som ${state.playerName}`;
 
     renderHostVsGuestUI(state.isHost);
 
@@ -497,7 +497,7 @@
     if (typeof room.isHost === "boolean" && room.isHost !== state.isHost) {
       state.isHost = room.isHost;
       renderHostVsGuestUI(state.isHost);
-      el.hostHint.textContent = state.isHost ? "Du er vert 👑" : `Tilkoblet som ${state.playerName}`;
+      el.hostHint.textContent = state.isHost ? "Du er vert" : `Tilkoblet som ${state.playerName}`;
     }
 
     // Render players grid
@@ -515,7 +515,7 @@
         <div class="player-avatar-circle" style="border-color: ${p.color || '#3b5080'}">${renderAvatarHtml(p.avatar)}</div>
         <div class="player-name-text">${escapeHtml(p.name)}</div>
         <div class="player-status-badge ${isReady ? 'status-ready' : 'status-waiting'}">
-          ${isReady ? '✅ Klar i lobby' : '⏳ I spill…'}
+          ${isReady ? 'Klar i lobby' : 'I spill…'}
         </div>
       `;
       if (canKick) {
@@ -605,7 +605,7 @@
               startBtn.textContent = startBtn.dataset.hostText || "Start spill";
             } else {
               startBtn.disabled = true;
-              startBtn.textContent = "Venter på vert 👑";
+              startBtn.textContent = "Venter på vert";
             }
           }
         }

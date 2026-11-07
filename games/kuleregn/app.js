@@ -44,7 +44,7 @@
     id: "cannon",
     name: "Stridsvognkanon",
     type: "Kanon",
-    icon: "💣",
+    icon: "",
     damage: 50,
     fireRate: 0.65,
     startingAmmo: Infinity,
@@ -252,7 +252,7 @@
       { id: "rust_shd_2", type: "shield", x: 1100, y: h - 340, respawnSec: 20, timer: 0 },
     ];
 
-    // Red Explosive Barrels (☣)
+    // Red Explosive Barrels
     const barrels = [
       { id: "rust_bar_1", x: 915, y: 915, r: 16, hp: 35 },
       { id: "rust_bar_2", x: 1285, y: 915, r: 16, hp: 35 },
@@ -1118,7 +1118,7 @@
 
     const isMe = winner && winner.id === (state.playerId || "player_local");
     if (el.podiumTitle) {
-      el.podiumTitle.textContent = isMe ? "🏆 DU VANT KAMPEN!" : `👑 ${winner ? winner.name : 'Vinner'} VANT!`;
+      el.podiumTitle.textContent = isMe ? "DU VANT KAMPEN!" : `${winner ? winner.name : 'Vinner'} VANT!`;
     }
     if (el.podiumDesc) {
       el.podiumDesc.textContent = isMe
@@ -1148,7 +1148,7 @@
   }
 
   function addKillFeedItem(item) {
-    const wIcon = WEAPONS[item.weapon] ? WEAPONS[item.weapon].icon : "🔫";
+    const wIcon = WEAPONS[item.weapon] ? (WEAPONS[item.weapon].icon || "▸") : "▸";
     state.killFeed.unshift({
       ...item,
       icon: wIcon,
@@ -1659,13 +1659,13 @@
             if (c.health < c.maxHealth) {
               c.health = Math.min(c.maxHealth, c.health + 40);
               collected = true;
-              if (c === state.player) showPickupToast("❤️ +40 Helse!");
+              if (c === state.player) showPickupToast("+40 Helse!");
             }
           } else if (p.type === "shield") {
             if (c.shield < c.maxShield) {
               c.shield = Math.min(c.maxShield, c.shield + 50);
               collected = true;
-              if (c === state.player) showPickupToast("🛡️ +50 Kevlar Skjold!");
+              if (c === state.player) showPickupToast("+50 Kevlar Skjold!");
             }
           }
 
@@ -1912,7 +1912,7 @@
       ctx.fillStyle = "#ffffff";
       ctx.shadowColor = "#000000";
       ctx.shadowBlur = 4;
-      const label = pItem.type === "medkit" ? "❤️ MEDKIT" : "🛡️ SKJOLD";
+      const label = pItem.type === "medkit" ? "+ HELSE" : "SKJOLD";
       ctx.fillText(label, pItem.x, pItem.y + 28);
       ctx.restore();
     }
@@ -1934,7 +1934,7 @@
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillStyle = "#fef08a";
-      ctx.fillText("☣", b.x, b.y);
+      ctx.fillText("!", b.x, b.y);
       ctx.restore();
     }
 
@@ -2457,10 +2457,10 @@
     if (data.status === "countdown") {
       el.countdownOverlay?.classList.remove("hidden");
       const rem = Math.ceil(data.countdownRemaining || 3);
-      if (el.countdownText) el.countdownText.textContent = rem > 0 ? String(rem) : "KJEMP! 💥";
+      if (el.countdownText) el.countdownText.textContent = rem > 0 ? String(rem) : "KJEMP!";
     } else if (data.status === "playing") {
       if (prevStatus === "countdown") {
-        if (el.countdownText) el.countdownText.textContent = "KJEMP! 💥";
+        if (el.countdownText) el.countdownText.textContent = "KJEMP!";
         playTone(880, 0.4, "triangle", 0.35);
         setTimeout(() => el.countdownOverlay?.classList.add("hidden"), 600);
       } else {
@@ -2555,14 +2555,14 @@
     state.opponents = {};
     const center = { x: map.width / 2, y: map.height / 2 };
     const dummyConfigs = map.id === "rust" ? [
-      { id: "dummy_1", name: "Panser-Alfa 🎯", color: "#f43f5e", avatar: "char:h1:c_f43f5e:r1:e1:m1", offset: { x: -620, y: -40 }, weapon: "shotgun", hullAngle: 0.5 },
-      { id: "dummy_2", name: "Panser-Bravo 🎯", color: "#38bdf8", avatar: "char:h2:c_38bdf8:r2:e2:m2", offset: { x: 540, y: -100 }, weapon: "sniper", hullAngle: 2.2 },
-      { id: "dummy_3", name: "Panser-Charlie 🎯", color: "#a855f7", avatar: "char:h3:c_a855f7:r3:e3:m3", offset: { x: 0, y: -590 }, weapon: "assault", hullAngle: -1.2 },
-      { id: "dummy_4", name: "Panser-Delta 🎯", color: "#10b981", avatar: "char:h4:c_10b981:r1:e2:m1", offset: { x: -260, y: 320 }, weapon: "rocket", hullAngle: -2.8 },
+      { id: "dummy_1", name: "Panser-Alfa", color: "#f43f5e", avatar: "char:h1:c_f43f5e:r1:e1:m1", offset: { x: -620, y: -40 }, weapon: "shotgun", hullAngle: 0.5 },
+      { id: "dummy_2", name: "Panser-Bravo", color: "#38bdf8", avatar: "char:h2:c_38bdf8:r2:e2:m2", offset: { x: 540, y: -100 }, weapon: "sniper", hullAngle: 2.2 },
+      { id: "dummy_3", name: "Panser-Charlie", color: "#a855f7", avatar: "char:h3:c_a855f7:r3:e3:m3", offset: { x: 0, y: -590 }, weapon: "assault", hullAngle: -1.2 },
+      { id: "dummy_4", name: "Panser-Delta", color: "#10b981", avatar: "char:h4:c_10b981:r1:e2:m1", offset: { x: -260, y: 320 }, weapon: "rocket", hullAngle: -2.8 },
     ] : [
-      { id: "dummy_1", name: "Panser-Alfa 🎯", color: "#f43f5e", avatar: "char:h1:c_f43f5e:r1:e1:m1", offset: { x: -140, y: -100 }, weapon: "shotgun", hullAngle: 0.8 },
-      { id: "dummy_2", name: "Panser-Bravo 🎯", color: "#38bdf8", avatar: "char:h2:c_38bdf8:r2:e2:m2", offset: { x: 140, y: -100 }, weapon: "sniper", hullAngle: -1.8 },
-      { id: "dummy_3", name: "Panser-Charlie 🎯", color: "#a855f7", avatar: "char:h3:c_a855f7:r3:e3:m3", offset: { x: 0, y: 140 }, weapon: "assault", hullAngle: 2.5 },
+      { id: "dummy_1", name: "Panser-Alfa", color: "#f43f5e", avatar: "char:h1:c_f43f5e:r1:e1:m1", offset: { x: -140, y: -100 }, weapon: "shotgun", hullAngle: 0.8 },
+      { id: "dummy_2", name: "Panser-Bravo", color: "#38bdf8", avatar: "char:h2:c_38bdf8:r2:e2:m2", offset: { x: 140, y: -100 }, weapon: "sniper", hullAngle: -1.8 },
+      { id: "dummy_3", name: "Panser-Charlie", color: "#a855f7", avatar: "char:h3:c_a855f7:r3:e3:m3", offset: { x: 0, y: 140 }, weapon: "assault", hullAngle: 2.5 },
     ];
 
     dummyConfigs.forEach(d => {
@@ -2666,7 +2666,7 @@
     if (data.status === "countdown") {
       if (el.countdownOverlay) el.countdownOverlay.classList.remove("hidden");
       const rem = Math.ceil(data.countdownRemaining || 3);
-      if (el.countdownText) el.countdownText.textContent = rem > 0 ? String(rem) : "KJEMP! 💥";
+      if (el.countdownText) el.countdownText.textContent = rem > 0 ? String(rem) : "KJEMP!";
     } else {
       if (el.countdownOverlay) el.countdownOverlay.classList.add("hidden");
     }
@@ -2867,7 +2867,12 @@
     // Sound toggle
     el.btnSoundToggle?.addEventListener("click", () => {
       soundEnabled = !soundEnabled;
-      el.btnSoundToggle.textContent = soundEnabled ? "🔊" : "🔇";
+      const onSvg = el.btnSoundToggle.querySelector(".sound-icon-on");
+      const offSvg = el.btnSoundToggle.querySelector(".sound-icon-off");
+      if (onSvg && offSvg) {
+        onSvg.classList.toggle("hidden", !soundEnabled);
+        offSvg.classList.toggle("hidden", soundEnabled);
+      }
     });
 
     // Header Back button
