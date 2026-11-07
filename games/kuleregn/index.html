@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="/game-lobby.css" />
   <link rel="stylesheet" href="/parallax-bg.css" />
   <link rel="stylesheet" href="/character/character-creator.css" />
-  <link rel="stylesheet" href="styles.css?v=2.2" />
+  <link rel="stylesheet" href="styles.css?v=2.3" />
 </head>
 
 <body class="kuleregn-page">
@@ -74,8 +74,22 @@
             </div>
             <h2 class="hero-title">Kuleregn</h2>
             <p class="hero-desc">
-              Topp-ned 2D arkadeskytespill med festfiguren din! Beveg deg med WASD/piltaster, sikt med musen og skyt med venstreklikk eller mellomrom. Plukk opp spesialvåpen og dominer arenaen!
+              Topp-ned taktisk 2D skytespill inspirert av klassisk CS / Rust! Beveg deg med WASD, sikt med musen og skyt med venstreklikk eller mellomrom. Velg startvåpen, bruk taktisk synsvinkel (FOV) til å oppdage fiender gjennom vegger, og dominer arenaen!
             </p>
+          </div>
+
+          <!-- Weapon Loadout Selection (Choose Gun at Start) -->
+          <div class="loadout-section">
+            <div class="loadout-header">
+              <div class="loadout-title-row">
+                <span class="action-card-badge badge-orange">Loadout</span>
+                <span class="loadout-title">Velg ditt startvåpen</span>
+              </div>
+              <span class="loadout-subtitle">Du starter alltid med valgt våpen (kan også byttes i kamp med 1–5)</span>
+            </div>
+            <div class="weapon-loadout-grid" id="weaponLoadoutGrid">
+              <!-- Populated dynamically by app.js -->
+            </div>
           </div>
 
           <!-- Mode Navigation Tabs -->
@@ -120,7 +134,8 @@
                 <div class="form-group">
                   <label for="selectSoloMap">Velg arena</label>
                   <select id="selectSoloMap" class="text-input select-input">
-                    <option value="gloshaugen_arena" selected>Gløshaugen Arena 🏛️</option>
+                    <option value="rust" selected>Rust (Scrapyard) 🏜️</option>
+                    <option value="gloshaugen_arena">Gløshaugen Arena 🏛️</option>
                     <option value="cyber_hangar">Cyber Hangar 🚀</option>
                   </select>
                 </div>
@@ -162,6 +177,14 @@
               <span class="cg-desc">Skyt</span>
             </div>
             <div class="cg-item">
+              <span class="cg-key">1 – 5</span>
+              <span class="cg-desc">Bytt våpen</span>
+            </div>
+            <div class="cg-item">
+              <span class="cg-key">👁️ FOV</span>
+              <span class="cg-desc">X-Ray Veggsyn</span>
+            </div>
+            <div class="cg-item">
               <span class="cg-key">TAB</span>
               <span class="cg-desc">Resultattavle</span>
             </div>
@@ -188,6 +211,10 @@
               <span class="hr-label">Plass</span>
               <span class="hr-divider">•</span>
               <span class="hr-kills" id="hudKillsText">0 drap</span>
+            </div>
+            <div class="hud-fov-badge" id="hudFovBadge" title="Taktisk synsfelt: Se fiender gjennom vegger innenfor synskjeglen">
+              <span class="fov-dot"></span>
+              <span class="fov-text">X-RAY FOV</span>
             </div>
             <div class="hud-streak-banner hidden" id="hudStreakBanner">
               🔥 <span id="hudStreakCount">3x</span> Drapstrekk!
@@ -232,14 +259,38 @@
             </div>
           </div>
 
-          <!-- Bottom Right: Active Weapon & Ammo -->
+          <!-- Bottom Right: Active Weapon & Quick Loadout Switcher -->
           <div class="hud-bottom-right">
+            <!-- In-game quick loadout hotkey bar (1-5) -->
+            <div class="quick-weapon-bar" id="quickWeaponBar">
+              <button type="button" class="qw-btn active" data-weapon="assault" title="1: AR-47 Maskingevær">
+                <span class="qw-key">1</span>
+                <span class="qw-icon">⚡</span>
+              </button>
+              <button type="button" class="qw-btn" data-weapon="shotgun" title="2: SPAS-12 Hagle">
+                <span class="qw-key">2</span>
+                <span class="qw-icon">💥</span>
+              </button>
+              <button type="button" class="qw-btn" data-weapon="sniper" title="3: AWP Skarpskytter">
+                <span class="qw-key">3</span>
+                <span class="qw-icon">🎯</span>
+              </button>
+              <button type="button" class="qw-btn" data-weapon="rocket" title="4: RPG Rakettkaster">
+                <span class="qw-key">4</span>
+                <span class="qw-icon">🚀</span>
+              </button>
+              <button type="button" class="qw-btn" data-weapon="pistol" title="5: P-99 Pistol">
+                <span class="qw-key">5</span>
+                <span class="qw-icon">🔫</span>
+              </button>
+            </div>
+
             <div class="weapon-hud-card" id="weaponHudCard">
               <div class="whc-top">
-                <span class="whc-icon" id="weaponHudIcon">🔫</span>
+                <span class="whc-icon" id="weaponHudIcon">⚡</span>
                 <div class="whc-info">
-                  <span class="whc-name" id="weaponHudName">P-99 Pistol</span>
-                  <span class="whc-type" id="weaponHudType">Halvautomatisk</span>
+                  <span class="whc-name" id="weaponHudName">AR-47 Maskingevær</span>
+                  <span class="whc-type" id="weaponHudType">Helautomatisk</span>
                 </div>
               </div>
 
@@ -331,7 +382,7 @@
   <script src="/parallax-bg.js?v=2.1"></script>
   <script src="/character/character-creator.js"></script>
   <script src="/game-lobby.js"></script>
-  <script src="app.js?v=2.2"></script>
+  <script src="app.js?v=2.3"></script>
 </body>
 
 </html>

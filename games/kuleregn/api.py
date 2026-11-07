@@ -121,6 +121,14 @@ WEAPONS_SPEC = {
 }
 
 MAP_CONFIGS = {
+    "rust": {
+        "id": "rust",
+        "name": "Rust (Scrapyard) 🏜️",
+        "desc": "Kompakt og intens ørkenarena inspirert av klassisk Rust / CS. Sentralt tårn, containere, rørgater og dekningskasser.",
+        "width": 2200,
+        "height": 2200,
+        "spawnCount": 12,
+    },
     "gloshaugen_arena": {
         "id": "gloshaugen_arena",
         "name": "Gløshaugen Arena 🏛️",
@@ -148,7 +156,7 @@ class KuleregnRoom:
         code: str,
         host_name: str,
         host_color: str,
-        map_id: str = "gloshaugen_arena",
+        map_id: str = "rust",
         score_limit: int = 15,
         time_limit: int = 300,
         bot_count: int = 4,
@@ -167,7 +175,7 @@ class KuleregnRoom:
         self.race_end_time: Optional[float] = None
 
         self.mode: str = mode if mode in ("ffa", "tdm") else "ffa"
-        self.map_id: str = map_id if map_id in MAP_CONFIGS else "gloshaugen_arena"
+        self.map_id: str = map_id if map_id in MAP_CONFIGS else "rust"
         self.score_limit: int = max(5, min(50, score_limit))
         self.time_limit: int = max(60, min(900, time_limit))
         self.bot_count: int = max(0, min(8, bot_count))
@@ -209,7 +217,7 @@ class KuleregnRoom:
             "speed": 0.0,
             "health": 100,
             "shield": 25,
-            "weapon": "pistol",
+            "weapon": "assault",
             "kills": 0,
             "deaths": 0,
             "score": 0,
@@ -255,7 +263,7 @@ class KuleregnRoom:
                 "speed": 0.0,
                 "health": 100,
                 "shield": 25,
-                "weapon": "pistol",
+                "weapon": "assault",
                 "kills": 0,
                 "deaths": 0,
                 "score": 0,
@@ -316,7 +324,7 @@ class KuleregnRoom:
                         pl["score"] = 0
                         pl["health"] = 100
                         pl["shield"] = 25
-                        pl["weapon"] = "pistol"
+                        pl["weapon"] = pl.get("weapon", "assault")
                     self.kill_feed = []
                     self.recent_events = []
                     self.bump()
@@ -331,6 +339,7 @@ class KuleregnRoom:
         color: Optional[str] = None,
         avatar: Optional[str] = None,
         name: Optional[str] = None,
+        weapon: Optional[str] = None,
     ) -> bool:
         with self.lock:
             p = self.players.get(player_id)
@@ -358,6 +367,9 @@ class KuleregnRoom:
                 clean_name = str(name).strip()[:18]
                 if clean_name:
                     p["name"] = clean_name
+
+            if weapon and weapon in WEAPONS_SPEC:
+                p["weapon"] = weapon
 
             self.bump()
             return True
@@ -402,7 +414,7 @@ class KuleregnRoom:
                 pl["score"] = 0
                 pl["health"] = 100
                 pl["shield"] = 25
-                pl["weapon"] = "pistol"
+                pl["weapon"] = pl.get("weapon", "assault")
             self.kill_feed = []
             self.recent_events = []
             self.bump()
@@ -425,7 +437,7 @@ class KuleregnRoom:
                 pl["score"] = 0
                 pl["health"] = 100
                 pl["shield"] = 25
-                pl["weapon"] = "pistol"
+                pl["weapon"] = pl.get("weapon", "assault")
             self.kill_feed = []
             self.recent_events = []
             self.bump()
@@ -444,7 +456,7 @@ class KuleregnRoom:
                 pl["score"] = 0
                 pl["health"] = 100
                 pl["shield"] = 25
-                pl["weapon"] = "pistol"
+                pl["weapon"] = pl.get("weapon", "assault")
             self.kill_feed = []
             self.recent_events = []
             self.bump()
@@ -656,7 +668,7 @@ class KuleregnAPI:
                                 code=room_code,
                                 host_name=host_player.get("name", "Sjåfør 1"),
                                 host_color=host_color,
-                                map_id="gloshaugen_arena",
+                                map_id="rust",
                                 score_limit=15,
                                 time_limit=300,
                                 bot_count=2,
@@ -687,7 +699,7 @@ class KuleregnAPI:
                                         "y": 400.0 + (slot // 4) * 80.0,
                                         "angle": 0.0,
                                         "vx": 0.0, "vy": 0.0, "speed": 0.0,
-                                        "health": 100, "shield": 25, "weapon": "pistol",
+                                        "health": 100, "shield": 25, "weapon": "assault",
                                         "kills": 0, "deaths": 0, "score": 0, "streak": 0, "highestStreak": 0,
                                         "lastSeen": time.time(),
                                     }
@@ -719,7 +731,7 @@ class KuleregnAPI:
             host_name = str(body.get("hostName", "Spiller 1")).strip()[:18] or "Spiller 1"
             host_color = str(body.get("color", "")).strip()
             host_avatar = str(body.get("avatar", "")).strip()
-            map_id = str(body.get("mapId", "gloshaugen_arena")).strip()
+            map_id = str(body.get("mapId", "rust")).strip()
             score_limit = int(body.get("scoreLimit", 15))
             time_limit = int(body.get("timeLimit", 300))
             bot_count = int(body.get("botCount", 4))

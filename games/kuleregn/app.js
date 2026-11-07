@@ -39,6 +39,95 @@
   ];
 
   const WEAPONS = {
+    assault: {
+      id: "assault",
+      name: "AR-47 Maskingevær",
+      type: "Helautomatisk",
+      icon: "⚡",
+      damage: 17,
+      fireRate: 0.11, // ~9 rps
+      startingAmmo: Infinity,
+      bulletSpeed: 980,
+      bulletLife: 1.15,
+      spread: 0.06,
+      bulletCount: 1,
+      isAutomatic: true,
+      recoilKick: 4,
+      screenShake: 2,
+      color: "#38bdf8",
+      length: 28,
+      barrelWidth: 5,
+      slot: "1",
+      desc: "Høy skuddtakt og solid skade",
+      dps: "155 DPS",
+    },
+    shotgun: {
+      id: "shotgun",
+      name: "SPAS-12 Hagle",
+      type: "Pumpehagle",
+      icon: "💥",
+      damage: 18, // 18 x 6 = 108 maks
+      fireRate: 0.65,
+      startingAmmo: Infinity,
+      bulletSpeed: 780,
+      bulletLife: 0.65,
+      spread: 0.22,
+      bulletCount: 6,
+      isAutomatic: false,
+      recoilKick: 9,
+      screenShake: 5,
+      color: "#fb923c",
+      length: 26,
+      barrelWidth: 6,
+      slot: "2",
+      desc: "Massiv nærkampskade med 6 hagl",
+      dps: "108 Maks",
+    },
+    sniper: {
+      id: "sniper",
+      name: "AWP Skarpskytter",
+      type: "Bolt-action",
+      icon: "🎯",
+      damage: 85,
+      fireRate: 0.85,
+      startingAmmo: Infinity,
+      bulletSpeed: 1500,
+      bulletLife: 1.2,
+      spread: 0.012,
+      bulletCount: 1,
+      isAutomatic: false,
+      recoilKick: 14,
+      screenShake: 7,
+      color: "#a855f7",
+      length: 36,
+      barrelWidth: 4,
+      slot: "3",
+      desc: "Lynrask kule med lasersikte",
+      dps: "85 Skade",
+    },
+    rocket: {
+      id: "rocket",
+      name: "RPG Rakettkaster",
+      type: "Eksplosiv",
+      icon: "🚀",
+      damage: 115,
+      splashRadius: 140,
+      fireRate: 1.2,
+      startingAmmo: Infinity,
+      bulletSpeed: 520,
+      bulletLife: 2.2,
+      spread: 0.02,
+      bulletCount: 1,
+      isAutomatic: false,
+      recoilKick: 16,
+      screenShake: 12,
+      color: "#ef4444",
+      length: 32,
+      barrelWidth: 8,
+      slot: "4",
+      desc: "Flatestøt og eksplosiv sprutskade",
+      dps: "115 AOE",
+    },
     pistol: {
       id: "pistol",
       name: "P-99 Pistol",
@@ -57,89 +146,146 @@
       color: "#fde047",
       length: 18,
       barrelWidth: 4,
-    },
-    shotgun: {
-      id: "shotgun",
-      name: "SPAS-12 Hagle",
-      type: "Pumpehagle",
-      icon: "💥",
-      damage: 18, // 18 x 6 = 108 maks
-      fireRate: 0.65,
-      startingAmmo: 18,
-      bulletSpeed: 780,
-      bulletLife: 0.65,
-      spread: 0.22,
-      bulletCount: 6,
-      isAutomatic: false,
-      recoilKick: 9,
-      screenShake: 5,
-      color: "#fb923c",
-      length: 26,
-      barrelWidth: 6,
-    },
-    assault: {
-      id: "assault",
-      name: "AR-47 Maskingevær",
-      type: "Helautomatisk",
-      icon: "⚡",
-      damage: 17,
-      fireRate: 0.11, // ~9 rps
-      startingAmmo: 60,
-      bulletSpeed: 980,
-      bulletLife: 1.15,
-      spread: 0.06,
-      bulletCount: 1,
-      isAutomatic: true,
-      recoilKick: 4,
-      screenShake: 2,
-      color: "#38bdf8",
-      length: 28,
-      barrelWidth: 5,
-    },
-    sniper: {
-      id: "sniper",
-      name: "AWP Skarpskytter",
-      type: "Bolt-action",
-      icon: "🎯",
-      damage: 85,
-      fireRate: 0.85,
-      startingAmmo: 8,
-      bulletSpeed: 1500,
-      bulletLife: 1.2,
-      spread: 0.012,
-      bulletCount: 1,
-      isAutomatic: false,
-      recoilKick: 14,
-      screenShake: 7,
-      color: "#a855f7",
-      length: 36,
-      barrelWidth: 4,
-    },
-    rocket: {
-      id: "rocket",
-      name: "RPG Rakettkaster",
-      type: "Eksplosiv",
-      icon: "🚀",
-      damage: 115,
-      splashRadius: 140,
-      fireRate: 1.2,
-      startingAmmo: 5,
-      bulletSpeed: 520,
-      bulletLife: 2.2,
-      spread: 0.02,
-      bulletCount: 1,
-      isAutomatic: false,
-      recoilKick: 16,
-      screenShake: 12,
-      color: "#ef4444",
-      length: 32,
-      barrelWidth: 8,
+      slot: "5",
+      desc: "Rask og presis reserveladning",
+      dps: "100 DPS",
     },
   };
 
   // =========================================================================
-  // ARENA MAPS GENERATION
+  // ARENA MAPS GENERATION (RUST / GLØSHAUGEN / CYBER HANGAR)
   // =========================================================================
+
+  function buildRustMap() {
+    const w = 2200;
+    const h = 2200;
+
+    const obstacles = [
+      // Outer Perimeter Walls (Scrapyard boundary)
+      { x: 0, y: 0, w: w, h: 40, type: "wall" },
+      { x: 0, y: h - 40, w: w, h: 40, type: "wall" },
+      { x: 0, y: 0, w: 40, h: h, type: "wall" },
+      { x: w - 40, y: 0, w: 40, h: h, type: "wall" },
+
+      // ==========================================
+      // CENTER RUST TOWER / OIL RIG (Iconic Core)
+      // ==========================================
+      // 4 heavy steel support pillars
+      { x: 970, y: 970, w: 55, h: 55, type: "tower_pillar" },
+      { x: 1175, y: 970, w: 55, h: 55, type: "tower_pillar" },
+      { x: 970, y: 1175, w: 55, h: 55, type: "tower_pillar" },
+      { x: 1175, y: 1175, w: 55, h: 55, type: "tower_pillar" },
+      // Tower central shelter crate
+      { x: 1060, y: 1060, w: 80, h: 80, type: "crate", label: "RIG-CRATE" },
+
+      // ==========================================
+      // SHIPPING CONTAINERS (Corrugated Steel)
+      // ==========================================
+      // West Blue Container (Classic peek lane)
+      { x: 490, y: 980, w: 90, h: 240, type: "container", color: "blue", label: "MSC-702" },
+      // East Rust Container (Scrapyard staple)
+      { x: 1620, y: 980, w: 90, h: 240, type: "container", color: "rust", label: "TEX-88" },
+      // North Olive Military Container
+      { x: 980, y: 510, w: 240, h: 90, type: "container", color: "green", label: "MIL-04" },
+      // South Dark Steel Container
+      { x: 980, y: 1600, w: 240, h: 90, type: "container", color: "dark", label: "HAZ-91" },
+
+      // Staggered Quadrant Containers
+      { x: 580, y: 620, w: 200, h: 85, type: "container", color: "rust", label: "CS-RUST" },
+      { x: 1420, y: 1495, w: 200, h: 85, type: "container", color: "blue", label: "HAPAG" },
+      { x: 1440, y: 620, w: 85, h: 200, type: "container", color: "green", label: "MAERSK" },
+      { x: 675, y: 1380, w: 85, h: 200, type: "container", color: "dark", label: "KLINE" },
+
+      // ==========================================
+      // INDUSTRIAL PIPELINES
+      // ==========================================
+      { x: 260, y: 560, w: 40, h: 420, type: "pipe" },
+      { x: 1900, y: 1220, w: 40, h: 420, type: "pipe" },
+      { x: 1220, y: 260, w: 400, h: 40, type: "pipe" },
+      { x: 580, y: 1900, w: 400, h: 40, type: "pipe" },
+
+      // ==========================================
+      // CONCRETE BLAST BARRIERS & SANDBAGS
+      // ==========================================
+      // Sandbags around tower approaches
+      { x: 810, y: 840, w: 120, h: 35, type: "sandbags" },
+      { x: 1270, y: 840, w: 120, h: 35, type: "sandbags" },
+      { x: 810, y: 1325, w: 120, h: 35, type: "sandbags" },
+      { x: 1270, y: 1325, w: 120, h: 35, type: "sandbags" },
+
+      // Concrete Blast Barriers
+      { x: 380, y: 380, w: 150, h: 35, type: "concrete" },
+      { x: 1670, y: 380, w: 150, h: 35, type: "concrete" },
+      { x: 380, y: 1785, w: 150, h: 35, type: "concrete" },
+      { x: 1670, y: 1785, w: 150, h: 35, type: "concrete" },
+
+      // ==========================================
+      // WOODEN CARGO CRATES
+      // ==========================================
+      { x: 430, y: 1040, w: 50, h: 50, type: "crate" },
+      { x: 1720, y: 1110, w: 50, h: 50, type: "crate" },
+      { x: 1075, y: 450, w: 50, h: 50, type: "crate" },
+      { x: 1075, y: 1700, w: 50, h: 50, type: "crate" },
+      { x: 260, y: 1400, w: 60, h: 60, type: "crate" },
+      { x: 1880, y: 740, w: 60, h: 60, type: "crate" },
+    ];
+
+    const spawns = [
+      { x: 180, y: 180 },
+      { x: w - 180, y: 180 },
+      { x: 180, y: h - 180 },
+      { x: w - 180, y: h - 180 },
+      { x: w / 2, y: 160 },
+      { x: w / 2, y: h - 160 },
+      { x: 160, y: h / 2 },
+      { x: w - 160, y: h / 2 },
+      { x: 420, y: 800 },
+      { x: 1780, y: 1400 },
+      { x: 780, y: 1780 },
+      { x: 1420, y: 420 },
+    ];
+
+    // Tactical medkits & kevlar shields only (NO weapon pickups)
+    const pickups = [
+      { id: "rust_med_1", type: "medkit", x: 340, y: 1100, respawnSec: 15, timer: 0 },
+      { id: "rust_med_2", type: "medkit", x: w - 340, y: 1100, respawnSec: 15, timer: 0 },
+      { id: "rust_shd_1", type: "shield", x: 1100, y: 340, respawnSec: 20, timer: 0 },
+      { id: "rust_shd_2", type: "shield", x: 1100, y: h - 340, respawnSec: 20, timer: 0 },
+    ];
+
+    // Red Explosive Barrels (☣)
+    const barrels = [
+      { id: "rust_bar_1", x: 915, y: 915, r: 16, hp: 35 },
+      { id: "rust_bar_2", x: 1285, y: 915, r: 16, hp: 35 },
+      { id: "rust_bar_3", x: 915, y: 1285, r: 16, hp: 35 },
+      { id: "rust_bar_4", x: 1285, y: 1285, r: 16, hp: 35 },
+      { id: "rust_bar_5", x: 550, y: 930, r: 16, hp: 35 },
+      { id: "rust_bar_6", x: 1650, y: 1270, r: 16, hp: 35 },
+      { id: "rust_bar_7", x: 1100, y: 720, r: 16, hp: 35 },
+      { id: "rust_bar_8", x: 1100, y: 1480, r: 16, hp: 35 },
+    ];
+
+    return {
+      id: "rust",
+      name: "Rust (Scrapyard)",
+      width: w,
+      height: h,
+      obstacles,
+      spawns,
+      pickups,
+      barrels,
+      bgColor: "#2a180d",
+      floorColor: "#936d46",
+      gridColor: "#805c38",
+      isDesert: true,
+    };
+  }
+
+  function getMapById(id) {
+    if (id === "gloshaugen_arena") return buildGloshaugenArena();
+    if (id === "cyber_hangar") return buildCyberHangar();
+    return buildRustMap(); // Default map is Rust!
+  }
 
   function buildGloshaugenArena() {
     const w = 2400;
@@ -208,13 +354,6 @@
     ];
 
     const pickups = [
-      { id: "pk_shotgun_1", type: "shotgun", x: 480, y: 300, respawnSec: 18, timer: 0 },
-      { id: "pk_shotgun_2", type: "shotgun", x: w - 480, y: h - 300, respawnSec: 18, timer: 0 },
-      { id: "pk_assault_1", type: "assault", x: 300, y: h / 2, respawnSec: 20, timer: 0 },
-      { id: "pk_assault_2", type: "assault", x: w - 300, y: h / 2, respawnSec: 20, timer: 0 },
-      { id: "pk_sniper_1", type: "sniper", x: w / 2, y: 260, respawnSec: 25, timer: 0 },
-      { id: "pk_sniper_2", type: "sniper", x: w / 2, y: h - 260, respawnSec: 25, timer: 0 },
-      { id: "pk_rocket_mid", type: "rocket", x: w / 2, y: h / 2, respawnSec: 32, timer: 0 },
       { id: "pk_medkit_1", type: "medkit", x: 180, y: h / 2 - 200, respawnSec: 15, timer: 0 },
       { id: "pk_medkit_2", type: "medkit", x: w - 180, y: h / 2 + 200, respawnSec: 15, timer: 0 },
       { id: "pk_shield_1", type: "shield", x: w / 2 - 260, y: h / 2 + 20, respawnSec: 20, timer: 0 },
@@ -301,13 +440,6 @@
     ];
 
     const pickups = [
-      { id: "ch_pk_rocket", type: "rocket", x: w / 2, y: h / 2, respawnSec: 32, timer: 0 },
-      { id: "ch_pk_sniper_1", type: "sniper", x: w / 2, y: 120, respawnSec: 25, timer: 0 },
-      { id: "ch_pk_sniper_2", type: "sniper", x: w / 2, y: h - 120, respawnSec: 25, timer: 0 },
-      { id: "ch_pk_shotgun_1", type: "shotgun", x: 420, y: 440, respawnSec: 18, timer: 0 },
-      { id: "ch_pk_shotgun_2", type: "shotgun", x: w - 420, y: h - 440, respawnSec: 18, timer: 0 },
-      { id: "ch_pk_assault_1", type: "assault", x: 420, y: h - 440, respawnSec: 20, timer: 0 },
-      { id: "ch_pk_assault_2", type: "assault", x: w - 420, y: 440, respawnSec: 20, timer: 0 },
       { id: "ch_pk_med_1", type: "medkit", x: w / 2 - 250, y: h / 2, respawnSec: 15, timer: 0 },
       { id: "ch_pk_med_2", type: "medkit", x: w / 2 + 250, y: h / 2, respawnSec: 15, timer: 0 },
       { id: "ch_pk_shd_1", type: "shield", x: w / 2, y: h / 2 - 240, respawnSec: 20, timer: 0 },
@@ -485,9 +617,10 @@
     playerColor: localStorage.getItem("kr_player_color") || "#ffd166",
     playerAvatar: localStorage.getItem("party_avatar") || localStorage.getItem("kr_player_avatar") || localStorage.getItem("spillhjornet_character") || "char:h1:c_ffd166:r1:e1:m1",
 
+    selectedWeapon: localStorage.getItem("kr_selected_weapon") || "assault",
     roomStatus: "lobby", // "lobby" | "countdown" | "playing" | "finished"
-    mapId: "gloshaugen_arena",
-    currentMap: buildGloshaugenArena(),
+    mapId: "rust",
+    currentMap: buildRustMap(),
     scoreLimit: 15,
     timeLimit: 300,
     timeRemaining: 300,
@@ -504,7 +637,7 @@
       shield: 25,
       maxHealth: 100,
       maxShield: 100,
-      weapon: "pistol",
+      weapon: localStorage.getItem("kr_selected_weapon") || "assault",
       ammo: Infinity,
       fireTimer: 0,
       kills: 0,
@@ -573,6 +706,11 @@
     inputPartyRoomCode: document.getElementById("inputPartyRoomCode"),
     inputPartyJoinName: document.getElementById("inputPartyJoinName"),
     btnJoinPartyRoom: document.getElementById("btnJoinPartyRoom"),
+
+    // Weapon Loadout Elements
+    weaponLoadoutGrid: document.getElementById("weaponLoadoutGrid"),
+    quickWeaponBar: document.getElementById("quickWeaponBar"),
+    hudFovBadge: document.getElementById("hudFovBadge"),
 
     // Solo Practice Elements
     selectSoloMap: document.getElementById("selectSoloMap"),
@@ -684,7 +822,7 @@
     combatant.shield = 25;
     combatant.isDead = false;
     combatant.respawnTimer = 0;
-    combatant.weapon = "pistol";
+    combatant.weapon = combatant.chosenWeapon || state.selectedWeapon || "assault";
     combatant.ammo = Infinity;
     combatant.invulnerableUntil = performance.now() + 2500; // 2.5s spawn shield
   }
@@ -743,6 +881,26 @@
     const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / den;
     const u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / den;
     return t >= 0 && t <= 1 && u >= 0 && u <= 1;
+  }
+
+  function isLineBlockedByObstacles(x1, y1, x2, y2, obstacles) {
+    if (!obstacles || obstacles.length === 0) return false;
+    const minX = Math.min(x1, x2);
+    const maxX = Math.max(x1, x2);
+    const minY = Math.min(y1, y2);
+    const maxY = Math.max(y1, y2);
+
+    for (let i = 0; i < obstacles.length; i++) {
+      const obs = obstacles[i];
+      // Fast AABB pre-check
+      if (obs.x + obs.w < minX || obs.x > maxX || obs.y + obs.h < minY || obs.y > maxY) {
+        continue;
+      }
+      if (lineIntersectsRect(x1, y1, x2, y2, obs.x, obs.y, obs.w, obs.h)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   // =========================================================================
@@ -1045,6 +1203,12 @@
         }
       }
 
+      if (k === "1") selectPlayerWeapon("assault");
+      if (k === "2") selectPlayerWeapon("shotgun");
+      if (k === "3") selectPlayerWeapon("sniper");
+      if (k === "4") selectPlayerWeapon("rocket");
+      if (k === "5") selectPlayerWeapon("pistol");
+
       if (e.key === "Tab") {
         e.preventDefault();
         if (el.scoreboardModal) el.scoreboardModal.classList.remove("hidden");
@@ -1103,21 +1267,65 @@
     }
   }
 
+  function selectPlayerWeapon(weaponId, notify = true) {
+    if (!WEAPONS[weaponId]) return;
+    state.selectedWeapon = weaponId;
+    localStorage.setItem("kr_selected_weapon", weaponId);
+    state.player.weapon = weaponId;
+    state.player.ammo = Infinity;
+    const w = WEAPONS[weaponId];
+    if (notify) {
+      showPickupToast(`${w.icon} Valgt: ${w.name}`);
+      playTone(520, 0.08, "triangle", 0.3);
+    }
+    updateWeaponHUD();
+    renderWeaponLoadoutGrid();
+  }
+
+  function renderWeaponLoadoutGrid() {
+    if (!el.weaponLoadoutGrid) return;
+    el.weaponLoadoutGrid.innerHTML = "";
+
+    const weaponsList = [
+      WEAPONS.assault,
+      WEAPONS.shotgun,
+      WEAPONS.sniper,
+      WEAPONS.rocket,
+      WEAPONS.pistol,
+    ];
+
+    weaponsList.forEach(w => {
+      const isSelected = (state.selectedWeapon === w.id);
+      const card = document.createElement("div");
+      card.className = `weapon-loadout-card ${isSelected ? "selected" : ""}`;
+      card.dataset.weapon = w.id;
+
+      card.innerHTML = `
+        <span class="wlc-hotkey">${w.slot}</span>
+        <span class="wlc-icon">${w.icon}</span>
+        <span class="wlc-name">${w.name}</span>
+        <span class="wlc-type">${w.type}</span>
+        <div class="wlc-stats-row">
+          <span class="wlc-stat">${w.dps || w.damage + " dmg"}</span>
+        </div>
+        <span class="wlc-active-badge">✓ VALGT</span>
+      `;
+
+      card.addEventListener("click", () => {
+        selectPlayerWeapon(w.id, true);
+      });
+
+      el.weaponLoadoutGrid.appendChild(card);
+    });
+  }
+
   function firePlayerWeapon() {
     const p = state.player;
     if (p.isDead || p.fireTimer > 0) return;
-    const w = WEAPONS[p.weapon] || WEAPONS.pistol;
+    const w = WEAPONS[p.weapon] || WEAPONS.assault;
 
-    // Special weapon ammo consumption (pistol is infinite)
-    if (p.weapon !== "pistol") {
-      p.ammo--;
-      if (p.ammo <= 0) {
-        p.weapon = "pistol";
-        p.ammo = Infinity;
-        showPickupToast("Tomt for spesialammo – byttet til Pistol 🔫");
-      }
-    }
-
+    // Tactical loadout weapons have unlimited combat ammo
+    p.ammo = Infinity;
     p.fireTimer = w.fireRate;
 
     // Recoil impulse on player
@@ -1423,16 +1631,6 @@
               collected = true;
               if (c === state.player) showPickupToast("🛡️ +50 Kevlar Skjold!");
             }
-          } else if (WEAPONS[p.type]) {
-            // Weapon crate pickup
-            const newW = WEAPONS[p.type];
-            c.weapon = p.type;
-            c.ammo = newW.startingAmmo || 20;
-            collected = true;
-            if (c === state.player) {
-              showPickupToast(`${newW.icon} Plukket opp ${newW.name}! (${c.ammo} skudd)`);
-              updateWeaponHUD();
-            }
           }
 
           if (collected) {
@@ -1484,6 +1682,54 @@
     ctx.fillStyle = map.floorColor;
     ctx.fillRect(40, 40, map.width - 80, map.height - 80);
 
+    // Desert Specific Ground Details (Rust Scrapyard)
+    if (map.isDesert) {
+      // Concrete foundation pads under containers
+      for (const obs of map.obstacles) {
+        if (obs.type === "container" || obs.type === "tower_pillar") {
+          ctx.fillStyle = "#5c4a39";
+          ctx.fillRect(obs.x - 8, obs.y - 8, obs.w + 16, obs.h + 16);
+          ctx.strokeStyle = "#4a3c2e";
+          ctx.lineWidth = 2;
+          ctx.strokeRect(obs.x - 8, obs.y - 8, obs.w + 16, obs.h + 16);
+        }
+      }
+
+      // Center Rig Concrete Foundation with Hazard Markings
+      ctx.fillStyle = "#483829";
+      ctx.fillRect(940, 940, 320, 320);
+      ctx.strokeStyle = "#382c20";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(940, 940, 320, 320);
+
+      // Hazard Caution Stripes on Rig Border
+      ctx.save();
+      ctx.strokeStyle = "#eab308";
+      ctx.lineWidth = 3;
+      ctx.setLineDash([12, 12]);
+      ctx.strokeRect(944, 944, 312, 312);
+      ctx.restore();
+
+      // Tire Tracks across desert lanes
+      ctx.save();
+      ctx.strokeStyle = "rgba(0, 0, 0, 0.09)";
+      ctx.lineWidth = 5;
+      ctx.setLineDash([14, 10]);
+      // West-East central corridor tracks
+      ctx.beginPath();
+      ctx.moveTo(100, 1100);
+      ctx.lineTo(map.width - 100, 1100);
+      ctx.moveTo(100, 1115);
+      ctx.lineTo(map.width - 100, 1115);
+      // North-South tracks
+      ctx.moveTo(1100, 100);
+      ctx.lineTo(1100, map.height - 100);
+      ctx.moveTo(1115, 100);
+      ctx.lineTo(1115, map.height - 100);
+      ctx.stroke();
+      ctx.restore();
+    }
+
     // 2. Floor Grid Markings
     ctx.strokeStyle = map.gridColor;
     ctx.lineWidth = 1;
@@ -1499,25 +1745,67 @@
     }
     ctx.stroke();
 
-    // 3. Render Pickups
+    // 3. Tactical FOV Vision Beam (Player flashlight & vision cone)
+    const p = state.player;
+    if (!p.isDead) {
+      const fovHalfAngle = 0.96; // ~55° each side (~110° total cone)
+      const fovDist = 1250;
+      ctx.save();
+
+      // Forward directional cone
+      const coneGrad = ctx.createRadialGradient(p.x, p.y, 15, p.x, p.y, fovDist);
+      coneGrad.addColorStop(0, "rgba(56, 189, 248, 0.16)");
+      coneGrad.addColorStop(0.35, "rgba(56, 189, 248, 0.08)");
+      coneGrad.addColorStop(0.75, "rgba(56, 189, 248, 0.03)");
+      coneGrad.addColorStop(1, "rgba(56, 189, 248, 0)");
+
+      ctx.fillStyle = coneGrad;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.arc(p.x, p.y, fovDist, p.angle - fovHalfAngle, p.angle + fovHalfAngle);
+      ctx.closePath();
+      ctx.fill();
+
+      // Close proximity awareness circle (140px)
+      const closeGrad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 140);
+      closeGrad.addColorStop(0, "rgba(56, 189, 248, 0.12)");
+      closeGrad.addColorStop(1, "rgba(56, 189, 248, 0)");
+      ctx.fillStyle = closeGrad;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 140, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Subtle dashed perimeter arc
+      ctx.strokeStyle = "rgba(56, 189, 248, 0.22)";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([6, 6]);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, fovDist * 0.95, p.angle - fovHalfAngle, p.angle + fovHalfAngle);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.restore();
+    }
+
+    // 4. Render Pickups (medkits and shields)
     const nowTime = performance.now() / 1000;
-    for (const p of map.pickups) {
-      if (p.timer > 0) continue;
-      const bob = Math.sin(nowTime * 3 + p.x) * 4;
+    for (const pItem of map.pickups) {
+      if (pItem.timer > 0) continue;
+      const bob = Math.sin(nowTime * 3 + pItem.x) * 4;
       const rot = nowTime * 1.5;
 
       ctx.save();
-      ctx.translate(p.x, p.y + bob);
+      ctx.translate(pItem.x, pItem.y + bob);
 
       // Glow circle
       ctx.beginPath();
       ctx.arc(0, 0, 22, 0, Math.PI * 2);
-      ctx.fillStyle = p.type === "medkit" ? "rgba(34, 197, 94, 0.25)" : (p.type === "shield" ? "rgba(6, 182, 212, 0.25)" : "rgba(251, 146, 60, 0.25)");
+      ctx.fillStyle = pItem.type === "medkit" ? "rgba(34, 197, 94, 0.25)" : "rgba(6, 182, 212, 0.25)";
       ctx.fill();
 
       // Crate box
       ctx.rotate(rot);
-      ctx.fillStyle = p.type === "medkit" ? "#16a34a" : (p.type === "shield" ? "#0284c7" : "#ea580c");
+      ctx.fillStyle = pItem.type === "medkit" ? "#16a34a" : "#0284c7";
       ctx.fillRect(-14, -14, 28, 28);
       ctx.strokeStyle = "#ffffff";
       ctx.lineWidth = 2;
@@ -1532,12 +1820,12 @@
       ctx.fillStyle = "#ffffff";
       ctx.shadowColor = "#000000";
       ctx.shadowBlur = 4;
-      const label = p.type === "medkit" ? "❤️ MEDKIT" : (p.type === "shield" ? "🛡️ SKJOLD" : (WEAPONS[p.type] ? WEAPONS[p.type].name : "VÅPEN"));
-      ctx.fillText(label, p.x, p.y + 28);
+      const label = pItem.type === "medkit" ? "❤️ MEDKIT" : "🛡️ SKJOLD";
+      ctx.fillText(label, pItem.x, pItem.y + 28);
       ctx.restore();
     }
 
-    // 4. Render Explosive Barrels
+    // 5. Render Explosive Barrels
     for (const b of map.barrels) {
       if (b.hp <= 0) continue;
       ctx.save();
@@ -1558,20 +1846,121 @@
       ctx.restore();
     }
 
-    // 5. Render Map Obstacles (Walls & Pillars)
+    // 6. Render Map Obstacles (Shipping Containers, Pillars, Pipes, Sandbags, Concrete, Crates)
     for (const obs of map.obstacles) {
       ctx.save();
-      if (obs.type === "pillar") {
+      if (obs.type === "container") {
+        // Shipping Cargo Container
+        const colMap = {
+          blue: { body: "#1e40af", rib: "#2563eb", border: "#172554" },
+          rust: { body: "#9a3412", rib: "#c2410c", border: "#431407" },
+          green: { body: "#365314", rib: "#4d7c0f", border: "#142004" },
+          dark: { body: "#1e293b", rib: "#334155", border: "#090d16" },
+        };
+        const cTheme = colMap[obs.color] || colMap.dark;
+
+        ctx.fillStyle = cTheme.body;
+        ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+
+        // Corrugated metal ribs
+        ctx.strokeStyle = cTheme.rib;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        if (obs.w > obs.h) {
+          // Horizontal container -> vertical ribs
+          for (let rx = obs.x + 12; rx < obs.x + obs.w - 8; rx += 12) {
+            ctx.moveTo(rx, obs.y + 4);
+            ctx.lineTo(rx, obs.y + obs.h - 4);
+          }
+        } else {
+          // Vertical container -> horizontal ribs
+          for (let ry = obs.y + 12; ry < obs.y + obs.h - 8; ry += 12) {
+            ctx.moveTo(obs.x + 4, ry);
+            ctx.lineTo(obs.x + obs.w - 4, ry);
+          }
+        }
+        ctx.stroke();
+
+        // Heavy border and corner castings
+        ctx.strokeStyle = cTheme.border;
+        ctx.lineWidth = 3;
+        ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+
+        // Stencil Label
+        if (obs.label) {
+          ctx.save();
+          ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
+          ctx.font = "900 9px monospace";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(obs.label, obs.x + obs.w / 2, obs.y + obs.h / 2);
+          ctx.restore();
+        }
+      } else if (obs.type === "tower_pillar") {
+        // Heavy Industrial Steel Column
+        ctx.fillStyle = "#262626";
+        ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+        ctx.strokeStyle = "#525252";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+        // Bevel center plate
+        ctx.fillStyle = "#404040";
+        ctx.fillRect(obs.x + 8, obs.y + 8, obs.w - 16, obs.h - 16);
+      } else if (obs.type === "pipe") {
+        // Industrial Cylindrical Pipeline
+        ctx.fillStyle = "#475569";
+        ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+        ctx.strokeStyle = "#94a3b8";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+        // Pipe ring joints
+        ctx.fillStyle = "#334155";
+        if (obs.w > obs.h) {
+          for (let px = obs.x + 40; px < obs.x + obs.w - 20; px += 50) {
+            ctx.fillRect(px, obs.y - 2, 6, obs.h + 4);
+          }
+        } else {
+          for (let py = obs.y + 40; py < obs.y + obs.h - 20; py += 50) {
+            ctx.fillRect(obs.x - 2, py, obs.w + 4, 6);
+          }
+        }
+      } else if (obs.type === "sandbags") {
+        // Sandbag Barricade
+        ctx.fillStyle = "#a1824a";
+        ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+        ctx.strokeStyle = "#785e2f";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+      } else if (obs.type === "concrete") {
+        // Concrete Blast Wall
         ctx.fillStyle = "#475569";
         ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
         ctx.strokeStyle = "#64748b";
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 2;
         ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+        // Hazard edge stripe
+        ctx.fillStyle = "#eab308";
+        ctx.fillRect(obs.x + 4, obs.y + 4, Math.min(24, obs.w - 8), 4);
       } else if (obs.type === "crate") {
+        // Reinforced Wooden Cargo Crate
         ctx.fillStyle = "#78350f";
         ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
         ctx.strokeStyle = "#b45309";
         ctx.lineWidth = 2;
+        ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+        // Cross brace
+        ctx.beginPath();
+        ctx.moveTo(obs.x + 2, obs.y + 2);
+        ctx.lineTo(obs.x + obs.w - 2, obs.y + obs.h - 2);
+        ctx.moveTo(obs.x + obs.w - 2, obs.y + 2);
+        ctx.lineTo(obs.x + 2, obs.y + obs.h - 2);
+        ctx.strokeStyle = "rgba(180, 83, 9, 0.6)";
+        ctx.stroke();
+      } else if (obs.type === "pillar") {
+        ctx.fillStyle = "#475569";
+        ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+        ctx.strokeStyle = "#64748b";
+        ctx.lineWidth = 3;
         ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
       } else {
         ctx.fillStyle = "#334155";
@@ -1583,7 +1972,25 @@
       ctx.restore();
     }
 
-    // 6. Render Bullets & Rocket Trails
+    // Center Tower Catwalk Platform (Rust Rig Gantry)
+    if (map.id === "rust") {
+      ctx.save();
+      ctx.fillStyle = "rgba(15, 23, 42, 0.7)";
+      ctx.fillRect(990, 990, 220, 220);
+      ctx.strokeStyle = "rgba(234, 179, 8, 0.65)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(990, 990, 220, 220);
+      // Steel mesh diagonal crossbars
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(990, 990); ctx.lineTo(1210, 1210);
+      ctx.moveTo(1210, 990); ctx.lineTo(990, 1210);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // 7. Render Bullets & Rocket Trails
     for (const b of state.bullets) {
       ctx.save();
       ctx.beginPath();
@@ -1605,23 +2012,127 @@
       ctx.restore();
     }
 
-    // 7. Render Particles
-    for (const p of state.particles) {
+    // 8. Render Particles
+    for (const pt of state.particles) {
       ctx.save();
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size * (p.life / p.maxLife), 0, Math.PI * 2);
-      ctx.fillStyle = p.color;
+      ctx.arc(pt.x, pt.y, pt.size * (pt.life / pt.maxLife), 0, Math.PI * 2);
+      ctx.fillStyle = pt.color;
       ctx.fill();
       ctx.restore();
     }
 
-    // 8. Render Combatants (Opponents first, Player on top)
+    // 9. Combatant Visibility & Wallhack FOV Raycast Check
+    const fovHalfAngle = 0.96;
     for (const opp of Object.values(state.opponents)) {
-      if (!opp.isDead) drawCombatant(ctx, opp);
+      if (opp.isDead) continue;
+      const d = Math.hypot(opp.x - p.x, opp.y - p.y);
+      let diff = Math.atan2(opp.y - p.y, opp.x - p.x) - p.angle;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      const absDiff = Math.abs(diff);
+
+      const inFOV = d <= 140 || (d <= 1350 && absDiff <= fovHalfAngle);
+      const isBlocked = isLineBlockedByObstacles(p.x, p.y, opp.x, opp.y, map.obstacles);
+
+      if (!isBlocked) {
+        // Direct line of sight: Draw opponent normally
+        drawCombatant(ctx, opp, false);
+      } else if (inFOV) {
+        // Occluded behind obstacle, BUT inside player's FOV!
+        // User: "add fov so you can see enemies through things"
+        // Draw glowing X-Ray tactical holographic silhouette through walls!
+        drawXRayCombatant(ctx, opp, d);
+      } else {
+        // Occluded and outside FOV: completely hidden from player
+      }
     }
+
+    // Render local player on top
     if (!state.player.isDead) {
       drawCombatant(ctx, state.player, true);
     }
+
+    ctx.restore();
+  }
+
+  function drawXRayCombatant(ctx, c, dist) {
+    const now = performance.now();
+    const pulse = 0.8 + Math.sin(now * 0.009) * 0.2;
+
+    ctx.save();
+
+    // 1. Holographic X-Ray glow through obstacles
+    ctx.shadowColor = c.color || "#ef4444";
+    ctx.shadowBlur = 16 * pulse;
+
+    // 2. Translucent silhouette body
+    ctx.save();
+    ctx.translate(c.x, c.y);
+
+    const facingLeft = Math.cos(c.angle) < -0.1;
+    if (facingLeft) ctx.scale(-1, 1);
+
+    // Glowing ghostly body circle
+    ctx.beginPath();
+    ctx.arc(0, -2, 20, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(239, 68, 68, 0.35)";
+    ctx.fill();
+    ctx.strokeStyle = c.color || "#ef4444";
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    // Tactical scanlines across silhouette
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.45)";
+    ctx.lineWidth = 1;
+    for (let sy = -16; sy <= 16; sy += 6) {
+      const w = Math.sqrt(Math.max(0, 400 - sy * sy));
+      ctx.beginPath();
+      ctx.moveTo(-w * 0.8, sy - 2);
+      ctx.lineTo(w * 0.8, sy - 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // 3. Direction pointer / gun silhouette
+    ctx.save();
+    ctx.translate(c.x, c.y);
+    ctx.rotate(c.angle);
+    ctx.fillStyle = c.color || "#ef4444";
+    ctx.fillRect(12, -2, 22, 4);
+    ctx.restore();
+
+    // 4. Overhead Tactical HUD marker
+    ctx.save();
+    ctx.translate(c.x, c.y - 42);
+
+    // Tactical Diamond / Arrow
+    ctx.fillStyle = "#ef4444";
+    ctx.font = "bold 13px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("▼", 0, -8);
+
+    // X-Ray Distance & Name tag
+    ctx.font = "bold 10px monospace";
+    ctx.fillStyle = "#ffffff";
+    ctx.shadowColor = "#000000";
+    ctx.shadowBlur = 4;
+    const distMeters = Math.round(dist / 12);
+    ctx.fillText(`${c.name || "FIENDE"} [${distMeters}m]`, 0, -20);
+
+    // Health Bar
+    const barW = 38;
+    const barH = 4;
+    const hpPct = Math.max(0, Math.min(1, (c.health || 0) / (c.maxHealth || 100)));
+    ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
+    ctx.fillRect(-barW / 2, 2, barW, barH);
+    ctx.fillStyle = hpPct > 0.5 ? "#22c55e" : (hpPct > 0.25 ? "#eab308" : "#ef4444");
+    ctx.fillRect(-barW / 2, 2, barW * hpPct, barH);
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+    ctx.lineWidth = 0.8;
+    ctx.strokeRect(-barW / 2, 2, barW, barH);
+
+    ctx.restore();
 
     ctx.restore();
   }
@@ -1773,16 +2284,28 @@
 
   function updateWeaponHUD() {
     const p = state.player;
-    const w = WEAPONS[p.weapon] || WEAPONS.pistol;
+    const w = WEAPONS[p.weapon] || WEAPONS.assault;
 
     if (el.weaponHudIcon) el.weaponHudIcon.textContent = w.icon;
     if (el.weaponHudName) el.weaponHudName.textContent = w.name;
     if (el.weaponHudType) el.weaponHudType.textContent = w.type;
     if (el.ammoCurrent) {
-      el.ammoCurrent.textContent = p.weapon === "pistol" ? "∞" : String(p.ammo);
+      el.ammoCurrent.textContent = "∞";
     }
     if (el.ammoLabel) {
-      el.ammoLabel.textContent = p.weapon === "pistol" ? "Uendelig" : "Skudd igjen";
+      el.ammoLabel.textContent = "Uendelig";
+    }
+
+    // Synchronize quick weapon buttons highlight in HUD
+    if (el.quickWeaponBar) {
+      const btns = el.quickWeaponBar.querySelectorAll(".qw-btn");
+      btns.forEach(btn => {
+        if (btn.dataset.weapon === p.weapon) {
+          btn.classList.add("active");
+        } else {
+          btn.classList.remove("active");
+        }
+      });
     }
   }
 
@@ -1956,11 +2479,17 @@
   function spawnSoloDummies(map) {
     state.opponents = {};
     const center = { x: map.width / 2, y: map.height / 2 };
-    const dummyConfigs = [
-      { id: "dummy_1", name: "Blink 1 🎯", color: "#f43f5e", avatar: "char:h1:c_f43f5e:r1:e1:m1", offset: { x: -140, y: -100 } },
-      { id: "dummy_2", name: "Blink 2 🎯", color: "#38bdf8", avatar: "char:h2:c_38bdf8:r2:e2:m2", offset: { x: 140, y: -100 } },
-      { id: "dummy_3", name: "Blink 3 🎯", color: "#a855f7", avatar: "char:h3:c_a855f7:r3:e3:m3", offset: { x: 0, y: 140 } },
+    const dummyConfigs = map.id === "rust" ? [
+      { id: "dummy_1", name: "Blink 1 🎯", color: "#f43f5e", avatar: "char:h1:c_f43f5e:r1:e1:m1", offset: { x: -620, y: -40 }, weapon: "shotgun" },
+      { id: "dummy_2", name: "Blink 2 🎯", color: "#38bdf8", avatar: "char:h2:c_38bdf8:r2:e2:m2", offset: { x: 540, y: -100 }, weapon: "sniper" },
+      { id: "dummy_3", name: "Blink 3 🎯", color: "#a855f7", avatar: "char:h3:c_a855f7:r3:e3:m3", offset: { x: 0, y: -590 }, weapon: "assault" },
+      { id: "dummy_4", name: "Blink 4 🎯", color: "#10b981", avatar: "char:h4:c_10b981:r1:e2:m1", offset: { x: -260, y: 320 }, weapon: "rocket" },
+    ] : [
+      { id: "dummy_1", name: "Blink 1 🎯", color: "#f43f5e", avatar: "char:h1:c_f43f5e:r1:e1:m1", offset: { x: -140, y: -100 }, weapon: "shotgun" },
+      { id: "dummy_2", name: "Blink 2 🎯", color: "#38bdf8", avatar: "char:h2:c_38bdf8:r2:e2:m2", offset: { x: 140, y: -100 }, weapon: "sniper" },
+      { id: "dummy_3", name: "Blink 3 🎯", color: "#a855f7", avatar: "char:h3:c_a855f7:r3:e3:m3", offset: { x: 0, y: 140 }, weapon: "assault" },
     ];
+
     dummyConfigs.forEach(d => {
       state.opponents[d.id] = {
         id: d.id,
@@ -1975,7 +2504,9 @@
         speed: 0,
         health: 100,
         shield: 25,
-        weapon: "pistol",
+        maxHealth: 100,
+        maxShield: 100,
+        weapon: d.weapon || "assault",
         kills: 0,
         deaths: 0,
         score: 0,
@@ -1992,15 +2523,15 @@
     state.isSolo = true;
     state.roomCode = null;
     state.playerId = "solo_player";
-    const selectedMapId = el.selectSoloMap ? el.selectSoloMap.value : "gloshaugen_arena";
+    const selectedMapId = el.selectSoloMap ? el.selectSoloMap.value : "rust";
     state.mapId = selectedMapId;
-    state.currentMap = selectedMapId === "cyber_hangar" ? buildCyberHangar() : buildGloshaugenArena();
+    state.currentMap = getMapById(selectedMapId);
     state.scoreLimit = 999;
     state.timeLimit = 3600;
     state.timeRemaining = 3600;
     state.roomStatus = "playing";
 
-    // Spawn player
+    // Spawn player with chosen loadout
     spawnPlayer(state.player, state.currentMap);
     state.player.name = state.playerName || "Soldat";
     state.player.color = state.playerColor || "#ffd166";
@@ -2034,8 +2565,8 @@
   function launchOnlineMatch(data) {
     state.isSolo = false;
     state.roomStatus = data.status || "playing";
-    state.mapId = data.mapId || state.mapId;
-    state.currentMap = state.mapId === "cyber_hangar" ? buildCyberHangar() : buildGloshaugenArena();
+    state.mapId = data.mapId || state.mapId || "rust";
+    state.currentMap = getMapById(state.mapId);
     state.scoreLimit = data.scoreLimit || state.scoreLimit;
     state.timeLimit = data.timeLimit || state.timeLimit;
     state.timeRemaining = data.timeRemaining !== undefined ? data.timeRemaining : state.timeLimit;
@@ -2168,7 +2699,7 @@
         const data = await resp.json();
         if (data && data.ok) {
           state.isHost = Boolean(data.isHost);
-          state.mapId = data.mapId || "gloshaugen_arena";
+          state.mapId = data.mapId || "rust";
           state.scoreLimit = data.scoreLimit || 15;
           state.timeLimit = data.timeLimit || 300;
           state.timeRemaining = data.timeRemaining !== undefined ? data.timeRemaining : (data.timeLimit || 300);
@@ -2236,6 +2767,19 @@
 
     // Standard Tab Switching (Nettspill / Solo)
     initTabs();
+
+    // Render weapon loadout selection grid in lobby
+    renderWeaponLoadoutGrid();
+
+    // In-game Quick Weapon Bar click handlers
+    if (el.quickWeaponBar) {
+      el.quickWeaponBar.addEventListener("click", (e) => {
+        const btn = e.target.closest(".qw-btn");
+        if (btn && btn.dataset.weapon) {
+          selectPlayerWeapon(btn.dataset.weapon, true);
+        }
+      });
+    }
 
     // Standardized PartyConnect for "Nettspill" tab
     if (window.PartyConnect) {
