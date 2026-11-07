@@ -845,16 +845,17 @@ body {
 }
 
 .start-game-btn {
-  background: linear-gradient(135deg, #fb8500, #ff5400);
+  background: linear-gradient(135deg, #10b981, #059669);
   color: #fff;
   font-size: 0.95rem;
   padding: 0.75rem 1.4rem;
-  box-shadow: 0 4px 14px rgba(251, 133, 0, 0.35);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
 }
 
 .start-game-btn:hover {
+  background: linear-gradient(135deg, #34d399, #059669);
   transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(251, 133, 0, 0.45);
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45);
 }
 
 /* Waiting Box for players */
@@ -980,7 +981,6 @@ body {
 }
 
 .lobby-game-card:hover .party-gear-icon {
-  content: url('/hover_settings.png');
   transform: rotate(45deg);
 }
 
@@ -1294,20 +1294,19 @@ body.party-in-lobby .player-kick-btn {
   z-index: 3;
 }
 
-/* Character Customizer Section */
+/* Character Customizer Section - Balanced, spacious, and fills space naturally */
 body.party-in-lobby .lobby-character-section {
   background: rgba(13, 19, 33, 0.65);
   border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 0.75rem 1.1rem;
+  padding: 0.85rem 1.15rem;
   margin-bottom: 0;
   flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 body.party-in-lobby .lobby-character-wrap {
   width: 100%;
-  display: flex;
-  justify-content: center;
 }
 
 body.party-in-lobby #skribblCustomizerLobby {
@@ -1315,73 +1314,91 @@ body.party-in-lobby #skribblCustomizerLobby {
 }
 
 body.party-in-lobby #skribblCustomizerLobby .skribbl-customizer-card {
-  max-width: 580px;
+  max-width: 100%;
   width: 100%;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(270px, 1fr) minmax(280px, 1.15fr);
+  align-items: stretch;
   gap: 1.25rem;
-  flex-wrap: wrap;
 }
 
 body.party-in-lobby #skribblCustomizerLobby .skribbl-stage-box {
-  padding: 0.55rem 0.85rem;
-  gap: 0.45rem;
+  padding: 0.75rem 1rem;
+  gap: 0.6rem;
   border-radius: 14px;
   background: rgba(10, 15, 28, 0.75);
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 body.party-in-lobby #skribblCustomizerLobby .skribbl-stage-content {
-  gap: 0.85rem;
+  gap: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 body.party-in-lobby #skribblCustomizerLobby .skribbl-arrows-col {
-  height: 110px;
-  width: 36px;
+  height: 125px;
+  width: 38px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 body.party-in-lobby #skribblCustomizerLobby .skribbl-nav-btn {
-  width: 34px;
-  height: 32px;
-  min-width: 34px;
-  font-size: 1.15rem;
-  border-radius: 8px;
+  width: 38px;
+  height: 36px;
+  min-width: 38px;
+  font-size: 1.25rem;
+  border-radius: 10px;
 }
 
 body.party-in-lobby #skribblCustomizerLobby .skribbl-canvas-bubble {
-  width: 105px;
-  height: 105px;
+  width: 120px;
+  height: 120px;
 }
 
 body.party-in-lobby #skribblCustomizerLobby .skribbl-randomize-btn {
-  padding: 0.32rem 0.7rem;
-  font-size: 0.78rem;
-  border-radius: 8px;
+  padding: 0.45rem 1.2rem;
+  font-size: 0.84rem;
+  border-radius: 999px;
+  margin-top: 0.2rem;
 }
 
 body.party-in-lobby #skribblCustomizerLobby .skribbl-colors-section {
-  padding: 0.65rem 0.85rem;
-  background: rgba(10, 15, 28, 0.55);
+  padding: 0.85rem 1.15rem;
+  background: rgba(10, 15, 28, 0.65);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: center;
+  min-height: 185px;
+  box-sizing: border-box;
 }
 
 body.party-in-lobby #skribblCustomizerLobby .skribbl-colors-grid {
-  grid-template-columns: repeat(8, 1fr);
-  gap: 0.45rem;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.65rem 0.85rem;
+  width: 100%;
+  max-width: 270px;
+  justify-items: center;
+  align-items: center;
 }
 
 body.party-in-lobby #skribblCustomizerLobby .skribbl-color-dot {
-  width: 24px;
-  height: 24px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 body.party-in-lobby .player-waiting-box {
@@ -1444,25 +1461,35 @@ body.party-in-lobby .lobby-game-card {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
   margin: 0 !important;
   flex-shrink: 0 !important;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease !important;
-}
-
-body.party-in-lobby .lobby-game-card:hover {
-  border-color: rgba(251, 133, 0, 0.5) !important;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45) !important;
-  transform: none !important;
+  transform: translateZ(0) !important;
+  -webkit-backface-visibility: hidden !important;
+  backface-visibility: hidden !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease !important;
 }
 
 body.party-in-lobby .lobby-game-card.active-playable {
-  border-color: var(--accent-orange) !important;
-  background: rgba(28, 39, 66, 0.75) !important;
-  box-shadow: 0 4px 16px rgba(251, 133, 0, 0.12) !important;
+  border-color: rgba(251, 133, 0, 0.4) !important;
+  background-color: rgba(28, 39, 66, 0.75) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.party-in-lobby .lobby-game-card.active-playable:hover {
+  border-color: #10b981 !important;
+  background-color: rgba(30, 44, 74, 0.92) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), 0 0 16px rgba(16, 185, 129, 0.16) !important;
+  transform: none !important;
 }
 
 body.party-in-lobby .lobby-game-card.disabled-playable {
   opacity: 0.55 !important;
   cursor: not-allowed !important;
   filter: grayscale(0.25) !important;
+}
+
+body.party-in-lobby .lobby-game-card.disabled-playable:hover {
+  transform: none !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
+  border-color: var(--border) !important;
 }
 
 /* Card Left Section (Title, Badge, Description, Meta) */
@@ -1579,13 +1606,15 @@ body.party-in-lobby .lg-select {
   max-width: 140px !important;
 }
 
+/* Green Start Game Buttons */
 body.party-in-lobby .start-game-btn {
   width: 100% !important;
-  min-width: 150px !important;
-  padding: 0.48rem 0.85rem !important;
-  font-size: 0.84rem !important;
+  min-width: 120px !important;
+  padding: 0.5rem 1rem !important;
+  font-size: 0.92rem !important;
   font-weight: 800 !important;
-  letter-spacing: 0.02em !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
   border-radius: 8px !important;
   text-align: center !important;
   display: flex !important;
@@ -1594,15 +1623,21 @@ body.party-in-lobby .start-game-btn {
   box-sizing: border-box !important;
   line-height: 1.25 !important;
   margin: 0 !important;
-  box-shadow: 0 4px 12px rgba(251, 133, 0, 0.25) !important;
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.32) !important;
+  cursor: pointer !important;
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease !important;
 }
 
 body.party-in-lobby .start-game-btn:hover {
+  background: linear-gradient(135deg, #34d399, #059669) !important;
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.48) !important;
   transform: translateY(-1px) !important;
-  box-shadow: 0 4px 14px rgba(251, 133, 0, 0.35) !important;
 }
 
-/* Prominent Game Artwork / Image on Card (Fortsatt på spillekortet!) */
+/* Prominent Game Artwork / Image on Card (Fortsatt på spillekortet, stabilt uten flimmer) */
 body.party-in-lobby .lg-card-bg-icon {
   position: absolute !important;
   right: 185px !important;
@@ -1616,7 +1651,13 @@ body.party-in-lobby .lg-card-bg-icon {
   pointer-events: none !important;
   z-index: 0 !important;
   opacity: 0.26 !important;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  transition: opacity 0.2s ease !important;
+}
+
+body.party-in-lobby .lg-card-bg-icon,
+body.party-in-lobby .lg-card-bg-icon * {
+  pointer-events: none !important;
+  user-select: none !important;
 }
 
 body.party-in-lobby .lg-card-bg-icon img {
@@ -1628,8 +1669,8 @@ body.party-in-lobby .lg-card-bg-icon img {
 }
 
 body.party-in-lobby .lobby-game-card:hover .lg-card-bg-icon {
-  opacity: 0.46 !important;
-  transform: translateY(-50%) scale(1.1) rotate(-2deg) !important;
+  opacity: 0.44 !important;
+  transform: translateY(-50%) rotate(-6deg) !important;
 }
 
 /* Sleek Scrollbars for Games List, Players, and Left Col */

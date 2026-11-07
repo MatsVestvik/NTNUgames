@@ -603,7 +603,7 @@
             startBtn.classList.remove("disabled-btn");
             if (isHost) {
               startBtn.disabled = false;
-              startBtn.textContent = startBtn.dataset.hostText || "Start spill";
+              startBtn.textContent = startBtn.dataset.hostText || "Start";
             } else {
               startBtn.disabled = true;
               startBtn.textContent = "Venter på vert";
