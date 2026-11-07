@@ -671,10 +671,10 @@
     // Camera
     camera: { x: 400, y: 400, zoom: 1.0, shake: 0 },
 
-    // Input States (WASD Movement, Arrows Turn, Space/Click Shoot)
+    // Input States (WASD Movement, Left/Right Arrows Pan View, Space/Click Shoot)
     keys: {
       w: false, a: false, s: false, d: false,
-      arrowUp: false, arrowDown: false, arrowLeft: false, arrowRight: false,
+      arrowLeft: false, arrowRight: false,
       shoot: false
     },
     lastTurnAngle: 0,
@@ -1230,11 +1230,22 @@
       if (k === "s") { state.keys.s = true; hideStartWeaponOverlay(); }
       if (k === "d") { state.keys.d = true; hideStartWeaponOverlay(); }
 
-      // Arrow Keys for Turning / Aiming
-      if (e.key === "ArrowUp") { e.preventDefault(); state.keys.arrowUp = true; state.mouse.hasMoved = false; hideStartWeaponOverlay(); }
-      if (e.key === "ArrowDown") { e.preventDefault(); state.keys.arrowDown = true; state.mouse.hasMoved = false; hideStartWeaponOverlay(); }
-      if (e.key === "ArrowLeft") { e.preventDefault(); state.keys.arrowLeft = true; state.mouse.hasMoved = false; hideStartWeaponOverlay(); }
-      if (e.key === "ArrowRight") { e.preventDefault(); state.keys.arrowRight = true; state.mouse.hasMoved = false; hideStartWeaponOverlay(); }
+      // Left and Right Arrow Keys ONLY to pan the view
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        state.keys.arrowLeft = true;
+        state.mouse.hasMoved = false;
+        hideStartWeaponOverlay();
+      }
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        state.keys.arrowRight = true;
+        state.mouse.hasMoved = false;
+        hideStartWeaponOverlay();
+      }
+      if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+        e.preventDefault();
+      }
 
       // Space / Enter to Shoot
       if (k === " " || e.key === " " || k === "enter") {
@@ -1275,11 +1286,10 @@
       if (k === "s") state.keys.s = false;
       if (k === "d") state.keys.d = false;
 
-      // Arrow Keys for Turning
-      if (e.key === "ArrowUp") state.keys.arrowUp = false;
-      if (e.key === "ArrowDown") state.keys.arrowDown = false;
+      // Left and Right Arrow Keys to pan the view
       if (e.key === "ArrowLeft") state.keys.arrowLeft = false;
       if (e.key === "ArrowRight") state.keys.arrowRight = false;
+      if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault();
 
       // Space to Shoot
       if (k === " " || e.key === " " || k === "enter") state.keys.shoot = false;
@@ -1533,12 +1543,13 @@
       my *= 0.7071;
     }
 
-    // Aiming / Turning: Arrow keys have dedicated priority
-    const turnX = (state.keys.arrowRight ? 1 : 0) - (state.keys.arrowLeft ? 1 : 0);
-    const turnY = (state.keys.arrowDown ? 1 : 0) - (state.keys.arrowUp ? 1 : 0);
-
-    if (turnX !== 0 || turnY !== 0) {
-      p.angle = Math.atan2(turnY, turnX);
+    // Pan the view left/right with Left & Right arrow keys only
+    const panSpeed = 4.8; // radians per second (~275°/s smooth view panning)
+    if (state.keys.arrowLeft || state.keys.arrowRight) {
+      const panDir = (state.keys.arrowRight ? 1 : 0) - (state.keys.arrowLeft ? 1 : 0);
+      p.angle += panDir * panSpeed * dt;
+      while (p.angle > Math.PI) p.angle -= Math.PI * 2;
+      while (p.angle < -Math.PI) p.angle += Math.PI * 2;
       state.lastTurnAngle = p.angle;
     } else if (state.mouse.hasMoved && el.combatCanvas) {
       // Mouse cursor aiming
@@ -1568,8 +1579,8 @@
       }
     }
 
-    // Camera follow player smoothly
-    const lookahead = 60;
+    // Camera follow player smoothly and pan in the facing direction
+    const lookahead = 90;
     const targetCamX = p.x + Math.cos(p.angle) * lookahead;
     const targetCamY = p.y + Math.sin(p.angle) * lookahead;
     state.camera.x += (targetCamX - state.camera.x) * 0.12;
