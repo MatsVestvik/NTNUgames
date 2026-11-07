@@ -53,8 +53,8 @@
       spread: 0.06,
       bulletCount: 1,
       isAutomatic: true,
-      recoilKick: 4,
-      screenShake: 2,
+      recoilKick: 0,
+      screenShake: 0,
       color: "#38bdf8",
       length: 28,
       barrelWidth: 5,
@@ -75,8 +75,8 @@
       spread: 0.22,
       bulletCount: 6,
       isAutomatic: false,
-      recoilKick: 9,
-      screenShake: 5,
+      recoilKick: 0,
+      screenShake: 0,
       color: "#fb923c",
       length: 26,
       barrelWidth: 6,
@@ -97,8 +97,8 @@
       spread: 0.012,
       bulletCount: 1,
       isAutomatic: false,
-      recoilKick: 14,
-      screenShake: 7,
+      recoilKick: 0,
+      screenShake: 0,
       color: "#a855f7",
       length: 36,
       barrelWidth: 4,
@@ -120,8 +120,8 @@
       spread: 0.02,
       bulletCount: 1,
       isAutomatic: false,
-      recoilKick: 16,
-      screenShake: 12,
+      recoilKick: 0,
+      screenShake: 0,
       color: "#ef4444",
       length: 32,
       barrelWidth: 8,
@@ -142,8 +142,8 @@
       spread: 0.035,
       bulletCount: 1,
       isAutomatic: false,
-      recoilKick: 3,
-      screenShake: 2,
+      recoilKick: 0,
+      screenShake: 0,
       color: "#fde047",
       length: 18,
       barrelWidth: 4,
@@ -745,8 +745,8 @@
     // Explosions & Particles
     particles: [],
 
-    // Camera
-    camera: { x: 400, y: 400, zoom: 1.0, shake: 0 },
+    // Camera (Zoomed 3x in for closer tank combat)
+    camera: { x: 400, y: 400, zoom: 3.0, shake: 0 },
 
     // Input States (WASD Tank Steering/Throttle, Left/Right Arrows Turret, Space/Click Shoot)
     keys: {
@@ -1492,12 +1492,6 @@
     p.ammo = Infinity;
     p.fireTimer = w.fireRate;
 
-    // Tank turret recoil kick & hull impulse
-    p.recoilOffset = Math.min(10, (p.recoilOffset || 0) + (w.recoilKick > 8 ? 8 : 6));
-    p.recoilVx = (p.recoilVx || 0) - Math.cos(p.angle) * w.recoilKick * 7;
-    p.recoilVy = (p.recoilVy || 0) - Math.sin(p.angle) * w.recoilKick * 7;
-    state.camera.shake = Math.min(18, state.camera.shake + w.screenShake);
-
     const barrelDist = 26;
     const barrelX = p.x + Math.cos(p.angle) * barrelDist;
     const barrelY = p.y + Math.sin(p.angle) * barrelDist;
@@ -1620,11 +1614,6 @@
 
     if (p.fireTimer > 0) p.fireTimer = Math.max(0, p.fireTimer - dt);
 
-    // Recoil recovery for turret kick
-    if (p.recoilOffset > 0) {
-      p.recoilOffset = Math.max(0, p.recoilOffset - dt * 26);
-    }
-
     // 1. Tank Hull Steering & Driving with WASD
     const isDrivingForward = !!state.keys.w;
     const isDrivingReverse = !!state.keys.s;
@@ -1652,13 +1641,9 @@
       p.trackFrame = Math.floor(p.trackDistance / 10) % 3;
     }
 
-    // Combine drive velocity with shooting recoil momentum
-    const driveVx = Math.cos(p.hullAngle) * forwardThrottle;
-    const driveVy = Math.sin(p.hullAngle) * forwardThrottle;
-    p.vx = driveVx + (p.recoilVx || 0);
-    p.vy = driveVy + (p.recoilVy || 0);
-    if (p.recoilVx) p.recoilVx *= Math.pow(0.005, dt);
-    if (p.recoilVy) p.recoilVy *= Math.pow(0.005, dt);
+    // Drive velocity without recoil drift
+    p.vx = Math.cos(p.hullAngle) * forwardThrottle;
+    p.vy = Math.sin(p.hullAngle) * forwardThrottle;
 
     // Apply movement & obstacle collisions
     applyCombatantMovement(p, map, dt);
@@ -1694,8 +1679,8 @@
       }
     }
 
-    // 4. Camera smoothly tracks player and pans ahead along turret sightline
-    const lookahead = 90;
+    // 4. Camera smoothly tracks player and pans ahead along turret sightline (tight framing at 3x zoom)
+    const lookahead = 60;
     const targetCamX = p.x + Math.cos(p.angle) * lookahead;
     const targetCamY = p.y + Math.sin(p.angle) * lookahead;
     state.camera.x += (targetCamX - state.camera.x) * 0.12;
@@ -2440,9 +2425,8 @@
 
     // 5. Tank Turret & Cannon Barrel (Rotated independently along turretAngle)
     const turretImg = getTintedSprite(TANK_ASSETS.turret, tankColor);
-    const recoil = c.recoilOffset || 0;
-    const turretX = c.x - Math.cos(turretAngle) * recoil;
-    const turretY = c.y - Math.sin(turretAngle) * recoil;
+    const turretX = c.x;
+    const turretY = c.y;
 
     // Laser Sight for Sniper / Cannon
     if (c.weapon === "sniper") {
