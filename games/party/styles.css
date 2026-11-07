@@ -669,25 +669,26 @@ body {
   justify-content: space-between;
   align-items: center;
   gap: 1.5rem;
-  transition: all 0.25s ease;
+  transition: border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
   position: relative;
   overflow: hidden;
 }
 
 .lg-card-bg-icon {
   position: absolute;
-  right: 210px;
+  right: 25px;
   top: 50%;
   transform: translateY(-50%) rotate(-6deg);
-  width: 130px;
-  height: 130px;
+  width: 120px;
+  height: 120px;
   display: flex;
   align-items: center;
   justify-content: center;
   pointer-events: none;
+  user-select: none;
   z-index: 0;
-  opacity: 0.16;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  opacity: 0.18;
+  transition: opacity 0.2s ease;
 }
 
 .lg-card-bg-icon img {
@@ -697,12 +698,14 @@ body {
   image-rendering: pixelated;
   image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;
-  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.6));
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
+  pointer-events: none;
+  user-select: none;
 }
 
 .lobby-game-card:hover .lg-card-bg-icon {
-  opacity: 0.30;
-  transform: translateY(-50%) scale(1.08) rotate(-2deg);
+  opacity: 0.32;
+  transform: translateY(-50%) rotate(-6deg);
 }
 
 .lg-card-left,
@@ -977,11 +980,6 @@ body {
   image-rendering: crisp-edges;
   vertical-align: middle;
   margin-right: 4px;
-  transition: transform 0.2s ease;
-}
-
-.lobby-game-card:hover .party-gear-icon {
-  transform: rotate(45deg);
 }
 
 /* ========================================================== */
@@ -1449,7 +1447,7 @@ body.party-in-lobby .lobby-game-card {
   justify-content: space-between !important;
   align-items: center !important;
   gap: 1rem !important;
-  padding: 0.85rem 1.2rem !important;
+  padding: 0.85rem 1.25rem !important;
   border-radius: 14px !important;
   min-width: 0 !important;
   width: 100% !important;
@@ -1461,22 +1459,31 @@ body.party-in-lobby .lobby-game-card {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
   margin: 0 !important;
   flex-shrink: 0 !important;
-  transform: translateZ(0) !important;
-  -webkit-backface-visibility: hidden !important;
-  backface-visibility: hidden !important;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease !important;
+  cursor: default !important;
+  user-select: none !important;
+  transform: none !important;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease !important;
 }
 
 body.party-in-lobby .lobby-game-card.active-playable {
   border-color: rgba(251, 133, 0, 0.4) !important;
   background-color: rgba(28, 39, 66, 0.75) !important;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
+  cursor: pointer !important;
+  transform: none !important;
 }
 
 body.party-in-lobby .lobby-game-card.active-playable:hover {
   border-color: #10b981 !important;
-  background-color: rgba(30, 44, 74, 0.92) !important;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), 0 0 16px rgba(16, 185, 129, 0.16) !important;
+  background-color: rgba(30, 46, 76, 0.94) !important;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.45), 0 0 16px rgba(16, 185, 129, 0.22) !important;
+  transform: none !important;
+}
+
+body.party-in-lobby .lobby-game-card.active-playable:active {
+  background-color: rgba(22, 34, 58, 0.98) !important;
+  border-color: #059669 !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4) !important;
   transform: none !important;
 }
 
@@ -1484,6 +1491,7 @@ body.party-in-lobby .lobby-game-card.disabled-playable {
   opacity: 0.55 !important;
   cursor: not-allowed !important;
   filter: grayscale(0.25) !important;
+  transform: none !important;
 }
 
 body.party-in-lobby .lobby-game-card.disabled-playable:hover {
@@ -1492,7 +1500,7 @@ body.party-in-lobby .lobby-game-card.disabled-playable:hover {
   border-color: var(--border) !important;
 }
 
-/* Card Left Section (Title, Badge, Description, Meta) */
+/* Card Left Section: all children pass pointer-events so card remains single hit target */
 body.party-in-lobby .lg-card-left {
   display: flex !important;
   flex-direction: column !important;
@@ -1501,6 +1509,11 @@ body.party-in-lobby .lg-card-left {
   box-sizing: border-box !important;
   position: relative !important;
   z-index: 1 !important;
+  pointer-events: none !important;
+}
+
+body.party-in-lobby .lg-card-left * {
+  pointer-events: none !important;
 }
 
 body.party-in-lobby .lg-card-title-row {
@@ -1548,17 +1561,17 @@ body.party-in-lobby .lg-card-meta {
   font-weight: 600 !important;
 }
 
-/* Card Right Section (Actions, Inline Settings, Start Button) */
+/* Card Right Section (Settings dropdowns) */
 body.party-in-lobby .lg-card-right {
   display: flex !important;
   flex-direction: column !important;
   align-items: flex-end !important;
+  justify-content: center !important;
   flex: 0 0 auto !important;
-  min-width: 170px !important;
-  max-width: 220px !important;
-  gap: 0.45rem !important;
+  min-width: 120px !important;
+  max-width: 240px !important;
   position: relative !important;
-  z-index: 1 !important;
+  z-index: 2 !important;
   box-sizing: border-box !important;
 }
 
@@ -1572,6 +1585,9 @@ body.party-in-lobby .lg-settings-inline {
   box-sizing: border-box !important;
   margin: 0 !important;
   font-size: 0.72rem !important;
+  position: relative !important;
+  z-index: 2 !important;
+  pointer-events: auto !important;
 }
 
 body.party-in-lobby .party-gear-icon {
@@ -1580,6 +1596,8 @@ body.party-in-lobby .party-gear-icon {
   min-width: 14px !important;
   opacity: 0.75;
   flex-shrink: 0;
+  pointer-events: none !important;
+  transform: none !important;
 }
 
 body.party-in-lobby .lg-settings-inline label {
@@ -1589,6 +1607,8 @@ body.party-in-lobby .lg-settings-inline label {
   font-size: 0.72rem !important;
   color: #94a3b8 !important;
   margin: 0 !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
 }
 
 body.party-in-lobby .lg-select {
@@ -1604,43 +1624,13 @@ body.party-in-lobby .lg-select {
   text-overflow: ellipsis !important;
   outline: none !important;
   max-width: 140px !important;
+  pointer-events: auto !important;
 }
 
-/* Green Start Game Buttons */
-body.party-in-lobby .start-game-btn {
-  width: 100% !important;
-  min-width: 120px !important;
-  padding: 0.5rem 1rem !important;
-  font-size: 0.92rem !important;
-  font-weight: 800 !important;
-  letter-spacing: 0.04em !important;
-  text-transform: uppercase !important;
-  border-radius: 8px !important;
-  text-align: center !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  box-sizing: border-box !important;
-  line-height: 1.25 !important;
-  margin: 0 !important;
-  background: linear-gradient(135deg, #10b981, #059669) !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.32) !important;
-  cursor: pointer !important;
-  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease !important;
-}
-
-body.party-in-lobby .start-game-btn:hover {
-  background: linear-gradient(135deg, #34d399, #059669) !important;
-  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.48) !important;
-  transform: translateY(-1px) !important;
-}
-
-/* Prominent Game Artwork / Image on Card (Fortsatt på spillekortet, stabilt uten flimmer) */
+/* Background Artwork Icon */
 body.party-in-lobby .lg-card-bg-icon {
   position: absolute !important;
-  right: 185px !important;
+  right: 25px !important;
   top: 50% !important;
   transform: translateY(-50%) rotate(-6deg) !important;
   width: 110px !important;
@@ -1650,7 +1640,7 @@ body.party-in-lobby .lg-card-bg-icon {
   justify-content: center !important;
   pointer-events: none !important;
   z-index: 0 !important;
-  opacity: 0.26 !important;
+  opacity: 0.22 !important;
   transition: opacity 0.2s ease !important;
 }
 
@@ -1665,11 +1655,11 @@ body.party-in-lobby .lg-card-bg-icon img {
   height: 100% !important;
   object-fit: contain !important;
   image-rendering: pixelated !important;
-  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.65)) !important;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5)) !important;
 }
 
 body.party-in-lobby .lobby-game-card:hover .lg-card-bg-icon {
-  opacity: 0.44 !important;
+  opacity: 0.36 !important;
   transform: translateY(-50%) rotate(-6deg) !important;
 }
 

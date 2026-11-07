@@ -556,15 +556,11 @@
 
     cards.forEach((card) => {
       const minPlayers = parseInt(card.dataset.minPlayers || "2", 10);
-      const startBtn = card.querySelector(".start-game-btn");
       const badge = card.querySelector(".lg-card-badge");
       const selects = card.querySelectorAll("select");
 
       if (badge && !badge.dataset.origText) {
         badge.dataset.origText = badge.textContent.trim();
-      }
-      if (startBtn && !startBtn.dataset.hostText) {
-        startBtn.dataset.hostText = startBtn.textContent.trim();
       }
 
       const hasEnough = playerCount >= minPlayers;
@@ -573,12 +569,9 @@
         card.classList.add("disabled-playable");
         card.classList.remove("active-playable");
         card.style.order = "99";
+        card.dataset.allReady = "false";
+        card.title = `Trenger minst ${minPlayers} spillere for å starte`;
 
-        if (startBtn) {
-          startBtn.disabled = true;
-          startBtn.classList.add("disabled-btn");
-          startBtn.textContent = `Trenger minst ${minPlayers} spillere`;
-        }
         if (badge) {
           badge.className = "lg-card-badge badge-needed";
           badge.textContent = `Trenger ${minPlayers} spillere`;
@@ -589,34 +582,17 @@
         card.classList.remove("disabled-playable");
         card.classList.add("active-playable");
         card.style.order = "1";
+        card.dataset.allReady = allReady ? "true" : "false";
 
-        if (startBtn) {
-          if (!allReady) {
-            startBtn.classList.add("disabled-btn");
-            startBtn.disabled = true;
-            if (isHost) {
-              startBtn.textContent = `Venter på spillere (${readyCount}/${totalCount} i lobby)…`;
-            } else {
-              startBtn.textContent = `Venter på spillere (${readyCount}/${totalCount})…`;
-            }
-          } else {
-            startBtn.classList.remove("disabled-btn");
-            if (isHost) {
-              startBtn.disabled = false;
-              startBtn.textContent = startBtn.dataset.hostText || "Start";
-            } else {
-              startBtn.disabled = true;
-              startBtn.textContent = "Venter på vert";
-            }
-          }
-        }
         if (badge) {
           if (!allReady) {
             badge.className = "lg-card-badge badge-waiting";
             badge.textContent = `Venter på retur (${readyCount}/${totalCount})`;
+            card.title = `Venter på at alle spillere er klare i party-loungen (${readyCount}/${totalCount})`;
           } else {
             badge.className = "lg-card-badge badge-ready";
-            badge.textContent = badge.dataset.origText || "Klar til spill";
+            badge.textContent = isHost ? "Trykk for å starte" : (badge.dataset.origText || "Klar til spill");
+            card.title = isHost ? "Trykk for å starte dette spillet for hele rommet" : "Venter på at verten starter spillet";
           }
         }
         selects.forEach((s) => (s.disabled = !isHost || !allReady));
@@ -664,7 +640,7 @@
     if (isHost) {
       el.sectionGameSelector.classList.remove("is-guest-view");
       el.playerWaitingBox.classList.add("hidden");
-      if (sectionHint) sectionHint.textContent = "Verten velger spill for hele rommet";
+      if (sectionHint) sectionHint.textContent = "Trykk på et spill for å starte for hele rommet:";
     } else {
       el.sectionGameSelector.classList.add("is-guest-view");
       el.playerWaitingBox.classList.remove("hidden");
@@ -674,12 +650,23 @@
     updatePartyGamesListByPlayerCount(state.lastPlayerCount || 1, isHost);
   }
 
-  // Standardized Declarative Game Launcher for Host
-  async function launchPartyGame(btnElement, gameId, getSettings) {
-    if (!state.isHost || !state.roomCode) return;
-    const originalText = btnElement.textContent;
-    btnElement.disabled = true;
-    btnElement.textContent = "Starter spill…";
+  // Standardized Declarative Game Launcher for Host (Triggered by clicking card)
+  let isLaunchingGame = false;
+
+  async function launchPartyGame(cardElement, gameId, getSettings) {
+    if (!state.isHost || !state.roomCode || isLaunchingGame) return;
+    isLaunchingGame = true;
+
+    const badge = cardElement ? cardElement.querySelector(".lg-card-badge") : null;
+    const originalBadgeText = badge ? badge.textContent : "";
+    if (badge) {
+      badge.textContent = "Starter spill…";
+      badge.className = "lg-card-badge badge-ready";
+    }
+    if (cardElement) {
+      cardElement.style.pointerEvents = "none";
+      cardElement.style.opacity = "0.75";
+    }
 
     const settings = (typeof getSettings === "function") ? getSettings() : {};
 
@@ -698,8 +685,12 @@
       const data = await resp.json();
       if (!data.ok) {
         alert(data.error || "Kunne ikke starte spillet.");
-        btnElement.disabled = false;
-        btnElement.textContent = originalText;
+        if (badge) badge.textContent = originalBadgeText;
+        if (cardElement) {
+          cardElement.style.pointerEvents = "";
+          cardElement.style.opacity = "";
+        }
+        isLaunchingGame = false;
         return;
       }
 
@@ -708,14 +699,18 @@
     } catch (err) {
       console.error("Launch error:", err);
       alert("Nettverksfeil ved start av spill.");
-      btnElement.disabled = false;
-      btnElement.textContent = originalText;
+      if (badge) badge.textContent = originalBadgeText;
+      if (cardElement) {
+        cardElement.style.pointerEvents = "";
+        cardElement.style.opacity = "";
+      }
+      isLaunchingGame = false;
     }
   }
 
   const GAME_LAUNCHERS = [
     {
-      btn: el.btnStartOrdbombe,
+      cardId: "gameCardOrdbombe",
       id: "ordbombe",
       settings: () => ({
         turnDuration: parseFloat(el.selectTimerParty?.value) || 6.0,
@@ -723,7 +718,7 @@
       }),
     },
     {
-      btn: el.btnStartTegnOgGjett,
+      cardId: "gameCardTegnOgGjett",
       id: "tegn_og_gjett",
       settings: () => ({
         drawTime: parseInt(el.selectTimerDraw?.value || "80", 10),
@@ -731,19 +726,19 @@
       }),
     },
     {
-      btn: el.btnStartSjakk,
+      cardId: "gameCardSjakk",
       id: "sjakk",
       settings: () => ({
         timeControl: parseInt(el.selectTimerSjakk?.value || "300", 10),
       }),
     },
     {
-      btn: el.btnStartKorridorer,
+      cardId: "gameCardKorridorer",
       id: "korridorer",
       settings: () => ({}),
     },
     {
-      btn: el.btnStartTurbosladd,
+      cardId: "gameCardTurbosladd",
       id: "turbosladd",
       settings: () => ({
         laps: parseInt(el.selectLapsTurbosladd?.value || "3", 10) || 3,
@@ -751,20 +746,44 @@
       }),
     },
     {
-      btn: el.btnStartKuleregn,
+      cardId: "gameCardKuleregn",
       id: "kuleregn",
       settings: () => ({
-        mapId: el.selectMapKuleregn?.value || "gloshaugen_arena",
+        mapId: el.selectMapKuleregn?.value || "rust",
         scoreLimit: parseInt(el.selectScoreLimitKuleregn?.value || "15", 10) || 15,
         mode: "ffa",
       }),
     },
   ];
 
-  GAME_LAUNCHERS.forEach(({ btn, id, settings }) => {
-    if (btn) {
-      btn.addEventListener("click", () => launchPartyGame(btn, id, settings));
-    }
+  GAME_LAUNCHERS.forEach(({ cardId, id, settings }) => {
+    const card = document.getElementById(cardId);
+    if (!card) return;
+
+    card.addEventListener("click", (e) => {
+      // Don't trigger game launch if clicking inside settings dropdowns or labels
+      if (e.target.closest(".lg-settings-inline") || e.target.closest("select") || e.target.closest("label")) {
+        return;
+      }
+
+      if (!state.isHost) {
+        showToast("Bare romverten kan starte et spill.");
+        return;
+      }
+
+      if (card.classList.contains("disabled-playable")) {
+        const minPlayers = card.dataset.minPlayers || "2";
+        showToast(`Dette spillet krever minst ${minPlayers} spillere.`);
+        return;
+      }
+
+      if (card.dataset.allReady === "false") {
+        showToast("Venter på at alle spillere er klare i party-loungen.");
+        return;
+      }
+
+      launchPartyGame(card, id, settings);
+    });
   });
 
   // Copy invitation link
