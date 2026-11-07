@@ -858,6 +858,7 @@ body {
   border: 1px solid rgba(251, 133, 0, 0.45);
 }
 
+.tag-players,
 .tag-multiplayer {
   background: rgba(239, 71, 111, 0.14);
   color: var(--accent-pink);
