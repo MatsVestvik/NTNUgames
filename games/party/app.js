@@ -701,11 +701,11 @@
 
     if (isHost) {
       el.sectionGameSelector.classList.remove("is-guest-view");
-      el.playerWaitingBox.classList.add("hidden");
+      if (el.playerWaitingBox) el.playerWaitingBox.classList.add("hidden");
       if (sectionHint) sectionHint.textContent = "Trykk på et spill for å starte for hele rommet:";
     } else {
       el.sectionGameSelector.classList.add("is-guest-view");
-      el.playerWaitingBox.classList.remove("hidden");
+      if (el.playerWaitingBox) el.playerWaitingBox.classList.remove("hidden");
       if (sectionHint) sectionHint.textContent = "Tilgjengelige partyspill (Verten velger spill):";
     }
 
