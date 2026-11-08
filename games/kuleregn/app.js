@@ -682,6 +682,8 @@
     lastTime: 0,
     killFeed: [],
     recentEvents: [],
+    recentShots: [],
+    seenShotIds: new Set(),
   };
 
   // =========================================================================
@@ -988,20 +990,31 @@
         killerColor: killer ? killer.color : "#94a3b8",
         victimName: victim.name,
         victimColor: victim.color,
-        weapon: weaponId || "pistol",
+        weapon: weaponId || "cannon",
       });
 
       // Report event to server if involved
-      if (victim === state.player || (state.isHost && killer === state.player)) {
+      if (!state.isSolo) {
         state.recentEvents.push({
           type: "kill",
-          killerId: killer ? killer.id : "env",
+          killerId: killer ? killer.id : (state.playerId || "env"),
           victimId: victim.id,
-          weapon: weaponId || "pistol",
+          weapon: weaponId || "cannon",
         });
       }
 
       checkMatchVictory();
+    } else {
+      // Victim took damage but survived - report hit to server
+      if (!state.isSolo && (killer === state.player || victim === state.player)) {
+        state.recentEvents.push({
+          type: "hit",
+          attackerId: killer ? killer.id : state.playerId,
+          targetId: victim.id,
+          damage: damage,
+          weapon: weaponId || "cannon",
+        });
+      }
     }
 
     updateVitalsHUD();
@@ -1354,6 +1367,16 @@
       });
     }
 
+    if (!state.isSolo) {
+      state.recentShots.push({
+        id: `s_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        x: barrelX,
+        y: barrelY,
+        angle: p.angle,
+        weapon: p.weapon,
+      });
+    }
+
     addMuzzleParticles(barrelX, barrelY, p.angle, w.color);
     playWeaponSound(p.weapon);
     updateWeaponHUD();
@@ -1445,6 +1468,9 @@
       if (p.respawnTimer <= 0) {
         spawnPlayer(p, map);
         updateWeaponHUD();
+        if (!state.isSolo) {
+          state.recentEvents.push({ type: "respawn" });
+        }
       }
       return;
     }
@@ -1673,6 +1699,12 @@
             p.timer = p.respawnSec;
             playPickupSound(p.type);
             addMuzzleParticles(p.x, p.y, 0, "#10b981");
+            if (!state.isSolo && c === state.player) {
+              state.recentEvents.push({
+                type: "pickup",
+                pickupType: p.type,
+              });
+            }
             break;
           }
         }
@@ -2200,6 +2232,23 @@
     }
 
     ctx.restore();
+
+    // 11. Respawn Death Overlay when player is dead
+    if (state.player.isDead) {
+      ctx.save();
+      ctx.fillStyle = "rgba(15, 23, 42, 0.72)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#ef4444";
+      ctx.font = "bold 32px sans-serif";
+      ctx.fillText("STRIDSVOGN ØDELAGT!", canvas.width / 2, canvas.height / 2 - 24);
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 20px sans-serif";
+      const rem = Math.max(0.1, state.player.respawnTimer || 0).toFixed(1);
+      ctx.fillText(`Gjenoppstår om ${rem}s...`, canvas.width / 2, canvas.height / 2 + 20);
+      ctx.restore();
+    }
   }
 
   function drawCombatant(ctx, c, isMe = false) {
@@ -2419,6 +2468,7 @@
         roomCode: state.roomCode,
         playerId: state.playerId,
         events: state.recentEvents.slice(),
+        shots: state.recentShots.slice(),
         telemetry: {
           x: state.player.x,
           y: state.player.y,
@@ -2429,14 +2479,13 @@
           vy: state.player.vy,
           speed: state.player.speed,
           weapon: state.player.weapon,
-          health: state.player.health,
-          shield: state.player.shield,
           avatar: state.playerAvatar,
           color: state.playerColor,
         },
       };
 
       state.recentEvents = [];
+      state.recentShots = [];
 
       const resp = await fetch("/api/kuleregn/sync", {
         method: "POST",
@@ -2472,6 +2521,35 @@
       showVictoryPodium(winner);
     }
 
+    // Ingest local player stats from server
+    const me = (data.players || []).find(p => p.id === state.playerId);
+    if (me) {
+      state.player.kills = me.kills || 0;
+      state.player.deaths = me.deaths || 0;
+      state.player.score = me.score || 0;
+
+      if (typeof me.health === "number") {
+        if (me.health < state.player.health) {
+          state.camera.shake = Math.min(18, state.camera.shake + 6);
+          playTone(160, 0.1, "sawtooth", 0.35);
+          showDamageFeedback();
+          addDamageSparks(state.player.x, state.player.y, state.player.color);
+        }
+        state.player.health = me.health;
+        state.player.shield = me.shield || 0;
+      }
+
+      if (me.isDead && !state.player.isDead) {
+        state.player.isDead = true;
+        state.player.respawnTimer = 2.5;
+        addDeathExplosion(state.player.x, state.player.y, state.player.color);
+        playTone(120, 0.35, "sawtooth", 0.5);
+      } else if (!me.isDead && state.player.isDead && state.player.respawnTimer <= 0) {
+        spawnPlayer(state.player, state.currentMap);
+      }
+      updateVitalsHUD();
+    }
+
     // Ingest opponent players
     (data.players || []).forEach(p => {
       if (p.id !== state.playerId && !p.isBot) {
@@ -2489,13 +2567,13 @@
             vx: p.vx,
             vy: p.vy,
             speed: p.speed,
-            weapon: p.weapon || "pistol",
+            weapon: p.weapon || "cannon",
             health: p.health || 100,
             shield: p.shield || 25,
             kills: p.kills || 0,
             deaths: p.deaths || 0,
             score: p.score || 0,
-            isDead: (p.health || 100) <= 0,
+            isDead: Boolean(p.isDead || (p.health || 100) <= 0),
           };
         } else {
           const opp = state.opponents[p.id];
@@ -2524,16 +2602,66 @@
           opp.kills = p.kills || opp.kills;
           opp.deaths = p.deaths || opp.deaths;
           opp.score = p.score || opp.score;
-          opp.isDead = (p.health || 100) <= 0;
+
+          const serverDead = Boolean(p.isDead || (p.health || 100) <= 0);
+          if (serverDead && !opp.isDead) {
+            opp.isDead = true;
+            addDeathExplosion(opp.x, opp.y, opp.color);
+          } else if (!serverDead && opp.isDead) {
+            opp.isDead = false;
+            opp.health = 100;
+            opp.shield = 25;
+            opp.invulnerableUntil = performance.now() + 2500;
+          }
         }
       }
     });
+
+    // Ingest opponent shots from server
+    if (data.recentShots && data.recentShots.length > 0) {
+      data.recentShots.forEach(s => {
+        if (s.playerId && s.playerId !== state.playerId && !state.seenShotIds.has(s.id)) {
+          state.seenShotIds.add(s.id);
+          if (state.seenShotIds.size > 200) {
+            const first = state.seenShotIds.values().next().value;
+            state.seenShotIds.delete(first);
+          }
+          const opp = state.opponents[s.playerId];
+          const oppName = opp ? opp.name : "Motstander";
+          const oppColor = opp ? opp.color : "#ef4444";
+          const w = WEAPONS[s.weapon] || WEAPONS.cannon || WEAPONS.assault;
+
+          for (let i = 0; i < (w.bulletCount || 1); i++) {
+            const spreadAngle = (Math.random() - 0.5) * w.spread;
+            const bAngle = s.angle + spreadAngle;
+            state.bullets.push({
+              id: `${s.id}_${i}`,
+              ownerId: s.playerId,
+              ownerName: oppName,
+              ownerColor: oppColor,
+              weapon: s.weapon,
+              x: s.x,
+              y: s.y,
+              vx: Math.cos(bAngle) * w.bulletSpeed,
+              vy: Math.sin(bAngle) * w.bulletSpeed,
+              damage: w.damage,
+              life: w.bulletLife,
+              maxLife: w.bulletLife,
+              color: w.color,
+              isRocket: s.weapon === "rocket",
+            });
+          }
+          addMuzzleParticles(s.x, s.y, s.angle, w.color);
+          playWeaponSound(s.weapon);
+        }
+      });
+    }
 
     // Ingest kill feed if reported by server
     if (data.killFeed && data.killFeed.length > 0) {
       data.killFeed.forEach(kf => {
         const exists = state.killFeed.some(existing =>
-          existing.killerName === kf.killerName && existing.victimName === kf.victimName
+          existing.killerName === kf.killerName && existing.victimName === kf.victimName && Math.abs((existing.timestamp || 0) - (kf.time ? kf.time * 1000 : 0)) < 3000
         );
         if (!exists) {
           addKillFeedItem(kf);

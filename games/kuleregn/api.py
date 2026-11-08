@@ -42,6 +42,21 @@ PLAYER_PALETTE = [
 ]
 
 WEAPONS_SPEC = {
+    "cannon": {
+        "id": "cannon",
+        "name": "Stridsvognkanon",
+        "icon": "💣",
+        "damage": 50,
+        "fireRate": 0.65,
+        "magSize": 1,
+        "reloadTime": 0.65,
+        "bulletSpeed": 1100,
+        "spread": 0.005,
+        "bulletCount": 1,
+        "bulletRange": 1300,
+        "isAutomatic": False,
+        "ammoReserve": 999,
+    },
     "pistol": {
         "id": "pistol",
         "name": "P-99 Pistol",
@@ -187,6 +202,7 @@ class KuleregnRoom:
 
         self.kill_feed: List[Dict[str, Any]] = []
         self.recent_events: List[Dict[str, Any]] = []
+        self.recent_shots: List[Dict[str, Any]] = []
 
         # Add Host Player
         self._add_host(host_name, host_color, host_avatar)
@@ -327,6 +343,7 @@ class KuleregnRoom:
                         pl["weapon"] = pl.get("weapon", "assault")
                     self.kill_feed = []
                     self.recent_events = []
+                    self.recent_shots = []
                     self.bump()
             return True
 
@@ -417,6 +434,7 @@ class KuleregnRoom:
                 pl["weapon"] = pl.get("weapon", "assault")
             self.kill_feed = []
             self.recent_events = []
+            self.recent_shots = []
             self.bump()
             return True
 
@@ -440,6 +458,7 @@ class KuleregnRoom:
                 pl["weapon"] = pl.get("weapon", "assault")
             self.kill_feed = []
             self.recent_events = []
+            self.recent_shots = []
             self.bump()
             return True
 
@@ -459,6 +478,7 @@ class KuleregnRoom:
                 pl["weapon"] = pl.get("weapon", "assault")
             self.kill_feed = []
             self.recent_events = []
+            self.recent_shots = []
             self.bump()
             return True
 
@@ -535,26 +555,119 @@ class KuleregnRoom:
             self.bump()
             self._check_status_transitions()
 
-    def update_telemetry(self, player_id: str, telemetry: Dict[str, Any]) -> None:
+    def update_telemetry(
+        self,
+        player_id: str,
+        telemetry: Dict[str, Any],
+        events: Optional[List[Dict[str, Any]]] = None,
+        shots: Optional[List[Dict[str, Any]]] = None,
+    ) -> None:
         with self.lock:
             p = self.players.get(player_id)
             if not p:
                 return
 
-            p["lastSeen"] = time.time()
-            for key in ("x", "y", "angle", "hullAngle", "trackFrame", "vx", "vy", "speed", "weapon", "health", "shield", "isReloading"):
-                if key in telemetry:
+            now = time.time()
+            p["lastSeen"] = now
+
+            for key in ("x", "y", "angle", "hullAngle", "trackFrame", "vx", "vy", "speed", "weapon", "avatar", "color"):
+                if key in telemetry and telemetry[key] is not None:
                     p[key] = telemetry[key]
 
-            # Ingest hits/kills reported
-            events = telemetry.get("events", [])
-            for ev in events:
-                if ev.get("type") == "kill":
-                    self.register_kill(
-                        killer_id=ev.get("killerId", player_id),
-                        victim_id=ev.get("victimId", ""),
-                        weapon_id=ev.get("weapon", "pistol"),
-                    )
+            # Ingest shots fired by this player
+            if shots:
+                for s in shots:
+                    s_id = s.get("id") or f"s_{uuid.uuid4().hex[:6]}"
+                    self.recent_shots.append({
+                        "id": s_id,
+                        "playerId": player_id,
+                        "x": s.get("x", p.get("x", 0)),
+                        "y": s.get("y", p.get("y", 0)),
+                        "angle": s.get("angle", p.get("angle", 0)),
+                        "weapon": s.get("weapon", p.get("weapon", "cannon")),
+                        "time": now,
+                    })
+                if len(self.recent_shots) > 50:
+                    self.recent_shots = self.recent_shots[-50:]
+
+            # Ingest combat events (damage, hits, kills, pickups, respawns)
+            effective_events = events if events is not None else telemetry.get("events", [])
+            for ev in (effective_events or []):
+                ev_type = ev.get("type")
+                if ev_type in ("hit", "damage"):
+                    target_id = ev.get("targetId") or ev.get("victimId")
+                    attacker_id = ev.get("attackerId") or ev.get("killerId") or player_id
+                    damage = int(ev.get("damage", 50))
+                    weapon_id = ev.get("weapon", "cannon")
+                    target = self.players.get(target_id)
+                    if target and not target.get("isDead", False):
+                        if now < target.get("invulnerableUntil", 0):
+                            continue
+                        shield = target.get("shield", 0)
+                        if shield > 0:
+                            if shield >= damage:
+                                target["shield"] = shield - damage
+                                remaining = 0
+                            else:
+                                remaining = damage - shield
+                                target["shield"] = 0
+                        else:
+                            remaining = damage
+
+                        target["health"] = max(0, target.get("health", 100) - remaining)
+                        self.recent_events.append({
+                            "type": "damage",
+                            "targetId": target_id,
+                            "attackerId": attacker_id,
+                            "damage": damage,
+                            "weapon": weapon_id,
+                            "remainingHealth": target["health"],
+                            "remainingShield": target["shield"],
+                            "time": now,
+                        })
+
+                        if target["health"] <= 0:
+                            target["health"] = 0
+                            target["isDead"] = True
+                            target["respawnTime"] = now + 2.5
+                            self.register_kill(attacker_id, target_id, weapon_id)
+
+                elif ev_type == "kill":
+                    target_id = ev.get("victimId")
+                    attacker_id = ev.get("killerId") or player_id
+                    weapon_id = ev.get("weapon", "cannon")
+                    target = self.players.get(target_id)
+                    if target and not target.get("isDead", False):
+                        target["health"] = 0
+                        target["isDead"] = True
+                        target["respawnTime"] = now + 2.5
+                        self.register_kill(attacker_id, target_id, weapon_id)
+
+                elif ev_type == "pickup":
+                    p_type = ev.get("pickupType")
+                    if p_type == "medkit":
+                        p["health"] = min(100, p.get("health", 100) + 40)
+                    elif p_type == "shield":
+                        p["shield"] = min(100, p.get("shield", 25) + 50)
+
+                elif ev_type == "respawn":
+                    p["isDead"] = False
+                    p["health"] = 100
+                    p["shield"] = 25
+                    p["respawnTime"] = 0
+                    p["invulnerableUntil"] = now + 2.5
+
+            # Process respawns for dead players
+            for pl in self.players.values():
+                if pl.get("isDead") and pl.get("respawnTime") and now >= pl["respawnTime"]:
+                    pl["isDead"] = False
+                    pl["health"] = 100
+                    pl["shield"] = 25
+                    pl["respawnTime"] = 0
+                    pl["invulnerableUntil"] = now + 2.5
+
+            if len(self.recent_events) > 30:
+                self.recent_events = self.recent_events[-30:]
 
             self._check_status_transitions()
             self.bump()
@@ -592,10 +705,11 @@ class KuleregnRoom:
                     "speed": round(p.get("speed", 0.0), 1),
                     "health": p.get("health", 100),
                     "shield": p.get("shield", 0),
-                    "weapon": p.get("weapon", "pistol"),
+                    "weapon": p.get("weapon", "cannon"),
                     "kills": p.get("kills", 0),
                     "deaths": p.get("deaths", 0),
                     "score": p.get("score", 0),
+                    "isDead": bool(p.get("isDead", False) or p.get("health", 100) <= 0),
                     "isMe": bool(is_me),
                     "left": p.get("left", False),
                     "forfeit": p.get("forfeit", False),
@@ -617,8 +731,9 @@ class KuleregnRoom:
                 "botCount": self.bot_count,
                 "version": self.version,
                 "players": player_list,
-                "killFeed": self.kill_feed[-6:],
-                "recentEvents": self.recent_events[-12:],
+                "killFeed": self.kill_feed[-8:],
+                "recentEvents": self.recent_events[-16:],
+                "recentShots": [s for s in self.recent_shots if now - s.get("time", 0) < 2.0],
             }
 
 
@@ -858,13 +973,15 @@ class KuleregnAPI:
             code = str(body.get("roomCode", "")).strip().upper()
             player_id = str(body.get("playerId", "")).strip()
             telemetry = body.get("telemetry", {})
+            events = body.get("events", [])
+            shots = body.get("shots", [])
 
             with _rooms_lock:
                 room = _rooms.get(code)
             if not room:
                 return 404, {"error": "Fant ikke rommet."}
 
-            room.update_telemetry(player_id, telemetry)
+            room.update_telemetry(player_id, telemetry, events=events, shots=shots)
             return 200, room.get_public_state(player_id)
 
         # 8. Restart Match (Host only)
