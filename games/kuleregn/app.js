@@ -651,6 +651,7 @@
     animFrameId: null,
     lastTime: 0,
     killFeed: [],
+    seenKillFeedIds: new Set(),
     recentEvents: [],
     recentShots: [],
     seenShotIds: new Set(),
@@ -980,19 +981,26 @@
       const killerColor = actualKiller ? (actualKiller.color || (actualKiller === state.player ? (state.playerColor || "#ffd166") : "#ffd166")) : "#94a3b8";
       const killerId = actualKiller ? (actualKiller === state.player ? (state.playerId || "player_local") : actualKiller.id) : (state.playerId || "env");
 
+      const killEventId = `kf_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+      state.seenKillFeedIds.add(killEventId);
+
       // Add to kill feed
       addKillFeedItem({
+        id: killEventId,
+        killerId: killerId,
         killerName: killerName,
         killerColor: killerColor,
         victimName: victim.name || "Motstander",
         victimColor: victim.color || "#ef4444",
         weapon: weaponId || "cannon",
+        timestamp: Date.now(),
       });
 
       // Report event to server if online match and we are involved
       if (!state.isSolo && (actualKiller === state.player || (!killer && victim === state.player))) {
         state.recentEvents.push({
           type: "kill",
+          clientKillId: killEventId,
           killerId: killerId,
           victimId: victim.id,
           weapon: weaponId || "cannon",
@@ -1159,25 +1167,40 @@
 
   function addKillFeedItem(item) {
     const wIcon = WEAPONS[item.weapon] ? (WEAPONS[item.weapon].icon || "▸") : "▸";
-    state.killFeed.unshift({
+    const ts = item.timestamp || (item.time ? item.time * 1000 : Date.now());
+    const feedItem = {
       ...item,
       icon: wIcon,
-      timestamp: performance.now(),
-    });
-    if (state.killFeed.length > 5) state.killFeed.pop();
+      timestamp: ts,
+    };
+    state.killFeed.unshift(feedItem);
+    if (state.killFeed.length > 6) state.killFeed.pop();
 
     if (el.killFeedContainer) {
-      el.killFeedContainer.innerHTML = "";
-      state.killFeed.forEach(kf => {
-        const div = document.createElement("div");
-        div.className = "kill-feed-item";
-        div.innerHTML = `
-          <span class="kf-killer" style="color:${kf.killerColor}">${escapeHtml(kf.killerName)}</span>
-          <span class="kf-weapon">${kf.icon}</span>
-          <span class="kf-victim" style="color:${kf.victimColor}">${escapeHtml(kf.victimName)}</span>
-        `;
-        el.killFeedContainer.appendChild(div);
-      });
+      const div = document.createElement("div");
+      div.className = "kill-feed-item";
+      if (item.id) div.dataset.id = item.id;
+      div.innerHTML = `
+        <span class="kf-killer" style="color:${escapeHtml(item.killerColor || '#ffd166')}">${escapeHtml(item.killerName || 'Soldat')}</span>
+        <span class="kf-weapon">${escapeHtml(wIcon)}</span>
+        <span class="kf-victim" style="color:${escapeHtml(item.victimColor || '#ef4444')}">${escapeHtml(item.victimName || 'Motstander')}</span>
+      `;
+
+      // Prepend so newest kill slides in at the top without rebuilding existing elements
+      el.killFeedContainer.prepend(div);
+
+      // Cap at 5 messages on screen
+      while (el.killFeedContainer.children.length > 5) {
+        el.killFeedContainer.lastElementChild.remove();
+      }
+
+      // Automatically fade out and remove after 4.5 seconds
+      setTimeout(() => {
+        div.classList.add("kf-fading");
+        setTimeout(() => {
+          if (div.parentNode) div.remove();
+        }, 400);
+      }, 4500);
     }
   }
 
@@ -2644,20 +2667,43 @@
     // Ingest kill feed if reported by server
     if (data.killFeed && data.killFeed.length > 0) {
       data.killFeed.forEach(kf => {
+        const kfId = kf.id;
+        if (kfId && state.seenKillFeedIds.has(kfId)) {
+          return;
+        }
+
         const myId = state.playerId || state.player.id || "player_local";
         const isMyKill = kf.killerId === myId;
         const resolvedKillerName = (kf.killerName === "Omgivelse" && isMyKill) ? (state.playerName || state.player.name) : kf.killerName;
         const resolvedKillerColor = (kf.killerName === "Omgivelse" && isMyKill) ? (state.playerColor || state.player.color) : kf.killerColor;
-        const normalizedItem = {
-          ...kf,
-          killerName: resolvedKillerName,
-          killerColor: resolvedKillerColor,
-        };
-        const exists = state.killFeed.some(existing =>
-          existing.killerName === normalizedItem.killerName && existing.victimName === normalizedItem.victimName && Math.abs((existing.timestamp || 0) - (normalizedItem.time ? normalizedItem.time * 1000 : 0)) < 3000
+
+        const kfTime = kf.time ? kf.time * 1000 : Date.now();
+        const duplicate = state.killFeed.some(existing =>
+          (kfId && existing.id === kfId) ||
+          (existing.killerName === resolvedKillerName &&
+           existing.victimName === kf.victimName &&
+           Math.abs((existing.timestamp || 0) - kfTime) < 4000)
         );
-        if (!exists) {
-          addKillFeedItem(normalizedItem);
+
+        if (kfId) {
+          state.seenKillFeedIds.add(kfId);
+          if (state.seenKillFeedIds.size > 200) {
+            const first = state.seenKillFeedIds.values().next().value;
+            state.seenKillFeedIds.delete(first);
+          }
+        }
+
+        if (!duplicate) {
+          addKillFeedItem({
+            id: kfId,
+            killerId: kf.killerId,
+            killerName: resolvedKillerName,
+            killerColor: resolvedKillerColor,
+            victimName: kf.victimName,
+            victimColor: kf.victimColor,
+            weapon: kf.weapon,
+            timestamp: kfTime,
+          });
         }
       });
     }
@@ -2744,6 +2790,9 @@
 
     state.bullets = [];
     state.particles = [];
+    state.killFeed = [];
+    state.seenKillFeedIds.clear();
+    if (el.killFeedContainer) el.killFeedContainer.innerHTML = "";
 
     // Spawn shooting practice targets
     spawnSoloDummies(state.currentMap);
@@ -2781,6 +2830,9 @@
     state.opponents = {};
     state.bullets = [];
     state.particles = [];
+    state.killFeed = [];
+    state.seenKillFeedIds.clear();
+    if (el.killFeedContainer) el.killFeedContainer.innerHTML = "";
 
     showView("game");
     updateWeaponHUD();
@@ -2801,6 +2853,9 @@
   function handleForfeitAndLeave() {
     stopSimulation();
     stopRoomSync();
+    state.killFeed = [];
+    state.seenKillFeedIds.clear();
+    if (el.killFeedContainer) el.killFeedContainer.innerHTML = "";
 
     if (state.isSolo) {
       showView("lobby");

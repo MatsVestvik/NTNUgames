@@ -507,13 +507,19 @@ class KuleregnRoom:
                     self.status = "finished"
                     self.bump()
 
-    def register_kill(self, killer_id: str, victim_id: str, weapon_id: str = "pistol") -> None:
+    def register_kill(self, killer_id: str, victim_id: str, weapon_id: str = "cannon", event_id: Optional[str] = None) -> None:
         with self.lock:
-            killer = self.players.get(killer_id)
             victim = self.players.get(victim_id)
             if not victim:
                 return
 
+            now = time.time()
+            # Prevent double kill registration on the same victim within 1.5 seconds
+            if now - victim.get("lastKilledAt", 0.0) < 1.5:
+                return
+            victim["lastKilledAt"] = now
+
+            killer = self.players.get(killer_id)
             victim["deaths"] = victim.get("deaths", 0) + 1
             victim["streak"] = 0
 
@@ -531,8 +537,9 @@ class KuleregnRoom:
             w_name = WEAPONS_SPEC.get(weapon_id, {}).get("name", weapon_id.title())
             w_icon = WEAPONS_SPEC.get(weapon_id, {}).get("icon", "")
 
+            feed_id = event_id or f"kf_{uuid.uuid4().hex[:8]}"
             event = {
-                "id": uuid.uuid4().hex[:6],
+                "id": feed_id,
                 "killerId": killer_id,
                 "killerName": killer_name,
                 "killerColor": killer_color,
@@ -542,7 +549,7 @@ class KuleregnRoom:
                 "weapon": weapon_id,
                 "weaponName": w_name,
                 "weaponIcon": w_icon,
-                "time": time.time(),
+                "time": now,
             }
             self.kill_feed.append(event)
             if len(self.kill_feed) > 10:
@@ -630,11 +637,12 @@ class KuleregnRoom:
                             target["health"] = 0
                             target["isDead"] = True
                             target["respawnTime"] = now + 2.5
-                            self.register_kill(attacker_id, target_id, weapon_id)
+                            client_kill_id = ev.get("clientKillId")
+                            self.register_kill(attacker_id, target_id, weapon_id, event_id=client_kill_id)
 
                 elif ev_type == "kill":
                     target_id = ev.get("victimId")
-                    attacker_id = ev.get("killerId") or player_id
+                    attacker_id = ev.get("attackerId") or ev.get("killerId") or player_id
                     if attacker_id in ("env", "Omgivelse", "", None) and player_id in self.players:
                         attacker_id = player_id
                     weapon_id = ev.get("weapon", "cannon")
@@ -643,7 +651,8 @@ class KuleregnRoom:
                         target["health"] = 0
                         target["isDead"] = True
                         target["respawnTime"] = now + 2.5
-                        self.register_kill(attacker_id, target_id, weapon_id)
+                        client_kill_id = ev.get("clientKillId")
+                        self.register_kill(attacker_id, target_id, weapon_id, event_id=client_kill_id)
 
                 elif ev_type == "pickup":
                     pass # Pickups disabled

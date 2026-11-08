@@ -691,45 +691,68 @@ body.kuleregn-page {
   flex-direction: column;
   align-items: flex-end;
   gap: 0.35rem;
-  max-width: 340px;
+  max-width: 360px;
+  pointer-events: none;
+  z-index: 100;
 }
 
 .kill-feed-container {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 0.35rem;
+  gap: 0.4rem;
+  pointer-events: none;
 }
 
 .kill-feed-item {
-  background: rgba(15, 23, 42, 0.88);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  padding: 0.3rem 0.65rem;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  padding: 0.32rem 0.7rem;
   border-radius: 8px;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 700;
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-  animation: slideInKill 0.25s ease-out;
+  gap: 0.45rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  animation: slideInKill 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+  pointer-events: none;
+  user-select: none;
+}
+
+.kill-feed-item.kf-fading {
+  opacity: 0 !important;
+  transform: translateX(20px) !important;
 }
 
 @keyframes slideInKill {
-  from { transform: translateX(30px); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+  from {
+    transform: translateX(36px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
+.kf-killer,
 .kfi-killer {
   font-weight: 800;
 }
 
+.kf-weapon,
 .kfi-weapon-icon {
-  font-size: 0.95rem;
+  font-size: 0.88rem;
+  color: #fb8500;
+  display: inline-flex;
+  align-items: center;
 }
 
+.kf-victim,
 .kfi-victim {
-  color: #94a3b8;
+  font-weight: 700;
 }
 
 /* Bottom HUD removed as requested */
