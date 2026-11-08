@@ -597,6 +597,8 @@ class KuleregnRoom:
                 if ev_type in ("hit", "damage"):
                     target_id = ev.get("targetId") or ev.get("victimId")
                     attacker_id = ev.get("attackerId") or ev.get("killerId") or player_id
+                    if attacker_id in ("env", "Omgivelse", "", None) and player_id in self.players:
+                        attacker_id = player_id
                     damage = int(ev.get("damage", 50))
                     weapon_id = ev.get("weapon", "cannon")
                     target = self.players.get(target_id)
@@ -633,6 +635,8 @@ class KuleregnRoom:
                 elif ev_type == "kill":
                     target_id = ev.get("victimId")
                     attacker_id = ev.get("killerId") or player_id
+                    if attacker_id in ("env", "Omgivelse", "", None) and player_id in self.players:
+                        attacker_id = player_id
                     weapon_id = ev.get("weapon", "cannon")
                     target = self.players.get(target_id)
                     if target and not target.get("isDead", False):

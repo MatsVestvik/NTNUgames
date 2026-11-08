@@ -613,6 +613,10 @@
 
     // Local Player Tank
     player: {
+      id: "player_local",
+      name: "Soldat",
+      color: "#ffd166",
+      avatar: "",
       x: 400,
       y: 400,
       angle: -Math.PI / 2,     // Turret facing angle (pointing UP initially)
@@ -835,6 +839,21 @@
     combatant.weapon = "cannon";
     combatant.ammo = Infinity;
     combatant.invulnerableUntil = performance.now() + 500; // 0.5s brief spawn grace
+    if (combatant === state.player) {
+      combatant.id = state.playerId || combatant.id || "player_local";
+      combatant.name = state.playerName || combatant.name || "Soldat";
+      combatant.color = state.playerColor || combatant.color || "#ffd166";
+      combatant.avatar = state.playerAvatar || combatant.avatar || "";
+    }
+  }
+
+  function getCombatantById(id) {
+    if (!id) return null;
+    const myId = state.playerId || state.player.id || "player_local";
+    if (id === myId || id === state.playerId || id === state.player.id || id === "player_local" || id === "solo_player") {
+      return state.player;
+    }
+    return state.opponents[id] || null;
   }
 
   // =========================================================================
@@ -923,6 +942,12 @@
   function damageCombatant(victim, damage, killer, weaponId) {
     if (victim.isDead) return;
 
+    // Resolve killer if missing
+    let actualKiller = killer;
+    if (!actualKiller && victim !== state.player) {
+      actualKiller = state.player;
+    }
+
     // Shield absorbs damage first
     let remaining = damage;
     if (victim.shield > 0) {
@@ -942,48 +967,54 @@
       state.camera.shake = Math.min(18, state.camera.shake + 6);
       playTone(160, 0.1, "sawtooth", 0.35);
       showDamageFeedback();
-    } else if (killer === state.player) {
+    } else if (actualKiller === state.player) {
       playHitConfirmation();
     }
 
     // Check Death
     if (victim.health <= 0) {
       victim.isDead = true;
-      victim.deaths++;
+      victim.deaths = (victim.deaths || 0) + 1;
       victim.streak = 0;
       victim.respawnTimer = 2.5;
 
       addDeathExplosion(victim.x, victim.y, victim.color);
 
-      if (killer) {
-        killer.kills++;
-        killer.score += 100;
-        killer.streak++;
-        if (killer.streak > killer.highestStreak) killer.highestStreak = killer.streak;
+      if (actualKiller) {
+        actualKiller.kills = (actualKiller.kills || 0) + 1;
+        actualKiller.score = (actualKiller.score || 0) + 100;
+        actualKiller.streak = (actualKiller.streak || 0) + 1;
+        if (actualKiller.streak > (actualKiller.highestStreak || 0)) {
+          actualKiller.highestStreak = actualKiller.streak;
+        }
 
-        if (killer === state.player) {
+        if (actualKiller === state.player) {
           playKillFanfare();
           state.camera.shake = 10;
-          if (killer.streak >= 3) {
-            triggerStreakBanner(killer.streak);
+          if (actualKiller.streak >= 3) {
+            triggerStreakBanner(actualKiller.streak);
           }
         }
       }
 
+      const killerName = actualKiller ? (actualKiller.name || (actualKiller === state.player ? (state.playerName || "Soldat") : "Soldat")) : "Omgivelse";
+      const killerColor = actualKiller ? (actualKiller.color || (actualKiller === state.player ? (state.playerColor || "#ffd166") : "#ffd166")) : "#94a3b8";
+      const killerId = actualKiller ? (actualKiller === state.player ? (state.playerId || "player_local") : actualKiller.id) : (state.playerId || "env");
+
       // Add to kill feed
       addKillFeedItem({
-        killerName: killer ? killer.name : "Omgivelse",
-        killerColor: killer ? killer.color : "#94a3b8",
-        victimName: victim.name,
-        victimColor: victim.color,
+        killerName: killerName,
+        killerColor: killerColor,
+        victimName: victim.name || "Motstander",
+        victimColor: victim.color || "#ef4444",
         weapon: weaponId || "cannon",
       });
 
-      // Report event to server if involved (attacker-authoritative to avoid duplicate event cascades)
-      if (!state.isSolo && (killer === state.player || (!killer && victim === state.player))) {
+      // Report event to server if online match and we are involved
+      if (!state.isSolo && (actualKiller === state.player || (!killer && victim === state.player))) {
         state.recentEvents.push({
           type: "kill",
-          killerId: killer ? killer.id : (state.playerId || "env"),
+          killerId: killerId,
           victimId: victim.id,
           weapon: weaponId || "cannon",
         });
@@ -992,10 +1023,11 @@
       checkMatchVictory();
     } else {
       // Victim took damage but survived - report hit to server (attacker reports to avoid duplicate damage)
-      if (!state.isSolo && (killer === state.player || (!killer && victim === state.player))) {
+      if (!state.isSolo && (actualKiller === state.player || (!killer && victim === state.player))) {
+        const attackerId = actualKiller === state.player ? (state.playerId || "player_local") : (actualKiller ? actualKiller.id : state.playerId);
         state.recentEvents.push({
           type: "hit",
-          attackerId: killer ? killer.id : state.playerId,
+          attackerId: attackerId,
           targetId: victim.id,
           damage: damage,
           weapon: weaponId || "cannon",
@@ -1328,6 +1360,11 @@
     p.ammo = Infinity;
     p.fireTimer = w.fireRate;
 
+    const myId = state.playerId || p.id || "player_local";
+    p.id = myId;
+    p.name = state.playerName || p.name || "Soldat";
+    p.color = state.playerColor || p.color || "#ffd166";
+
     const barrelDist = 26;
     const barrelX = p.x + Math.cos(p.angle) * barrelDist;
     const barrelY = p.y + Math.sin(p.angle) * barrelDist;
@@ -1337,9 +1374,9 @@
       const bAngle = p.angle + spreadAngle;
       state.bullets.push({
         id: `p_b_${Date.now()}_${Math.random()}`,
-        ownerId: state.playerId || "player_local",
-        ownerName: state.playerName,
-        ownerColor: state.playerColor,
+        ownerId: myId,
+        ownerName: p.name,
+        ownerColor: p.color,
         weapon: p.weapon,
         x: barrelX,
         y: barrelY,
@@ -1613,11 +1650,13 @@
 
       // 3. Collision with Combatants
       let hitCombatant = false;
+      const myId = state.playerId || state.player.id || "player_local";
       for (const c of allCombatants) {
-        if (c.id === b.ownerId || c.isDead) continue;
+        const cId = c.id || (c === state.player ? myId : null);
+        if (cId === b.ownerId || c.isDead) continue;
         if (Math.hypot(c.x - b.x, c.y - b.y) <= 22) {
           hitCombatant = true;
-          const killer = allCombatants.find(k => k.id === b.ownerId);
+          const killer = getCombatantById(b.ownerId);
 
           if (b.isRocket) {
             addRocketBlast(b.x, b.y);
@@ -1636,7 +1675,7 @@
   }
 
   function damageRadius(cx, cy, radius, maxDamage, attackerId, weaponId, allCombatants) {
-    const attacker = allCombatants.find(a => a.id === attackerId);
+    const attacker = getCombatantById(attackerId);
     for (const c of allCombatants) {
       if (c.isDead) continue;
       const dist = Math.hypot(c.x - cx, c.y - cy);
@@ -2677,11 +2716,20 @@
     // Ingest kill feed if reported by server
     if (data.killFeed && data.killFeed.length > 0) {
       data.killFeed.forEach(kf => {
+        const myId = state.playerId || state.player.id || "player_local";
+        const isMyKill = kf.killerId === myId;
+        const resolvedKillerName = (kf.killerName === "Omgivelse" && isMyKill) ? (state.playerName || state.player.name) : kf.killerName;
+        const resolvedKillerColor = (kf.killerName === "Omgivelse" && isMyKill) ? (state.playerColor || state.player.color) : kf.killerColor;
+        const normalizedItem = {
+          ...kf,
+          killerName: resolvedKillerName,
+          killerColor: resolvedKillerColor,
+        };
         const exists = state.killFeed.some(existing =>
-          existing.killerName === kf.killerName && existing.victimName === kf.victimName && Math.abs((existing.timestamp || 0) - (kf.time ? kf.time * 1000 : 0)) < 3000
+          existing.killerName === normalizedItem.killerName && existing.victimName === normalizedItem.victimName && Math.abs((existing.timestamp || 0) - (normalizedItem.time ? normalizedItem.time * 1000 : 0)) < 3000
         );
         if (!exists) {
-          addKillFeedItem(kf);
+          addKillFeedItem(normalizedItem);
         }
       });
     }
@@ -2756,10 +2804,11 @@
     state.roomStatus = "playing";
 
     // Spawn player with chosen loadout
-    spawnPlayer(state.player, state.currentMap);
+    state.player.id = "solo_player";
     state.player.name = state.playerName || "Soldat";
     state.player.color = state.playerColor || "#ffd166";
     state.player.avatar = state.playerAvatar || "char:h1:c_ffd166:r1:e1:m1";
+    spawnPlayer(state.player, state.currentMap);
     state.player.kills = 0;
     state.player.deaths = 0;
     state.player.score = 0;
@@ -2795,10 +2844,11 @@
     state.timeLimit = data.timeLimit || state.timeLimit;
     state.timeRemaining = data.timeRemaining !== undefined ? data.timeRemaining : state.timeLimit;
 
+    state.player.id = state.playerId;
+    state.player.name = state.playerName || "Soldat";
+    state.player.color = state.playerColor || "#ffd166";
+    state.player.avatar = state.playerAvatar || "";
     spawnPlayer(state.player, state.currentMap);
-    state.player.name = state.playerName;
-    state.player.color = state.playerColor;
-    state.player.avatar = state.playerAvatar;
 
     state.opponents = {};
     state.bullets = [];
@@ -2946,9 +2996,19 @@
 
           if (myPlayer) {
             state.playerId = myPlayer.id;
-            if (myPlayer.name) state.playerName = myPlayer.name;
-            if (myPlayer.color) state.playerColor = myPlayer.color;
-            if (myPlayer.avatar) state.playerAvatar = myPlayer.avatar;
+            state.player.id = myPlayer.id;
+            if (myPlayer.name) {
+              state.playerName = myPlayer.name;
+              state.player.name = myPlayer.name;
+            }
+            if (myPlayer.color) {
+              state.playerColor = myPlayer.color;
+              state.player.color = myPlayer.color;
+            }
+            if (myPlayer.avatar) {
+              state.playerAvatar = myPlayer.avatar;
+              state.player.avatar = myPlayer.avatar;
+            }
           }
 
           launchOnlineMatch(data);
