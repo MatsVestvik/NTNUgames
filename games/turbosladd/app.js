@@ -3435,7 +3435,10 @@
             state.myCar.accessories = me.accessories;
             localStorage.setItem("ts_driver_accessories", JSON.stringify(me.accessories));
           }
-          state.myCar.isReady = Boolean(me.isReady);
+          const isCurrentlyInGarage = el.inGameGarage && !el.inGameGarage.classList.contains("hidden");
+          if (!isCurrentlyInGarage) {
+            state.myCar.isReady = Boolean(me.isReady);
+          }
         }
 
         // Sync opponent cars on startline
@@ -3690,10 +3693,23 @@
       if (myPlayer.name) {
         state.driverName = myPlayer.name;
       }
-      state.myCar.isReady = Boolean(myPlayer.isReady);
       localStorage.setItem("ts_driver_color", state.driverColor);
       localStorage.setItem("ts_driver_wheel_id", state.driverWheelId);
       localStorage.setItem("ts_driver_accessories", JSON.stringify(state.driverAccessories));
+    }
+
+    // Always start unready in the pre-race lobby phase so the customize garage opens!
+    if (state.roomStatus === "lobby") {
+      state.myCar.isReady = false;
+      if (state.mode === "online" && state.roomCode && state.playerId) {
+        fetch("/api/turbosladd/ready", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ roomCode: state.roomCode, playerId: state.playerId, ready: false }),
+        }).catch(() => {});
+      }
+    } else {
+      state.myCar.isReady = myPlayer ? Boolean(myPlayer.isReady) : false;
     }
 
     state.myCar.bodyId = 1;

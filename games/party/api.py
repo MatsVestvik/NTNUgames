@@ -2656,7 +2656,7 @@ class PartyAPI:
                                         "bodyId": int(pdata.get("bodyId", 1)),
                                         "wheelId": int(pdata.get("wheelId", 1)),
                                         "isHost": False,
-                                        "isReady": True,
+                                        "isReady": False,
                                         "slot": slot,
                                         "x": 0.0,
                                         "y": 0.0,

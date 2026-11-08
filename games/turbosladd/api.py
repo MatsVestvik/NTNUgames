@@ -349,7 +349,6 @@ class TurbosladdRoom:
                     remaining = [pl for pl in self.players.values() if not pl.get("left")]
                     if remaining:
                         remaining[0]["isHost"] = True
-                        remaining[0]["isReady"] = True
                         self.host_id = remaining[0]["id"]
                 self._check_status_transitions()
                 self.bump()
@@ -489,7 +488,7 @@ class TurbosladdRoom:
             self.finish_timeout = None
             self.race_end_time = None
             for p in self.players.values():
-                p["isReady"] = p.get("isHost", False)
+                p["isReady"] = False
                 p["lap"] = 1
                 p["checkpoint"] = 0
                 p["finished"] = False
@@ -629,8 +628,8 @@ class TurbosladdAPI:
                                 host_avatar=host_avatar,
                             )
                             room.host_id = p_room.host_id
-                            room.status = "countdown"
-                            room.countdown_start = time.time()
+                            room.status = "lobby"
+                            room.countdown_start = None
                             room.players = {}
                             room.players[p_room.host_id] = {
                                 "id": p_room.host_id,
@@ -639,7 +638,7 @@ class TurbosladdAPI:
                                 "avatar": host_avatar,
                                 "carModel": "gt",
                                 "isHost": True,
-                                "isReady": True,
+                                "isReady": False,
                                 "slot": 0,
                                 "x": 0.0, "y": 0.0, "angle": 0.0, "vx": 0.0, "vy": 0.0, "speed": 0.0,
                                 "isDrifting": False, "lap": 1, "checkpoint": 0, "finished": False,
@@ -657,7 +656,7 @@ class TurbosladdAPI:
                                         "avatar": pdata.get("avatar", ""),
                                         "carModel": "gt",
                                         "isHost": False,
-                                        "isReady": True,
+                                        "isReady": False,
                                         "slot": slot,
                                         "x": 0.0, "y": 0.0, "angle": 0.0, "vx": 0.0, "vy": 0.0, "speed": 0.0,
                                         "isDrifting": False, "lap": 1, "checkpoint": 0, "finished": False,
