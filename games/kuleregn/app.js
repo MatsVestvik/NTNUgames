@@ -247,17 +247,8 @@
     // Pickups removed as requested
     const pickups = [];
 
-    // Red Explosive Barrels
-    const barrels = [
-      { id: "rust_bar_1", x: 915, y: 915, r: 16, hp: 35 },
-      { id: "rust_bar_2", x: 1285, y: 915, r: 16, hp: 35 },
-      { id: "rust_bar_3", x: 915, y: 1285, r: 16, hp: 35 },
-      { id: "rust_bar_4", x: 1285, y: 1285, r: 16, hp: 35 },
-      { id: "rust_bar_5", x: 550, y: 930, r: 16, hp: 35 },
-      { id: "rust_bar_6", x: 1650, y: 1270, r: 16, hp: 35 },
-      { id: "rust_bar_7", x: 1100, y: 720, r: 16, hp: 35 },
-      { id: "rust_bar_8", x: 1100, y: 1480, r: 16, hp: 35 },
-    ];
+    // Explosives removed as requested
+    const barrels = [];
 
     return {
       id: "rust",
@@ -350,14 +341,8 @@
     // Pickups removed as requested
     const pickups = [];
 
-    const barrels = [
-      { id: "bar_1", x: w / 2 - 180, y: h / 2 - 180, r: 16, hp: 40 },
-      { id: "bar_2", x: w / 2 + 180, y: h / 2 - 180, r: 16, hp: 40 },
-      { id: "bar_3", x: w / 2 - 180, y: h / 2 + 180, r: 16, hp: 40 },
-      { id: "bar_4", x: w / 2 + 180, y: h / 2 + 180, r: 16, hp: 40 },
-      { id: "bar_5", x: 500, y: h - 400, r: 16, hp: 40 },
-      { id: "bar_6", x: w - 500, y: 400, r: 16, hp: 40 },
-    ];
+    // Explosives removed as requested
+    const barrels = [];
 
     return {
       id: "gloshaugen_arena",
@@ -432,14 +417,8 @@
     // Pickups removed as requested
     const pickups = [];
 
-    const barrels = [
-      { id: "ch_bar_1", x: w / 2 - 220, y: h / 2 - 220, r: 16, hp: 40 },
-      { id: "ch_bar_2", x: w / 2 + 220, y: h / 2 - 220, r: 16, hp: 40 },
-      { id: "ch_bar_3", x: w / 2 - 220, y: h / 2 + 220, r: 16, hp: 40 },
-      { id: "ch_bar_4", x: w / 2 + 220, y: h / 2 + 220, r: 16, hp: 40 },
-      { id: "ch_bar_5", x: 260, y: h / 2, r: 16, hp: 40 },
-      { id: "ch_bar_6", x: w - 260, y: h / 2, r: 16, hp: 40 },
-    ];
+    // Explosives removed as requested
+    const barrels = [];
 
     return {
       id: "cyber_hangar",
@@ -1629,25 +1608,6 @@
         continue;
       }
 
-      // 2. Collision with Explosive Barrels
-      let hitBarrel = false;
-      for (const barrel of map.barrels) {
-        if (barrel.hp > 0 && Math.hypot(barrel.x - b.x, barrel.y - b.y) <= barrel.r + 4) {
-          hitBarrel = true;
-          barrel.hp -= b.damage;
-          addDamageSparks(barrel.x, barrel.y, "#ef4444");
-          if (barrel.hp <= 0) {
-            addRocketBlast(barrel.x, barrel.y);
-            damageRadius(barrel.x, barrel.y, 180, 120, b.ownerId, "barrel", allCombatants);
-          }
-          break;
-        }
-      }
-      if (hitBarrel) {
-        state.bullets.splice(i, 1);
-        continue;
-      }
-
       // 3. Collision with Combatants
       let hitCombatant = false;
       const myId = state.playerId || state.player.id || "player_local";
@@ -1893,27 +1853,6 @@
       ctx.lineTo(map.width - 40, y);
     }
     ctx.stroke();
-
-    // 5. Render Explosive Barrels
-    for (const b of map.barrels) {
-      if (b.hp <= 0) continue;
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-      ctx.fillStyle = "#b91c1c";
-      ctx.fill();
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = "#fca5a5";
-      ctx.stroke();
-
-      // Hazard Stripes
-      ctx.font = "bold 13px sans-serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillStyle = "#fef08a";
-      ctx.fillText("!", b.x, b.y);
-      ctx.restore();
-    }
 
     // 6. Render Map Obstacles (Shipping Containers, Pillars, Pipes, Sandbags, Concrete, Crates)
     for (const obs of map.obstacles) {
@@ -2235,17 +2174,6 @@
         Math.max(1, obs.w * scale),
         Math.max(1, obs.h * scale)
       );
-    }
-
-    // Explosive Barrels
-    if (map.barrels) {
-      for (const b of map.barrels) {
-        if (b.hp <= 0) continue;
-        ctx.beginPath();
-        ctx.arc(offsetX + b.x * scale, offsetY + b.y * scale, 1.8, 0, Math.PI * 2);
-        ctx.fillStyle = "#ef4444";
-        ctx.fill();
-      }
     }
 
     // Alive Opponents

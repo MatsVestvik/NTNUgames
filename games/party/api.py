@@ -2492,27 +2492,59 @@ class PartyAPI:
                         with _rooms_lock:
                             host_player = room.players.get(room.host_id, {})
                             time_ctrl = int(settings.get("timeControl", 300))
+                            color_pref = settings.get("colorPref", "random")
+                            host_is_white = True
+                            if color_pref == "host_black":
+                                host_is_white = False
+                            elif color_pref == "random":
+                                host_is_white = (random.random() < 0.5)
+
                             s_room = SjakkRoom(
                                 code=code,
-                                host_name=host_player.get("name", "Hvit"),
+                                host_name=host_player.get("name", "Spiller"),
                                 host_avatar=host_player.get("avatar", "charbear"),
                                 time_control=time_ctrl
                             )
                             s_room.host_id = room.host_id
-                            s_room.white_player["id"] = room.host_id
-                            # If second player is in the party, assign as Black
+
                             other_players = [p for pid, p in room.players.items() if pid != room.host_id]
-                            if other_players:
-                                p2 = other_players[0]
-                                s_room.black_player = {
-                                    "id": p2["id"],
-                                    "name": p2["name"],
-                                    "avatar": p2["avatar"],
-                                    "color": "b",
-                                    "isHost": False,
-                                    "lastSeen": time.time(),
-                                }
-                                s_room.start_game_if_ready()
+                            if host_is_white:
+                                s_room.white_player["id"] = room.host_id
+                                s_room.white_player["name"] = host_player.get("name", "Hvit")
+                                s_room.white_player["avatar"] = host_player.get("avatar", "charbear")
+                                if other_players:
+                                    p2 = other_players[0]
+                                    s_room.black_player = {
+                                        "id": p2["id"],
+                                        "name": p2["name"],
+                                        "avatar": p2["avatar"],
+                                        "color": "b",
+                                        "isHost": False,
+                                        "lastSeen": time.time(),
+                                    }
+                                    s_room.start_game_if_ready()
+                            else:
+                                if other_players:
+                                    p2 = other_players[0]
+                                    s_room.white_player = {
+                                        "id": p2["id"],
+                                        "name": p2["name"],
+                                        "avatar": p2["avatar"],
+                                        "color": "w",
+                                        "isHost": False,
+                                        "lastSeen": time.time(),
+                                    }
+                                    s_room.black_player = {
+                                        "id": room.host_id,
+                                        "name": host_player.get("name", "Svart"),
+                                        "avatar": host_player.get("avatar", "charbear"),
+                                        "color": "b",
+                                        "isHost": True,
+                                        "lastSeen": time.time(),
+                                    }
+                                    s_room.start_game_if_ready()
+                                else:
+                                    s_room.white_player["id"] = room.host_id
                             sjakk_rooms[code] = s_room
                     except Exception as err:
                         print("Error creating sjakk party room bridge:", err)
@@ -2534,6 +2566,10 @@ class PartyAPI:
                             k_room.players[0]["id"] = room.host_id
                             k_room.players[0]["avatar"] = host_player.get("avatar", "charbear")
                             k_room.players[0]["color"] = host_player.get("color") or extract_color_from_avatar(host_player.get("avatar"), PLAYER_CONFIGS[0]["color"])
+                            wall_setting = settings.get("walls", "standard")
+                            base_walls = 5 if wall_setting == "fewer" else (15 if wall_setting == "more" else 10)
+                            p_walls = base_walls if len(room.players) == 2 else max(3, base_walls // 2)
+                            k_room.players[0]["walls"] = p_walls
                             for pid, pdata in room.players.items():
                                 if pid != room.host_id and len(k_room.players) < 16:
                                     idx = len(k_room.players)
@@ -2546,7 +2582,7 @@ class PartyAPI:
                                         "color": p_color,
                                         "colorName": pdata.get("colorName", cfg["colorName"]),
                                         "pos": list(cfg["start"]),
-                                        "walls": 10 if len(room.players) == 2 else 5,
+                                        "walls": p_walls,
                                         "goalDesc": cfg["goalDesc"],
                                         "isHost": False,
                                         "lastSeen": time.time(),

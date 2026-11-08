@@ -1622,9 +1622,8 @@ body.party-in-lobby .lg-card-right {
   flex-direction: column !important;
   align-items: flex-end !important;
   justify-content: center !important;
-  flex: 0 0 auto !important;
-  min-width: 120px !important;
-  max-width: 240px !important;
+  flex: 0 0 220px !important;
+  width: 220px !important;
   position: relative !important;
   z-index: 2 !important;
   box-sizing: border-box !important;
@@ -1770,6 +1769,18 @@ body.party-in-lobby .lobby-game-card:hover .lg-card-bg-icon {
   .lobby-games-list {
     max-height: 540px;
     padding-bottom: 2rem;
+  }
+}
+
+@media (max-width: 700px) {
+  body.party-in-lobby .lobby-game-card {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+  body.party-in-lobby .lg-card-right {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    align-items: flex-start !important;
   }
 }
 

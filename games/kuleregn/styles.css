@@ -732,12 +732,10 @@ body.kuleregn-page {
   color: #94a3b8;
 }
 
-/* Bottom Left: Vitals (HP & Shield) */
-.hud-bottom-left {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  width: 260px;
+/* Bottom HUD removed as requested */
+.hud-bottom-left,
+.hud-bottom-right {
+  display: none !important;
 }
 
 .vitals-container {

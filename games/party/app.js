@@ -89,7 +89,10 @@
     selectRoundsDraw: document.getElementById("selectRoundsDraw"),
     btnStartSjakk: document.getElementById("btnStartSjakk"),
     selectTimerSjakk: document.getElementById("selectTimerSjakk"),
+    selectColorSjakk: document.getElementById("selectColorSjakk"),
     btnStartKorridorer: document.getElementById("btnStartKorridorer"),
+    selectBoardKorridorer: document.getElementById("selectBoardKorridorer"),
+    selectWallsKorridorer: document.getElementById("selectWallsKorridorer"),
     btnStartImposter: document.getElementById("btnStartImposter"),
     selectTimerImposter: document.getElementById("selectTimerImposter"),
     btnStartFargekoden: document.getElementById("btnStartFargekoden"),
@@ -792,12 +795,16 @@
       id: "sjakk",
       settings: () => ({
         timeControl: parseInt(el.selectTimerSjakk?.value || "300", 10),
+        colorPref: el.selectColorSjakk?.value || "random",
       }),
     },
     {
       cardId: "gameCardKorridorer",
       id: "korridorer",
-      settings: () => ({}),
+      settings: () => ({
+        board: el.selectBoardKorridorer?.value || "9x9",
+        walls: el.selectWallsKorridorer?.value || "standard",
+      }),
     },
     {
       cardId: "gameCardTurbosladd",

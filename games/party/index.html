@@ -8,7 +8,7 @@
   <link rel="icon" type="image/x-icon" href="/favicon.ico" />
   <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png" />
   <link rel="apple-touch-icon" href="/favicon.png" />
-  <link rel="stylesheet" href="/party/styles.css?v=2.8" />
+  <link rel="stylesheet" href="/party/styles.css?v=2.9" />
   <link rel="stylesheet" href="/character/character-creator.css?v=2.1" />
   <link rel="stylesheet" href="/parallax-bg.css?v=2.1" />
 </head>
@@ -141,236 +141,262 @@
             <div class="lobby-games-list" id="lobbyGamesList">
               <!-- Game 1: Ordbombe -->
               <div class="lobby-game-card active-playable" id="gameCardOrdbombe" data-min-players="1">
-            <div class="lg-card-bg-icon">
-              <img src="/ordbombe/assets/icon.png?v=2.0" alt="" aria-hidden="true" />
-            </div>
-            <div class="lg-card-left">
-              <div>
-                <div class="lg-card-title-row">
-                  <h4 class="lg-card-title">Ordbombe</h4>
-                  <span class="lg-card-badge badge-ready">Klar til spill</span>
+                <div class="lg-card-bg-icon">
+                  <img src="/ordbombe/assets/icon.png?v=2.0" alt="" aria-hidden="true" />
                 </div>
-                <p class="lg-card-desc">
-                  Tast inn et gyldig norsk ord som inneholder stavelsen før bomben eksploderer på din mobil!
-                </p>
-                <div class="lg-card-meta">
-                  <span>1–16 spillere</span> • <span>6–12s runder</span> • <span>495 000+ ord</span>
+                <div class="lg-card-left">
+                  <div>
+                    <div class="lg-card-title-row">
+                      <h4 class="lg-card-title">Ordbombe</h4>
+                      <span class="lg-card-badge badge-ready">Klar til spill</span>
+                    </div>
+                    <p class="lg-card-desc">
+                      Tast inn et gyldig norsk ord som inneholder stavelsen før bomben eksploderer på din mobil!
+                    </p>
+                    <div class="lg-card-meta">
+                      <span>1–16 spillere</span> • <span>6–12s runder</span> • <span>495 000+ ord</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="lg-card-right">
+                  <!-- Settings dropdowns -->
+                  <div class="lg-settings-inline">
+                    <img src="/settings.png" class="party-gear-icon" alt="" />
+                    <label>
+                      <span>Tid:</span>
+                      <select id="selectTimerParty" class="lg-select">
+                        <option value="6" selected>Standard (6s)</option>
+                        <option value="9">Rolig (9s)</option>
+                        <option value="12">Avslappet (12s)</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Nivå:</span>
+                      <select id="selectDiffParty" class="lg-select">
+                        <option value="medium">Middels</option>
+                        <option value="easy">Lett</option>
+                        <option value="hard">Vanskelig</option>
+                      </select>
+                    </label>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div class="lg-card-right">
-              <!-- Settings dropdowns -->
-              <div class="lg-settings-inline">
-                <img src="/settings.png" class="party-gear-icon" alt="" />
-                <label>
-                  <span>Tid:</span>
-                  <select id="selectTimerParty" class="lg-select">
-                    <option value="6" selected>Standard (6s)</option>
-                    <option value="9">Rolig (9s)</option>
-                    <option value="12">Avslappet (12s)</option>
-                  </select>
-                </label>
-                <label>
-                  <span>Nivå:</span>
-                  <select id="selectDiffParty" class="lg-select">
-                    <option value="medium">Middels</option>
-                    <option value="easy">Lett</option>
-                    <option value="hard">Vanskelig</option>
-                  </select>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <!-- Game 2: Tegn & Gjett (Flerspillerspill) -->
-          <div class="lobby-game-card active-playable" id="gameCardTegnOgGjett" data-min-players="2">
-            <div class="lg-card-bg-icon">
-              <img src="/tegn-og-gjett/assets/icon.png" alt="" aria-hidden="true" />
-            </div>
-            <div class="lg-card-left">
-              <div>
-                <div class="lg-card-title-row">
-                  <h4 class="lg-card-title">Tegn & Gjett</h4>
-                  <span class="lg-card-badge badge-ready">Klar til spill</span>
+              <!-- Game 2: Tegn & Gjett (Flerspillerspill) -->
+              <div class="lobby-game-card active-playable" id="gameCardTegnOgGjett" data-min-players="2">
+                <div class="lg-card-bg-icon">
+                  <img src="/tegn-og-gjett/assets/icon.png" alt="" aria-hidden="true" />
                 </div>
-                <p class="lg-card-desc">
-                  Én tegner det hemmelige ordet i sanntid, resten gjetter i lynrask chat på egen mobil!
-                </p>
-                <div class="lg-card-meta">
-                  <span>2–16 spillere</span> • <span>Live tegning</span> • <span>60–90s runder</span>
+                <div class="lg-card-left">
+                  <div>
+                    <div class="lg-card-title-row">
+                      <h4 class="lg-card-title">Tegn & Gjett</h4>
+                      <span class="lg-card-badge badge-ready">Klar til spill</span>
+                    </div>
+                    <p class="lg-card-desc">
+                      Én tegner det hemmelige ordet i sanntid, resten gjetter i lynrask chat på egen mobil!
+                    </p>
+                    <div class="lg-card-meta">
+                      <span>2–16 spillere</span> • <span>Live tegning</span> • <span>60–90s runder</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            <div class="lg-card-right">
-              <!-- Settings dropdowns -->
-              <div class="lg-settings-inline">
-                <img src="/settings.png" class="party-gear-icon" alt="" />
-                <label>
-                  <span>Tid:</span>
-                  <select id="selectTimerDraw" class="lg-select">
-                    <option value="60">60 sekunder</option>
-                    <option value="75" selected>75 sekunder</option>
-                    <option value="90">90 sekunder</option>
-                  </select>
-                </label>
-                <label>
-                  <span>Runder:</span>
-                  <select id="selectRoundsDraw" class="lg-select">
-                    <option value="2">2 runder</option>
-                    <option value="3" selected>3 runder</option>
-                    <option value="4">4 runder</option>
-                  </select>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <!-- Game 3: Sjakk (2-spillerspill) -->
-          <div class="lobby-game-card active-playable" id="gameCardSjakk" data-min-players="2">
-            <div class="lg-card-bg-icon">
-              <img src="/sjakk/assets/icon.png" alt="" aria-hidden="true" />
-            </div>
-            <div class="lg-card-left">
-              <div>
-                <div class="lg-card-title-row">
-                  <h4 class="lg-card-title">Sjakk</h4>
-                  <span class="lg-card-badge badge-ready">Klar til spill</span>
-                </div>
-                <p class="lg-card-desc">
-                  Klassisk 2-spillers sjakkduell i retro pikselstil. De to første spillerne styrer Hvit og Svart, resten ser på!
-                </p>
-                <div class="lg-card-meta">
-                  <span>2 spillere + tilskuere</span> • <span>3–10 min klokke</span>
+                <div class="lg-card-right">
+                  <!-- Settings dropdowns -->
+                  <div class="lg-settings-inline">
+                    <img src="/settings.png" class="party-gear-icon" alt="" />
+                    <label>
+                      <span>Tid:</span>
+                      <select id="selectTimerDraw" class="lg-select">
+                        <option value="60">60 sekunder</option>
+                        <option value="75" selected>75 sekunder</option>
+                        <option value="90">90 sekunder</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Runder:</span>
+                      <select id="selectRoundsDraw" class="lg-select">
+                        <option value="2">2 runder</option>
+                        <option value="3" selected>3 runder</option>
+                        <option value="4">4 runder</option>
+                      </select>
+                    </label>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div class="lg-card-right">
-              <div class="lg-settings-inline">
-                <img src="/settings.png" class="party-gear-icon" alt="" />
-                <label>
-                  <span>Tid:</span>
-                  <select id="selectTimerSjakk" class="lg-select">
-                    <option value="180">3 min (Lyn)</option>
-                    <option value="300" selected>5 min (Blitz)</option>
-                    <option value="600">10 min (Hurtig)</option>
-                    <option value="0">Ubegrenset</option>
-                  </select>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <!-- Game 4: Korridorer (2-16 spillere) -->
-          <div class="lobby-game-card active-playable" id="gameCardKorridorer" data-min-players="2">
-            <div class="lg-card-bg-icon">
-              <img src="/hub/assets/icons/korridorer.png" alt="" aria-hidden="true" />
-            </div>
-            <div class="lg-card-left">
-              <div>
-                <div class="lg-card-title-row">
-                  <h4 class="lg-card-title">Korridorer</h4>
-                  <span class="lg-card-badge badge-ready">Klar til spill</span>
+              <!-- Game 3: Sjakk (2-spillerspill) -->
+              <div class="lobby-game-card active-playable" id="gameCardSjakk" data-min-players="2">
+                <div class="lg-card-bg-icon">
+                  <img src="/sjakk/assets/icon.png" alt="" aria-hidden="true" />
                 </div>
-                <p class="lg-card-desc">
-                  Taktisk labyrintduell for 2–16 spillere. Flytt monsteret ditt eller sett opp vegger for å sperre motstanderne ute!
-                </p>
-                <div class="lg-card-meta">
-                  <span>2–16 spillere</span> • <span>Eget monster på brettet</span>
+                <div class="lg-card-left">
+                  <div>
+                    <div class="lg-card-title-row">
+                      <h4 class="lg-card-title">Sjakk</h4>
+                      <span class="lg-card-badge badge-ready">Klar til spill</span>
+                    </div>
+                    <p class="lg-card-desc">
+                      Klassisk 2-spillers sjakkduell i retro pikselstil. De to første spillerne styrer Hvit og Svart, resten ser på!
+                    </p>
+                    <div class="lg-card-meta">
+                      <span>2 spillere + tilskuere</span> • <span>3–10 min klokke</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            <div class="lg-card-right"></div>
-          </div>
-
-          <!-- Game 5: Turbosladd (1-16 spillere) -->
-          <div class="lobby-game-card active-playable" id="gameCardTurbosladd" data-min-players="1">
-            <div class="lg-card-bg-icon">
-              <img src="/assets/icons/turbosladd.png" alt="Turbosladd bil" aria-hidden="true" />
-            </div>
-            <div class="lg-card-left">
-              <div>
-                <div class="lg-card-title-row">
-                  <h4 class="lg-card-title">Turbosladd</h4>
-                  <span class="lg-card-badge badge-ready">Klar til spill</span>
-                </div>
-                <p class="lg-card-desc">
-                  Topp-ned 2D arkaderacing med ekte drifting! Hold gassen inne og sladd gjennom svingene mot vennene dine.
-                </p>
-                <div class="lg-card-meta">
-                  <span>1–16 spillere</span> • <span>Drifting &amp; Racing</span>
+                <div class="lg-card-right">
+                  <div class="lg-settings-inline">
+                    <img src="/settings.png" class="party-gear-icon" alt="" />
+                    <label>
+                      <span>Tid:</span>
+                      <select id="selectTimerSjakk" class="lg-select">
+                        <option value="180">3 min (Lyn)</option>
+                        <option value="300" selected>5 min (Blitz)</option>
+                        <option value="600">10 min (Hurtig)</option>
+                        <option value="0">Ubegrenset</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Farge:</span>
+                      <select id="selectColorSjakk" class="lg-select">
+                        <option value="random" selected>Tilfeldig farge</option>
+                        <option value="host_white">Vert er Hvit</option>
+                        <option value="host_black">Vert er Svart</option>
+                      </select>
+                    </label>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div class="lg-card-right">
-              <div class="lg-settings-inline">
-                <img src="/settings.png" class="party-gear-icon" alt="" />
-                <label>
-                  <span>Bane:</span>
-                  <select id="selectTrackTurbosladd" class="lg-select">
-                    <option value="rally_random" selected>Tilfeldig Rallyetappe</option>
-                    <option value="grand_prix">Skogsrally Grand Prix</option>
-                    <option value="fjord_drift">Fjordsvingen Rally</option>
-                    <option value="fjellpasset">Fjellpasset Rally</option>
-                  </select>
-                </label>
-                <label>
-                  <span>Runder:</span>
-                  <select id="selectLapsTurbosladd" class="lg-select">
-                    <option value="3" selected>3 runder</option>
-                    <option value="5">5 runder</option>
-                  </select>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <!-- Game 6: Kuleregn (1-16 spillere) -->
-          <div class="lobby-game-card active-playable" id="gameCardKuleregn" data-min-players="1">
-            <div class="lg-card-bg-icon">
-              <img src="/assets/icons/kuleregn.png" alt="Kuleregn blink" aria-hidden="true" />
-            </div>
-            <div class="lg-card-left">
-              <div>
-                <div class="lg-card-title-row">
-                  <h4 class="lg-card-title">Kuleregn</h4>
-                  <span class="lg-card-badge badge-ready">Klar til spill</span>
+              <!-- Game 4: Korridorer (2-16 spillere) -->
+              <div class="lobby-game-card active-playable" id="gameCardKorridorer" data-min-players="2">
+                <div class="lg-card-bg-icon">
+                  <img src="/hub/assets/icons/korridorer.png" alt="" aria-hidden="true" />
                 </div>
-                <p class="lg-card-desc">
-                  Topp-ned 2D panserkamp på Rust-arenaen! Kjør stridsvogn med WASD, sikt med piltastene og avfyr med mellomrom.
-                </p>
-                <div class="lg-card-meta">
-                  <span>1–16 spillere</span> • <span>Stridsvognkamp</span>
+                <div class="lg-card-left">
+                  <div>
+                    <div class="lg-card-title-row">
+                      <h4 class="lg-card-title">Korridorer</h4>
+                      <span class="lg-card-badge badge-ready">Klar til spill</span>
+                    </div>
+                    <p class="lg-card-desc">
+                      Taktisk labyrintduell for 2–16 spillere. Flytt monsteret ditt eller sett opp vegger for å sperre motstanderne ute!
+                    </p>
+                    <div class="lg-card-meta">
+                      <span>2–16 spillere</span> • <span>Eget monster på brettet</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="lg-card-right">
+                  <div class="lg-settings-inline">
+                    <img src="/settings.png" class="party-gear-icon" alt="" />
+                    <label>
+                      <span>Brett:</span>
+                      <select id="selectBoardKorridorer" class="lg-select">
+                        <option value="9x9" selected>Klassisk 9×9</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Vegger:</span>
+                      <select id="selectWallsKorridorer" class="lg-select">
+                        <option value="standard" selected>Standard (10/5)</option>
+                        <option value="fewer">Færre (5/3)</option>
+                        <option value="more">Ekstra (15/8)</option>
+                      </select>
+                    </label>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div class="lg-card-right">
-              <div class="lg-settings-inline">
-                <img src="/settings.png" class="party-gear-icon" alt="" />
-                <label>
-                  <span>Bane:</span>
-                  <select id="selectMapKuleregn" class="lg-select">
-                    <option value="rust" selected>Rust (Scrapyard)</option>
-                    <option value="gloshaugen_arena">Gløshaugen Arena</option>
-                    <option value="cyber_hangar">Cyber Hangar</option>
-                  </select>
-                </label>
-                <label>
-                  <span>Drap for seier:</span>
-                  <select id="selectScoreLimitKuleregn" class="lg-select">
-                    <option value="10">10 drap</option>
-                    <option value="15" selected>15 drap</option>
-                    <option value="25">25 drap</option>
-                  </select>
-                </label>
+              <!-- Game 5: Turbosladd (1-16 spillere) -->
+              <div class="lobby-game-card active-playable" id="gameCardTurbosladd" data-min-players="1">
+                <div class="lg-card-bg-icon">
+                  <img src="/assets/icons/turbosladd.png" alt="Turbosladd bil" aria-hidden="true" />
+                </div>
+                <div class="lg-card-left">
+                  <div>
+                    <div class="lg-card-title-row">
+                      <h4 class="lg-card-title">Turbosladd</h4>
+                      <span class="lg-card-badge badge-ready">Klar til spill</span>
+                    </div>
+                    <p class="lg-card-desc">
+                      Topp-ned 2D arkaderacing med ekte drifting! Hold gassen inne og sladd gjennom svingene mot vennene dine.
+                    </p>
+                    <div class="lg-card-meta">
+                      <span>1–16 spillere</span> • <span>Drifting &amp; Racing</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="lg-card-right">
+                  <div class="lg-settings-inline">
+                    <img src="/settings.png" class="party-gear-icon" alt="" />
+                    <label>
+                      <span>Bane:</span>
+                      <select id="selectTrackTurbosladd" class="lg-select">
+                        <option value="rally_random" selected>Tilfeldig Rallyetappe</option>
+                        <option value="grand_prix">Skogsrally Grand Prix</option>
+                        <option value="fjord_drift">Fjordsvingen Rally</option>
+                        <option value="fjellpasset">Fjellpasset Rally</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Runder:</span>
+                      <select id="selectLapsTurbosladd" class="lg-select">
+                        <option value="3" selected>3 runder</option>
+                        <option value="5">5 runder</option>
+                      </select>
+                    </label>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+
+              <!-- Game 6: Kuleregn (1-16 spillere) -->
+              <div class="lobby-game-card active-playable" id="gameCardKuleregn" data-min-players="1">
+                <div class="lg-card-bg-icon">
+                  <img src="/assets/icons/kuleregn.png" alt="Kuleregn blink" aria-hidden="true" />
+                </div>
+                <div class="lg-card-left">
+                  <div>
+                    <div class="lg-card-title-row">
+                      <h4 class="lg-card-title">Kuleregn</h4>
+                      <span class="lg-card-badge badge-ready">Klar til spill</span>
+                    </div>
+                    <p class="lg-card-desc">
+                      Topp-ned 2D panserkamp på Rust-arenaen! Kjør stridsvogn med WASD, sikt med piltastene og avfyr med mellomrom.
+                    </p>
+                    <div class="lg-card-meta">
+                      <span>1–16 spillere</span> • <span>Stridsvognkamp</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="lg-card-right">
+                  <div class="lg-settings-inline">
+                    <img src="/settings.png" class="party-gear-icon" alt="" />
+                    <label>
+                      <span>Bane:</span>
+                      <select id="selectMapKuleregn" class="lg-select">
+                        <option value="rust" selected>Rust (Scrapyard)</option>
+                        <option value="gloshaugen_arena">Gløshaugen Arena</option>
+                        <option value="cyber_hangar">Cyber Hangar</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Drap for seier:</span>
+                      <select id="selectScoreLimitKuleregn" class="lg-select">
+                        <option value="10">10 drap</option>
+                        <option value="15" selected>15 drap</option>
+                        <option value="25">25 drap</option>
+                      </select>
+                    </label>
+                  </div>
+                </div>
+              </div>
         </div>
       </section>
     </div>
@@ -379,7 +405,7 @@
   </div>
 
   <script src="/character/character-creator.js?v=2.2"></script>
-  <script src="/party/app.js?v=2.6"></script>
+  <script src="/party/app.js?v=2.7"></script>
   <script src="/parallax-bg.js?v=2.1"></script>
 </body>
 
