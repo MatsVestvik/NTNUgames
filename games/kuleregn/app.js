@@ -785,10 +785,10 @@
       if (el.modalPodium) el.modalPodium.classList.add("hidden");
       if (el.startWeaponOverlay) el.startWeaponOverlay.classList.add("hidden");
       if (el.btnHeaderBack) {
-        el.btnHeaderBack.href = "/";
+        el.btnHeaderBack.href = state.roomCode ? `/party/?room=${encodeURIComponent(state.roomCode)}` : "/";
       }
       if (el.backBtnText) {
-        el.backBtnText.textContent = "Hub";
+        el.backBtnText.textContent = state.roomCode ? "Forlat rommet" : "Hub";
       }
       stopSimulation();
       stopRoomSync();
@@ -2965,7 +2965,7 @@
             el.btnHeaderBack.href = `/party/?room=${encodeURIComponent(roomParam)}`;
           }
           if (el.backBtnText) {
-            el.backBtnText.textContent = "Lounge";
+            el.backBtnText.textContent = "Forlat rommet";
           }
 
           let myPlayer = (data.players || []).find(p => p.id === state.playerId || p.isMe);
@@ -3065,7 +3065,7 @@
 
     // Header Back button
     el.btnHeaderBack?.addEventListener("click", (e) => {
-      if (state.view === "game") {
+      if (state.view === "game" || state.roomCode) {
         e.preventDefault();
         handleForfeitAndLeave();
       }

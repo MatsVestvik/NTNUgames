@@ -59,6 +59,7 @@
 
   // Elements
   const el = {
+    headerBackLink: document.getElementById("headerBackLink"),
     viewAuth: document.getElementById("viewAuth"),
     viewLobby: document.getElementById("viewLobby"),
     tabJoin: document.getElementById("tabJoin"),
@@ -128,6 +129,21 @@
     toast._timer = setTimeout(() => {
       toast.classList.remove("show");
     }, 3200);
+  }
+
+  function updateHeaderBackButton() {
+    if (!el.headerBackLink) return;
+    if (state.roomCode) {
+      el.headerBackLink.textContent = "‹ Forlat rommet";
+      el.headerBackLink.href = "#";
+      el.headerBackLink.title = "Forlat rommet";
+      el.headerBackLink.classList.add("is-leave-btn");
+    } else {
+      el.headerBackLink.textContent = "‹ Hub";
+      el.headerBackLink.href = "/";
+      el.headerBackLink.title = "Tilbake til Hub";
+      el.headerBackLink.classList.remove("is-leave-btn");
+    }
   }
 
   // Tabs switching (Join / Create)
@@ -287,6 +303,7 @@
     document.body.classList.add("party-in-lobby");
     el.viewAuth.classList.add("hidden");
     el.viewLobby.classList.remove("hidden");
+    updateHeaderBackButton();
 
     el.roomCodeDisplay.textContent = state.roomCode;
     el.hostHint.textContent = state.isHost ? "Du er vert" : `Tilkoblet som ${state.playerName}`;
@@ -449,6 +466,7 @@
             el.viewLobby.classList.add("hidden");
             el.viewAuth.classList.remove("hidden");
             history.replaceState(null, "", window.location.pathname);
+            updateHeaderBackButton();
             showToast("Du ble fjernet fra party-rommet av verten.");
             return;
           }
@@ -904,13 +922,25 @@
     el.viewLobby.classList.add("hidden");
     el.viewAuth.classList.remove("hidden");
     history.replaceState(null, "", window.location.pathname);
+    updateHeaderBackButton();
   }
 
-  el.btnLeaveRoom.addEventListener("click", () => {
-    if (confirm("Er du sikker på at du vil forlate party-rommet?")) {
-      leaveRoom();
+  el.headerBackLink?.addEventListener("click", (e) => {
+    if (state.roomCode) {
+      e.preventDefault();
+      if (confirm("Er du sikker på at du vil forlate party-rommet?")) {
+        leaveRoom();
+      }
     }
   });
+
+  if (el.btnLeaveRoom) {
+    el.btnLeaveRoom.addEventListener("click", () => {
+      if (confirm("Er du sikker på at du vil forlate party-rommet?")) {
+        leaveRoom();
+      }
+    });
+  }
 
   // Cheer / reaction button animations
   document.querySelectorAll(".cheer-btn").forEach(btn => {
@@ -979,5 +1009,7 @@
     el.tabCreate.click();
     el.inputCreateName.focus();
   }
+
+  updateHeaderBackButton();
 
 })();

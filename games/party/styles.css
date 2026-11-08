@@ -85,11 +85,29 @@ body {
   background: var(--bg-subtle);
   border: 1px solid var(--border);
   transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
 }
 
 .back-link:hover {
   color: var(--text);
   border-color: var(--border-strong);
+}
+
+.back-link.is-leave-btn {
+  color: #f87171 !important;
+  background: rgba(239, 68, 68, 0.12) !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+  font-weight: 700 !important;
+}
+
+.back-link.is-leave-btn:hover {
+  color: #ffffff !important;
+  background: rgba(239, 68, 68, 0.28) !important;
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.35) !important;
 }
 
 .brand-info {
@@ -1465,9 +1483,7 @@ body.party-in-lobby .player-waiting-box {
 }
 
 body.party-in-lobby .lobby-footer {
-  margin-top: auto;
-  padding-top: 0.3rem;
-  flex-shrink: 0;
+  display: none !important;
 }
 
 body.party-in-lobby .leave-btn {
