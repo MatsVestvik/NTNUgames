@@ -2263,11 +2263,14 @@ class PartyAPI:
                 room = PartyRoom(code, host_token, host_name, host_avatar)
                 _rooms[code] = room
 
+            host_player = room.players.get(room.host_id, {})
             return 200, {
                 "ok": True,
                 "roomCode": room.code,
                 "hostToken": host_token,
                 "playerId": room.host_id,
+                "avatar": host_player.get("avatar", host_avatar),
+                "color": host_player.get("color", "#ffd166"),
                 "message": f"Party-rom {room.code} opprettet!",
             }
 

@@ -92,25 +92,39 @@
   // Image element cache to avoid re-fetching
   const imageCache = new Map();
   const dataUrlCache = new Map();
+  const pendingImagePromises = new Map();
   let preloadingPromise = null;
 
   function preloadImage(relPath) {
     if (!relPath) return Promise.resolve(null);
     if (imageCache.has(relPath)) {
-      return Promise.resolve(imageCache.get(relPath));
+      const cached = imageCache.get(relPath);
+      if (cached && cached.complete && cached.naturalWidth > 0) {
+        return Promise.resolve(cached);
+      }
     }
-    return new Promise((resolve, reject) => {
+    if (pendingImagePromises.has(relPath)) {
+      return pendingImagePromises.get(relPath);
+    }
+    const promise = new Promise((resolve) => {
       const img = new Image();
-      img.crossOrigin = "anonymous";
       img.onload = () => {
-        imageCache.set(relPath, img);
-        resolve(img);
+        pendingImagePromises.delete(relPath);
+        if (img.naturalWidth > 0) {
+          imageCache.set(relPath, img);
+          resolve(img);
+        } else {
+          resolve(null);
+        }
       };
       img.onerror = () => {
+        pendingImagePromises.delete(relPath);
         resolve(null);
       };
       img.src = ASSET_BASE + relPath;
     });
+    pendingImagePromises.set(relPath, promise);
+    return promise;
   }
 
   function preloadAllAssets() {
@@ -150,6 +164,11 @@
         dataUrlCache.clear();
         if (typeof window !== "undefined") {
           window.dispatchEvent(new CustomEvent("character-creator-ready"));
+          window.dispatchEvent(
+            new CustomEvent("spillhjornet:characterUpdated", {
+              detail: { config: getSavedCharacter(), encoded: getSavedConfigString() }
+            })
+          );
         }
       })
       .catch(() => {});
@@ -257,6 +276,16 @@
     return opt ? opt.file : null;
   }
 
+  function drawFallbackHead(ctx, headColor) {
+    ctx.fillStyle = headColor || "#ffd166";
+    ctx.beginPath();
+    ctx.arc(32, 32, 26, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+
   /**
    * Tints the circle head image onto an offscreen canvas.
    * Pure white (255) pixels receive the full headColor.
@@ -264,36 +293,44 @@
    * Black outline (0) and transparent pixels are preserved.
    */
   function createTintedHeadCanvas(headImg, headColorHex) {
-    const canvas = document.createElement("canvas");
-    canvas.width = 64;
-    canvas.height = 64;
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    ctx.drawImage(headImg, 0, 0);
-
-    const imgData = ctx.getImageData(0, 0, 64, 64);
-    const data = imgData.data;
-    const { r: tr, g: tg, b: tb } = hexToRgb(headColorHex);
-
-    for (let i = 0; i < data.length; i += 4) {
-      const a = data[i + 3];
-      if (a === 0) continue;
-
-      const r = data[i];
-      const g = data[i + 1];
-      const b = data[i + 2];
-
-      // Keep black outline intact
-      if (r === 0 && g === 0 && b === 0) continue;
-
-      // Grayscale shading factor
-      const factor = r / 255.0;
-      data[i] = Math.round(tr * factor);
-      data[i + 1] = Math.round(tg * factor);
-      data[i + 2] = Math.round(tb * factor);
+    if (!headImg || !headImg.complete || headImg.naturalWidth === 0) {
+      return null;
     }
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = 64;
+      canvas.height = 64;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      ctx.drawImage(headImg, 0, 0);
 
-    ctx.putImageData(imgData, 0, 0);
-    return canvas;
+      const imgData = ctx.getImageData(0, 0, 64, 64);
+      const data = imgData.data;
+      const { r: tr, g: tg, b: tb } = hexToRgb(headColorHex);
+
+      for (let i = 0; i < data.length; i += 4) {
+        const a = data[i + 3];
+        if (a === 0) continue;
+
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+
+        // Keep black outline intact
+        if (r === 0 && g === 0 && b === 0) continue;
+
+        // Grayscale shading factor
+        const factor = r / 255.0;
+        data[i] = Math.round(tr * factor);
+        data[i + 1] = Math.round(tg * factor);
+        data[i + 2] = Math.round(tb * factor);
+      }
+
+      ctx.putImageData(imgData, 0, 0);
+      return canvas;
+    } catch (e) {
+      console.warn("createTintedHeadCanvas fallback:", e);
+      return null;
+    }
   }
 
   /**
@@ -307,56 +344,64 @@
 
     // 1. Circle Head (always HEAD_FILE)
     const headImg = imageCache.get(HEAD_FILE);
-    if (headImg && headImg.complete) {
+    let headDrawn = false;
+    if (headImg && headImg.complete && headImg.naturalWidth > 0) {
       const tinted = createTintedHeadCanvas(headImg, cfg.headColor);
-      ctx.drawImage(tinted, 0, 0, canvas.width, canvas.height);
-    } else {
+      if (tinted) {
+        ctx.drawImage(tinted, 0, 0, canvas.width, canvas.height);
+        headDrawn = true;
+      }
+    }
+    if (!headDrawn) {
       canvas.__incomplete = true;
-      ctx.fillStyle = cfg.headColor || "#ffd166";
-      ctx.beginPath();
-      ctx.arc(32, 32, 26, 0, Math.PI * 2);
-      ctx.fill();
+      drawFallbackHead(ctx, cfg.headColor);
+    }
+
+    // 2. Mouth
+    let mouthDrawn = false;
+    const mouthFile = getMouthFile(cfg.mouth);
+    if (mouthFile) {
+      const mouthImg = imageCache.get(mouthFile);
+      if (mouthImg && mouthImg.complete && mouthImg.naturalWidth > 0) {
+        ctx.drawImage(mouthImg, 0, 0, canvas.width, canvas.height);
+        mouthDrawn = true;
+      } else {
+        canvas.__incomplete = true;
+      }
+    }
+    if (!mouthDrawn) {
       ctx.strokeStyle = "#111827";
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(32, 36, 5, 0, Math.PI);
       ctx.stroke();
-      // Simple face fallback
+    }
+
+    // 3. Eyes
+    let eyesDrawn = false;
+    const eyesFile = getEyesFile(cfg.eyes);
+    if (eyesFile) {
+      const eyesImg = imageCache.get(eyesFile);
+      if (eyesImg && eyesImg.complete && eyesImg.naturalWidth > 0) {
+        ctx.drawImage(eyesImg, 0, 0, canvas.width, canvas.height);
+        eyesDrawn = true;
+      } else {
+        canvas.__incomplete = true;
+      }
+    }
+    if (!eyesDrawn) {
       ctx.fillStyle = "#111827";
       ctx.beginPath();
       ctx.arc(24, 28, 3, 0, Math.PI * 2);
       ctx.arc(40, 28, 3, 0, Math.PI * 2);
       ctx.fill();
-      ctx.beginPath();
-      ctx.arc(32, 36, 6, 0, Math.PI);
-      ctx.stroke();
-    }
-
-    // 2. Mouth
-    const mouthFile = getMouthFile(cfg.mouth);
-    if (mouthFile) {
-      const mouthImg = imageCache.get(mouthFile);
-      if (mouthImg && mouthImg.complete) {
-        ctx.drawImage(mouthImg, 0, 0, canvas.width, canvas.height);
-      } else {
-        canvas.__incomplete = true;
-      }
-    }
-
-    // 3. Eyes
-    const eyesFile = getEyesFile(cfg.eyes);
-    if (eyesFile) {
-      const eyesImg = imageCache.get(eyesFile);
-      if (eyesImg && eyesImg.complete) {
-        ctx.drawImage(eyesImg, 0, 0, canvas.width, canvas.height);
-      } else {
-        canvas.__incomplete = true;
-      }
     }
 
     // 4. Hair / Crown (in authentic natural colors from asset)
     const hairFile = getHairFile(cfg.hair);
     if (hairFile) {
       const hairImg = imageCache.get(hairFile);
-      if (hairImg && hairImg.complete) {
+      if (hairImg && hairImg.complete && hairImg.naturalWidth > 0) {
         ctx.drawImage(hairImg, 0, 0, canvas.width, canvas.height);
       } else {
         canvas.__incomplete = true;
@@ -375,32 +420,56 @@
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.imageSmoothingEnabled = false;
 
+    const mouthFile = getMouthFile(cfg.mouth);
+    const eyesFile = getEyesFile(cfg.eyes);
+    const hairFile = getHairFile(cfg.hair);
+
+    // Parallel load all required assets
+    const [headImg, mouthImg, eyesImg, hairImg] = await Promise.all([
+      preloadImage(HEAD_FILE),
+      mouthFile ? preloadImage(mouthFile) : Promise.resolve(null),
+      eyesFile ? preloadImage(eyesFile) : Promise.resolve(null),
+      hairFile ? preloadImage(hairFile) : Promise.resolve(null),
+    ]);
+
     // 1. Circle Head (HEAD_FILE)
-    const headImg = await preloadImage(HEAD_FILE);
-    if (headImg) {
+    let headDrawn = false;
+    if (headImg && headImg.naturalWidth > 0) {
       const tinted = createTintedHeadCanvas(headImg, cfg.headColor);
-      ctx.drawImage(tinted, 0, 0, canvas.width, canvas.height);
+      if (tinted) {
+        ctx.drawImage(tinted, 0, 0, canvas.width, canvas.height);
+        headDrawn = true;
+      }
+    }
+    if (!headDrawn) {
+      drawFallbackHead(ctx, cfg.headColor);
     }
 
     // 2. Mouth
-    const mouthFile = getMouthFile(cfg.mouth);
-    if (mouthFile) {
-      const mouthImg = await preloadImage(mouthFile);
-      if (mouthImg) ctx.drawImage(mouthImg, 0, 0, canvas.width, canvas.height);
+    if (mouthImg && mouthImg.naturalWidth > 0) {
+      ctx.drawImage(mouthImg, 0, 0, canvas.width, canvas.height);
+    } else {
+      ctx.strokeStyle = "#111827";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(32, 36, 5, 0, Math.PI);
+      ctx.stroke();
     }
 
     // 3. Eyes
-    const eyesFile = getEyesFile(cfg.eyes);
-    if (eyesFile) {
-      const eyesImg = await preloadImage(eyesFile);
-      if (eyesImg) ctx.drawImage(eyesImg, 0, 0, canvas.width, canvas.height);
+    if (eyesImg && eyesImg.naturalWidth > 0) {
+      ctx.drawImage(eyesImg, 0, 0, canvas.width, canvas.height);
+    } else {
+      ctx.fillStyle = "#111827";
+      ctx.beginPath();
+      ctx.arc(24, 28, 3, 0, Math.PI * 2);
+      ctx.arc(40, 28, 3, 0, Math.PI * 2);
+      ctx.fill();
     }
 
     // 4. Hair / Crown
-    const hairFile = getHairFile(cfg.hair);
-    if (hairFile) {
-      const hairImg = await preloadImage(hairFile);
-      if (hairImg) ctx.drawImage(hairImg, 0, 0, canvas.width, canvas.height);
+    if (hairImg && hairImg.naturalWidth > 0) {
+      ctx.drawImage(hairImg, 0, 0, canvas.width, canvas.height);
     }
 
     return canvas;
@@ -413,6 +482,16 @@
 
     if (dataUrlCache.has(key)) {
       return dataUrlCache.get(key);
+    }
+
+    // Check if we have saved dataUrl for the user's saved character
+    const savedConfig = getSavedCharacter();
+    if (encodeConfig(savedConfig) === key) {
+      const savedUrl = localStorage.getItem(STORAGE_DATAURL_KEY);
+      if (savedUrl && savedUrl.startsWith("data:image/png")) {
+        dataUrlCache.set(key, savedUrl);
+        return savedUrl;
+      }
     }
 
     const canvas = document.createElement("canvas");
@@ -509,6 +588,8 @@
     const initialRaw = options.initialConfig || getSavedCharacter();
     let currentConfig = parseConfig(initialRaw);
     let isUpdating = false;
+    let hasPendingUpdate = false;
+    let pendingSkipSave = false;
 
     container.innerHTML = `
       <div class="skribbl-customizer-card">
@@ -691,7 +772,11 @@
     }
 
     async function applyUpdate(skipSave = false) {
-      if (isUpdating) return;
+      if (isUpdating) {
+        hasPendingUpdate = true;
+        if (!skipSave) pendingSkipSave = false;
+        return;
+      }
       isUpdating = true;
       try {
         await compositeCharacter(canvas, currentConfig);
@@ -707,11 +792,27 @@
         }
       } finally {
         isUpdating = false;
+        if (hasPendingUpdate) {
+          hasPendingUpdate = false;
+          const nextSkip = pendingSkipSave;
+          pendingSkipSave = false;
+          applyUpdate(nextSkip);
+        }
       }
     }
 
+    // Synchronous immediate draw so canvas is never blank for even a single frame
+    compositeCharacterSync(canvas, currentConfig);
+    refreshColorDots();
+
     // Initial render
     applyUpdate(true);
+
+    // Re-render when background asset preloading finishes
+    const handleAssetsReady = () => {
+      applyUpdate(true);
+    };
+    window.addEventListener("character-creator-ready", handleAssetsReady);
 
     // Listen to external updates from other widgets
     const handleGlobalUpdate = (e) => {
@@ -745,6 +846,7 @@
       },
       destroy: () => {
         window.removeEventListener("spillhjornet:characterUpdated", handleGlobalUpdate);
+        window.removeEventListener("character-creator-ready", handleAssetsReady);
       }
     };
   }

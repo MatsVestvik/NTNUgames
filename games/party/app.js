@@ -16,7 +16,12 @@
 
   function getMonImg(avatar) {
     if (window.CharacterCreator && typeof window.CharacterCreator.getAvatarImgSrc === "function") {
-      return window.CharacterCreator.getAvatarImgSrc(avatar);
+      try {
+        const src = window.CharacterCreator.getAvatarImgSrc(avatar);
+        if (src) return src;
+      } catch (e) {
+        console.warn("CharacterCreator getAvatarImgSrc failed:", e);
+      }
     }
     if (!avatar) return "/assets/mons/charbear.png";
     if (avatar.startsWith("/") || avatar.startsWith("data:") || avatar.endsWith(".png")) return avatar;
@@ -49,6 +54,7 @@
     isPolling: false,
     hasRenderedLobby: false,
     lastPlayersKey: null,
+    lastRoomData: null,
   };
 
   // Elements
@@ -326,6 +332,20 @@
     }
   }
 
+  function updateMyPlayerAvatarInGrid(encoded, dataUrl) {
+    if (!el.playersGrid) return;
+    const meTile = el.playersGrid.querySelector(".player-tile.is-me");
+    if (meTile) {
+      const img = meTile.querySelector(".player-mon-img");
+      if (img) {
+        const nextSrc = dataUrl || getMonImg(encoded);
+        if (nextSrc && img.src !== nextSrc) {
+          img.src = nextSrc;
+        }
+      }
+    }
+  }
+
   function initLobbyCustomizer() {
     const lobbyContainer = document.getElementById("skribblCustomizerLobby");
     if (!window.CharacterCreator || !lobbyContainer) return;
@@ -338,6 +358,11 @@
       onChange: (encoded, dataUrl, cfg) => {
         state.avatar = encoded;
         saveSession();
+        if (state.lastRoomData && Array.isArray(state.lastRoomData.players)) {
+          const me = state.lastRoomData.players.find((p) => p.id === state.playerId);
+          if (me) me.avatar = encoded;
+        }
+        updateMyPlayerAvatarInGrid(encoded, dataUrl);
         scheduleAvatarSync(encoded);
       },
     });
@@ -478,6 +503,8 @@
   }
 
   function updateLobbyUI(room) {
+    state.lastRoomData = room;
+    if (!lobbyWidget) initLobbyCustomizer();
     if (el.connStatusText) el.connStatusText.textContent = "Live";
     el.playersCountNum.textContent = String(room.playerCount || 1);
 
@@ -512,7 +539,8 @@
     }
 
     // Render players grid only if players list changed
-    const playersKey = JSON.stringify((room.players || []).map(p => [p.id, p.name, p.color, p.avatar, p.isHost, p.isReady]));
+    const effectiveMeAvatar = state.avatar || (me ? me.avatar : "");
+    const playersKey = JSON.stringify((room.players || []).map(p => [p.id, p.name, p.color, (p.id === state.playerId ? effectiveMeAvatar : p.avatar), p.isHost, p.isReady]));
     if (state.lastPlayersKey !== playersKey) {
       state.lastPlayersKey = playersKey;
       el.playersGrid.innerHTML = "";
@@ -520,13 +548,14 @@
         const isMe = p.id === state.playerId;
         const canKick = state.isHost && !isMe && !p.isHost;
         const isReady = Boolean(p.isReady);
+        const playerAvatar = (isMe && state.avatar) ? state.avatar : p.avatar;
         const tile = document.createElement("div");
         tile.className = `player-tile ${p.isHost ? "is-host" : ""} ${isMe ? "is-me" : ""} ${isReady ? "is-ready" : "is-not-ready"}`;
         tile.innerHTML = `
           ${p.isHost ? '<span class="player-crown-badge">VERT</span>' : ''}
           ${isMe ? '<span class="player-me-badge">DEG</span>' : ''}
           ${canKick ? `<button type="button" class="player-kick-btn" title="Fjern ${escapeHtml(p.name)} fra rommet" aria-label="Fjern ${escapeHtml(p.name)}">✕</button>` : ''}
-          <div class="player-avatar-wrap">${renderAvatarHtml(p.avatar)}</div>
+          <div class="player-avatar-wrap">${renderAvatarHtml(playerAvatar)}</div>
           <div class="player-name-text">${escapeHtml(p.name)}</div>
         `;
         if (canKick) {
@@ -917,6 +946,21 @@
       partyHeaderIcon.src = window.CharacterCreator.getAvatarImgSrc();
     });
   }
+
+  // Listen for character asset preloading and external updates to refresh player tiles
+  window.addEventListener("character-creator-ready", () => {
+    state.lastPlayersKey = null;
+    if (state.lastRoomData) {
+      updateLobbyUI(state.lastRoomData);
+    }
+  });
+
+  window.addEventListener("spillhjornet:characterUpdated", () => {
+    state.lastPlayersKey = null;
+    if (state.lastRoomData) {
+      updateLobbyUI(state.lastRoomData);
+    }
+  });
 
   if (loadSession()) {
     enterLobbyView();
