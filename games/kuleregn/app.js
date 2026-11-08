@@ -244,13 +244,8 @@
       { x: 1420, y: 420 },
     ];
 
-    // Tactical medkits & kevlar shields only (NO weapon pickups)
-    const pickups = [
-      { id: "rust_med_1", type: "medkit", x: 340, y: 1100, respawnSec: 15, timer: 0 },
-      { id: "rust_med_2", type: "medkit", x: w - 340, y: 1100, respawnSec: 15, timer: 0 },
-      { id: "rust_shd_1", type: "shield", x: 1100, y: 340, respawnSec: 20, timer: 0 },
-      { id: "rust_shd_2", type: "shield", x: 1100, y: h - 340, respawnSec: 20, timer: 0 },
-    ];
+    // Pickups removed as requested
+    const pickups = [];
 
     // Red Explosive Barrels
     const barrels = [
@@ -352,12 +347,8 @@
       { x: w / 2 - 320, y: h / 2 + 260 },
     ];
 
-    const pickups = [
-      { id: "pk_medkit_1", type: "medkit", x: 180, y: h / 2 - 200, respawnSec: 15, timer: 0 },
-      { id: "pk_medkit_2", type: "medkit", x: w - 180, y: h / 2 + 200, respawnSec: 15, timer: 0 },
-      { id: "pk_shield_1", type: "shield", x: w / 2 - 260, y: h / 2 + 20, respawnSec: 20, timer: 0 },
-      { id: "pk_shield_2", type: "shield", x: w / 2 + 260, y: h / 2 - 20, respawnSec: 20, timer: 0 },
-    ];
+    // Pickups removed as requested
+    const pickups = [];
 
     const barrels = [
       { id: "bar_1", x: w / 2 - 180, y: h / 2 - 180, r: 16, hp: 40 },
@@ -438,12 +429,8 @@
       { x: w / 2 + 380, y: h / 2 },
     ];
 
-    const pickups = [
-      { id: "ch_pk_med_1", type: "medkit", x: w / 2 - 250, y: h / 2, respawnSec: 15, timer: 0 },
-      { id: "ch_pk_med_2", type: "medkit", x: w / 2 + 250, y: h / 2, respawnSec: 15, timer: 0 },
-      { id: "ch_pk_shd_1", type: "shield", x: w / 2, y: h / 2 - 240, respawnSec: 20, timer: 0 },
-      { id: "ch_pk_shd_2", type: "shield", x: w / 2, y: h / 2 + 240, respawnSec: 20, timer: 0 },
-    ];
+    // Pickups removed as requested
+    const pickups = [];
 
     const barrels = [
       { id: "ch_bar_1", x: w / 2 - 220, y: h / 2 - 220, r: 16, hp: 40 },
@@ -732,6 +719,7 @@
 
     // In-game HUD Elements (View 2)
     hudRankPill: document.getElementById("hudRankPill"),
+    minimapCanvas: document.getElementById("minimapCanvas"),
     hudPosNum: document.getElementById("hudPosNum"),
     hudKillsText: document.getElementById("hudKillsText"),
     hudStreakBanner: document.getElementById("hudStreakBanner"),
@@ -846,7 +834,7 @@
     combatant.respawnTimer = 0;
     combatant.weapon = "cannon";
     combatant.ammo = Infinity;
-    combatant.invulnerableUntil = performance.now() + 2500; // 2.5s spawn shield
+    combatant.invulnerableUntil = performance.now() + 500; // 0.5s brief spawn grace
   }
 
   // =========================================================================
@@ -934,8 +922,6 @@
 
   function damageCombatant(victim, damage, killer, weaponId) {
     if (victim.isDead) return;
-    const now = performance.now();
-    if (victim.invulnerableUntil && now < victim.invulnerableUntil) return;
 
     // Shield absorbs damage first
     let remaining = damage;
@@ -993,8 +979,8 @@
         weapon: weaponId || "cannon",
       });
 
-      // Report event to server if involved
-      if (!state.isSolo) {
+      // Report event to server if involved (attacker-authoritative to avoid duplicate event cascades)
+      if (!state.isSolo && (killer === state.player || (!killer && victim === state.player))) {
         state.recentEvents.push({
           type: "kill",
           killerId: killer ? killer.id : (state.playerId || "env"),
@@ -1005,8 +991,8 @@
 
       checkMatchVictory();
     } else {
-      // Victim took damage but survived - report hit to server
-      if (!state.isSolo && (killer === state.player || victim === state.player)) {
+      // Victim took damage but survived - report hit to server (attacker reports to avoid duplicate damage)
+      if (!state.isSolo && (killer === state.player || (!killer && victim === state.player))) {
         state.recentEvents.push({
           type: "hit",
           attackerId: killer ? killer.id : state.playerId,
@@ -1411,14 +1397,12 @@
       // 2. Update Local Player Physics & Aiming
       updatePlayer(dt, map);
 
-      // 2b. If Solo Practice, update target dummies respawn
-      if (state.isSolo) {
-        for (const opp of Object.values(state.opponents)) {
-          if (opp.isDead) {
-            opp.respawnTimer -= dt;
-            if (opp.respawnTimer <= 0) {
-              spawnPlayer(opp, map);
-            }
+      // 2b. Update Opponent Respawn Timers
+      for (const opp of Object.values(state.opponents)) {
+        if (opp.isDead && opp.respawnTimer > 0) {
+          opp.respawnTimer = Math.max(0, opp.respawnTimer - dt);
+          if (state.isSolo && opp.respawnTimer <= 0) {
+            spawnPlayer(opp, map);
           }
         }
       }
@@ -1669,47 +1653,7 @@
   }
 
   function updatePickups(dt, map, allCombatants) {
-    for (const p of map.pickups) {
-      if (p.timer > 0) {
-        p.timer = Math.max(0, p.timer - dt);
-        continue;
-      }
-
-      // Check pickup collection
-      for (const c of allCombatants) {
-        if (c.isDead) continue;
-        if (Math.hypot(c.x - p.x, c.y - p.y) <= 32) {
-          let collected = false;
-
-          if (p.type === "medkit") {
-            if (c.health < c.maxHealth) {
-              c.health = Math.min(c.maxHealth, c.health + 40);
-              collected = true;
-              if (c === state.player) showPickupToast("+40 Helse!");
-            }
-          } else if (p.type === "shield") {
-            if (c.shield < c.maxShield) {
-              c.shield = Math.min(c.maxShield, c.shield + 50);
-              collected = true;
-              if (c === state.player) showPickupToast("+50 Kevlar Skjold!");
-            }
-          }
-
-          if (collected) {
-            p.timer = p.respawnSec;
-            playPickupSound(p.type);
-            addMuzzleParticles(p.x, p.y, 0, "#10b981");
-            if (!state.isSolo && c === state.player) {
-              state.recentEvents.push({
-                type: "pickup",
-                pickupType: p.type,
-              });
-            }
-            break;
-          }
-        }
-      }
-    }
+    // Pickups disabled as requested
   }
 
   function showPickupToast(text) {
@@ -1910,44 +1854,6 @@
       ctx.lineTo(map.width - 40, y);
     }
     ctx.stroke();
-
-    // 3. Render Pickups (medkits and shields)
-    const nowTime = performance.now() / 1000;
-    for (const pItem of map.pickups) {
-      if (pItem.timer > 0) continue;
-      const bob = Math.sin(nowTime * 3 + pItem.x) * 4;
-      const rot = nowTime * 1.5;
-
-      ctx.save();
-      ctx.translate(pItem.x, pItem.y + bob);
-
-      // Glow circle
-      ctx.beginPath();
-      ctx.arc(0, 0, 22, 0, Math.PI * 2);
-      ctx.fillStyle = pItem.type === "medkit" ? "rgba(34, 197, 94, 0.25)" : "rgba(6, 182, 212, 0.25)";
-      ctx.fill();
-
-      // Crate box
-      ctx.rotate(rot);
-      ctx.fillStyle = pItem.type === "medkit" ? "#16a34a" : "#0284c7";
-      ctx.fillRect(-14, -14, 28, 28);
-      ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(-14, -14, 28, 28);
-
-      ctx.restore();
-
-      // Overhead Pickup Label
-      ctx.save();
-      ctx.font = "bold 11px sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillStyle = "#ffffff";
-      ctx.shadowColor = "#000000";
-      ctx.shadowBlur = 4;
-      const label = pItem.type === "medkit" ? "+ HELSE" : "SKJOLD";
-      ctx.fillText(label, pItem.x, pItem.y + 28);
-      ctx.restore();
-    }
 
     // 5. Render Explosive Barrels
     for (const b of map.barrels) {
@@ -2249,6 +2155,99 @@
       ctx.fillText(`Gjenoppstår om ${rem}s...`, canvas.width / 2, canvas.height / 2 + 20);
       ctx.restore();
     }
+
+    // 12. Render Minimap Radar
+    drawMinimap();
+  }
+
+  function drawMinimap() {
+    const canvas = el.minimapCanvas;
+    if (!canvas || !state.currentMap) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const map = state.currentMap;
+    const mw = canvas.width;
+    const mh = canvas.height;
+
+    ctx.clearRect(0, 0, mw, mh);
+
+    // Radar background with subtle tint
+    ctx.fillStyle = "rgba(15, 23, 42, 0.9)";
+    ctx.fillRect(0, 0, mw, mh);
+
+    const pad = 6;
+    const availW = mw - pad * 2;
+    const availH = mh - pad * 2;
+    const scale = Math.min(availW / map.width, availH / map.height);
+    const offsetX = pad + (availW - map.width * scale) / 2;
+    const offsetY = pad + (availH - map.height * scale) / 2;
+
+    // Arena map bounds border
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.28)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(offsetX, offsetY, map.width * scale, map.height * scale);
+
+    // Obstacles (walls, crates, containers)
+    ctx.fillStyle = "rgba(148, 163, 184, 0.5)";
+    for (const obs of map.obstacles) {
+      ctx.fillRect(
+        offsetX + obs.x * scale,
+        offsetY + obs.y * scale,
+        Math.max(1, obs.w * scale),
+        Math.max(1, obs.h * scale)
+      );
+    }
+
+    // Explosive Barrels
+    if (map.barrels) {
+      for (const b of map.barrels) {
+        if (b.hp <= 0) continue;
+        ctx.beginPath();
+        ctx.arc(offsetX + b.x * scale, offsetY + b.y * scale, 1.8, 0, Math.PI * 2);
+        ctx.fillStyle = "#ef4444";
+        ctx.fill();
+      }
+    }
+
+    // Alive Opponents
+    for (const opp of Object.values(state.opponents)) {
+      if (opp.isDead) continue;
+      const ox = offsetX + opp.x * scale;
+      const oy = offsetY + opp.y * scale;
+
+      ctx.beginPath();
+      ctx.arc(ox, oy, 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = opp.color || "#f43f5e";
+      ctx.fill();
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+    }
+
+    // Local Player Tank
+    const p = state.player;
+    if (!p.isDead) {
+      const px = offsetX + p.x * scale;
+      const py = offsetY + p.y * scale;
+
+      // Turret aim vector
+      const dirAngle = p.angle !== undefined ? p.angle : p.hullAngle;
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(px + Math.cos(dirAngle) * 9, py + Math.sin(dirAngle) * 9);
+      ctx.strokeStyle = "#22c55e";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Tank dot
+      ctx.beginPath();
+      ctx.arc(px, py, 4.5, 0, Math.PI * 2);
+      ctx.fillStyle = p.color || "#22c55e";
+      ctx.fill();
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+    }
   }
 
   function drawCombatant(ctx, c, isMe = false) {
@@ -2528,24 +2527,30 @@
       state.player.deaths = me.deaths || 0;
       state.player.score = me.score || 0;
 
-      if (typeof me.health === "number") {
-        if (me.health < state.player.health) {
+      const serverDead = Boolean(me.isDead || (typeof me.health === "number" && me.health <= 0));
+
+      if (serverDead && !state.player.isDead) {
+        state.player.isDead = true;
+        state.player.health = 0;
+        state.player.respawnTimer = 2.5;
+        addDeathExplosion(state.player.x, state.player.y, state.player.color);
+        playTone(120, 0.35, "sawtooth", 0.5);
+      } else if (!serverDead && state.player.isDead && state.player.respawnTimer <= 0.2) {
+        spawnPlayer(state.player, state.currentMap);
+        state.player.health = me.health || 100;
+        state.player.shield = me.shield || 25;
+      } else if (!state.player.isDead) {
+        // Local player is ALIVE: health can ONLY decrease while alive (no rubber-banding back up!)
+        if (typeof me.health === "number" && me.health < state.player.health) {
           state.camera.shake = Math.min(18, state.camera.shake + 6);
           playTone(160, 0.1, "sawtooth", 0.35);
           showDamageFeedback();
           addDamageSparks(state.player.x, state.player.y, state.player.color);
+          state.player.health = me.health;
         }
-        state.player.health = me.health;
-        state.player.shield = me.shield || 0;
-      }
-
-      if (me.isDead && !state.player.isDead) {
-        state.player.isDead = true;
-        state.player.respawnTimer = 2.5;
-        addDeathExplosion(state.player.x, state.player.y, state.player.color);
-        playTone(120, 0.35, "sawtooth", 0.5);
-      } else if (!me.isDead && state.player.isDead && state.player.respawnTimer <= 0) {
-        spawnPlayer(state.player, state.currentMap);
+        if (typeof me.shield === "number" && me.shield < state.player.shield) {
+          state.player.shield = me.shield;
+        }
       }
       updateVitalsHUD();
     }
@@ -2597,21 +2602,33 @@
           }
 
           opp.weapon = p.weapon || opp.weapon;
-          opp.health = p.health;
-          opp.shield = p.shield;
           opp.kills = p.kills || opp.kills;
           opp.deaths = p.deaths || opp.deaths;
           opp.score = p.score || opp.score;
 
-          const serverDead = Boolean(p.isDead || (p.health || 100) <= 0);
-          if (serverDead && !opp.isDead) {
+          const serverDead = Boolean(p.isDead || (typeof p.health === "number" && p.health <= 0));
+
+          if ((serverDead || opp.health <= 0) && !opp.isDead) {
             opp.isDead = true;
+            opp.health = 0;
+            opp.respawnTimer = 2.5;
             addDeathExplosion(opp.x, opp.y, opp.color);
           } else if (!serverDead && opp.isDead) {
-            opp.isDead = false;
-            opp.health = 100;
-            opp.shield = 25;
-            opp.invulnerableUntil = performance.now() + 2500;
+            // Only resurrect if respawn timer has actually run its course (prevents in-flight packet resurrection)
+            if (!opp.respawnTimer || opp.respawnTimer <= 0.2) {
+              opp.isDead = false;
+              opp.health = p.health || 100;
+              opp.shield = p.shield || 25;
+              opp.invulnerableUntil = performance.now() + 500;
+            }
+          } else if (!opp.isDead) {
+            // Opponent is ALIVE: health can ONLY decrease while alive (no rubber-banding back up!)
+            if (typeof p.health === "number" && p.health < opp.health) {
+              opp.health = p.health;
+            }
+            if (typeof p.shield === "number" && p.shield < opp.shield) {
+              opp.shield = p.shield;
+            }
           }
         }
       }

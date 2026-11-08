@@ -190,7 +190,7 @@
 
         <!-- In-Game HUD Elements -->
         <div class="hud-overlay" id="hudOverlay">
-          <!-- Top Left: Leader / Personal Rank & Streaks -->
+          <!-- Top Left: Leader / Personal Rank & Streaks & Tactical Minimap -->
           <div class="hud-top-left">
             <div class="hud-rank-pill" id="hudRankPill">
               <span class="hr-pos" id="hudPosNum">1.</span>
@@ -200,6 +200,9 @@
             </div>
             <div class="hud-streak-banner hidden" id="hudStreakBanner">
               <span id="hudStreakCount">3x</span> Drapstrekk!
+            </div>
+            <div class="hud-minimap-card" id="hudMinimapCard" title="Taktisk radar">
+              <canvas id="minimapCanvas" width="130" height="130"></canvas>
             </div>
           </div>
 
@@ -264,16 +267,6 @@
                   <span class="ammo-label" id="ammoLabel" style="font-size:0.85rem; color:#94a3b8; margin-left:6px;">Uendelig</span>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <!-- Bottom Center: Floating Pickup Notification -->
-          <div class="hud-bottom-center">
-            <div class="pickup-toast hidden" id="pickupToast">
-              <span class="pt-icon" id="pickupToastIcon">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-              </span>
-              <span class="pt-text" id="pickupToastText">Plukket opp våpen</span>
             </div>
           </div>
 
@@ -348,7 +341,7 @@
   <script src="/parallax-bg.js?v=2.1"></script>
   <script src="/character/character-creator.js"></script>
   <script src="/game-lobby.js"></script>
-  <script src="app.js?v=3.5"></script>
+  <script src="app.js?v=3.6"></script>
 </body>
 
 </html>

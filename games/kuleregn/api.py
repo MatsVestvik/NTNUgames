@@ -601,8 +601,6 @@ class KuleregnRoom:
                     weapon_id = ev.get("weapon", "cannon")
                     target = self.players.get(target_id)
                     if target and not target.get("isDead", False):
-                        if now < target.get("invulnerableUntil", 0):
-                            continue
                         shield = target.get("shield", 0)
                         if shield > 0:
                             if shield >= damage:
@@ -644,18 +642,14 @@ class KuleregnRoom:
                         self.register_kill(attacker_id, target_id, weapon_id)
 
                 elif ev_type == "pickup":
-                    p_type = ev.get("pickupType")
-                    if p_type == "medkit":
-                        p["health"] = min(100, p.get("health", 100) + 40)
-                    elif p_type == "shield":
-                        p["shield"] = min(100, p.get("shield", 25) + 50)
+                    pass # Pickups disabled
 
                 elif ev_type == "respawn":
                     p["isDead"] = False
                     p["health"] = 100
                     p["shield"] = 25
                     p["respawnTime"] = 0
-                    p["invulnerableUntil"] = now + 2.5
+                    p["invulnerableUntil"] = now + 0.5
 
             # Process respawns for dead players
             for pl in self.players.values():
@@ -664,7 +658,7 @@ class KuleregnRoom:
                     pl["health"] = 100
                     pl["shield"] = 25
                     pl["respawnTime"] = 0
-                    pl["invulnerableUntil"] = now + 2.5
+                    pl["invulnerableUntil"] = now + 0.5
 
             if len(self.recent_events) > 30:
                 self.recent_events = self.recent_events[-30:]
