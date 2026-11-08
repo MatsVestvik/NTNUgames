@@ -1484,7 +1484,7 @@
     const isSteeringRight = !!state.keys.d;
 
     // Turn hull with A (left) and D (right) - grounded tank turn speed
-    const hullTurnSpeed = 2.1; // rad/s (~120 deg/s)
+    const hullTurnSpeed = 1.3; // rad/s (~74 deg/s) - tyngre og roligere styring
     const steerDir = (isSteeringRight ? 1 : 0) - (isSteeringLeft ? 1 : 0);
     if (steerDir !== 0) {
       p.hullAngle = (p.hullAngle || 0) + steerDir * hullTurnSpeed * dt;
@@ -1492,14 +1492,14 @@
       while (p.hullAngle < -Math.PI) p.hullAngle += Math.PI * 2;
     }
 
-    // Drive forward / reverse along hullAngle - controlled speed at 3x zoom
+    // Drive forward / reverse along hullAngle - tregere, mer autentisk stridsvognfart
     let forwardThrottle = 0;
-    if (isDrivingForward) forwardThrottle += 160;
-    if (isDrivingReverse) forwardThrottle -= 95;
+    if (isDrivingForward) forwardThrottle += 100; // redusert fra 160
+    if (isDrivingReverse) forwardThrottle -= 60;  // redusert fra 95
 
     // Animate tracks when driving or steering
     if (forwardThrottle !== 0 || steerDir !== 0) {
-      const treadSpeed = forwardThrottle !== 0 ? Math.abs(forwardThrottle) : 100;
+      const treadSpeed = forwardThrottle !== 0 ? Math.abs(forwardThrottle) : 70;
       p.trackDistance = (p.trackDistance || 0) + treadSpeed * dt;
       p.trackFrame = Math.floor(p.trackDistance / 10) % 3;
     }
@@ -1511,8 +1511,8 @@
     // Apply movement & obstacle collisions
     applyCombatantMovement(p, map, dt);
 
-    // 2. Turret Aiming with Arrow Keys (Left & Right) - lowered sensitivity for steady aiming
-    const turretTurnSpeed = 2.2; // rad/s (~126 deg/s)
+    // 2. Turret Aiming with Arrow Keys (Left & Right) - roligere kanonsikte
+    const turretTurnSpeed = 1.25; // rad/s (~71 deg/s) - roligere tårnrotasjon med piltaster
     if (state.keys.arrowLeft || state.keys.arrowRight) {
       const panDir = (state.keys.arrowRight ? 1 : 0) - (state.keys.arrowLeft ? 1 : 0);
       p.angle += panDir * turretTurnSpeed * dt;
@@ -1529,7 +1529,7 @@
       let diff = targetAngle - p.angle;
       while (diff < -Math.PI) diff += Math.PI * 2;
       while (diff > Math.PI) diff -= Math.PI * 2;
-      const maxTurn = 2.8 * dt;
+      const maxTurn = 1.5 * dt; // rad/s (~86 deg/s) - roligere kanondreining mot musen
       if (Math.abs(diff) <= maxTurn) {
         p.angle = targetAngle;
       } else {
