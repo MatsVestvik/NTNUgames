@@ -2582,16 +2582,19 @@ class PartyAPI:
                         from games.korridorer.api import _rooms as korridorer_rooms, KorridorerRoom, PLAYER_CONFIGS
                         with _rooms_lock:
                             host_player = room.players.get(room.host_id, {})
+                            time_limit_setting = int(settings.get("timeLimit", 30))
                             k_room = KorridorerRoom(
                                 code=code,
                                 host_name=host_player.get("name", "Spiller 1"),
                                 host_avatar=host_player.get("avatar", "charbear"),
-                                max_players=16
+                                max_players=16,
+                                turn_time_limit=time_limit_setting,
                             )
                             k_room.host_id = room.host_id
                             k_room.players[0]["id"] = room.host_id
                             k_room.players[0]["avatar"] = host_player.get("avatar", "charbear")
                             k_room.players[0]["color"] = host_player.get("color") or extract_color_from_avatar(host_player.get("avatar"), PLAYER_CONFIGS[0]["color"])
+                            k_room.players[0]["eliminated"] = False
                             wall_setting = settings.get("walls", "standard")
                             base_walls = 5 if wall_setting == "fewer" else (15 if wall_setting == "more" else 10)
                             p_walls = base_walls if len(room.players) == 2 else max(3, base_walls // 2)
@@ -2611,6 +2614,7 @@ class PartyAPI:
                                         "walls": p_walls,
                                         "goalDesc": cfg["goalDesc"],
                                         "isHost": False,
+                                        "eliminated": False,
                                         "lastSeen": time.time(),
                                     })
                             if len(k_room.players) >= 2:

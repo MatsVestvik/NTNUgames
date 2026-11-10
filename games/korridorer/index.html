@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="/game-lobby.css" />
   <link rel="stylesheet" href="/parallax-bg.css?v=2.2" />
   <link rel="stylesheet" href="/character/character-creator.css" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=2.5" />
 </head>
 
 <body class="korridorer-page" data-game-id="korridorer">
@@ -125,6 +125,17 @@
                 <!-- Rendered dynamically via JS for 2 to 4 players -->
               </div>
 
+              <div class="form-group">
+                <label for="selectLocalTimeLimit">Tidsbegrensning per tur</label>
+                <select id="selectLocalTimeLimit" class="text-input">
+                  <option value="15">15 sekunder (Lynrask)</option>
+                  <option value="30" selected>30 sekunder (Standard)</option>
+                  <option value="45">45 sekunder (Rolig)</option>
+                  <option value="60">60 sekunder (Tenksom)</option>
+                  <option value="0">Ingen tidsgrense</option>
+                </select>
+              </div>
+
               <button type="button" class="primary-btn pulse-glow" id="btnStartLocal">
                 Start lokalt parti
               </button>
@@ -186,6 +197,17 @@
                   <button type="button" class="seg-btn" data-diff="easy">Rekrutt (Enkel)</button>
                   <button type="button" class="seg-btn active" data-diff="hard">Mester (Taktisk)</button>
                 </div>
+              </div>
+
+              <div class="form-group">
+                <label for="selectBotTimeLimit">Tidsbegrensning per tur</label>
+                <select id="selectBotTimeLimit" class="text-input">
+                  <option value="15">15 sekunder (Lynrask)</option>
+                  <option value="30" selected>30 sekunder (Standard)</option>
+                  <option value="45">45 sekunder (Rolig)</option>
+                  <option value="60">60 sekunder (Tenksom)</option>
+                  <option value="0">Ingen tidsgrense</option>
+                </select>
               </div>
 
               <button type="button" class="primary-btn pulse-glow" id="btnStartBot">
@@ -255,14 +277,30 @@
                 <span class="turn-label" id="turnLabel">DIN TUR!</span>
                 <span class="turn-sub" id="turnSub">Klikk en rute for å flytte brikken, eller klikk en kantlinje for å bygge en vegg.</span>
               </div>
+              <div class="turn-timer-badge" id="turnTimerBadge" title="Tid igjen på turen">
+                <svg class="timer-ring-svg" width="38" height="38" viewBox="0 0 38 38">
+                  <circle class="timer-ring-bg" cx="19" cy="19" r="15" />
+                  <circle class="timer-ring-fill" id="timerRingFill" cx="19" cy="19" r="15" />
+                </svg>
+                <span class="timer-ring-text" id="timerRingText">30</span>
+              </div>
             </div>
           </div>
 
           <!-- Main Center Stage: Players Panels + 9x9 Board -->
           <div class="arena-stage">
-            <!-- Left / Top Players Cards (P1 & P3) -->
-            <div class="players-column col-left" id="colPlayersLeft">
-              <!-- Dynamic player cards rendered via JS -->
+            <!-- Left: Turn Order Players List -->
+            <div class="turn-order-column" id="colTurnOrder">
+              <div class="turn-order-header">
+                <div class="to-header-title-group">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                  <span class="to-title">Turrekkefølge</span>
+                </div>
+                <span class="to-badge" id="dispPlayerCount">2 spillere</span>
+              </div>
+              <div class="players-turn-list" id="playersTurnList">
+                <!-- Dynamically rendered cards in exact turn order -->
+              </div>
             </div>
 
             <!-- The Quoridor Board Wrapper -->
@@ -290,9 +328,39 @@
               </div>
             </div>
 
-            <!-- Right / Bottom Players Cards (P2 & P4) -->
-            <div class="players-column col-right" id="colPlayersRight">
-              <!-- Dynamic player cards rendered via JS -->
+            <!-- Right: Match HUD Sidebar -->
+            <div class="match-sidebar-column" id="colMatchSidebar">
+              <div class="sidebar-spotlight-card">
+                <div class="sfc-label">Aktiv spiller</div>
+                <div class="sfc-player-row">
+                  <div class="sfc-avatar-wrap" id="hudActiveAvatarWrap">
+                    <img src="/assets/mons/charbear.png" id="hudActiveAvatarImg" class="sfc-avatar-img" alt="" />
+                  </div>
+                  <div class="sfc-info">
+                    <span class="sfc-name" id="hudActiveName">Spiller 1</span>
+                    <span class="sfc-sub" id="hudActiveSub">Flytt eller bygg vegg</span>
+                  </div>
+                </div>
+
+                <!-- Turn Timer Visual Track -->
+                <div class="sfc-timer-box" id="hudTimerBox">
+                  <div class="sfc-timer-header">
+                    <span class="sfc-timer-label">Turtid igjen:</span>
+                    <span class="sfc-timer-val" id="hudTimerSec">30s</span>
+                  </div>
+                  <div class="sfc-timer-track">
+                    <div class="sfc-timer-fill" id="hudTimerBarFill"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Surrender & Controls in Sidebar -->
+              <div class="sidebar-actions-card">
+                <button type="button" class="btn-sidebar-danger btn-give-up" id="btnGiveUpSide" title="Gi opp partiet">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
+                  <span>Gi opp</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -302,6 +370,10 @@
               <button type="button" class="btn-subtle" id="btnRestartGame">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
                 <span>Nytt spill</span>
+              </button>
+              <button type="button" class="btn-subtle btn-give-up" id="btnGiveUp">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
+                <span>Gi opp</span>
               </button>
               <button type="button" class="btn-subtle" id="btnBackToLobby">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
@@ -429,7 +501,7 @@
   <script src="/character/character-creator.js"></script>
   <script src="/game-lobby.js"></script>
   <!-- Main Game App Script -->
-  <script src="/korridorer/app.js?v=2.0"></script>
+  <script src="/korridorer/app.js?v=2.5"></script>
 </body>
 
 </html>

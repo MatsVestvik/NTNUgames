@@ -94,6 +94,7 @@
     btnStartKorridorer: document.getElementById("btnStartKorridorer"),
     selectBoardKorridorer: document.getElementById("selectBoardKorridorer"),
     selectWallsKorridorer: document.getElementById("selectWallsKorridorer"),
+    selectTimeLimitKorridorer: document.getElementById("selectTimeLimitKorridorer"),
     btnStartImposter: document.getElementById("btnStartImposter"),
     selectTimerImposter: document.getElementById("selectTimerImposter"),
     btnStartFargekoden: document.getElementById("btnStartFargekoden"),
@@ -861,6 +862,7 @@
       settings: () => ({
         board: el.selectBoardKorridorer?.value || "9x9",
         walls: el.selectWallsKorridorer?.value || "standard",
+        timeLimit: parseInt(el.selectTimeLimitKorridorer?.value || "30", 10),
       }),
     },
     {

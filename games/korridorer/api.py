@@ -347,7 +347,7 @@ def validate_wall_placement(r: int, c: int, orientation: str, walls: List[Dict[s
 
 
 class KorridorerRoom:
-    def __init__(self, code: str, host_name: str, host_avatar: str, max_players: int = 16):
+    def __init__(self, code: str, host_name: str, host_avatar: str, max_players: int = 16, turn_time_limit: int = 30):
         self.code = code
         self.created_at = time.time()
         self.last_active = time.time()
@@ -358,6 +358,9 @@ class KorridorerRoom:
         self.status = "waiting"  # waiting, active, finished
         self.current_turn = 0
         self.winner: Optional[Dict[str, Any]] = None
+        self.win_reason: Optional[str] = None
+        self.turn_time_limit: int = max(0, int(turn_time_limit if turn_time_limit is not None else 30))
+        self.turn_start_time: float = time.time()
 
         self.host_id = f"p_{uuid.uuid4().hex[:8]}"
         self.players: List[Dict[str, Any]] = [
@@ -371,6 +374,7 @@ class KorridorerRoom:
                 "walls": 10,
                 "goalDesc": PLAYER_CONFIGS[0]["goalDesc"],
                 "isHost": True,
+                "eliminated": False,
                 "lastSeen": time.time(),
             }
         ]
@@ -430,6 +434,7 @@ class KorridorerRoom:
                 "goalDesc": cfg["goalDesc"],
                 "isHost": False,
                 "isBot": True,
+                "eliminated": False,
                 "lastSeen": time.time(),
             }
             self.players.append(bot_player)
@@ -452,15 +457,16 @@ class KorridorerRoom:
         if self.current_turn >= len(self.players):
             return
         current_player = self.players[self.current_turn]
-        if not current_player.get("isBot"):
+        if current_player.get("eliminated") or not current_player.get("isBot"):
             return
 
         board_size = self.get_board_size()
-        all_pos = [tuple(p["pos"]) for p in self.players]
+        all_pos = [tuple(p["pos"]) for p in self.players if not p.get("eliminated")]
         curr_pos = tuple(current_player["pos"])
         walls_set = self.get_walls_set()
         valid_moves = get_valid_pawn_moves(curr_pos, all_pos, walls_set, board_size)
         if not valid_moves:
+            self._advance_to_next_active_turn()
             return
 
         bot_goal = self.get_goal_fn(self.current_turn)
@@ -473,6 +479,103 @@ class KorridorerRoom:
                 best_move = (mr, mc)
 
         self.make_pawn_move(current_player["id"], best_move[0], best_move[1])
+
+    def _advance_to_next_active_turn(self) -> None:
+        active_players = [p for p in self.players if not p.get("eliminated")]
+        if len(active_players) <= 1:
+            if len(active_players) == 1:
+                self.status = "finished"
+                self.winner = {
+                    "id": active_players[0]["id"],
+                    "name": active_players[0]["name"],
+                    "avatar": active_players[0]["avatar"],
+                    "color": active_players[0]["color"],
+                    "slot": self.players.index(active_players[0]),
+                }
+                self.win_reason = f"{active_players[0]['name']} vant fordi alle andre ga opp!"
+                self.bump()
+            return
+
+        for _ in range(len(self.players)):
+            self.current_turn = (self.current_turn + 1) % len(self.players)
+            if not self.players[self.current_turn].get("eliminated"):
+                break
+        self.turn_start_time = time.time()
+        self.bump()
+        self.step_bot_if_needed()
+
+    def check_timeout_if_needed(self) -> None:
+        if self.status != "active" or self.turn_time_limit <= 0:
+            return
+        now = time.time()
+        if now - self.turn_start_time >= self.turn_time_limit:
+            self._auto_step_current_player()
+
+    def _auto_step_current_player(self) -> None:
+        if self.status != "active":
+            return
+        current_player = self.players[self.current_turn]
+        if current_player.get("eliminated"):
+            self._advance_to_next_active_turn()
+            return
+
+        board_size = self.get_board_size()
+        all_pos = [tuple(p["pos"]) for p in self.players if not p.get("eliminated")]
+        curr_pos = tuple(current_player["pos"])
+        walls_set = self.get_walls_set()
+
+        valid_moves = get_valid_pawn_moves(curr_pos, all_pos, walls_set, board_size)
+        if valid_moves:
+            bot_goal = self.get_goal_fn(self.current_turn)
+            best_move = valid_moves[0]
+            best_dist = 999
+            for mr, mc in valid_moves:
+                d = get_shortest_path_distance((mr, mc), bot_goal, walls_set, board_size)
+                if d < best_dist:
+                    best_dist = d
+                    best_move = (mr, mc)
+            self.make_pawn_move(current_player["id"], best_move[0], best_move[1])
+        else:
+            self._advance_to_next_active_turn()
+
+    def forfeit_player(self, player_id: str) -> Tuple[bool, str]:
+        with self.lock:
+            if self.status != "active":
+                return False, "Partiet er ikke aktivt."
+
+            player = next((p for p in self.players if p["id"] == player_id), None)
+            if not player:
+                return False, "Fant ikke spilleren i rommet."
+
+            if player.get("eliminated"):
+                return False, "Spilleren har allerede gitt opp."
+
+            player["eliminated"] = True
+            player["pos"] = [-99, -99]
+            player_name = player["name"]
+
+            active = [p for p in self.players if not p.get("eliminated")]
+            if len(active) <= 1:
+                self.status = "finished"
+                self.winner = {
+                    "id": active[0]["id"],
+                    "name": active[0]["name"],
+                    "avatar": active[0]["avatar"],
+                    "color": active[0]["color"],
+                    "slot": self.players.index(active[0]),
+                } if active else None
+                winner_name = self.winner["name"] if self.winner else "Ingen"
+                self.win_reason = f"{player_name} ga opp. {winner_name} vinner partiet!"
+                self.bump()
+                return True, self.win_reason
+
+            # If it was the forfeiting player's turn, advance
+            if self.players[self.current_turn]["id"] == player_id:
+                self._advance_to_next_active_turn()
+            else:
+                self.bump()
+
+            return True, f"{player_name} ga opp partiet."
 
     def start_game(self) -> Tuple[bool, str]:
         with self.lock:
@@ -495,11 +598,14 @@ class KorridorerRoom:
                 p["pos"] = list(starts_multi[idx % len(starts_multi)] if is_multi else starts_2p[idx])
                 p["walls"] = 999
                 p["goalDesc"] = f"Nå sentrum (rute {mid}, {mid})" if is_multi else cfg["goalDesc"]
+                p["eliminated"] = False
 
             self.walls.clear()
             self.current_turn = 0
             self.status = "active"
             self.winner = None
+            self.win_reason = None
+            self.turn_start_time = time.time()
             self.rematch_votes.clear()
             self.bump()
             # If first player is bot (rare), step it
@@ -516,7 +622,7 @@ class KorridorerRoom:
                 return False, "Det er ikke din tur."
 
             board_size = self.get_board_size()
-            all_pos = [tuple(p["pos"]) for p in self.players]
+            all_pos = [tuple(p["pos"]) for p in self.players if not p.get("eliminated")]
             curr_pos = tuple(current_player["pos"])
             walls_set = self.get_walls_set()
 
@@ -539,13 +645,12 @@ class KorridorerRoom:
                     "color": current_player["color"],
                     "slot": self.current_turn,
                 }
+                self.win_reason = f"{current_player['name']} nådde målet først!"
                 self.bump()
                 return True, f"{current_player['name']} vant partiet!"
 
-            # Advance turn
-            self.current_turn = (self.current_turn + 1) % len(self.players)
-            self.bump()
-            self.step_bot_if_needed()
+            # Advance turn to next active player
+            self._advance_to_next_active_turn()
             return True, "Trekk utført."
 
     def place_wall(self, player_id: str, r: int, c: int, orientation: str) -> Tuple[bool, str]:
@@ -558,7 +663,8 @@ class KorridorerRoom:
                 return False, "Det er ikke din tur."
 
             board_size = self.get_board_size()
-            ok, msg = validate_wall_placement(r, c, orientation, self.walls, self.players, board_size)
+            active_players = [p for p in self.players if not p.get("eliminated")]
+            ok, msg = validate_wall_placement(r, c, orientation, self.walls, active_players, board_size)
             if not ok:
                 return False, msg
 
@@ -572,10 +678,8 @@ class KorridorerRoom:
                 "color": current_player["color"],
             })
 
-            # Advance turn
-            self.current_turn = (self.current_turn + 1) % len(self.players)
-            self.bump()
-            self.step_bot_if_needed()
+            # Advance turn to next active player
+            self._advance_to_next_active_turn()
             return True, "Vegg plassert."
 
     def add_chat(self, player_id: str, text: str) -> None:
@@ -615,6 +719,9 @@ class KorridorerRoom:
 
     def get_public_state(self, player_id: Optional[str] = None) -> Dict[str, Any]:
         with self.lock:
+            # Check timeout if game is running
+            self.check_timeout_if_needed()
+
             board_size = self.get_board_size()
             is_multi = len(self.players) > 2
             mid = board_size // 2
@@ -629,7 +736,7 @@ class KorridorerRoom:
                     my_role = f"p{idx + 1}"
                     my_index = idx
                     p["lastSeen"] = time.time()
-                    if self.status == "active" and self.current_turn == idx:
+                    if self.status == "active" and self.current_turn == idx and not p.get("eliminated"):
                         is_my_turn = True
                     break
             else:
@@ -637,10 +744,14 @@ class KorridorerRoom:
                     self.spectators[player_id]["lastSeen"] = time.time()
 
             if is_my_turn and my_index is not None:
-                all_pos = [tuple(p["pos"]) for p in self.players]
+                all_pos = [tuple(p["pos"]) for p in self.players if not p.get("eliminated")]
                 curr_pos = tuple(self.players[my_index]["pos"])
                 walls_set = self.get_walls_set()
                 my_valid_moves = [list(m) for m in get_valid_pawn_moves(curr_pos, all_pos, walls_set, board_size)]
+
+            time_rem = 0.0
+            if self.turn_time_limit > 0 and self.status == "active":
+                time_rem = max(0.0, self.turn_time_limit - (time.time() - self.turn_start_time))
 
             return {
                 "ok": True,
@@ -648,6 +759,9 @@ class KorridorerRoom:
                 "status": self.status,
                 "version": self.version,
                 "maxPlayers": self.max_players,
+                "turnTimeLimit": self.turn_time_limit,
+                "turnTimeRemaining": round(time_rem, 1),
+                "winReason": self.win_reason,
                 "boardSize": board_size,
                 "isCenterGoal": is_multi,
                 "centerGoal": [mid, mid] if is_multi else None,
@@ -663,6 +777,8 @@ class KorridorerRoom:
                         "walls": p["walls"],
                         "goalDesc": p["goalDesc"],
                         "isHost": p["isHost"],
+                        "isBot": p.get("isBot", False),
+                        "eliminated": p.get("eliminated", False),
                     }
                     for p in self.players
                 ],
@@ -707,11 +823,13 @@ class KorridorerAPI:
                         p_room = party_rooms.get(room_code)
                         if p_room:
                             host_player = p_room.players.get(p_room.host_id, {})
+                            turn_time_limit = int(p_room.game_state.get("settings", {}).get("timeLimit", 30))
                             room = KorridorerRoom(
                                 code=room_code,
                                 host_name=host_player.get("name", "Spiller 1"),
                                 host_avatar=host_player.get("avatar", "charbear"),
-                                max_players=16
+                                max_players=16,
+                                turn_time_limit=turn_time_limit,
                             )
                             room.host_id = p_room.host_id
                             room.players[0]["id"] = p_room.host_id
@@ -732,6 +850,7 @@ class KorridorerAPI:
                                         "walls": 10 if len(p_room.players) == 2 else 5,
                                         "goalDesc": cfg["goalDesc"],
                                         "isHost": False,
+                                        "eliminated": False,
                                         "lastSeen": time.time(),
                                     })
                             if len(room.players) >= 2:
@@ -782,6 +901,7 @@ class KorridorerAPI:
             host_name = str(body.get("hostName", "Spiller 1")).strip()[:18] or "Spiller 1"
             host_avatar = str(body.get("avatar", "charbear")).strip()[:200000] or "charbear"
             max_players = int(body.get("maxPlayers", 4))
+            turn_time_limit = int(body.get("turnTimeLimit") if body.get("turnTimeLimit") is not None else (body.get("timeLimit") or 30))
 
             with _rooms_lock:
                 available = [c for c in CLEAN_ROOM_CODES if c not in _rooms]
@@ -792,6 +912,7 @@ class KorridorerAPI:
                     host_name=host_name,
                     host_avatar=host_avatar,
                     max_players=max_players,
+                    turn_time_limit=turn_time_limit,
                 )
                 _rooms[code] = room
 
@@ -830,6 +951,7 @@ class KorridorerAPI:
                         "walls": 10 if room.max_players == 2 else 5,
                         "goalDesc": cfg["goalDesc"],
                         "isHost": False,
+                        "eliminated": False,
                         "lastSeen": time.time(),
                     }
                     room.players.append(new_player)
@@ -859,6 +981,37 @@ class KorridorerAPI:
                         "role": "spectator",
                         "isHost": False,
                     }
+
+        elif path in ("/api/korridorer/forfeit", "/api/korridorer/resign"):
+            code = str(body.get("roomCode") or body.get("code") or "").strip().upper()
+            player_id = str(body.get("playerId") or body.get("player") or "").strip()
+
+            with _rooms_lock:
+                room = _rooms.get(code)
+
+            if not room:
+                return 404, {"ok": False, "error": "Rommet finnes ikke."}
+
+            ok, msg = room.forfeit_player(player_id)
+            if not ok:
+                return 400, {"ok": False, "error": msg}
+
+            return 200, {"ok": True, "message": msg, "state": room.get_public_state(player_id)}
+
+        elif path == "/api/korridorer/timeout":
+            code = str(body.get("roomCode") or body.get("code") or "").strip().upper()
+            player_id = str(body.get("playerId") or body.get("player") or "").strip()
+
+            with _rooms_lock:
+                room = _rooms.get(code)
+
+            if not room:
+                return 404, {"ok": False, "error": "Rommet finnes ikke."}
+
+            with room.lock:
+                room.check_timeout_if_needed()
+
+            return 200, {"ok": True, "state": room.get_public_state(player_id)}
 
         elif path == "/api/korridorer/start":
             code = str(body.get("roomCode") or body.get("code") or "").strip().upper()

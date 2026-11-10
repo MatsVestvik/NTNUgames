@@ -457,6 +457,13 @@
     // Bot Config
     botDifficulty: "hard", // 'easy' or 'hard'
     isBotThinking: false,
+
+    // Turn Timer & Surrender
+    turnTimeLimit: 30, // seconds per turn (0 = disabled)
+    turnTimeRemaining: 30,
+    turnTimerInterval: null,
+    turnStartTimeStamp: 0,
+    winReason: null,
   };
 
   // Saved preferences in localStorage
@@ -544,6 +551,7 @@
     // Local Tab
     controlLocalCount: document.getElementById("controlLocalCount"),
     localPlayersList: document.getElementById("localPlayersList"),
+    selectLocalTimeLimit: document.getElementById("selectLocalTimeLimit"),
     btnStartLocal: document.getElementById("btnStartLocal"),
 
     // Bot Tab
@@ -555,6 +563,7 @@
     pickerBotSprite: document.getElementById("pickerBotSprite"),
     controlBotCount: document.getElementById("controlBotCount"),
     controlBotDiff: document.getElementById("controlBotDiff"),
+    selectBotTimeLimit: document.getElementById("selectBotTimeLimit"),
     btnStartBot: document.getElementById("btnStartBot"),
 
     // Game Arena
@@ -562,11 +571,29 @@
     turnPawnImg: document.getElementById("turnPawnImg"),
     turnLabel: document.getElementById("turnLabel"),
     turnSub: document.getElementById("turnSub"),
+    turnTimerBadge: document.getElementById("turnTimerBadge"),
+    timerRingFill: document.getElementById("timerRingFill"),
+    timerRingText: document.getElementById("timerRingText"),
     btnModePawn: document.getElementById("btnModePawn"),
     btnModeWall: document.getElementById("btnModeWall"),
     btnRotateWall: document.getElementById("btnRotateWall"),
     btnWallsCount: document.getElementById("btnWallsCount"),
     labelOrientation: document.getElementById("labelOrientation"),
+
+    // Turn Order & Match HUD Columns
+    colTurnOrder: document.getElementById("colTurnOrder"),
+    dispPlayerCount: document.getElementById("dispPlayerCount"),
+    playersTurnList: document.getElementById("playersTurnList"),
+    colMatchSidebar: document.getElementById("colMatchSidebar"),
+    hudActiveAvatarWrap: document.getElementById("hudActiveAvatarWrap"),
+    hudActiveAvatarImg: document.getElementById("hudActiveAvatarImg"),
+    hudActiveName: document.getElementById("hudActiveName"),
+    hudActiveSub: document.getElementById("hudActiveSub"),
+    hudTimerBox: document.getElementById("hudTimerBox"),
+    hudTimerSec: document.getElementById("hudTimerSec"),
+    hudTimerBarFill: document.getElementById("hudTimerBarFill"),
+    btnGiveUpSide: document.getElementById("btnGiveUpSide"),
+    btnGiveUp: document.getElementById("btnGiveUp"),
 
     colPlayersLeft: document.getElementById("colPlayersLeft"),
     colPlayersRight: document.getElementById("colPlayersRight"),
@@ -1157,9 +1184,11 @@
       });
     });
 
-    // In-Game Footer Controls
+    // In-Game Footer Controls & Surrender
     el.btnRestartGame.addEventListener("click", handleRequestRematch);
     el.btnBackToLobby.addEventListener("click", leaveToLobby);
+    if (el.btnGiveUp) el.btnGiveUp.addEventListener("click", handleGiveUp);
+    if (el.btnGiveUpSide) el.btnGiveUpSide.addEventListener("click", handleGiveUp);
 
     // Victory Modal Buttons
     el.btnVictoryRematch.addEventListener("click", () => {
@@ -1442,6 +1471,9 @@
     state.role = data.myRole || "spectator";
     state.playerIndex = typeof data.myIndex === "number" ? data.myIndex : 0;
     if (data.boardSize) state.boardSize = data.boardSize;
+    if (typeof data.turnTimeLimit === "number") state.turnTimeLimit = data.turnTimeLimit;
+    if (typeof data.turnTimeRemaining === "number") state.turnTimeRemaining = data.turnTimeRemaining;
+    if (data.winReason) state.winReason = data.winReason;
 
     // Chat messages check
     if (Array.isArray(data.chatMessages) && data.chatMessages.length > state.chatMessages.length) {
@@ -1452,6 +1484,7 @@
 
     if (data.status === "waiting") {
       state.gameActive = false;
+      stopTurnTimer();
       showView("waiting");
       renderWaitingRoomSlots(data);
     } else if (data.status === "active") {
@@ -1459,15 +1492,19 @@
       showView("game");
       renderGameBoard();
 
+      // Sync timer with server
+      syncTurnTimer(data.turnTimeLimit, data.turnTimeRemaining);
+
       // Play chime when turn changes to user
       if (prevStatus && prevTurn !== state.currentTurn && state.playerIndex === state.currentTurn) {
         soundEngine.playTurn();
       }
     } else if (data.status === "finished") {
       state.gameActive = false;
+      stopTurnTimer();
       renderGameBoard();
       if (data.winner) {
-        showVictoryModal(data.winner);
+        showVictoryModal(data.winner, data.winReason);
       }
     }
   }
@@ -1524,6 +1561,249 @@
     }
   }
 
+  // --- TURN TIMER & SURRENDER MANAGEMENT ---
+  function stopTurnTimer() {
+    if (state.turnTimerInterval) {
+      clearInterval(state.turnTimerInterval);
+      state.turnTimerInterval = null;
+    }
+  }
+
+  function startTurnTimer(limit = state.turnTimeLimit, remaining = limit) {
+    stopTurnTimer();
+    state.turnTimeLimit = typeof limit === "number" ? limit : 30;
+    state.turnTimeRemaining = typeof remaining === "number" ? remaining : state.turnTimeLimit;
+    state.turnStartTimeStamp = Date.now();
+
+    updateTimerVisuals();
+
+    if (state.turnTimeLimit <= 0 || !state.gameActive) {
+      return;
+    }
+
+    state.turnTimerInterval = setInterval(() => {
+      if (!state.gameActive) {
+        stopTurnTimer();
+        return;
+      }
+      state.turnTimeRemaining = Math.max(0, state.turnTimeRemaining - 1);
+      updateTimerVisuals();
+
+      if (state.turnTimeRemaining <= 0) {
+        stopTurnTimer();
+        handleTurnTimeout();
+      }
+    }, 1000);
+  }
+
+  function resetTurnTimer() {
+    if (state.turnTimeLimit > 0) {
+      startTurnTimer(state.turnTimeLimit, state.turnTimeLimit);
+    } else {
+      stopTurnTimer();
+      updateTimerVisuals();
+    }
+  }
+
+  function syncTurnTimer(serverLimit, serverRemaining) {
+    if (typeof serverLimit === "number") {
+      state.turnTimeLimit = serverLimit;
+    }
+    const rem = typeof serverRemaining === "number" ? Math.max(0, serverRemaining) : state.turnTimeLimit;
+    startTurnTimer(state.turnTimeLimit, rem);
+  }
+
+  function updateTimerVisuals() {
+    const limit = state.turnTimeLimit;
+    const rem = state.turnTimeRemaining;
+    const circumference = 94.25; // 2 * PI * 15
+
+    if (el.turnTimerBadge) {
+      if (limit <= 0) {
+        el.turnTimerBadge.style.display = "none";
+      } else {
+        el.turnTimerBadge.style.display = "inline-flex";
+        if (el.timerRingText) {
+          el.timerRingText.textContent = rem > 0 ? rem : "0";
+        }
+        if (el.timerRingFill) {
+          const ratio = Math.max(0, Math.min(1, rem / (limit || 1)));
+          const offset = circumference * (1 - ratio);
+          el.timerRingFill.style.strokeDasharray = `${circumference}`;
+          el.timerRingFill.style.strokeDashoffset = `${offset}`;
+        }
+        el.turnTimerBadge.classList.toggle("low-time", rem <= 10 && rem > 5);
+        el.turnTimerBadge.classList.toggle("critical-time", rem <= 5);
+      }
+    }
+
+    if (el.hudTimerBox) {
+      if (limit <= 0) {
+        el.hudTimerBox.style.display = "none";
+      } else {
+        el.hudTimerBox.style.display = "block";
+        if (el.hudTimerSec) {
+          el.hudTimerSec.textContent = `${rem}s`;
+        }
+        if (el.hudTimerBarFill) {
+          const pct = Math.max(0, Math.min(100, (rem / (limit || 1)) * 100));
+          el.hudTimerBarFill.style.width = `${pct}%`;
+          el.hudTimerBarFill.classList.toggle("low-time", rem <= 10 && rem > 5);
+          el.hudTimerBarFill.classList.toggle("critical-time", rem <= 5);
+        }
+      }
+    }
+
+    // Update mini timer in the active player's card
+    if (el.playersTurnList) {
+      const activeCard = el.playersTurnList.querySelector(".player-game-card.active-turn");
+      if (activeCard) {
+        const mini = activeCard.querySelector(".pg-countdown-mini");
+        if (mini) {
+          if (limit > 0) {
+            mini.textContent = `${rem}s`;
+            mini.classList.toggle("low-time", rem <= 10 && rem > 5);
+            mini.classList.toggle("critical-time", rem <= 5);
+          } else {
+            mini.textContent = "";
+          }
+        }
+      }
+    }
+  }
+
+  async function handleTurnTimeout() {
+    if (!state.gameActive) return;
+
+    if (state.mode === "online") {
+      try {
+        const resp = await fetch("/api/korridorer/timeout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            roomCode: state.roomCode,
+            playerId: state.playerId,
+          }),
+        });
+        const data = await resp.json();
+        if (data.ok && data.state) {
+          syncOnlineState(data.state);
+        }
+      } catch (err) {
+        console.error("Timeout request error:", err);
+      }
+    } else {
+      autoStepCurrentPlayer();
+    }
+  }
+
+  function autoStepCurrentPlayer() {
+    const curPlayer = state.players[state.currentTurn];
+    if (!curPlayer || curPlayer.eliminated || !curPlayer.pos) {
+      advanceToNextActiveTurn();
+      resetTurnTimer();
+      renderGameBoard();
+      return;
+    }
+
+    const wallsSet = new Set(state.walls.map(w => `${w.r},${w.c},${w.orientation}`));
+    const allPos = state.players.filter(p => !p.eliminated).map(p => p.pos);
+    const validMoves = getValidPawnMoves(curPlayer.pos, allPos, wallsSet);
+
+    if (validMoves.length > 0) {
+      const goalFn = getPlayerGoalFn(state.currentTurn);
+      let bestMove = validMoves[0];
+      let bestDist = 999999;
+      for (const move of validMoves) {
+        const d = getShortestPathDistance(move, goalFn, wallsSet);
+        if (d < bestDist) {
+          bestDist = d;
+          bestMove = move;
+        }
+      }
+      commitPawnMove(bestMove[0], bestMove[1]);
+    } else {
+      advanceToNextActiveTurn();
+      resetTurnTimer();
+      renderGameBoard();
+    }
+  }
+
+  function advanceToNextActiveTurn() {
+    if (!state.players || state.players.length === 0) return;
+    const n = state.players.length;
+    let nextIdx = (state.currentTurn + 1) % n;
+    let attempts = 0;
+    while (state.players[nextIdx] && state.players[nextIdx].eliminated && attempts < n) {
+      nextIdx = (nextIdx + 1) % n;
+      attempts++;
+    }
+    state.currentTurn = nextIdx;
+  }
+
+  async function handleGiveUp() {
+    if (!state.gameActive) return;
+    if (state.mode === "online" && state.role === "spectator") return;
+
+    const curPlayer = state.players[state.currentTurn];
+    const isOnline = state.mode === "online";
+    const myPlayer = isOnline
+      ? state.players.find(p => p.id === state.playerId)
+      : (state.mode === "bot" ? state.players[0] : curPlayer);
+
+    const playerName = myPlayer ? myPlayer.name : "du";
+    const confirmed = window.confirm(`Er du sikker på at du vil gi opp partiet, ${playerName}?`);
+    if (!confirmed) return;
+
+    if (isOnline) {
+      try {
+        const resp = await fetch("/api/korridorer/forfeit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            roomCode: state.roomCode,
+            playerId: state.playerId,
+          }),
+        });
+        const data = await resp.json();
+        if (data.ok && data.state) {
+          syncOnlineState(data.state);
+        } else {
+          alert(data.error || "Kunne ikke gi opp partiet.");
+        }
+      } catch (err) {
+        console.error("Forfeit error:", err);
+      }
+    } else {
+      // Local or bot mode
+      const forfeitingIndex = state.mode === "bot" ? 0 : state.currentTurn;
+      const forfeiter = state.players[forfeitingIndex];
+      if (!forfeiter) return;
+
+      forfeiter.eliminated = true;
+      forfeiter.pos = [-99, -99];
+
+      const active = state.players.filter(p => !p.eliminated);
+      if (active.length <= 1) {
+        state.gameActive = false;
+        const winner = active[0] || forfeiter;
+        state.winner = winner;
+        state.winReason = `${forfeiter.name} ga opp partiet!`;
+        stopTurnTimer();
+        renderGameBoard();
+        showVictoryModal(winner, state.winReason);
+      } else {
+        if (state.currentTurn === forfeitingIndex) {
+          advanceToNextActiveTurn();
+        }
+        resetTurnTimer();
+        renderGameBoard();
+        soundEngine.playTurn();
+        triggerBotTurnIfNeeded();
+      }
+    }
+  }
+
   // --- LOCAL PASS & PLAY HANDLERS ---
   function handleStartLocalGame() {
     state.mode = "local";
@@ -1531,8 +1811,13 @@
     state.playerId = "local_p0";
     state.currentTurn = 0;
     state.winner = null;
+    state.winReason = null;
     state.walls = [];
     state.turnCount = 0;
+
+    const timeLimit = el.selectLocalTimeLimit ? parseInt(el.selectLocalTimeLimit.value, 10) : 30;
+    state.turnTimeLimit = Number.isNaN(timeLimit) ? 30 : timeLimit;
+    state.turnTimeRemaining = state.turnTimeLimit;
 
     const count = localPlayersCount;
     state.players = [];
@@ -1548,6 +1833,7 @@
         pos: getPlayerStartPos(i, count),
         walls: 999,
         isHost: i === 0,
+        eliminated: false,
       });
     }
 
@@ -1558,6 +1844,7 @@
     el.btnLeaveRoomHeader.classList.remove("hidden");
     showView("game");
     renderGameBoard();
+    resetTurnTimer();
     soundEngine.playTurn();
   }
 
@@ -1568,12 +1855,17 @@
     state.playerId = "player_human";
     state.currentTurn = 0;
     state.winner = null;
+    state.winReason = null;
     state.walls = [];
     state.turnCount = 0;
     state.isBotThinking = false;
 
     const humanName = el.botPlayerName ? (el.botPlayerName.value.trim() || "Mester") : "Mester";
     localStorage.setItem("korridorer_player_name", humanName);
+
+    const timeLimit = el.selectBotTimeLimit ? parseInt(el.selectBotTimeLimit.value, 10) : 30;
+    state.turnTimeLimit = Number.isNaN(timeLimit) ? 30 : timeLimit;
+    state.turnTimeRemaining = state.turnTimeLimit;
 
     const count = botPlayersCount;
 
@@ -1587,6 +1879,7 @@
         pos: getPlayerStartPos(0, count),
         walls: 999,
         isHost: true,
+        eliminated: false,
       },
     ];
 
@@ -1620,6 +1913,7 @@
         walls: 999,
         isHost: false,
         isBot: true,
+        eliminated: false,
       });
     }
 
@@ -1630,6 +1924,7 @@
     el.btnLeaveRoomHeader.classList.remove("hidden");
     showView("game");
     renderGameBoard();
+    resetTurnTimer();
     soundEngine.playTurn();
   }
 
@@ -2013,13 +2308,15 @@
     if (goalFn(r, c)) {
       state.gameActive = false;
       state.winner = curPlayer;
+      stopTurnTimer();
       renderGameBoard();
       showVictoryModal(curPlayer);
       return;
     }
 
     // Next turn
-    state.currentTurn = (state.currentTurn + 1) % state.players.length;
+    advanceToNextActiveTurn();
+    resetTurnTimer();
     renderGameBoard();
     soundEngine.playTurn();
     triggerBotTurnIfNeeded();
@@ -2069,7 +2366,8 @@
     state.turnCount++;
 
     // Next turn
-    state.currentTurn = (state.currentTurn + 1) % state.players.length;
+    advanceToNextActiveTurn();
+    resetTurnTimer();
     renderGameBoard();
     soundEngine.playTurn();
     triggerBotTurnIfNeeded();
@@ -2121,35 +2419,103 @@
   }
 
   function renderPlayersSideCards() {
-    el.colPlayersLeft.innerHTML = "";
-    el.colPlayersRight.innerHTML = "";
-    const manyPlayers = state.players.length > 6;
-    el.colPlayersLeft.classList.toggle("many-players", manyPlayers);
-    el.colPlayersRight.classList.toggle("many-players", manyPlayers);
+    if (!el.playersTurnList) return;
+    el.playersTurnList.innerHTML = "";
 
+    const total = state.players.length;
+    const activeList = state.players.filter(p => !p.eliminated);
+    if (el.dispPlayerCount) {
+      if (activeList.length < total) {
+        el.dispPlayerCount.textContent = `${activeList.length}/${total} aktive`;
+      } else {
+        el.dispPlayerCount.textContent = `${total} spillere`;
+      }
+    }
+
+    // Determine who is next in active order
+    let nextIdx = -1;
+    if (state.gameActive && total > 1) {
+      let cand = (state.currentTurn + 1) % total;
+      let count = 0;
+      while (count < total) {
+        if (state.players[cand] && !state.players[cand].eliminated) {
+          nextIdx = cand;
+          break;
+        }
+        cand = (cand + 1) % total;
+        count++;
+      }
+    }
+
+    // Render cards strictly in sequence of turns (0, 1, 2, ... total - 1)
     state.players.forEach((p, idx) => {
       const isTurn = idx === state.currentTurn;
+      const isNext = !isTurn && idx === nextIdx && state.gameActive;
+      const isElim = Boolean(p.eliminated);
+      const isMe = (state.mode === "online" && idx === state.playerIndex) ||
+                   (state.mode === "bot" && idx === 0);
+
       const card = document.createElement("div");
-      card.className = `player-game-card ${isTurn ? "active-turn" : ""}`;
+      card.className = `player-game-card ${isTurn ? "active-turn" : ""} ${isElim ? "is-eliminated" : ""}`;
       card.id = `playerCard_${idx}`;
 
+      let statusBadgeHtml = "";
+      if (isElim) {
+        statusBadgeHtml = `<span class="pg-status-badge is-eliminated">Utslått</span>`;
+      } else if (isTurn) {
+        statusBadgeHtml = `<span class="pg-status-badge is-active">I trekket</span>`;
+      } else if (isNext) {
+        statusBadgeHtml = `<span class="pg-status-badge is-next">Neste tur</span>`;
+      } else {
+        statusBadgeHtml = `<span class="pg-status-badge is-waiting">Venter</span>`;
+      }
+
+      const timerMiniHtml = (isTurn && !isElim && state.turnTimeLimit > 0)
+        ? `<span class="pg-countdown-mini ${state.turnTimeRemaining <= 5 ? "critical-time" : (state.turnTimeRemaining <= 10 ? "low-time" : "")}">${state.turnTimeRemaining}s</span>`
+        : "";
+
       card.innerHTML = `
-        <div class="pg-header">
-          <div class="pg-avatar-wrap">
-            <img src="${getMonImg(p.avatar)}" class="pg-avatar-img" alt="${p.name}" />
+        <span class="pg-turn-pos">#${idx + 1}</span>
+        <div class="pg-avatar-wrap" style="border: 2px solid ${p.color || "#00b4d8"};">
+          <img src="${getMonImg(p.avatar)}" class="pg-avatar-img" alt="${p.name}" />
+        </div>
+        <div class="pg-info">
+          <div class="pg-name-row">
+            <span class="pg-name" title="${p.name}">${p.name}</span>
+            ${isMe ? '<span class="pg-me-tag">DEG</span>' : ""}
           </div>
-          <div class="pg-info">
-            <span class="pg-name">${p.name}</span>
+          <div class="pg-status-row">
+            ${statusBadgeHtml}
+            ${timerMiniHtml}
           </div>
         </div>
       `;
 
-      if (idx % 2 === 0) {
-        el.colPlayersLeft.appendChild(card);
-      } else {
-        el.colPlayersRight.appendChild(card);
-      }
+      el.playersTurnList.appendChild(card);
     });
+
+    // Update Match Sidebar Spotlight on Active Player
+    const curPlayer = state.players[state.currentTurn];
+    if (curPlayer) {
+      if (el.hudActiveAvatarImg) {
+        el.hudActiveAvatarImg.src = getMonImg(curPlayer.avatar);
+      }
+      if (el.hudActiveAvatarWrap) {
+        el.hudActiveAvatarWrap.style.borderColor = curPlayer.color || "#fbbf24";
+      }
+      if (el.hudActiveName) {
+        el.hudActiveName.textContent = curPlayer.name;
+      }
+      if (el.hudActiveSub) {
+        if (curPlayer.eliminated) {
+          el.hudActiveSub.textContent = "Utslått fra partiet";
+        } else if (state.players.length > 2) {
+          el.hudActiveSub.textContent = "Nå fellesmålet i midten";
+        } else {
+          el.hudActiveSub.textContent = curPlayer.goalDesc || (curPlayer.start && curPlayer.start[0] === 8 ? "Nå rad 0 (øverst)" : "Nå rad 8 (nederst)");
+        }
+      }
+    }
   }
 
   function renderBoardPawns() {
@@ -2157,6 +2523,7 @@
     document.querySelectorAll(".pawn-token").forEach(pt => pt.remove());
 
     state.players.forEach((p, idx) => {
+      if (p.eliminated || !p.pos || p.pos[0] < 0 || p.pos[1] < 0) return;
       const [r, c] = p.pos;
       const cell = document.getElementById(`cell_${r}_${c}`);
       if (!cell) return;
@@ -2414,14 +2781,21 @@
   }
 
   // --- VICTORY & REMATCH ---
-  function showVictoryModal(winner) {
+  function showVictoryModal(winner, winReason) {
+    stopTurnTimer();
     soundEngine.playVictory();
-    el.victoryWinnerImg.src = getMonImg(winner.avatar);
-    el.victoryTitle.textContent = `${winner.name} Vinner!`;
-    if (state.players && state.players.length > 2) {
-      el.victoryDesc.textContent = `Gratulerer! ${winner.name} nådde fellesmålet i midten først og vant partiet!`;
+    if (winner && winner.avatar) {
+      el.victoryWinnerImg.src = getMonImg(winner.avatar);
+    }
+    const winnerName = winner ? winner.name : "Vinner";
+    el.victoryTitle.textContent = `${winnerName} Vinner!`;
+    const reasonText = winReason || state.winReason;
+    if (reasonText) {
+      el.victoryDesc.textContent = reasonText;
+    } else if (state.players && state.players.length > 2) {
+      el.victoryDesc.textContent = `Gratulerer! ${winnerName} nådde fellesmålet i midten først og vant partiet!`;
     } else {
-      el.victoryDesc.textContent = `Gratulerer! ${winner.name} manøvrerte monsteret sitt i mål over brettet!`;
+      el.victoryDesc.textContent = `Gratulerer! ${winnerName} manøvrerte monsteret sitt i mål over brettet!`;
     }
 
     el.statTurnCount.textContent = state.turnCount;
@@ -2462,6 +2836,7 @@
   }
 
   async function leaveToLobby() {
+    stopTurnTimer();
     if (state.pollTimer) clearInterval(state.pollTimer);
     state.pollTimer = null;
     const code = state.roomCode || sessionStorage.getItem("party_room_code");
