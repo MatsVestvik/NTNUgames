@@ -516,15 +516,15 @@ body {
 }
 
 .player-tile.is-ready {
-  background: linear-gradient(180deg, rgba(16, 185, 129, 0.15) 0%, rgba(20, 36, 52, 0.9) 100%);
-  border-color: rgba(16, 185, 129, 0.55);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 0 14px rgba(16, 185, 129, 0.18);
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.25) 0%, rgba(20, 36, 52, 0.9) 100%);
+  border-color: rgba(16, 185, 129, 0.65);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 0 14px rgba(16, 185, 129, 0.25);
 }
 
 .player-tile.is-not-ready {
-  background: linear-gradient(180deg, rgba(239, 68, 68, 0.15) 0%, rgba(36, 20, 32, 0.9) 100%);
-  border-color: rgba(239, 68, 68, 0.5);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 0 14px rgba(239, 68, 68, 0.16);
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.35) 0%, rgba(36, 16, 24, 0.9) 100%);
+  border-color: rgba(239, 68, 68, 0.7);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 0 14px rgba(239, 68, 68, 0.3);
 }
 
 .player-tile.is-host {
@@ -1248,43 +1248,60 @@ body.party-in-lobby .player-tile:hover {
 }
 
 /* Green Hue for Ready Players */
-body.party-in-lobby .player-tile.is-ready {
-  background: linear-gradient(180deg, rgba(16, 185, 129, 0.16) 0%, rgba(18, 34, 50, 0.9) 100%) !important;
-  border-color: rgba(16, 185, 129, 0.6) !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 0 14px rgba(16, 185, 129, 0.2) !important;
+body.party-in-lobby .player-tile.is-ready,
+body.party-in-lobby .player-tile.is-me.is-ready {
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.3) 0%, rgba(6, 95, 70, 0.22) 55%, rgba(12, 28, 25, 0.95)) !important;
+  border-color: #10b981 !important;
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.35), 0 0 16px rgba(16, 185, 129, 0.25) !important;
 }
 
-body.party-in-lobby .player-tile.is-ready:hover {
-  border-color: #10b981 !important;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45), 0 0 18px rgba(16, 185, 129, 0.35) !important;
+body.party-in-lobby .player-tile.is-ready:hover,
+body.party-in-lobby .player-tile.is-me.is-ready:hover {
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.42) 0%, rgba(6, 95, 70, 0.3) 55%, rgba(14, 34, 30, 0.98)) !important;
+  border-color: #34d399 !important;
+  box-shadow: 0 6px 24px rgba(16, 185, 129, 0.45), 0 0 20px rgba(16, 185, 129, 0.35) !important;
+}
+
+body.party-in-lobby .player-tile.is-ready .player-avatar-wrap {
+  background: radial-gradient(circle at center, rgba(16, 185, 129, 0.45) 0%, rgba(16, 185, 129, 0.18) 55%, transparent 72%) !important;
+  border-radius: 50% !important;
 }
 
 body.party-in-lobby .player-tile.is-ready .player-mon-img {
-  filter: drop-shadow(0 6px 14px rgba(16, 185, 129, 0.5)) !important;
+  filter: drop-shadow(0 6px 14px rgba(16, 185, 129, 0.55)) !important;
 }
 
 /* Red Hue for Not Ready Players */
-body.party-in-lobby .player-tile.is-not-ready {
-  background: linear-gradient(180deg, rgba(239, 68, 68, 0.16) 0%, rgba(36, 18, 28, 0.9) 100%) !important;
-  border-color: rgba(239, 68, 68, 0.55) !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 0 14px rgba(239, 68, 68, 0.18) !important;
+body.party-in-lobby .player-tile.is-not-ready,
+body.party-in-lobby .player-tile.is-me.is-not-ready {
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.42) 0%, rgba(185, 28, 28, 0.28) 55%, rgba(38, 12, 16, 0.95)) !important;
+  border-color: #ef4444 !important;
+  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.45), 0 0 18px rgba(239, 68, 68, 0.32) !important;
 }
 
-body.party-in-lobby .player-tile.is-not-ready:hover {
-  border-color: #ef4444 !important;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45), 0 0 18px rgba(239, 68, 68, 0.3) !important;
+body.party-in-lobby .player-tile.is-not-ready:hover,
+body.party-in-lobby .player-tile.is-me.is-not-ready:hover {
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.52) 0%, rgba(185, 28, 28, 0.38) 55%, rgba(48, 15, 20, 0.98)) !important;
+  border-color: #f87171 !important;
+  box-shadow: 0 6px 24px rgba(239, 68, 68, 0.55), 0 0 22px rgba(239, 68, 68, 0.42) !important;
+}
+
+body.party-in-lobby .player-tile.is-not-ready .player-avatar-wrap {
+  background: radial-gradient(circle at center, rgba(239, 68, 68, 0.55) 0%, rgba(220, 38, 38, 0.25) 55%, transparent 72%) !important;
+  border-radius: 50% !important;
 }
 
 body.party-in-lobby .player-tile.is-not-ready .player-mon-img {
-  filter: drop-shadow(0 6px 14px rgba(239, 68, 68, 0.45)) !important;
+  filter: drop-shadow(0 6px 16px rgba(239, 68, 68, 0.7)) !important;
 }
 
 body.party-in-lobby .player-avatar-circle,
 body.party-in-lobby .player-avatar-wrap {
   width: 144px !important;
   height: 144px !important;
-  border-radius: 0 !important;
-  background: transparent !important;
+  max-width: 100% !important;
+  aspect-ratio: 1 / 1 !important;
+  border-radius: 50% !important;
   border: none !important;
   box-shadow: none !important;
   display: flex !important;
@@ -1360,6 +1377,72 @@ body.party-in-lobby .player-kick-btn {
   top: -7px;
   right: -6px;
   z-index: 3;
+}
+
+/* Ready Status Pill on Player Tile */
+.player-ready-pill {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  line-height: 1.2;
+  text-transform: uppercase;
+  margin-top: 0.15rem;
+  display: inline-block;
+  pointer-events: none;
+  transition: all 0.2s ease;
+}
+
+.player-ready-pill.is-ready {
+  background: rgba(16, 185, 129, 0.22);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.6);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.2);
+}
+
+.player-ready-pill.is-not-ready {
+  background: rgba(239, 68, 68, 0.28);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.65);
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.25);
+}
+
+.lobby-players-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.ready-toggle-btn {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  border: 1px solid #34d399;
+  border-radius: 8px;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.ready-toggle-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.45);
+}
+
+.ready-toggle-btn.is-not-ready {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  border-color: #f87171;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.35);
+}
+
+.ready-toggle-btn.is-not-ready:hover {
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.45);
 }
 
 /* Character Customizer Section - Balanced, spacious, and fills space naturally */

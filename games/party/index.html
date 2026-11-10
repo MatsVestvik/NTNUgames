@@ -8,7 +8,7 @@
   <link rel="icon" type="image/x-icon" href="/favicon.ico" />
   <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png" />
   <link rel="apple-touch-icon" href="/favicon.png" />
-  <link rel="stylesheet" href="/party/styles.css?v=3.0" />
+  <link rel="stylesheet" href="/party/styles.css?v=3.1" />
   <link rel="stylesheet" href="/character/character-creator.css?v=2.1" />
   <link rel="stylesheet" href="/parallax-bg.css?v=2.1" />
 </head>
@@ -103,7 +103,10 @@
               <h3 class="section-title">
                 Tilkoblede spillere (<span id="playersCountNum">1</span>)
               </h3>
-              <span class="section-hint" id="hostHint">Du er vert</span>
+              <div class="lobby-players-header-right">
+                <span class="section-hint" id="hostHint">Du er vert</span>
+                <button type="button" class="ready-toggle-btn is-ready" id="btnToggleReady" title="Trykk for å endre klar-status">✓ Du er klar</button>
+              </div>
             </div>
             <div class="players-grid" id="playersGrid">
               <!-- Rendered live -->
@@ -405,7 +408,7 @@
   </div>
 
   <script src="/character/character-creator.js?v=2.2"></script>
-  <script src="/party/app.js?v=2.8"></script>
+  <script src="/party/app.js?v=2.9"></script>
   <script src="/parallax-bg.js?v=2.1"></script>
 </body>
 

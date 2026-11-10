@@ -108,6 +108,7 @@
     selectScoreLimitKuleregn: document.getElementById("selectScoreLimitKuleregn"),
     selectBotsKuleregn: document.getElementById("selectBotsKuleregn"),
     btnLeaveRoom: document.getElementById("btnLeaveRoom"),
+    btnToggleReady: document.getElementById("btnToggleReady"),
     connStatusText: document.getElementById("connStatusText"),
   };
 
@@ -578,7 +579,15 @@
           ${canKick ? `<button type="button" class="player-kick-btn" title="Fjern ${escapeHtml(p.name)} fra rommet" aria-label="Fjern ${escapeHtml(p.name)}">✕</button>` : ''}
           <div class="player-avatar-wrap">${renderAvatarHtml(playerAvatar)}</div>
           <div class="player-name-text">${escapeHtml(p.name)}</div>
+          <span class="player-ready-pill ${isReady ? 'is-ready' : 'is-not-ready'}">${isReady ? 'KLAR' : 'IKKE KLAR'}</span>
         `;
+        if (isMe) {
+          tile.style.cursor = "pointer";
+          tile.title = isReady ? "Du er klar! Klikk for å sette som ikke klar" : "Du er ikke klar! Klikk for å bli klar";
+          tile.addEventListener("click", () => toggleReady(!isReady));
+        } else {
+          tile.title = `${p.name} er ${isReady ? 'klar' : 'ikke klar'}`;
+        }
         if (canKick) {
           const kickBtn = tile.querySelector(".player-kick-btn");
           if (kickBtn) {
@@ -592,6 +601,14 @@
         }
         el.playersGrid.appendChild(tile);
       });
+    }
+
+    if (el.btnToggleReady && me) {
+      const meReady = Boolean(me.isReady);
+      el.btnToggleReady.classList.toggle("is-ready", meReady);
+      el.btnToggleReady.classList.toggle("is-not-ready", !meReady);
+      el.btnToggleReady.textContent = meReady ? "✓ Du er klar" : "Meld deg klar";
+      el.btnToggleReady.title = meReady ? "Du er klar! Klikk for å sette som ikke klar" : "Du er ikke klar! Klikk for å melde deg klar";
     }
 
     // Update games list based on current player count & move disabled games to the bottom
@@ -684,6 +701,28 @@
 
     if (orderNeedsChange) {
       desiredOrder.forEach((card) => container.appendChild(card));
+    }
+  }
+
+  async function toggleReady(desiredReady) {
+    if (!state.roomCode || !state.playerId) return;
+    try {
+      const resp = await fetch("/api/party/toggle-ready", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roomCode: state.roomCode,
+          playerId: state.playerId,
+          ready: desiredReady,
+        }),
+      });
+      const data = await resp.json();
+      if (data.ok && data.state) {
+        state.version = data.state.version;
+        updateLobbyUI(data.state);
+      }
+    } catch (err) {
+      console.warn("Toggle ready error:", err);
     }
   }
 
@@ -939,6 +978,16 @@
       if (confirm("Er du sikker på at du vil forlate party-rommet?")) {
         leaveRoom();
       }
+    });
+  }
+
+  if (el.btnToggleReady) {
+    el.btnToggleReady.addEventListener("click", () => {
+      const me = (state.lastRoomData && state.lastRoomData.players)
+        ? state.lastRoomData.players.find(p => p.id === state.playerId)
+        : null;
+      const currentReady = me ? Boolean(me.isReady) : false;
+      toggleReady(!currentReady);
     });
   }
 

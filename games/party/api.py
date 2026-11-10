@@ -2113,7 +2113,8 @@ class PartyAPI:
                 if player_id in room.players:
                     room.players[player_id]["last_seen"] = time.time()
                     in_lounge = query.get("inLounge", [""])[0] in ("1", "true", "yes")
-                    if in_lounge and not room.players[player_id].get("is_ready"):
+                    if in_lounge and room.current_game is None and room.players[player_id].get("in_game"):
+                        room.players[player_id]["in_game"] = False
                         room.players[player_id]["is_ready"] = True
                         room.bump()
                 room.touch()
@@ -2382,6 +2383,27 @@ class PartyAPI:
                 "color": new_color
             }
 
+        if rel_path in ("/api/toggle-ready", "/api/party/toggle-ready"):
+            code = str(body.get("roomCode") or body.get("code") or "").strip().upper()
+            player_id = str(body.get("playerId") or "").strip()
+            desired_ready = body.get("ready")
+            with _rooms_lock:
+                room = _rooms.get(code)
+            if room:
+                with room.lock:
+                    if player_id in room.players:
+                        p = room.players[player_id]
+                        if desired_ready is None:
+                            p["is_ready"] = not p.get("is_ready", False)
+                        else:
+                            p["is_ready"] = bool(desired_ready)
+                        p["in_game"] = False
+                        p["last_seen"] = time.time()
+                        room.bump()
+                        state = room.get_public_state(player_id)
+                        return 200, {"ok": True, "isReady": p["is_ready"], "state": state}
+            return 404, {"ok": False, "error": "Rom eller spiller ikke funnet"}
+
         if rel_path in ("/api/to-lounge", "/api/to-lobby", "/api/ready"):
             code = str(body.get("roomCode") or body.get("code") or "").strip().upper()
             player_id = str(body.get("playerId") or "").strip()
@@ -2392,6 +2414,7 @@ class PartyAPI:
                 with room.lock:
                     if player_id in room.players:
                         room.players[player_id]["is_ready"] = True
+                        room.players[player_id]["in_game"] = False
                         room.players[player_id]["last_seen"] = time.time()
                     is_host = bool(
                         (player_id and room.players.get(player_id, {}).get("is_host")) or
@@ -2409,6 +2432,7 @@ class PartyAPI:
                             room.game_state = {}
                             for p in room.players.values():
                                 p["is_ready"] = True
+                                p["in_game"] = False
                         else:
                             # Guest left active game: notify game and mark guest ready
                             cleanup_external_game_session(code, current_game, player_id=player_id)
@@ -2447,6 +2471,7 @@ class PartyAPI:
                     room.game_state = {}
                     for p in room.players.values():
                         p["is_ready"] = True
+                        p["in_game"] = False
                     room.bump()
                     return 200, {"ok": True, "currentGame": None}
 
@@ -2475,6 +2500,7 @@ class PartyAPI:
                 # Mark all players as in game now that the game begins
                 for p in room.players.values():
                     p["is_ready"] = False
+                    p["in_game"] = True
 
                 if game_id == "ordbombe":
                     room.start_ordbombe(settings)
@@ -2815,6 +2841,7 @@ class PartyAPI:
                     room.game_state = {}
                     for p in room.players.values():
                         p["is_ready"] = True
+                        p["in_game"] = False
                     room.bump()
                 else:
                     return 400, {"ok": False, "error": f"Spillet '{game_id}' er under utvikling og ikke tilgjengelig enda."}
