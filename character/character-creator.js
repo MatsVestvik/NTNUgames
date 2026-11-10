@@ -557,6 +557,9 @@
 
   function saveCharacter(cfg, dataUrl = null, sourceId = null) {
     const encoded = encodeConfig(cfg);
+    if (dataUrl) {
+      dataUrlCache.set(encoded, dataUrl);
+    }
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
       localStorage.setItem("korridorer_character", encoded);
@@ -891,6 +894,7 @@
 
     const widgetContainer = modal.querySelector("#skribblModalWidgetContainer");
     let activeConfig = parseConfig(initialConfig || getSavedCharacter());
+    let activeDataUrl = null;
 
     const widget = renderSkribblWidget(widgetContainer, {
       initialConfig: activeConfig,
@@ -898,6 +902,7 @@
       persist: persist,
       onChange: (encoded, dataUrl, cfg) => {
         activeConfig = cfg;
+        activeDataUrl = dataUrl;
       }
     });
 
@@ -923,11 +928,32 @@
 
     modal.querySelector("#ccBtnSave").addEventListener("click", async () => {
       document.removeEventListener("keydown", onKeyDown);
-      const cfg = widget ? widget.getConfig() : activeConfig;
-      const dataUrl = await getDataUrl(cfg);
-      const encoded = persist ? saveCharacter(cfg, dataUrl) : encodeConfig(cfg);
-      if (onSave) onSave(cfg, dataUrl, encoded);
-      modal.remove();
+      try {
+        const cfg = widget ? widget.getConfig() : activeConfig;
+        let dataUrl = activeDataUrl;
+        const widgetCanvas = modal.querySelector(".skribbl-canvas");
+        if (!dataUrl && widgetCanvas) {
+          try {
+            dataUrl = widgetCanvas.toDataURL("image/png");
+          } catch (e) {}
+        }
+        if (!dataUrl) {
+          try {
+            dataUrl = await getDataUrl(cfg);
+          } catch (e) {
+            dataUrl = getDataUrlSync(cfg);
+          }
+        }
+        const encoded = persist ? saveCharacter(cfg, dataUrl) : encodeConfig(cfg);
+        if (dataUrl) {
+          dataUrlCache.set(encoded, dataUrl);
+        }
+        if (onSave) onSave(cfg, dataUrl, encoded);
+      } catch (err) {
+        console.error("Feil ved lagring av figur i modal:", err);
+      } finally {
+        modal.remove();
+      }
     });
   }
 

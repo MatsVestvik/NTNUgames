@@ -694,7 +694,11 @@
         localConfig[0].avatar = e.detail.encoded;
         updateCharacterPreviews();
         const p0Img = document.getElementById("imgLocalAvatarP0");
-        if (p0Img) p0Img.src = getMonImg(e.detail.encoded);
+        if (p0Img) p0Img.src = e.detail.dataUrl || getMonImg(e.detail.encoded);
+        const p0Badge = document.querySelector("#localPlayersList .local-player-row .local-p-badge");
+        if (p0Badge) {
+          p0Badge.style.background = extractCharacterColor(e.detail.encoded, PLAYER_DEFAULTS[0].color);
+        }
       }
     });
 
@@ -731,6 +735,10 @@
           updateCharacterPreviews();
           const p0Img = document.getElementById("imgLocalAvatarP0");
           if (p0Img) p0Img.src = getMonImg(encoded);
+          const p0Badge = document.querySelector("#localPlayersList .local-player-row .local-p-badge");
+          if (p0Badge) {
+            p0Badge.style.background = extractCharacterColor(encoded, PLAYER_DEFAULTS[0].color);
+          }
           soundEngine.playPawnMove();
         });
         el.cpwQuickColors.appendChild(sw);
@@ -753,6 +761,10 @@
         updateCharacterPreviews();
         const p0Img = document.getElementById("imgLocalAvatarP0");
         if (p0Img) p0Img.src = dataUrl || getMonImg(encoded);
+        const p0Badge = document.querySelector("#localPlayersList .local-player-row .local-p-badge");
+        if (p0Badge) {
+          p0Badge.style.background = extractCharacterColor(encoded, PLAYER_DEFAULTS[0].color);
+        }
         soundEngine.playWallRotate();
         if (onSavedCallback) onSavedCallback(encoded);
       }
@@ -771,6 +783,10 @@
     updateCharacterPreviews();
     const p0Img = document.getElementById("imgLocalAvatarP0");
     if (p0Img) p0Img.src = getMonImg(encoded);
+    const p0Badge = document.querySelector("#localPlayersList .local-player-row .local-p-badge");
+    if (p0Badge) {
+      p0Badge.style.background = extractCharacterColor(encoded, PLAYER_DEFAULTS[0].color);
+    }
     soundEngine.playWallRotate();
   }
 
@@ -792,7 +808,7 @@
       row.className = "local-player-row";
 
       row.innerHTML = `
-        <span class="local-p-badge" style="background:${cfg.color};">P${i + 1}</span>
+        <span class="local-p-badge" style="background:${extractCharacterColor(pData.avatar, cfg.color)};">P${i + 1}</span>
         <button type="button" class="local-p-avatar-btn" id="btnLocalAvatarP${i}" title="Tilpass figur for Spiller ${i + 1}">
           <img src="${getMonImg(pData.avatar)}" class="local-p-avatar-img" id="imgLocalAvatarP${i}" alt="Figur" />
         </button>
@@ -807,14 +823,26 @@
       const imgAv = row.querySelector(`#imgLocalAvatarP${i}`);
       btnAv.addEventListener("click", () => {
         if (typeof CharacterCreator !== "undefined") {
+          const currentPData = localConfig[i];
           CharacterCreator.openModal({
-            initialConfig: pData.avatar,
+            initialConfig: currentPData.avatar,
             title: `Tilpass figur: Spiller ${i + 1}`,
             persist: i === 0,
             onSave: (newCfg, dataUrl, enc) => {
               const encoded = enc || CharacterCreator.encodeConfig(newCfg);
-              pData.avatar = encoded;
-              imgAv.src = dataUrl || getMonImg(encoded);
+              currentPData.avatar = encoded;
+              localConfig[i].avatar = encoded;
+
+              const liveImg = document.getElementById(`imgLocalAvatarP${i}`) || imgAv;
+              if (liveImg) {
+                liveImg.src = dataUrl || getMonImg(encoded);
+              }
+
+              const badge = row.querySelector(".local-p-badge");
+              if (badge) {
+                badge.style.background = extractCharacterColor(encoded, cfg.color);
+              }
+
               if (i === 0) {
                 selectedCreateAvatar = encoded;
                 selectedJoinAvatar = encoded;
@@ -833,8 +861,20 @@
         if (typeof CharacterCreator !== "undefined") {
           const rnd = CharacterCreator.getRandomConfig();
           const enc = CharacterCreator.encodeConfig(rnd);
+          const dataUrl = CharacterCreator.getDataUrlSync(enc);
+          localConfig[i].avatar = enc;
           pData.avatar = enc;
-          imgAv.src = getMonImg(enc);
+
+          const liveImg = document.getElementById(`imgLocalAvatarP${i}`) || imgAv;
+          if (liveImg) {
+            liveImg.src = dataUrl || getMonImg(enc);
+          }
+
+          const badge = row.querySelector(".local-p-badge");
+          if (badge) {
+            badge.style.background = extractCharacterColor(enc, cfg.color);
+          }
+
           if (i === 0) {
             selectedCreateAvatar = enc;
             selectedJoinAvatar = enc;
