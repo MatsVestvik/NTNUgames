@@ -693,7 +693,8 @@
         selectedBotAvatar = e.detail.encoded;
         localConfig[0].avatar = e.detail.encoded;
         updateCharacterPreviews();
-        renderLocalPlayersSetup();
+        const p0Img = document.getElementById("imgLocalAvatarP0");
+        if (p0Img) p0Img.src = getMonImg(e.detail.encoded);
       }
     });
 
@@ -728,7 +729,8 @@
           selectedBotAvatar = encoded;
           localConfig[0].avatar = encoded;
           updateCharacterPreviews();
-          renderLocalPlayersSetup();
+          const p0Img = document.getElementById("imgLocalAvatarP0");
+          if (p0Img) p0Img.src = getMonImg(encoded);
           soundEngine.playPawnMove();
         });
         el.cpwQuickColors.appendChild(sw);
@@ -741,14 +743,16 @@
     if (typeof CharacterCreator === "undefined") return;
     CharacterCreator.openModal({
       initialConfig: selectedCreateAvatar,
-      onSave: (newCfg, dataUrl) => {
-        const encoded = CharacterCreator.encodeConfig(newCfg);
+      persist: true,
+      onSave: (newCfg, dataUrl, enc) => {
+        const encoded = enc || CharacterCreator.encodeConfig(newCfg);
         selectedCreateAvatar = encoded;
         selectedJoinAvatar = encoded;
         selectedBotAvatar = encoded;
         localConfig[0].avatar = encoded;
         updateCharacterPreviews();
-        renderLocalPlayersSetup();
+        const p0Img = document.getElementById("imgLocalAvatarP0");
+        if (p0Img) p0Img.src = dataUrl || getMonImg(encoded);
         soundEngine.playWallRotate();
         if (onSavedCallback) onSavedCallback(encoded);
       }
@@ -765,7 +769,8 @@
     selectedBotAvatar = encoded;
     localConfig[0].avatar = encoded;
     updateCharacterPreviews();
-    renderLocalPlayersSetup();
+    const p0Img = document.getElementById("imgLocalAvatarP0");
+    if (p0Img) p0Img.src = getMonImg(encoded);
     soundEngine.playWallRotate();
   }
 
@@ -805,14 +810,15 @@
           CharacterCreator.openModal({
             initialConfig: pData.avatar,
             title: `Tilpass figur: Spiller ${i + 1}`,
-            onSave: (newCfg, dataUrl) => {
-              const enc = CharacterCreator.encodeConfig(newCfg);
-              pData.avatar = enc;
-              imgAv.src = dataUrl || getMonImg(enc);
+            persist: i === 0,
+            onSave: (newCfg, dataUrl, enc) => {
+              const encoded = enc || CharacterCreator.encodeConfig(newCfg);
+              pData.avatar = encoded;
+              imgAv.src = dataUrl || getMonImg(encoded);
               if (i === 0) {
-                selectedCreateAvatar = enc;
-                selectedJoinAvatar = enc;
-                selectedBotAvatar = enc;
+                selectedCreateAvatar = encoded;
+                selectedJoinAvatar = encoded;
+                selectedBotAvatar = encoded;
                 updateCharacterPreviews();
               }
               soundEngine.playWallRotate();

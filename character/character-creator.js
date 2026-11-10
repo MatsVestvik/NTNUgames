@@ -590,6 +590,7 @@
     let isUpdating = false;
     let hasPendingUpdate = false;
     let pendingSkipSave = false;
+    const shouldAutoSave = options.autoSave === true && options.persist !== false;
 
     container.innerHTML = `
       <div class="skribbl-customizer-card">
@@ -783,7 +784,7 @@
         refreshColorDots();
 
         const encoded = encodeConfig(currentConfig);
-        if (!skipSave) {
+        if (!skipSave && shouldAutoSave) {
           saveCharacter(currentConfig, null, widgetId);
         }
 
@@ -816,6 +817,7 @@
 
     // Listen to external updates from other widgets
     const handleGlobalUpdate = (e) => {
+      if (options.persist === false || options.autoSave === false) return;
       if (e.detail && e.detail.config && e.detail.sourceId !== widgetId) {
         const nextCfg = parseConfig(e.detail.config);
         if (encodeConfig(nextCfg) !== encodeConfig(currentConfig)) {
@@ -854,7 +856,7 @@
   /**
    * Character Customizer Modal
    */
-  function openModal({ initialConfig, title = "Tilpass din spillfigur", onSave, onCancel } = {}) {
+  function openModal({ initialConfig, title = "Tilpass din spillfigur", onSave, onCancel, persist = true } = {}) {
     const existing = document.getElementById("ntnuCharacterCreatorModal");
     if (existing) existing.remove();
 
@@ -892,6 +894,8 @@
 
     const widget = renderSkribblWidget(widgetContainer, {
       initialConfig: activeConfig,
+      autoSave: false, // Never auto-save while browsing inside modal dialog
+      persist: persist,
       onChange: (encoded, dataUrl, cfg) => {
         activeConfig = cfg;
       }
@@ -921,7 +925,7 @@
       document.removeEventListener("keydown", onKeyDown);
       const cfg = widget ? widget.getConfig() : activeConfig;
       const dataUrl = await getDataUrl(cfg);
-      const encoded = saveCharacter(cfg, dataUrl);
+      const encoded = persist ? saveCharacter(cfg, dataUrl) : encodeConfig(cfg);
       if (onSave) onSave(cfg, dataUrl, encoded);
       modal.remove();
     });
