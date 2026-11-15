@@ -6,12 +6,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Kuleregn Tanks • 2D Stridsvognkamp</title>
 
-  <link rel="icon" type="image/png" href="/assets/icons/kuleregn.png?v=3.0" />
+  <link rel="icon" type="image/png" href="assets/icon.png?v=4.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/hub.css" />
   <link rel="stylesheet" href="/game-lobby.css" />
   <link rel="stylesheet" href="/parallax-bg.css" />
   <link rel="stylesheet" href="/character/character-creator.css" />
-  <link rel="stylesheet" href="styles.css?v=3.1" />
+  <link rel="stylesheet" href="styles.css?v=3.4" />
 </head>
 
 <body class="kuleregn-page">
@@ -33,7 +36,7 @@
           <span class="back-arrow" aria-hidden="true">←</span> <span id="backBtnText">Hub</span>
         </a>
         <div class="header-branding">
-          <img src="/hub/assets/icons/kuleregn.png?v=3.0" class="header-game-icon" alt="Kuleregn Tanks" aria-hidden="true" style="image-rendering: pixelated; object-fit: contain;" />
+          <img src="assets/icon.png?v=4.0" class="header-game-icon" alt="Kuleregn Tanks" aria-hidden="true" style="image-rendering: pixelated; object-fit: contain;" />
           <div>
             <h1 class="header-title">KULEREGN TANKS</h1>
             <span class="header-badge">2D Stridsvognkamp</span>
@@ -78,7 +81,7 @@
           <!-- Hero Header -->
           <div class="lobby-hero">
             <div class="hero-icon-wrap">
-              <img src="/hub/assets/icons/kuleregn.png?v=3.0" alt="Kuleregn Tanks stridsvogn" class="hero-icon" />
+              <img src="assets/icon.png?v=4.0" alt="Kuleregn Tanks stridsvogn" class="hero-icon" />
             </div>
             <h2 class="hero-title">Kuleregn Tanks</h2>
             <p class="hero-desc">
@@ -151,7 +154,7 @@
               </div>
 
               <button type="button" class="primary-btn pulse-glow" id="btnStartSoloPractice">
-                Start Skytebane
+                Start Skytebane (Velg stridsvogn)
               </button>
             </div>
           </div>
@@ -174,6 +177,98 @@
               <span class="cg-key">TAB</span>
               <span class="cg-desc">Resultattavle</span>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- VIEW 1.5: WAITING ROOM & TANK SELECTOR (Multiplayer Lobby)        -->
+      <!-- ================================================================= -->
+      <section class="view-panel hidden" id="viewWaitingRoom">
+        <div class="lobby-card wr-card">
+          <!-- Top Bar: Leave Room on Top-Left -->
+          <div class="wr-top-bar">
+            <button type="button" class="btn-leave-room" id="btnLeaveWaitingRoom" title="Forlat rom">
+              ◀ FORLAT ROM
+            </button>
+          </div>
+
+          <!-- Vehicle Turntable Selector Showcase (Pixelart Vibe, No Emojis, No Circles, No Glow) -->
+          <div class="wr-turntable-panel" id="wrTurntablePanel">
+            <div class="turntable-showcase-row">
+              <button type="button" class="turntable-arrow-btn prev-btn" id="btnTankPrev" aria-label="Forrige kjøretøy" title="Forrige kjøretøy">
+                ◀
+              </button>
+
+              <div class="turntable-stage" id="turntableStage" title="Valgt kjøretøy">
+                <canvas class="turntable-canvas" id="canvasVehicleTurntable" width="480" height="390"></canvas>
+              </div>
+
+              <button type="button" class="turntable-arrow-btn next-btn" id="btnTankNext" aria-label="Neste kjøretøy" title="Neste kjøretøy">
+                ▶
+              </button>
+            </div>
+
+            <!-- Stats Only (No Emojis, Pixelart vibe) -->
+            <div class="turntable-stats-grid" id="turntableStatsGrid">
+              <div class="tt-stat-box" title="Toppfart">
+                <div class="tt-stat-head">
+                  <span class="tt-stat-label">FART</span>
+                  <span class="tt-stat-val" id="ttStatSpeed">110</span>
+                </div>
+                <div class="tt-bar-track">
+                  <div class="tt-bar-fill fill-speed" id="ttFillSpeed" style="width: 60%;"></div>
+                </div>
+              </div>
+
+              <div class="tt-stat-box" title="Panserstyrke">
+                <div class="tt-stat-head">
+                  <span class="tt-stat-label">PANSER</span>
+                  <span class="tt-stat-val" id="ttStatArmor">100 HP</span>
+                </div>
+                <div class="tt-bar-track">
+                  <div class="tt-bar-fill fill-armor" id="ttFillArmor" style="width: 60%;"></div>
+                </div>
+              </div>
+
+              <div class="tt-stat-box" title="Skade">
+                <div class="tt-stat-head">
+                  <span class="tt-stat-label">SKADE</span>
+                  <span class="tt-stat-val" id="ttStatDamage">50</span>
+                </div>
+                <div class="tt-bar-track">
+                  <div class="tt-bar-fill fill-damage" id="ttFillDamage" style="width: 65%;"></div>
+                </div>
+              </div>
+
+              <div class="tt-stat-box" title="Skuddtakt">
+                <div class="tt-stat-head">
+                  <span class="tt-stat-label">SKUDDTAKT</span>
+                  <span class="tt-stat-val" id="ttStatRate">1.5/s</span>
+                </div>
+                <div class="tt-bar-track">
+                  <div class="tt-bar-fill fill-rate" id="ttFillRate" style="width: 60%;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Roster of Players in Room -->
+          <div class="wr-roster-section">
+            <div class="wr-roster-header">
+              <span class="wr-roster-title">Spillere i rommet</span>
+              <span class="wr-roster-count" id="waitingPlayerCount">1/16</span>
+            </div>
+            <div class="waiting-roster-grid" id="waitingPlayersGrid">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Waiting Room Action Buttons -->
+          <div class="wr-actions-bar">
+            <button type="button" class="btn-toggle-ready is-not-ready" id="btnToggleReady">
+              <span class="btr-label">JEG ER KLAR</span>
+            </button>
           </div>
         </div>
       </section>
@@ -220,6 +315,8 @@
               <!-- Dynamic kill feed notices -->
             </div>
           </div>
+
+
 
           <!-- Interactive Scoreboard Modal (Hold TAB or toggle) -->
           <div class="scoreboard-modal hidden" id="scoreboardModal">

@@ -2770,10 +2770,11 @@ class PartyAPI:
                                 bot_count=bot_count,
                                 mode=mode,
                                 host_avatar=host_player.get("avatar", ""),
+                                host_tank="medium",
                             )
                             k_room.host_id = room.host_id
-                            k_room.status = "countdown"
-                            k_room.countdown_start = time.time()
+                            k_room.status = "lobby"
+                            k_room.countdown_start = None
                             k_room.players = {}
 
                             # Host
@@ -2782,8 +2783,9 @@ class PartyAPI:
                                 "name": host_player.get("name", "Spiller 1"),
                                 "color": host_color,
                                 "avatar": host_player.get("avatar", ""),
+                                "tank": "medium",
                                 "isHost": True,
-                                "isReady": True,
+                                "isReady": False,
                                 "isBot": False,
                                 "slot": 0,
                                 "x": 400.0,
@@ -2792,9 +2794,11 @@ class PartyAPI:
                                 "vx": 0.0,
                                 "vy": 0.0,
                                 "speed": 0.0,
+                                "maxHealth": 100,
+                                "maxShield": 25,
                                 "health": 100,
                                 "shield": 25,
-                                "weapon": "pistol",
+                                "weapon": "cannon",
                                 "kills": 0,
                                 "deaths": 0,
                                 "score": 0,
@@ -2813,8 +2817,9 @@ class PartyAPI:
                                         "name": pdata.get("name", f"Spiller {slot + 1}"),
                                         "color": p_color,
                                         "avatar": pdata.get("avatar", ""),
+                                        "tank": "medium",
                                         "isHost": False,
-                                        "isReady": True,
+                                        "isReady": False,
                                         "isBot": False,
                                         "slot": slot,
                                         "x": 400.0 + (slot % 4) * 80.0,
@@ -2823,9 +2828,11 @@ class PartyAPI:
                                         "vx": 0.0,
                                         "vy": 0.0,
                                         "speed": 0.0,
+                                        "maxHealth": 100,
+                                        "maxShield": 25,
                                         "health": 100,
                                         "shield": 25,
-                                        "weapon": "pistol",
+                                        "weapon": "cannon",
                                         "kills": 0,
                                         "deaths": 0,
                                         "score": 0,

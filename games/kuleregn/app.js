@@ -39,64 +39,151 @@
     { color: "#1e293b", name: "Kullsvart" },
   ];
 
-  // Standard Single Tank Cannon
-  const TANK_CANNON = {
-    id: "cannon",
-    name: "Stridsvognkanon",
-    type: "Kanon",
-    icon: "",
-    damage: 50,
-    fireRate: 0.65,
-    startingAmmo: Infinity,
-    bulletSpeed: 1100,
-    bulletLife: 1.2,
-    spread: 0.005,
-    bulletCount: 1,
-    isAutomatic: false,
-    recoilKick: 0,
-    screenShake: 0,
-    color: "#fde047",
-    length: 26,
-    barrelWidth: 5,
-    slot: "1",
-    desc: "Standard 75mm stridsvognkanon",
-    dps: "75 DPS",
+  // =========================================================================
+  // TANK CLASSES & STATS SPECIFICATIONS
+  // =========================================================================
+
+  const TANK_CONFIGS = {
+    light: {
+      id: "light",
+      name: "Lett stridsvogn",
+      badge: "Rask & Smidig",
+      desc: "Høy toppfart og hurtigskytende 57mm kanon, men tynnere panser.",
+      maxHealth: 75,
+      maxShield: 0,
+      forwardSpeed: 140,
+      reverseSpeed: 85,
+      hullTurnSpeed: 1.8,
+      turretTurnSpeed: 1.8,
+      size: 64,
+      radius: 22,
+      weapon: {
+        id: "cannon_light",
+        name: "57mm Lett Hurtigkanon",
+        damage: 35,
+        fireRate: 0.38,
+        bulletSpeed: 1250,
+        bulletRange: 1200,
+        bulletLife: 1200 / 1250,
+        spread: 0.008,
+        color: "#38bdf8",
+      },
+      stats: { speed: 82, armor: 35, damage: 45, fireRate: 85 },
+      assets: {
+        body: "/games/kuleregn/assets/light/body.png",
+        turret: "/games/kuleregn/assets/light/turret.png",
+        tracks: "/games/kuleregn/assets/light/tracks_0001.png",
+      },
+    },
+    medium: {
+      id: "medium",
+      name: "Medium stridsvogn",
+      badge: "Balansert allrounder",
+      desc: "Klassisk balanse mellom manøvrerbarhet, pansring og ildkraft.",
+      maxHealth: 100,
+      maxShield: 0,
+      forwardSpeed: 110,
+      reverseSpeed: 65,
+      hullTurnSpeed: 1.35,
+      turretTurnSpeed: 1.35,
+      size: 64,
+      radius: 22,
+      weapon: {
+        id: "cannon_medium",
+        name: "75mm Stridsvognkanon",
+        damage: 50,
+        fireRate: 0.65,
+        bulletSpeed: 1100,
+        bulletRange: 1300,
+        bulletLife: 1300 / 1100,
+        spread: 0.005,
+        color: "#ffd166",
+      },
+      stats: { speed: 65, armor: 60, damage: 65, fireRate: 65 },
+      assets: {
+        body: "/games/kuleregn/assets/tank/body.png",
+        turret: "/games/kuleregn/assets/tank/turret.png",
+        tracks: "/games/kuleregn/assets/tank/tracks_0001.png",
+      },
+    },
+    heavy: {
+      id: "heavy",
+      name: "Tung stridsvogn",
+      badge: "Festning",
+      desc: "Massiv 152mm haubitser med enorm ildkraft. Tregt tårnsikte og kraftig rekyl.",
+      maxHealth: 140,
+      maxShield: 0,
+      forwardSpeed: 75,
+      reverseSpeed: 45,
+      hullTurnSpeed: 0.85,
+      turretTurnSpeed: 0.65,
+      size: 64,
+      radius: 22,
+      isOneShot: true,
+      weapon: {
+        id: "cannon_heavy",
+        name: "152mm Tung Haubitser (One-shot)",
+        damage: 250,
+        fireRate: 2.4,
+        bulletSpeed: 1050,
+        bulletRange: 1500,
+        bulletLife: 1500 / 1050,
+        spread: 0.002,
+        color: "#f43f5e",
+      },
+      stats: { speed: 40, armor: 100, damage: 100, fireRate: 25 },
+      assets: {
+        body: "/games/kuleregn/assets/heavy/body.png",
+        turret: "/games/kuleregn/assets/heavy/turret.png",
+        tracks: "/games/kuleregn/assets/heavy/tracks_0001.png",
+      },
+    },
   };
 
   const WEAPONS = {
-    cannon: TANK_CANNON,
-    assault: TANK_CANNON,
-    shotgun: TANK_CANNON,
-    sniper: TANK_CANNON,
-    rocket: TANK_CANNON,
-    pistol: TANK_CANNON,
+    cannon: TANK_CONFIGS.medium.weapon,
+    cannon_light: TANK_CONFIGS.light.weapon,
+    cannon_medium: TANK_CONFIGS.medium.weapon,
+    cannon_heavy: TANK_CONFIGS.heavy.weapon,
+    light: TANK_CONFIGS.light.weapon,
+    medium: TANK_CONFIGS.medium.weapon,
+    heavy: TANK_CONFIGS.heavy.weapon,
+    assault: TANK_CONFIGS.medium.weapon,
+    shotgun: TANK_CONFIGS.medium.weapon,
+    sniper: TANK_CONFIGS.medium.weapon,
+    rocket: TANK_CONFIGS.medium.weapon,
+    pistol: TANK_CONFIGS.medium.weapon,
   };
 
   // =========================================================================
   // TANK SPRITE ASSETS & DYNAMIC COLOR TINTING
   // =========================================================================
 
-  const TANK_ASSET_PATHS = {
-    body: "/games/kuleregn/assets/tank/body.png",
-    turret: "/games/kuleregn/assets/tank/turret.png",
-    tracks: [
-      "/games/kuleregn/assets/tank/tracks_0001.png",
-      "/games/kuleregn/assets/tank/tracks_0002.png",
-      "/games/kuleregn/assets/tank/tracks_0003.png",
-    ],
-  };
+  const TANK_SPRITES = {};
+  for (const [tKey, tConf] of Object.entries(TANK_CONFIGS)) {
+    const trackSrc = Array.isArray(tConf.assets.tracks) ? tConf.assets.tracks[0] : tConf.assets.tracks;
+    const trackImg = new Image();
+    TANK_SPRITES[tKey] = {
+      body: new Image(),
+      turret: new Image(),
+      tracks: trackImg,
+    };
+    TANK_SPRITES[tKey].tracks[0] = trackImg; // Backwards compatibility for array indexing
+    const onAssetLoad = () => {
+      tintCache.clear();
+      triggerAllPreviewsUpdate();
+    };
+    TANK_SPRITES[tKey].body.onload = onAssetLoad;
+    TANK_SPRITES[tKey].turret.onload = onAssetLoad;
+    trackImg.onload = onAssetLoad;
 
-  const TANK_ASSETS = {
-    body: new Image(),
-    turret: new Image(),
-    tracks: [new Image(), new Image(), new Image()],
-  };
+    TANK_SPRITES[tKey].body.src = tConf.assets.body;
+    TANK_SPRITES[tKey].turret.src = tConf.assets.turret;
+    trackImg.src = trackSrc;
+  }
 
-  TANK_ASSETS.body.src = TANK_ASSET_PATHS.body;
-  TANK_ASSETS.turret.src = TANK_ASSET_PATHS.turret;
-  TANK_ASSETS.tracks[0].src = TANK_ASSET_PATHS.tracks[0];
-  TANK_ASSETS.tracks[1].src = TANK_ASSET_PATHS.tracks[1];
-  TANK_ASSETS.tracks[2].src = TANK_ASSET_PATHS.tracks[2];
+  // Backward compatibility alias
+  const TANK_ASSETS = TANK_SPRITES.medium;
 
   const tintCache = new Map();
 
@@ -589,6 +676,10 @@
     scoreLimit: 15,
     timeLimit: 300,
     timeRemaining: 300,
+    selectedTank: localStorage.getItem("kuleregn_tank") || "medium",
+    turntableAngle: -Math.PI / 2,
+    isMyReady: false,
+    lobbyPollTimerId: null,
 
     // Local Player Tank
     player: {
@@ -596,6 +687,7 @@
       name: "Soldat",
       color: "#ffd166",
       avatar: "",
+      tank: localStorage.getItem("kuleregn_tank") || "medium",
       x: 400,
       y: 400,
       angle: -Math.PI / 2,     // Turret facing angle (pointing UP initially)
@@ -609,9 +701,9 @@
       vy: 0,
       speed: 160,
       health: 100,
-      shield: 25,
+      shield: 0,
       maxHealth: 100,
-      maxShield: 100,
+      maxShield: 0,
       weapon: "cannon",
       ammo: Infinity,
       fireTimer: 0,
@@ -633,6 +725,9 @@
 
     // Explosions & Particles
     particles: [],
+
+    // Tire Skidmarks from Rally Drift
+    skidmarks: [],
 
     // Camera (Zoomed 3x in for closer tank combat)
     camera: { x: 400, y: 400, zoom: 3.0, shake: 0 },
@@ -664,6 +759,7 @@
   const el = {
     // Views
     viewLobby: document.getElementById("viewLobby"),
+    viewWaitingRoom: document.getElementById("viewWaitingRoom"),
     viewGame: document.getElementById("viewGame"),
     combatCanvas: document.getElementById("combatCanvas"),
 
@@ -690,18 +786,38 @@
     inputPartyJoinName: document.getElementById("inputPartyJoinName"),
     btnJoinPartyRoom: document.getElementById("btnJoinPartyRoom"),
 
-    // In-game Start Weapon Modal Elements (Choose Gun when game starts)
-    startWeaponOverlay: document.getElementById("startWeaponOverlay"),
-    startWeaponGrid: document.getElementById("startWeaponGrid"),
-    btnConfirmStartWeapon: document.getElementById("btnConfirmStartWeapon"),
-    quickWeaponBar: document.getElementById("quickWeaponBar"),
-    hudFovBadge: document.getElementById("hudFovBadge"),
+    // Waiting Room & Vehicle Turntable Elements
+    displayRoomCode: document.getElementById("displayRoomCode"),
+    btnCopyRoomCode: document.getElementById("btnCopyRoomCode"),
+    displayWaitingMap: document.getElementById("displayWaitingMap"),
+    displayWaitingTarget: document.getElementById("displayWaitingTarget"),
+    waitingRoomStatusPill: document.getElementById("waitingRoomStatusPill"),
+    wrTurntablePanel: document.getElementById("wrTurntablePanel"),
+    btnTankPrev: document.getElementById("btnTankPrev"),
+    btnTankNext: document.getElementById("btnTankNext"),
+    turntableStage: document.getElementById("turntableStage"),
+    canvasVehicleTurntable: document.getElementById("canvasVehicleTurntable"),
+    ttStatSpeed: document.getElementById("ttStatSpeed"),
+    ttFillSpeed: document.getElementById("ttFillSpeed"),
+    ttStatArmor: document.getElementById("ttStatArmor"),
+    ttFillArmor: document.getElementById("ttFillArmor"),
+    ttStatDamage: document.getElementById("ttStatDamage"),
+    ttFillDamage: document.getElementById("ttFillDamage"),
+    ttStatRate: document.getElementById("ttStatRate"),
+    ttFillRate: document.getElementById("ttFillRate"),
+    waitingPlayerCount: document.getElementById("waitingPlayerCount"),
+    waitingPlayersGrid: document.getElementById("waitingPlayersGrid"),
+    btnToggleReady: document.getElementById("btnToggleReady"),
+    btnHostStartMatch: document.getElementById("btnHostStartMatch"),
+    btnLeaveWaitingRoom: document.getElementById("btnLeaveWaitingRoom"),
 
     // Solo Practice Elements
+    soloTankPicker: document.getElementById("soloTankPicker"),
     selectSoloMap: document.getElementById("selectSoloMap"),
     btnStartSoloPractice: document.getElementById("btnStartSoloPractice"),
 
     // In-game HUD Elements (View 2)
+    ingameTankDock: document.getElementById("ingameTankDock"),
     hudRankPill: document.getElementById("hudRankPill"),
     minimapCanvas: document.getElementById("minimapCanvas"),
     hudPosNum: document.getElementById("hudPosNum"),
@@ -770,13 +886,16 @@
   }
 
   // =========================================================================
-  // VIEW SWITCHER
+  // VIEW SWITCHER & WAITING ROOM CONTROLLER
   // =========================================================================
+
+  let lobbyPollTimer = null;
 
   function showView(viewName) {
     state.view = viewName;
 
     if (el.viewLobby) el.viewLobby.classList.toggle("hidden", viewName !== "lobby");
+    if (el.viewWaitingRoom) el.viewWaitingRoom.classList.toggle("hidden", viewName !== "waiting");
     if (el.viewGame) el.viewGame.classList.toggle("hidden", viewName !== "game");
     if (el.btnHeaderLeave) el.btnHeaderLeave.classList.toggle("hidden", viewName !== "game");
 
@@ -792,10 +911,629 @@
       }
       stopSimulation();
       stopRoomSync();
+      stopLobbyPoll();
+      stopTurntableLoop();
+    } else if (viewName === "waiting") {
+      if (el.headGameStatus) el.headGameStatus.classList.add("hidden");
+      if (el.modalPodium) el.modalPodium.classList.add("hidden");
+      if (el.btnHeaderBack) {
+        el.btnHeaderBack.href = state.roomCode ? `/party/?room=${encodeURIComponent(state.roomCode)}` : "/";
+      }
+      if (el.backBtnText) {
+        el.backBtnText.textContent = state.isSolo ? "Hub" : "Forlat rommet";
+      }
+      stopSimulation();
+      stopRoomSync();
+      if (!state.isSolo) {
+        startLobbyPoll();
+      } else {
+        stopLobbyPoll();
+      }
+      startTurntableLoop();
+      updateTurntableStatsUI();
+      renderTurntablePreview();
     } else if (viewName === "game") {
       if (el.headGameStatus) el.headGameStatus.classList.remove("hidden");
       if (el.modalPodium) el.modalPodium.classList.add("hidden");
+      if (el.btnHeaderBack) {
+        el.btnHeaderBack.href = "#";
+      }
+      if (el.backBtnText) {
+        el.backBtnText.textContent = state.isSolo ? "Meny" : "Forlat rommet";
+      }
+      stopLobbyPoll();
+      stopTurntableLoop();
       resizeCanvas();
+    }
+  }
+
+  // =========================================================================
+  // TANK PREVIEW RENDERING (Canvas Tank Cards & Hero Showcase)
+  // =========================================================================
+
+  function drawFallbackVehiclePreview(ctx, tankType, color, size) {
+    ctx.save();
+    if (tankType === "heavy") {
+      // Heavy Fortress Tank fallback
+      ctx.fillStyle = "#1e293b";
+      ctx.fillRect(-size * 0.46, -size * 0.44, size * 0.24, size * 0.88);
+      ctx.fillRect(size * 0.22, -size * 0.44, size * 0.24, size * 0.88);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.roundRect(-size * 0.32, -size * 0.40, size * 0.64, size * 0.80, 6);
+      ctx.fill();
+      ctx.strokeStyle = "#0f172a";
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+      // 152mm cannon barrel & muzzle brake
+      ctx.fillStyle = "#0f172a";
+      ctx.fillRect(-size * 0.09, -size * 0.62, size * 0.18, size * 0.45);
+      ctx.fillRect(-size * 0.14, -size * 0.65, size * 0.28, size * 0.08);
+      ctx.beginPath();
+      ctx.arc(0, 0, size * 0.22, 0, Math.PI * 2);
+      ctx.fillStyle = "#334155";
+      ctx.fill();
+      ctx.stroke();
+    } else {
+      // Light / Medium tank fallback
+      const wTrack = tankType === "light" ? size * 0.16 : size * 0.20;
+      ctx.fillStyle = "#1e293b";
+      ctx.fillRect(-size * 0.44, -size * 0.42, wTrack, size * 0.84);
+      ctx.fillRect(size * 0.44 - wTrack, -size * 0.42, wTrack, size * 0.84);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.roundRect(-size * 0.28, -size * 0.38, size * 0.56, size * 0.76, 5);
+      ctx.fill();
+      ctx.strokeStyle = "#0f172a";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = "#0f172a";
+      ctx.fillRect(-size * 0.05, -size * 0.56, size * 0.10, size * 0.4);
+      ctx.beginPath();
+      ctx.arc(0, 0, size * 0.16, 0, Math.PI * 2);
+      ctx.fillStyle = "#334155";
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function renderTankPreview(canvas, tankType, hexColor, customAngle) {
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    ctx.imageSmoothingEnabled = false;
+
+    const sprites = TANK_SPRITES[tankType] || TANK_SPRITES.medium;
+    const tConf = TANK_CONFIGS[tankType] || TANK_CONFIGS.medium;
+    // For rotating turntable (480x390), scale up boldly to ~346px!
+    const isRotating = customAngle !== undefined;
+    const baseDivider = isRotating ? 72 : 64;
+    const targetScale = Math.min(w / baseDivider, h / baseDivider);
+    const tankSize = Math.round(64 * (targetScale > 0 ? targetScale : 1));
+    const color = hexColor || state.playerColor || "#ffd166";
+
+    ctx.save();
+    ctx.translate(w / 2, h / 2);
+    const angle = isRotating ? customAngle : -Math.PI / 2;
+
+    // Check if body sprite is tinted & ready
+    const bodyImg = getTintedSprite(sprites.body, color);
+    if (!bodyImg) {
+      // Procedural fallback so preview canvas is NEVER blank while loading!
+      ctx.rotate(angle + Math.PI / 2);
+      drawFallbackVehiclePreview(ctx, tankType, color, tankSize);
+      ctx.restore();
+      return;
+    }
+
+    // Tracks (Static track sprite)
+    const trackImg = sprites.tracks instanceof Image ? sprites.tracks : sprites.tracks?.[0];
+    if (trackImg && trackImg.complete && trackImg.naturalWidth > 0) {
+      ctx.save();
+      ctx.rotate(angle + Math.PI / 2);
+      ctx.drawImage(trackImg, -tankSize / 2, -tankSize / 2, tankSize, tankSize);
+      ctx.restore();
+    }
+
+    // Body
+    ctx.save();
+    ctx.rotate(angle + Math.PI / 2);
+    ctx.drawImage(bodyImg, -tankSize / 2, -tankSize / 2, tankSize, tankSize);
+    ctx.restore();
+
+    // Turret
+    const turretImg = getTintedSprite(sprites.turret, color);
+    if (turretImg) {
+      ctx.save();
+      ctx.rotate(angle + Math.PI / 2);
+      ctx.drawImage(turretImg, -tankSize / 2, -tankSize / 2, tankSize, tankSize);
+      ctx.restore();
+    }
+
+    ctx.restore();
+  }
+
+  // =========================================================================
+  // TURNTABLE SELECTOR & VEHICLE STATS UI
+  // =========================================================================
+
+  const TANK_ORDER = ["light", "medium", "heavy"];
+
+  const TANK_STATS_UI = {
+    light: {
+      speedPct: 78,
+      speedText: "140",
+      armorPct: 35,
+      armorText: "75 HP",
+      damagePct: 48,
+      damageText: "35",
+      ratePct: 85,
+      rateText: "2.6/s",
+    },
+    medium: {
+      speedPct: 60,
+      speedText: "110",
+      armorPct: 60,
+      armorText: "100 HP",
+      damagePct: 65,
+      damageText: "50",
+      ratePct: 60,
+      rateText: "1.5/s",
+    },
+    heavy: {
+      speedPct: 40,
+      speedText: "75",
+      armorPct: 100,
+      armorText: "140 HP",
+      damagePct: 100,
+      damageText: "250",
+      ratePct: 25,
+      rateText: "0.4/s",
+    },
+  };
+
+  function updateTurntableStatsUI(tankType) {
+    const t = tankType || state.selectedTank || "medium";
+    const info = TANK_STATS_UI[t] || TANK_STATS_UI.medium;
+
+    if (el.ttStatSpeed) el.ttStatSpeed.textContent = info.speedText;
+    if (el.ttFillSpeed) el.ttFillSpeed.style.width = `${info.speedPct}%`;
+
+    if (el.ttStatArmor) el.ttStatArmor.textContent = info.armorText;
+    if (el.ttFillArmor) el.ttFillArmor.style.width = `${info.armorPct}%`;
+
+    if (el.ttStatDamage) el.ttStatDamage.textContent = info.damageText;
+    if (el.ttFillDamage) el.ttFillDamage.style.width = `${info.damagePct}%`;
+
+    if (el.ttStatRate) el.ttStatRate.textContent = info.rateText;
+    if (el.ttFillRate) el.ttFillRate.style.width = `${info.ratePct}%`;
+  }
+
+  let turntableAnimId = null;
+  let lastTurntableTime = performance.now();
+
+  function startTurntableLoop() {
+    if (!turntableAnimId) {
+      lastTurntableTime = performance.now();
+      turntableAnimId = requestAnimationFrame(turntableStep);
+    }
+  }
+
+  function stopTurntableLoop() {
+    if (turntableAnimId) {
+      cancelAnimationFrame(turntableAnimId);
+      turntableAnimId = null;
+    }
+  }
+
+  function turntableStep(now) {
+    const dt = Math.min((now - lastTurntableTime) / 1000, 0.1);
+    lastTurntableTime = now;
+
+    if (state.view === "waiting" && el.canvasVehicleTurntable) {
+      // Rotate slowly: ~0.75 rad/s = full 360° rotation in ~8.4s
+      state.turntableAngle = (state.turntableAngle + dt * 0.75) % (Math.PI * 2);
+      renderTurntablePreview();
+    }
+
+    turntableAnimId = requestAnimationFrame(turntableStep);
+  }
+
+  function renderTurntablePreview() {
+    if (!el.canvasVehicleTurntable) return;
+    const chosen = state.selectedTank || "medium";
+    renderTankPreview(el.canvasVehicleTurntable, chosen, state.playerColor, state.turntableAngle);
+  }
+
+  function cycleTank(delta) {
+    const current = state.selectedTank || "medium";
+    let idx = TANK_ORDER.indexOf(current);
+    if (idx === -1) idx = 2;
+    const nextIdx = (idx + delta + TANK_ORDER.length) % TANK_ORDER.length;
+    selectTankInGame(TANK_ORDER[nextIdx]);
+    playTone(340, 0.08, "triangle", 0.25);
+  }
+
+  function updateHeroWaitingPreview() {
+    renderTurntablePreview();
+    updateTurntableStatsUI();
+  }
+
+  function renderAllTankPreviews() {
+    renderTurntablePreview();
+    updateTurntableStatsUI();
+  }
+
+  function triggerAllPreviewsUpdate() {
+    renderAllTankPreviews();
+    if (el.waitingPlayersGrid) {
+      el.waitingPlayersGrid.querySelectorAll(".wpc-vehicle-canvas").forEach(cvs => {
+        const t = cvs.dataset.tank || "medium";
+        const col = cvs.dataset.color || "#ffd166";
+        renderTankPreview(cvs, t, col);
+      });
+    }
+  }
+
+  function syncTankCardsUI() {
+    const chosen = state.selectedTank || "medium";
+    updateTurntableStatsUI(chosen);
+    renderTurntablePreview();
+  }
+
+  function selectTankInGame(tankType) {
+    if (!TANK_CONFIGS[tankType]) return;
+    // Tank is locked in once the multiplayer match is underway
+    if (state.view === "game" && !state.isSolo) return;
+
+    const prevTank = state.selectedTank;
+    state.selectedTank = tankType;
+    localStorage.setItem("kuleregn_tank", tankType);
+
+    const tConf = TANK_CONFIGS[tankType];
+    state.player.tank = tankType;
+    state.player.maxHealth = tConf.maxHealth;
+    state.player.maxShield = 0;
+    state.player.shield = 0;
+
+    if (state.isSolo) {
+      // In Skytebane: immediately restore to full health so players can test fresh!
+      state.player.health = tConf.maxHealth;
+      if (prevTank !== tankType) {
+        addMuzzleParticles(state.player.x, state.player.y, state.player.angle, tConf.weapon.color);
+        playTone(tConf.id === "heavy" ? 140 : 320, 0.12, "triangle", 0.4);
+      }
+    } else {
+      // In multiplayer: keep current health bounded by new max
+      state.player.health = Math.min(state.player.health, tConf.maxHealth);
+      if (prevTank !== tankType) {
+        playTone(320, 0.08, "sine", 0.3);
+      }
+      if (state.roomCode && state.playerId) {
+        fetch("/api/kuleregn/tank", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            roomCode: state.roomCode,
+            playerId: state.playerId,
+            tank: tankType,
+          }),
+        }).catch(() => {});
+      }
+    }
+
+    updateTurntableStatsUI(tankType);
+    renderTurntablePreview();
+
+    // Immediate local player card tank preview update in waiting room grid
+    if (el.waitingPlayersGrid && state.playerId) {
+      const myCard = el.waitingPlayersGrid.querySelector(`[data-player-id="${state.playerId}"]`);
+      if (myCard) {
+        const myVehCvs = myCard.querySelector(".wpc-vehicle-canvas");
+        if (myVehCvs) {
+          myVehCvs.dataset.tank = tankType;
+          renderTankPreview(myVehCvs, tankType, state.playerColor);
+        }
+      }
+    }
+
+    updateWeaponHUD();
+    updateVitalsHUD();
+  }
+
+  async function selectTank(tankType) {
+    selectTankInGame(tankType);
+  }
+
+  // =========================================================================
+  // MULTIPLAYER LOBBY POLLING & READY STATE
+  // =========================================================================
+
+  function startLobbyPoll() {
+    if (lobbyPollTimer) clearInterval(lobbyPollTimer);
+    pollLobbyState();
+    lobbyPollTimer = setInterval(pollLobbyState, 600);
+  }
+
+  function stopLobbyPoll() {
+    if (lobbyPollTimer) {
+      clearInterval(lobbyPollTimer);
+      lobbyPollTimer = null;
+    }
+  }
+
+  async function pollLobbyState() {
+    if (state.view !== "waiting" || !state.roomCode) return;
+
+    try {
+      const resp = await fetch(`/api/kuleregn/state?roomCode=${encodeURIComponent(state.roomCode)}&playerId=${encodeURIComponent(state.playerId || "")}`);
+      const data = await resp.json();
+      if (!data || !data.ok) return;
+
+      if (data.status === "countdown" || data.status === "playing") {
+        stopLobbyPoll();
+        launchOnlineMatch(data);
+        return;
+      }
+
+      renderWaitingRoomState(data);
+    } catch (e) {
+      console.warn("Lobby poll error:", e);
+    }
+  }
+
+  function renderWaitingRoomState(data) {
+    if (el.btnLeaveWaitingRoom) {
+      el.btnLeaveWaitingRoom.textContent = "◀ FORLAT ROM";
+    }
+    if (el.displayRoomCode) el.displayRoomCode.textContent = data.roomCode || state.roomCode;
+    if (el.displayWaitingMap) {
+      const mapObj = getMapById(data.mapId || state.mapId);
+      el.displayWaitingMap.textContent = mapObj.name;
+    }
+    if (el.displayWaitingTarget) {
+      el.displayWaitingTarget.textContent = `${data.scoreLimit || state.scoreLimit} drap`;
+    }
+
+    const players = data.players || [];
+    const active = players.filter(p => !p.left);
+    if (el.waitingPlayerCount) {
+      el.waitingPlayerCount.textContent = `${active.length}/16`;
+    }
+
+    const me = players.find(p => p.id === state.playerId || p.isMe);
+    if (me) {
+      state.isHost = Boolean(me.isHost);
+      state.isMyReady = Boolean(me.isReady);
+      if (me.tank && me.tank !== state.selectedTank) {
+        state.selectedTank = me.tank;
+        syncTankCardsUI();
+      }
+      if (me.color && me.color !== state.playerColor) {
+        state.playerColor = me.color;
+        state.player.color = me.color;
+        renderAllTankPreviews();
+      }
+    }
+
+    // Ready toggle button UI
+    if (el.btnToggleReady) {
+      el.btnToggleReady.classList.toggle("is-ready", state.isMyReady);
+      el.btnToggleReady.classList.toggle("is-not-ready", !state.isMyReady);
+      const btrLabel = el.btnToggleReady.querySelector(".btr-label");
+      if (btrLabel) {
+        btrLabel.textContent = state.isMyReady ? "IKKE KLAR" : "JEG ER KLAR";
+      }
+    }
+
+    // Host Start Button
+    if (el.btnHostStartMatch) {
+      el.btnHostStartMatch.classList.toggle("hidden", !state.isHost);
+    }
+
+    // Status Pill
+    const readyCount = active.filter(p => p.isReady).length;
+    const allReady = active.length > 0 && readyCount === active.length;
+    if (el.waitingRoomStatusPill) {
+      if (allReady) {
+        el.waitingRoomStatusPill.textContent = "Alle er klare! Kampen starter straks...";
+        el.waitingRoomStatusPill.classList.add("ready");
+      } else {
+        const notReadyCount = active.length - readyCount;
+        el.waitingRoomStatusPill.textContent = `Venter på at ${notReadyCount} spiller${notReadyCount > 1 ? "e" : ""} velger tank... (${readyCount}/${active.length})`;
+        el.waitingRoomStatusPill.classList.remove("ready");
+      }
+    }
+
+    // Hero Selected Vehicle Preview
+    updateHeroWaitingPreview();
+
+    // Player Cards Grid
+    if (el.waitingPlayersGrid) {
+      el.waitingPlayersGrid.innerHTML = "";
+      players.forEach(p => {
+        if (p.left) return;
+        const isMe = Boolean(p.id === state.playerId || p.isMe);
+        const isReady = Boolean(p.isReady);
+        const tankKey = p.tank || "medium";
+        const tConf = TANK_CONFIGS[tankKey] || TANK_CONFIGS.medium;
+
+        const card = document.createElement("div");
+        card.dataset.playerId = p.id;
+        card.title = `${p.name}${isMe ? " (Deg)" : ""}`;
+        // Red background if not ready, Green if ready
+        card.className = `waiting-player-card ${isReady ? "is-ready" : "is-not-ready"}`;
+
+        const avCanvas = getAvatarCanvas(p.avatar, 36);
+
+        // Large tank sprite with small player character head in the corner
+        card.innerHTML = `
+          <div class="wpc-player-duo">
+            <canvas class="wpc-vehicle-canvas" width="148" height="118" data-tank="${escapeHtml(tankKey)}" data-color="${escapeHtml(p.color || "#ffd166")}"></canvas>
+            <canvas class="wpc-avatar-canvas" width="36" height="36" title="${escapeHtml(p.name)}"></canvas>
+          </div>
+        `;
+
+        const cvs = card.querySelector(".wpc-avatar-canvas");
+        if (cvs) {
+          if (window.CharacterCreator && typeof CharacterCreator.compositeCharacterSync === "function") {
+            try {
+              CharacterCreator.compositeCharacterSync(cvs, p.avatar || state.playerAvatar || "");
+            } catch (e) {
+              const cvsCtx = cvs.getContext("2d");
+              if (avCanvas) cvsCtx.drawImage(avCanvas, 0, 0, 36, 36);
+            }
+          } else if (avCanvas) {
+            const cvsCtx = cvs.getContext("2d");
+            cvsCtx.imageSmoothingEnabled = false;
+            cvsCtx.drawImage(avCanvas, 0, 0, 36, 36);
+          }
+        }
+
+        const vehCvs = card.querySelector(".wpc-vehicle-canvas");
+        if (vehCvs) {
+          renderTankPreview(vehCvs, tankKey, p.color || "#ffd166");
+        }
+
+        el.waitingPlayersGrid.appendChild(card);
+      });
+    }
+  }
+
+  function openSoloTankSelection() {
+    state.isSolo = true;
+    state.roomCode = null;
+    state.playerId = "solo_player";
+    const selectedMapId = el.selectSoloMap ? el.selectSoloMap.value : "rust";
+    state.mapId = selectedMapId;
+    state.currentMap = getMapById(selectedMapId);
+    state.scoreLimit = 999;
+    state.timeLimit = 3600;
+    state.timeRemaining = 3600;
+    state.roomStatus = "lobby";
+
+    showView("waiting");
+    renderSoloWaitingRoom();
+  }
+
+  function renderSoloWaitingRoom() {
+    if (el.btnLeaveWaitingRoom) {
+      el.btnLeaveWaitingRoom.textContent = "◀ TILBAKE";
+    }
+
+    if (el.btnToggleReady) {
+      el.btnToggleReady.classList.remove("is-ready");
+      el.btnToggleReady.classList.add("is-not-ready");
+      const btrLabel = el.btnToggleReady.querySelector(".btr-label");
+      if (btrLabel) {
+        btrLabel.textContent = "START SKYTEBANE";
+      }
+    }
+
+    if (el.waitingPlayerCount) {
+      el.waitingPlayerCount.textContent = "1/1";
+    }
+
+    if (el.waitingPlayersGrid) {
+      el.waitingPlayersGrid.innerHTML = "";
+      const tankKey = state.selectedTank || "medium";
+      const pColor = state.playerColor || "#ffd166";
+      const pAvatar = state.playerAvatar || "char:h1:c_ffd166:r1:e1:m1";
+
+      const card = document.createElement("div");
+      card.dataset.playerId = "solo_player";
+      card.title = `${state.playerName || "Soldat"} (Deg)`;
+      card.className = "waiting-player-card is-ready";
+
+      const avCanvas = getAvatarCanvas(pAvatar, 36);
+
+      card.innerHTML = `
+        <div class="wpc-player-duo">
+          <canvas class="wpc-vehicle-canvas" width="148" height="118" data-tank="${escapeHtml(tankKey)}" data-color="${escapeHtml(pColor)}"></canvas>
+          <canvas class="wpc-avatar-canvas" width="36" height="36" title="${escapeHtml(state.playerName || "Soldat")}"></canvas>
+        </div>
+      `;
+
+      const cvs = card.querySelector(".wpc-avatar-canvas");
+      if (cvs) {
+        if (window.CharacterCreator && typeof CharacterCreator.compositeCharacterSync === "function") {
+          try {
+            CharacterCreator.compositeCharacterSync(cvs, pAvatar);
+          } catch (e) {
+            const cvsCtx = cvs.getContext("2d");
+            if (avCanvas) cvsCtx.drawImage(avCanvas, 0, 0, 36, 36);
+          }
+        } else if (avCanvas) {
+          const cvsCtx = cvs.getContext("2d");
+          cvsCtx.imageSmoothingEnabled = false;
+          cvsCtx.drawImage(avCanvas, 0, 0, 36, 36);
+        }
+      }
+
+      const vehCvs = card.querySelector(".wpc-vehicle-canvas");
+      if (vehCvs) {
+        renderTankPreview(vehCvs, tankKey, pColor);
+      }
+
+      el.waitingPlayersGrid.appendChild(card);
+    }
+
+    updateHeroWaitingPreview();
+  }
+
+  async function toggleReady() {
+    if (state.isSolo) {
+      launchSoloPractice();
+      return;
+    }
+    if (!state.roomCode || !state.playerId) return;
+    state.isMyReady = !state.isMyReady;
+
+    if (el.btnToggleReady) {
+      el.btnToggleReady.classList.toggle("is-ready", state.isMyReady);
+      el.btnToggleReady.classList.toggle("is-not-ready", !state.isMyReady);
+      const btrLabel = el.btnToggleReady.querySelector(".btr-label");
+      if (btrLabel) {
+        btrLabel.textContent = state.isMyReady ? "IKKE KLAR" : "JEG ER KLAR";
+      }
+    }
+
+    try {
+      await fetch("/api/kuleregn/ready", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roomCode: state.roomCode,
+          playerId: state.playerId,
+          ready: state.isMyReady,
+        }),
+      });
+      pollLobbyState();
+    } catch (e) {
+      console.warn("Toggle ready err:", e);
+    }
+  }
+
+  async function hostStartMatch() {
+    if (!state.roomCode || !state.playerId || !state.isHost) return;
+    try {
+      const resp = await fetch("/api/kuleregn/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roomCode: state.roomCode,
+          playerId: state.playerId,
+        }),
+      });
+      const data = await resp.json();
+      if (data && data.ok) {
+        pollLobbyState();
+      }
+    } catch (e) {
+      console.warn("Host start err:", e);
     }
   }
 
@@ -812,8 +1550,15 @@
     combatant.recoilOffset = 0;
     combatant.recoilVx = 0;
     combatant.recoilVy = 0;
-    combatant.health = combatant.maxHealth || 100;
-    combatant.shield = 25;
+
+    const tankType = combatant.tank || (combatant === state.player ? state.selectedTank : "medium");
+    combatant.tank = tankType;
+    const tConf = TANK_CONFIGS[tankType] || TANK_CONFIGS.medium;
+
+    combatant.maxHealth = tConf.maxHealth;
+    combatant.maxShield = 0;
+    combatant.health = tConf.maxHealth;
+    combatant.shield = 0;
     combatant.isDead = false;
     combatant.respawnTimer = 0;
     combatant.weapon = "cannon";
@@ -824,6 +1569,7 @@
       combatant.name = state.playerName || combatant.name || "Soldat";
       combatant.color = state.playerColor || combatant.color || "#ffd166";
       combatant.avatar = state.playerAvatar || combatant.avatar || "";
+      updateVitalsHUD();
     }
   }
 
@@ -841,7 +1587,8 @@
   // =========================================================================
 
   function applyCombatantMovement(entity, map, dt) {
-    const r = 20; // Combatant collision radius
+    const tConf = TANK_CONFIGS[entity.tank || (entity === state.player ? state.selectedTank : "medium")] || TANK_CONFIGS.medium;
+    const r = tConf.radius || 20; // Combatant collision radius per tank type
 
     // Move X
     entity.x += entity.vx * dt;
@@ -928,19 +1675,8 @@
       actualKiller = state.player;
     }
 
-    // Shield absorbs damage first
-    let remaining = damage;
-    if (victim.shield > 0) {
-      if (victim.shield >= remaining) {
-        victim.shield -= remaining;
-        remaining = 0;
-      } else {
-        remaining -= victim.shield;
-        victim.shield = 0;
-      }
-    }
-
-    victim.health = Math.max(0, victim.health - remaining);
+    // Apply damage directly to health (no shield)
+    victim.health = Math.max(0, victim.health - damage);
     addDamageSparks(victim.x, victim.y, victim.color);
 
     if (victim === state.player) {
@@ -996,26 +1732,29 @@
         timestamp: Date.now(),
       });
 
-      // Report event to server if online match and we are involved
-      if (!state.isSolo && (actualKiller === state.player || (!killer && victim === state.player))) {
+      const victimId = (victim === state.player) ? (state.playerId || "player_local") : (victim.id || "victim_unknown");
+
+      // Report event to server if online match and we are involved (attacker OR victim!)
+      if (!state.isSolo && (actualKiller === state.player || victim === state.player)) {
         state.recentEvents.push({
           type: "kill",
           clientKillId: killEventId,
           killerId: killerId,
-          victimId: victim.id,
+          victimId: victimId,
           weapon: weaponId || "cannon",
         });
       }
 
       checkMatchVictory();
     } else {
-      // Victim took damage but survived - report hit to server (attacker reports to avoid duplicate damage)
-      if (!state.isSolo && (actualKiller === state.player || (!killer && victim === state.player))) {
+      // Victim took damage but survived - report hit to server
+      const victimId = (victim === state.player) ? (state.playerId || "player_local") : (victim.id || "victim_unknown");
+      if (!state.isSolo && (actualKiller === state.player || victim === state.player)) {
         const attackerId = actualKiller === state.player ? (state.playerId || "player_local") : (actualKiller ? actualKiller.id : state.playerId);
         state.recentEvents.push({
           type: "hit",
           attackerId: attackerId,
-          targetId: victim.id,
+          targetId: victimId,
           damage: damage,
           weapon: weaponId || "cannon",
         });
@@ -1252,16 +1991,24 @@
       if (k === "s") state.keys.s = true;
       if (k === "d") state.keys.d = true;
 
-      // Left and Right Arrow Keys to pan the turret
+      // Left and Right Arrow Keys to pan the turret (or cycle vehicle turntable in waiting room)
       if (e.key === "ArrowLeft") {
         e.preventDefault();
-        state.keys.arrowLeft = true;
-        state.mouse.hasMoved = false;
+        if (state.view === "waiting") {
+          cycleTank(-1);
+        } else {
+          state.keys.arrowLeft = true;
+          state.mouse.hasMoved = false;
+        }
       }
       if (e.key === "ArrowRight") {
         e.preventDefault();
-        state.keys.arrowRight = true;
-        state.mouse.hasMoved = false;
+        if (state.view === "waiting") {
+          cycleTank(1);
+        } else {
+          state.keys.arrowRight = true;
+          state.mouse.hasMoved = false;
+        }
       }
       if (e.key === "ArrowUp" || e.key === "ArrowDown") {
         e.preventDefault();
@@ -1353,10 +2100,69 @@
 
   function renderStartWeaponGrid() {}
 
+  function addCarDriftEffects(p) {
+    const cosH = Math.cos(p.hullAngle);
+    const sinH = Math.sin(p.hullAngle);
+    const rearX = p.x - cosH * 16;
+    const rearY = p.y - sinH * 16;
+    const rightX = -sinH;
+    const rightY = cosH;
+
+    const w1x = rearX - rightX * 12;
+    const w1y = rearY - rightY * 12;
+    const w2x = rearX + rightX * 12;
+    const w2y = rearY + rightY * 12;
+
+    if (!p.lastWheelPos) {
+      p.lastWheelPos = { w1x, w1y, w2x, w2y };
+    } else {
+      const d1 = Math.hypot(w1x - p.lastWheelPos.w1x, w1y - p.lastWheelPos.w1y);
+      if (d1 > 4) {
+        if (!state.skidmarks) state.skidmarks = [];
+        state.skidmarks.push({
+          x1: p.lastWheelPos.w1x, y1: p.lastWheelPos.w1y,
+          x2: w1x, y2: w1y,
+          alpha: 0.42,
+          width: 3.5,
+        });
+        state.skidmarks.push({
+          x1: p.lastWheelPos.w2x, y1: p.lastWheelPos.w2y,
+          x2: w2x, y2: w2y,
+          alpha: 0.42,
+          width: 3.5,
+        });
+        if (state.skidmarks.length > 300) {
+          state.skidmarks.splice(0, state.skidmarks.length - 300);
+        }
+        p.lastWheelPos = { w1x, w1y, w2x, w2y };
+      }
+    }
+
+    if (Math.random() < 0.45) {
+      const sx = Math.random() < 0.5 ? w1x : w2x;
+      const sy = Math.random() < 0.5 ? w1y : w2y;
+      state.particles.push({
+        x: sx + (Math.random() - 0.5) * 4,
+        y: sy + (Math.random() - 0.5) * 4,
+        vx: (Math.random() - 0.5) * 20,
+        vy: (Math.random() - 0.5) * 20,
+        size: 5 + Math.random() * 4,
+        color: "rgba(235, 235, 240, 0.45)",
+        life: 0.35 + Math.random() * 0.2,
+        maxLife: 0.55,
+      });
+    }
+
+    if (Math.random() < 0.08) {
+      playTone(520, 0.04, "sawtooth", 0.08);
+    }
+  }
+
   function firePlayerWeapon() {
     const p = state.player;
     if (p.isDead || p.fireTimer > 0) return;
-    const w = WEAPONS[p.weapon] || WEAPONS.assault;
+    const tConf = TANK_CONFIGS[p.tank || state.selectedTank] || TANK_CONFIGS.medium;
+    const w = tConf.weapon;
 
     // Tactical loadout weapons have unlimited combat ammo
     p.ammo = Infinity;
@@ -1367,30 +2173,28 @@
     p.name = state.playerName || p.name || "Soldat";
     p.color = state.playerColor || p.color || "#ffd166";
 
-    const barrelDist = 26;
+    const barrelDist = 28.5;
     const barrelX = p.x + Math.cos(p.angle) * barrelDist;
     const barrelY = p.y + Math.sin(p.angle) * barrelDist;
 
-    for (let i = 0; i < w.bulletCount; i++) {
-      const spreadAngle = (Math.random() - 0.5) * w.spread;
-      const bAngle = p.angle + spreadAngle;
-      state.bullets.push({
-        id: `p_b_${Date.now()}_${Math.random()}`,
-        ownerId: myId,
-        ownerName: p.name,
-        ownerColor: p.color,
-        weapon: p.weapon,
-        x: barrelX,
-        y: barrelY,
-        vx: Math.cos(bAngle) * w.bulletSpeed,
-        vy: Math.sin(bAngle) * w.bulletSpeed,
-        damage: w.damage,
-        life: w.bulletLife,
-        maxLife: w.bulletLife,
-        color: w.color,
-        isRocket: p.weapon === "rocket",
-      });
-    }
+    const spreadAngle = (Math.random() - 0.5) * (w.spread || 0.005);
+    const bAngle = p.angle + spreadAngle;
+    state.bullets.push({
+      id: `p_b_${Date.now()}_${Math.random()}`,
+      ownerId: myId,
+      ownerName: p.name,
+      ownerColor: p.color,
+      weapon: p.tank || "cannon",
+      x: barrelX,
+      y: barrelY,
+      vx: Math.cos(bAngle) * w.bulletSpeed,
+      vy: Math.sin(bAngle) * w.bulletSpeed,
+      damage: w.damage,
+      life: (w.bulletRange || 1300) / w.bulletSpeed,
+      maxLife: (w.bulletRange || 1300) / w.bulletSpeed,
+      color: w.color || p.color,
+      isRocket: false,
+    });
 
     if (!state.isSolo) {
       state.recentShots.push({
@@ -1398,13 +2202,98 @@
         x: barrelX,
         y: barrelY,
         angle: p.angle,
-        weapon: p.weapon,
+        weapon: p.tank || "cannon",
       });
     }
 
     addMuzzleParticles(barrelX, barrelY, p.angle, w.color);
-    playWeaponSound(p.weapon);
+
+    if (tConf.isOneShot || tConf.id === "heavy") {
+      // Colossal recoil knockback for heavy one-shot haubitser
+      p.vx -= Math.cos(p.angle) * 240;
+      p.vy -= Math.sin(p.angle) * 240;
+      state.camera.shake = Math.min(26, state.camera.shake + 18);
+      // Large fiery muzzle blast particles
+      for (let i = 0; i < 16; i++) {
+        const spd = 60 + Math.random() * 150;
+        const pa = p.angle + (Math.random() - 0.5) * 0.9;
+        state.particles.push({
+          x: barrelX,
+          y: barrelY,
+          vx: Math.cos(pa) * spd,
+          vy: Math.sin(pa) * spd,
+          size: 7 + Math.random() * 6,
+          color: Math.random() < 0.4 ? "#f97316" : (Math.random() < 0.7 ? "#ef4444" : "#fbbf24"),
+          life: 0.45 + Math.random() * 0.25,
+          maxLife: 0.7,
+        });
+      }
+      playTone(72, 0.35, "sawtooth", 0.7);
+    } else {
+      playTone(tConf.id === "light" ? 360 : 220, 0.12, "square", 0.4);
+      state.camera.shake = Math.min(14, state.camera.shake + (tConf.id === "light" ? 2 : 4));
+    }
+
     updateWeaponHUD();
+  }
+
+  function updateOpponents(dt, map) {
+    for (const opp of Object.values(state.opponents)) {
+      if (opp.isDead) {
+        if (opp.respawnTimer > 0) {
+          opp.respawnTimer = Math.max(0, opp.respawnTimer - dt);
+          if (state.isSolo && opp.respawnTimer <= 0) {
+            spawnPlayer(opp, map);
+          }
+        }
+        continue;
+      }
+
+      // 1. Dead reckoning: project target position forward using opponent velocity
+      if (opp.vx !== undefined && opp.vy !== undefined) {
+        opp.targetX = (opp.targetX !== undefined ? opp.targetX : opp.x) + opp.vx * dt;
+        opp.targetY = (opp.targetY !== undefined ? opp.targetY : opp.y) + opp.vy * dt;
+      }
+
+      // 2. Continuous position lerp (buttery smooth 60 FPS glide)
+      if (opp.targetX !== undefined && opp.targetY !== undefined) {
+        const dx = opp.targetX - opp.x;
+        const dy = opp.targetY - opp.y;
+        const dist = Math.hypot(dx, dy);
+
+        if (dist > 250) {
+          // Snap on huge jump (spawn / teleport)
+          opp.x = opp.targetX;
+          opp.y = opp.targetY;
+        } else if (dist > 0.05) {
+          const t = Math.min(1.0, 16 * dt);
+          opp.x += dx * t;
+          opp.y += dy * t;
+        }
+      }
+
+      // 3. Shortest-arc turret angle lerp
+      if (opp.targetAngle !== undefined) {
+        let diff = opp.targetAngle - opp.angle;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        const rotT = Math.min(1.0, 20 * dt);
+        opp.angle += diff * rotT;
+        while (opp.angle > Math.PI) opp.angle -= Math.PI * 2;
+        while (opp.angle < -Math.PI) opp.angle += Math.PI * 2;
+      }
+
+      // 4. Shortest-arc hull / vehicle chassis angle lerp (tracked across screens!)
+      if (opp.targetHullAngle !== undefined) {
+        let hDiff = opp.targetHullAngle - (opp.hullAngle !== undefined ? opp.hullAngle : opp.angle);
+        while (hDiff < -Math.PI) hDiff += Math.PI * 2;
+        while (hDiff > Math.PI) hDiff -= Math.PI * 2;
+        const hullT = Math.min(1.0, 20 * dt);
+        opp.hullAngle = (opp.hullAngle !== undefined ? opp.hullAngle : opp.angle) + hDiff * hullT;
+        while (opp.hullAngle > Math.PI) opp.hullAngle -= Math.PI * 2;
+        while (opp.hullAngle < -Math.PI) opp.hullAngle += Math.PI * 2;
+      }
+    }
   }
 
   // =========================================================================
@@ -1436,15 +2325,8 @@
       // 2. Update Local Player Physics & Aiming
       updatePlayer(dt, map);
 
-      // 2b. Update Opponent Respawn Timers
-      for (const opp of Object.values(state.opponents)) {
-        if (opp.isDead && opp.respawnTimer > 0) {
-          opp.respawnTimer = Math.max(0, opp.respawnTimer - dt);
-          if (state.isSolo && opp.respawnTimer <= 0) {
-            spawnPlayer(opp, map);
-          }
-        }
-      }
+      // 2b. Smooth 60 FPS Opponent Interpolation & Chassis Rotation Tracking
+      updateOpponents(dt, map);
 
       // 3. Update Projectiles & Bullets
       const allCombatants = [state.player, ...Object.values(state.opponents)];
@@ -1457,6 +2339,16 @@
       updateParticles(dt);
       if (state.camera.shake > 0) {
         state.camera.shake = Math.max(0, state.camera.shake - dt * 25);
+      }
+
+      // 5b. Update Skidmarks Fading
+      if (state.skidmarks && state.skidmarks.length > 0) {
+        for (let i = state.skidmarks.length - 1; i >= 0; i--) {
+          state.skidmarks[i].alpha -= dt * 0.035;
+          if (state.skidmarks[i].alpha <= 0.02) {
+            state.skidmarks.splice(i, 1);
+          }
+        }
       }
 
       // 6. Render Game Canvas
@@ -1500,42 +2392,38 @@
 
     if (p.fireTimer > 0) p.fireTimer = Math.max(0, p.fireTimer - dt);
 
-    // 1. Tank Hull Steering & Driving with WASD (Lower sensitivity for controlled, heavy tank steering)
+    // 1. Vehicle Steering & Throttle with WASD
+    const tConf = TANK_CONFIGS[p.tank || state.selectedTank] || TANK_CONFIGS.medium;
     const isDrivingForward = !!state.keys.w;
     const isDrivingReverse = !!state.keys.s;
     const isSteeringLeft = !!state.keys.a;
     const isSteeringRight = !!state.keys.d;
-
-    // Turn hull with A (left) and D (right) - grounded tank turn speed
-    const hullTurnSpeed = 1.3; // rad/s (~74 deg/s) - tyngre og roligere styring
     const steerDir = (isSteeringRight ? 1 : 0) - (isSteeringLeft ? 1 : 0);
+
+    // Classic Tracked Tank Physics (Light, Medium, Heavy)
+    const hullTurnSpeed = tConf.hullTurnSpeed;
     if (steerDir !== 0) {
       p.hullAngle = (p.hullAngle || 0) + steerDir * hullTurnSpeed * dt;
       while (p.hullAngle > Math.PI) p.hullAngle -= Math.PI * 2;
       while (p.hullAngle < -Math.PI) p.hullAngle += Math.PI * 2;
     }
 
-    // Drive forward / reverse along hullAngle - tregere, mer autentisk stridsvognfart
     let forwardThrottle = 0;
-    if (isDrivingForward) forwardThrottle += 100; // redusert fra 160
-    if (isDrivingReverse) forwardThrottle -= 60;  // redusert fra 95
+    if (isDrivingForward) forwardThrottle += tConf.forwardSpeed;
+    if (isDrivingReverse) forwardThrottle -= tConf.reverseSpeed;
 
-    // Animate tracks when driving or steering
-    if (forwardThrottle !== 0 || steerDir !== 0) {
-      const treadSpeed = forwardThrottle !== 0 ? Math.abs(forwardThrottle) : 70;
-      p.trackDistance = (p.trackDistance || 0) + treadSpeed * dt;
-      p.trackFrame = Math.floor(p.trackDistance / 10) % 3;
-    }
-
-    // Drive velocity without recoil drift
-    p.vx = Math.cos(p.hullAngle) * forwardThrottle;
-    p.vy = Math.sin(p.hullAngle) * forwardThrottle;
+    // Tracked tank direct propulsion with momentum decay
+    const targetVx = Math.cos(p.hullAngle) * forwardThrottle;
+    const targetVy = Math.sin(p.hullAngle) * forwardThrottle;
+    p.vx += (targetVx - p.vx) * Math.min(1.0, dt * 10);
+    p.vy += (targetVy - p.vy) * Math.min(1.0, dt * 10);
 
     // Apply movement & obstacle collisions
     applyCombatantMovement(p, map, dt);
 
-    // 2. Turret Aiming with Arrow Keys (Left & Right) - roligere kanonsikte
-    const turretTurnSpeed = 1.25; // rad/s (~71 deg/s) - roligere tårnrotasjon med piltaster
+    // 2. Turret Aiming with Arrow Keys or Mouse Cursor
+    // HEAVY TANK has slow turret traversal (0.65 rad/s) for authentic ponderous dreadnought aiming!
+    const turretTurnSpeed = tConf.turretTurnSpeed;
     if (state.keys.arrowLeft || state.keys.arrowRight) {
       const panDir = (state.keys.arrowRight ? 1 : 0) - (state.keys.arrowLeft ? 1 : 0);
       p.angle += panDir * turretTurnSpeed * dt;
@@ -1543,7 +2431,7 @@
       while (p.angle < -Math.PI) p.angle += Math.PI * 2;
       state.lastTurnAngle = p.angle;
     } else if (state.mouse.hasMoved && el.combatCanvas) {
-      // Smooth turret traversal towards mouse cursor (prevents instant angle snapping)
+      // Smooth turret traversal towards mouse cursor (respects turretTurnSpeed!)
       const cw = el.combatCanvas.width;
       const ch = el.combatCanvas.height;
       const pScreenX = cw / 2 + (p.x - state.camera.x) * state.camera.zoom;
@@ -1552,7 +2440,7 @@
       let diff = targetAngle - p.angle;
       while (diff < -Math.PI) diff += Math.PI * 2;
       while (diff > Math.PI) diff -= Math.PI * 2;
-      const maxTurn = 1.5 * dt; // rad/s (~86 deg/s) - roligere kanondreining mot musen
+      const maxTurn = turretTurnSpeed * dt;
       if (Math.abs(diff) <= maxTurn) {
         p.angle = targetAngle;
       } else {
@@ -1568,8 +2456,7 @@
     // 3. Continuous weapon firing when holding mouse or space
     const isShooting = (state.mouse.down || state.keys.shoot) && state.roomStatus === "playing";
     if (isShooting) {
-      const w = WEAPONS[p.weapon] || WEAPONS.pistol;
-      if (w.isAutomatic || p.fireTimer <= 0) {
+      if (p.fireTimer <= 0) {
         firePlayerWeapon();
       }
     }
@@ -1637,7 +2524,9 @@
       for (const c of allCombatants) {
         const cId = c.id || (c === state.player ? myId : null);
         if (cId === b.ownerId || c.isDead) continue;
-        if (Math.hypot(c.x - b.x, c.y - b.y) <= 22) {
+        const tConf = TANK_CONFIGS[c.tank || (c === state.player ? state.selectedTank : "medium")] || TANK_CONFIGS.medium;
+        const hitRadius = tConf.radius || 22;
+        if (Math.hypot(c.x - b.x, c.y - b.y) <= hitRadius) {
           hitCombatant = true;
           const killer = getCombatantById(b.ownerId);
 
@@ -1876,6 +2765,22 @@
       ctx.lineTo(map.width - 40, y);
     }
     ctx.stroke();
+
+    // 3. Tire Skidmarks on Arena Floor
+    if (state.skidmarks && state.skidmarks.length > 0) {
+      ctx.save();
+      ctx.lineCap = "round";
+      for (let i = 0; i < state.skidmarks.length; i++) {
+        const sm = state.skidmarks[i];
+        ctx.strokeStyle = `rgba(18, 18, 24, ${sm.alpha})`;
+        ctx.lineWidth = sm.width || 3.5;
+        ctx.beginPath();
+        ctx.moveTo(sm.x1, sm.y1);
+        ctx.lineTo(sm.x2, sm.y2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
 
     // 6. Render Map Obstacles (Shipping Containers, Pillars, Pipes, Sandbags, Concrete, Crates)
     for (const obs of map.obstacles) {
@@ -2243,7 +3148,10 @@
   function drawCombatant(ctx, c, isMe = false) {
     const now = performance.now();
     const isInvuln = c.invulnerableUntil && now < c.invulnerableUntil;
-    const tankSize = 58;
+    const tankType = c.tank || (isMe ? state.selectedTank : "medium");
+    const tConf = TANK_CONFIGS[tankType] || TANK_CONFIGS.medium;
+    const sprites = TANK_SPRITES[tankType] || TANK_SPRITES.medium;
+    const tankSize = 64; // Native 64x64 drawing size (no scaling)
     const hullAngle = c.hullAngle !== undefined ? c.hullAngle : (c.angle !== undefined ? c.angle : -Math.PI / 2);
     const turretAngle = c.angle !== undefined ? c.angle : hullAngle;
     const tankColor = c.color || "#ffd166";
@@ -2262,7 +3170,7 @@
     if (isInvuln) {
       ctx.save();
       ctx.beginPath();
-      ctx.arc(c.x, c.y, 34, 0, Math.PI * 2);
+      ctx.arc(c.x, c.y, tankSize * 0.6, 0, Math.PI * 2);
       ctx.fillStyle = "rgba(56, 189, 248, 0.22)";
       ctx.fill();
       ctx.strokeStyle = "#38bdf8";
@@ -2271,9 +3179,8 @@
       ctx.restore();
     }
 
-    // 3. Tank Tracks (Caterpillar Treads - animated frame 0, 1, or 2)
-    const frameIdx = Math.abs(c.trackFrame || 0) % 3;
-    const trackImg = TANK_ASSETS.tracks[frameIdx];
+    // 3. Tank Tracks (Static track sprite)
+    const trackImg = sprites.tracks instanceof Image ? sprites.tracks : sprites.tracks?.[0];
     if (trackImg && trackImg.complete && trackImg.naturalWidth > 0) {
       ctx.save();
       ctx.translate(c.x, c.y);
@@ -2283,7 +3190,7 @@
     }
 
     // 4. Tank Hull / Body (Tinted to character color)
-    const bodyImg = getTintedSprite(TANK_ASSETS.body, tankColor);
+    const bodyImg = getTintedSprite(sprites.body, tankColor);
     if (bodyImg) {
       ctx.save();
       ctx.translate(c.x, c.y);
@@ -2296,29 +3203,14 @@
       ctx.translate(c.x, c.y);
       ctx.rotate(hullAngle);
       ctx.fillStyle = tankColor;
-      ctx.fillRect(-22, -18, 44, 36);
+      ctx.fillRect(-tankSize * 0.38, -tankSize * 0.3, tankSize * 0.76, tankSize * 0.6);
       ctx.restore();
     }
 
     // 5. Tank Turret & Cannon Barrel (Rotated independently along turretAngle)
-    const turretImg = getTintedSprite(TANK_ASSETS.turret, tankColor);
+    const turretImg = getTintedSprite(sprites.turret, tankColor);
     const turretX = c.x;
     const turretY = c.y;
-
-    // Laser Sight for Sniper / Cannon
-    if (c.weapon === "sniper") {
-      ctx.save();
-      ctx.strokeStyle = isMe ? "rgba(244, 63, 94, 0.65)" : "rgba(239, 68, 68, 0.45)";
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([8, 8]);
-      ctx.beginPath();
-      const tipX = turretX + Math.cos(turretAngle) * 26;
-      const tipY = turretY + Math.sin(turretAngle) * 26;
-      ctx.moveTo(tipX, tipY);
-      ctx.lineTo(tipX + Math.cos(turretAngle) * 650, tipY + Math.sin(turretAngle) * 650);
-      ctx.stroke();
-      ctx.restore();
-    }
 
     if (turretImg) {
       ctx.save();
@@ -2342,7 +3234,7 @@
 
     // 6. Overhead Name & Vitals Bar (Unrotated)
     ctx.save();
-    ctx.translate(c.x, c.y - 38);
+    ctx.translate(c.x, c.y - tankSize * 0.65);
 
     // Name Tag
     ctx.font = "bold 12px sans-serif";
@@ -2353,21 +3245,16 @@
     ctx.fillText(c.name, 0, -4);
     ctx.shadowBlur = 0;
 
-    // Mini Health & Shield Bars
+    // Mini Health Bar over tank
     const barW = 42;
     const barH = 5;
     ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
     ctx.fillRect(-barW / 2, 0, barW, barH);
 
-    const hpPct = Math.max(0, c.health / 100);
+    const maxHp = c.maxHealth || tConf.maxHealth || 100;
+    const hpPct = Math.max(0, Math.min(1, c.health / maxHp));
     ctx.fillStyle = hpPct > 0.4 ? "#22c55e" : "#ef4444";
     ctx.fillRect(-barW / 2, 0, barW * hpPct, barH);
-
-    if (c.shield > 0) {
-      const shdPct = Math.max(0, c.shield / 100);
-      ctx.fillStyle = "#06b6d4";
-      ctx.fillRect(-barW / 2, -3, barW * shdPct, 2.5);
-    }
 
     ctx.restore();
   }
@@ -2378,11 +3265,12 @@
 
   function updateVitalsHUD() {
     const p = state.player;
-    if (el.vitalHealthFill) el.vitalHealthFill.style.width = `${Math.max(0, p.health)}%`;
-    if (el.vitalHealthNum) el.vitalHealthNum.textContent = String(Math.max(0, p.health));
+    const tConf = TANK_CONFIGS[p.tank || state.selectedTank] || TANK_CONFIGS.medium;
+    const maxHp = p.maxHealth || tConf.maxHealth || 100;
 
-    if (el.vitalShieldFill) el.vitalShieldFill.style.width = `${Math.max(0, p.shield)}%`;
-    if (el.vitalShieldNum) el.vitalShieldNum.textContent = String(Math.max(0, p.shield));
+    const hpPct = Math.max(0, Math.min(100, (p.health / maxHp) * 100));
+    if (el.vitalHealthFill) el.vitalHealthFill.style.width = `${hpPct}%`;
+    if (el.vitalHealthNum) el.vitalHealthNum.textContent = String(Math.max(0, p.health));
 
     // Update Rank in Lobby/Match
     const all = [state.player, ...Object.values(state.opponents)];
@@ -2394,11 +3282,11 @@
 
   function updateWeaponHUD() {
     const p = state.player;
-    const w = WEAPONS[p.weapon] || WEAPONS.assault;
+    const tConf = TANK_CONFIGS[p.tank || state.selectedTank] || TANK_CONFIGS.medium;
 
-    if (el.weaponHudIcon) el.weaponHudIcon.textContent = w.icon;
-    if (el.weaponHudName) el.weaponHudName.textContent = w.name;
-    if (el.weaponHudType) el.weaponHudType.textContent = w.type;
+    if (el.weaponHudIcon) el.weaponHudIcon.textContent = "💣";
+    if (el.weaponHudName) el.weaponHudName.textContent = tConf.weapon.name;
+    if (el.weaponHudType) el.weaponHudType.textContent = `${tConf.name} • ${tConf.weapon.damage} Skade`;
     if (el.ammoCurrent) {
       el.ammoCurrent.textContent = "∞";
     }
@@ -2437,9 +3325,11 @@
   // MULTIPLAYER NETWORKING & ROOM SYNC
   // =========================================================================
 
+  let isSyncing = false;
+
   function startRoomSync() {
     if (state.syncTimerId) clearInterval(state.syncTimerId);
-    state.syncTimerId = setInterval(syncWithServer, 80); // ~12 updates per second
+    state.syncTimerId = setInterval(syncWithServer, 50); // 20 updates per second for tight synchronization
   }
 
   function stopRoomSync() {
@@ -2447,10 +3337,12 @@
       clearInterval(state.syncTimerId);
       state.syncTimerId = null;
     }
+    isSyncing = false;
   }
 
   async function syncWithServer() {
-    if (!state.roomCode || !state.playerId || state.isSolo) return;
+    if (isSyncing || !state.roomCode || !state.playerId || state.isSolo) return;
+    isSyncing = true;
 
     try {
       const payload = {
@@ -2467,9 +3359,13 @@
           vx: state.player.vx,
           vy: state.player.vy,
           speed: state.player.speed,
+          tank: state.player.tank || state.selectedTank,
           weapon: state.player.weapon,
           avatar: state.playerAvatar,
           color: state.playerColor,
+          health: state.player.health,
+          shield: state.player.shield,
+          isDead: Boolean(state.player.isDead),
         },
       };
 
@@ -2483,14 +3379,30 @@
       });
       const data = await resp.json();
       if (data && data.ok) {
+        if (data.version && state.lastServerVersion && data.version < state.lastServerVersion) {
+          // Discard out-of-order packet
+          return;
+        }
+        if (data.version) state.lastServerVersion = data.version;
         handleServerStateUpdate(data);
       }
-    } catch (e) {}
+    } catch (e) {
+    } finally {
+      isSyncing = false;
+    }
   }
 
   function handleServerStateUpdate(data) {
     const prevStatus = state.roomStatus;
     state.roomStatus = data.status;
+
+    if (data.status === "lobby") {
+      stopRoomSync();
+      stopSimulation();
+      showView("waiting");
+      renderWaitingRoomState(data);
+      return;
+    }
 
     if (data.status === "countdown") {
       el.countdownOverlay?.classList.remove("hidden");
@@ -2528,7 +3440,7 @@
       } else if (!serverDead && state.player.isDead && state.player.respawnTimer <= 0.2) {
         spawnPlayer(state.player, state.currentMap);
         state.player.health = me.health || 100;
-        state.player.shield = me.shield || 25;
+        state.player.shield = 0;
       } else if (!state.player.isDead) {
         // Local player is ALIVE: health can ONLY decrease while alive (no rubber-banding back up!)
         if (typeof me.health === "number" && me.health < state.player.health) {
@@ -2537,9 +3449,6 @@
           showDamageFeedback();
           addDamageSparks(state.player.x, state.player.y, state.player.color);
           state.player.health = me.health;
-        }
-        if (typeof me.shield === "number" && me.shield < state.player.shield) {
-          state.player.shield = me.shield;
         }
       }
       updateVitalsHUD();
@@ -2554,17 +3463,24 @@
             name: p.name,
             color: p.color,
             avatar: p.avatar || "",
+            tank: p.tank || "medium",
             x: p.x,
             y: p.y,
+            targetX: p.x,
+            targetY: p.y,
             angle: p.angle,
+            targetAngle: p.angle,
             hullAngle: p.hullAngle !== undefined ? p.hullAngle : p.angle,
+            targetHullAngle: p.hullAngle !== undefined ? p.hullAngle : p.angle,
             trackFrame: p.trackFrame || 0,
-            vx: p.vx,
-            vy: p.vy,
-            speed: p.speed,
+            vx: p.vx || 0,
+            vy: p.vy || 0,
+            speed: p.speed || 0,
             weapon: p.weapon || "cannon",
+            maxHealth: p.maxHealth || 100,
+            maxShield: 0,
             health: p.health || 100,
-            shield: p.shield || 25,
+            shield: 0,
             kills: p.kills || 0,
             deaths: p.deaths || 0,
             score: p.score || 0,
@@ -2573,20 +3489,26 @@
         } else {
           const opp = state.opponents[p.id];
           if (p.avatar && p.avatar !== opp.avatar) opp.avatar = p.avatar;
+          if (p.tank && p.tank !== opp.tank) opp.tank = p.tank;
           opp.color = p.color || opp.color;
-          opp.x += (p.x - opp.x) * 0.32;
-          opp.y += (p.y - opp.y) * 0.32;
-          let diff = p.angle - opp.angle;
-          while (diff < -Math.PI) diff += Math.PI * 2;
-          while (diff > Math.PI) diff -= Math.PI * 2;
-          opp.angle += diff * 0.32;
 
-          if (p.hullAngle !== undefined) {
-            let hDiff = p.hullAngle - (opp.hullAngle || opp.angle);
-            while (hDiff < -Math.PI) hDiff += Math.PI * 2;
-            while (hDiff > Math.PI) hDiff -= Math.PI * 2;
-            opp.hullAngle = (opp.hullAngle || opp.angle) + hDiff * 0.32;
+          // Target authoritative coordinates for smooth continuous 60fps lerping
+          opp.targetX = p.x;
+          opp.targetY = p.y;
+          opp.targetAngle = p.angle;
+          opp.targetHullAngle = p.hullAngle !== undefined ? p.hullAngle : p.angle;
+          opp.vx = p.vx || 0;
+          opp.vy = p.vy || 0;
+          opp.speed = p.speed || 0;
+
+          // If snap distance is huge (e.g. teleport / respawn)
+          if (Math.hypot(p.x - opp.x, p.y - opp.y) > 250) {
+            opp.x = p.x;
+            opp.y = p.y;
+            opp.angle = p.angle;
+            opp.hullAngle = opp.targetHullAngle;
           }
+
           if (p.trackFrame !== undefined) {
             opp.trackFrame = p.trackFrame;
           }
@@ -2608,16 +3530,13 @@
             if (!opp.respawnTimer || opp.respawnTimer <= 0.2) {
               opp.isDead = false;
               opp.health = p.health || 100;
-              opp.shield = p.shield || 25;
+              opp.shield = 0;
               opp.invulnerableUntil = performance.now() + 500;
             }
           } else if (!opp.isDead) {
             // Opponent is ALIVE: health can ONLY decrease while alive (no rubber-banding back up!)
             if (typeof p.health === "number" && p.health < opp.health) {
               opp.health = p.health;
-            }
-            if (typeof p.shield === "number" && p.shield < opp.shield) {
-              opp.shield = p.shield;
             }
           }
         }
@@ -2636,10 +3555,13 @@
           const opp = state.opponents[s.playerId];
           const oppName = opp ? opp.name : "Motstander";
           const oppColor = opp ? opp.color : "#ef4444";
-          const w = WEAPONS[s.weapon] || WEAPONS.cannon || WEAPONS.assault;
+          const w = WEAPONS[s.weapon] || WEAPONS.cannon || WEAPONS.medium || TANK_CONFIGS.medium.weapon;
+          const bSpeed = w.bulletSpeed || 1100;
+          const bLife = w.bulletLife || ((w.bulletRange || 1300) / bSpeed);
+          const bDmg = w.damage || 50;
 
           for (let i = 0; i < (w.bulletCount || 1); i++) {
-            const spreadAngle = (Math.random() - 0.5) * w.spread;
+            const spreadAngle = (Math.random() - 0.5) * (w.spread || 0.005);
             const bAngle = s.angle + spreadAngle;
             state.bullets.push({
               id: `${s.id}_${i}`,
@@ -2649,12 +3571,12 @@
               weapon: s.weapon,
               x: s.x,
               y: s.y,
-              vx: Math.cos(bAngle) * w.bulletSpeed,
-              vy: Math.sin(bAngle) * w.bulletSpeed,
-              damage: w.damage,
-              life: w.bulletLife,
-              maxLife: w.bulletLife,
-              color: w.color,
+              vx: Math.cos(bAngle) * bSpeed,
+              vy: Math.sin(bAngle) * bSpeed,
+              damage: bDmg,
+              life: bLife,
+              maxLife: bLife,
+              color: w.color || oppColor,
               isRocket: s.weapon === "rocket",
             });
           }
@@ -2749,9 +3671,9 @@
         vy: 0,
         speed: 0,
         health: 100,
-        shield: 25,
+        shield: 0,
         maxHealth: 100,
-        maxShield: 100,
+        maxShield: 0,
         weapon: d.weapon || "assault",
         kills: 0,
         deaths: 0,
@@ -2777,11 +3699,17 @@
     state.timeRemaining = 3600;
     state.roomStatus = "playing";
 
-    // Spawn player with chosen loadout
+    const tConf = TANK_CONFIGS[state.selectedTank] || TANK_CONFIGS.medium;
     state.player.id = "solo_player";
     state.player.name = state.playerName || "Soldat";
     state.player.color = state.playerColor || "#ffd166";
     state.player.avatar = state.playerAvatar || "char:h1:c_ffd166:r1:e1:m1";
+    state.player.tank = state.selectedTank;
+    state.player.maxHealth = tConf.maxHealth;
+    state.player.maxShield = 0;
+    state.player.health = tConf.maxHealth;
+    state.player.shield = 0;
+
     spawnPlayer(state.player, state.currentMap);
     state.player.kills = 0;
     state.player.deaths = 0;
@@ -2992,6 +3920,16 @@
               state.playerAvatar = myPlayer.avatar;
               state.player.avatar = myPlayer.avatar;
             }
+            if (myPlayer.tank) {
+              state.selectedTank = myPlayer.tank;
+            }
+          }
+
+          // If room is in lobby, show waiting room!
+          if (data.status === "lobby") {
+            showView("waiting");
+            renderWaitingRoomState(data);
+            return;
           }
 
           launchOnlineMatch(data);
@@ -3047,9 +3985,71 @@
       });
     }
 
+    // Waiting Room Turntable Vehicle Selector (Left/Right Arrows & Touch/Click)
+    el.btnTankPrev?.addEventListener("click", () => {
+      cycleTank(-1);
+    });
+    el.btnTankNext?.addEventListener("click", () => {
+      cycleTank(1);
+    });
+    el.turntableStage?.addEventListener("click", () => {
+      cycleTank(1);
+    });
+
+    let touchStartX = 0;
+    el.turntableStage?.addEventListener("touchstart", (e) => {
+      if (e.touches && e.touches[0]) {
+        touchStartX = e.touches[0].clientX;
+      }
+    }, { passive: true });
+    el.turntableStage?.addEventListener("touchend", (e) => {
+      if (e.changedTouches && e.changedTouches[0]) {
+        const deltaX = e.changedTouches[0].clientX - touchStartX;
+        if (Math.abs(deltaX) > 25) {
+          cycleTank(deltaX < 0 ? 1 : -1);
+        }
+      }
+    }, { passive: true });
+
+    // Solo Practice Tank Picker (if present)
+    const soloBtns = el.soloTankPicker ? el.soloTankPicker.querySelectorAll(".solo-tank-opt") : [];
+    soloBtns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const tankType = btn.dataset.tank;
+        if (tankType) selectTank(tankType);
+      });
+    });
+
+    // Waiting Room: Toggle Ready
+    el.btnToggleReady?.addEventListener("click", () => {
+      toggleReady();
+    });
+
+    // Waiting Room: Host Force Start
+    el.btnHostStartMatch?.addEventListener("click", () => {
+      hostStartMatch();
+    });
+
+    // Waiting Room: Copy Room Code
+    el.btnCopyRoomCode?.addEventListener("click", () => {
+      if (state.roomCode) {
+        navigator.clipboard?.writeText(state.roomCode);
+        const oldTitle = el.btnCopyRoomCode.title;
+        el.btnCopyRoomCode.title = "Kopiert!";
+        setTimeout(() => {
+          if (el.btnCopyRoomCode) el.btnCopyRoomCode.title = oldTitle;
+        }, 1500);
+      }
+    });
+
+    // Waiting Room: Leave Room Button
+    el.btnLeaveWaitingRoom?.addEventListener("click", () => {
+      handleForfeitAndLeave();
+    });
+
     // Solo Practice Start Button
     el.btnStartSoloPractice?.addEventListener("click", () => {
-      launchSoloPractice();
+      openSoloTankSelection();
     });
 
     // Sound toggle
@@ -3065,7 +4065,7 @@
 
     // Header Back button
     el.btnHeaderBack?.addEventListener("click", (e) => {
-      if (state.view === "game" || state.roomCode) {
+      if (state.view === "game" || state.view === "waiting" || state.roomCode) {
         e.preventDefault();
         handleForfeitAndLeave();
       }
@@ -3082,11 +4082,22 @@
     });
 
     // Podium Return Buttons
-    el.btnPodiumReturnLobby?.addEventListener("click", () => {
+    el.btnPodiumReturnLobby?.addEventListener("click", async () => {
       if (el.modalPodium) el.modalPodium.classList.add("hidden");
       if (state.isSolo) {
-        launchSoloPractice();
+        openSoloTankSelection();
       } else {
+        if (state.roomCode) {
+          try {
+            await fetch("/api/kuleregn/reset_lobby", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ roomCode: state.roomCode, playerId: state.playerId }),
+            });
+            showView("waiting");
+            return;
+          } catch (_) {}
+        }
         handleForfeitAndLeave();
       }
     });
@@ -3095,8 +4106,13 @@
       if (el.modalPodium) el.modalPodium.classList.add("hidden");
       stopSimulation();
       stopRoomSync();
+      stopLobbyPoll();
       showView("lobby");
     });
+
+    // Initial render of tank previews and active selection
+    renderAllTankPreviews();
+    syncTankCardsUI();
   }
 
   // =========================================================================

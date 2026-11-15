@@ -41,6 +41,69 @@ PLAYER_PALETTE = [
     {"color": "#22c55e", "name": "Militærgrønn"},
 ]
 
+TANK_SPECS = {
+    "light": {
+        "id": "light",
+        "name": "Lett stridsvogn",
+        "badge": "Rask & Smidig",
+        "desc": "Høy toppfart og hurtigskytende 57mm kanon, men tynnere panser.",
+        "maxHealth": 75,
+        "maxShield": 0,
+        "forwardSpeed": 140,
+        "reverseSpeed": 85,
+        "hullTurnSpeed": 1.8,
+        "turretTurnSpeed": 1.8,
+        "radius": 22,
+        "size": 64,
+        "damage": 35,
+        "fireRate": 0.38,
+        "bulletSpeed": 1250,
+        "bulletRange": 1200,
+        "spread": 0.008,
+        "cannonName": "57mm Lett Hurtigkanon",
+    },
+    "medium": {
+        "id": "medium",
+        "name": "Medium stridsvogn",
+        "badge": "Balansert allrounder",
+        "desc": "Klassisk balanse mellom manøvrerbarhet, pansring og ildkraft.",
+        "maxHealth": 100,
+        "maxShield": 0,
+        "forwardSpeed": 110,
+        "reverseSpeed": 65,
+        "hullTurnSpeed": 1.35,
+        "turretTurnSpeed": 1.35,
+        "radius": 22,
+        "size": 64,
+        "damage": 50,
+        "fireRate": 0.65,
+        "bulletSpeed": 1100,
+        "bulletRange": 1300,
+        "spread": 0.005,
+        "cannonName": "75mm Stridsvognkanon",
+    },
+    "heavy": {
+        "id": "heavy",
+        "name": "Tung stridsvogn",
+        "badge": "Festning",
+        "desc": "Massiv 152mm haubitser med enorm ildkraft. Tregt tårnsikte og kraftig rekyl.",
+        "maxHealth": 140,
+        "maxShield": 0,
+        "forwardSpeed": 75,
+        "reverseSpeed": 45,
+        "hullTurnSpeed": 0.85,
+        "turretTurnSpeed": 0.65,
+        "radius": 22,
+        "size": 64,
+        "damage": 250,
+        "fireRate": 2.4,
+        "bulletSpeed": 1050,
+        "bulletRange": 1500,
+        "spread": 0.002,
+        "cannonName": "152mm Tung Haubitser (One-shot)",
+    },
+}
+
 WEAPONS_SPEC = {
     "cannon": {
         "id": "cannon",
@@ -177,6 +240,7 @@ class KuleregnRoom:
         bot_count: int = 4,
         mode: str = "ffa",
         host_avatar: str = "",
+        host_tank: str = "medium",
     ) -> None:
         self.code: str = code.upper()
         self.lock = threading.RLock()
@@ -205,22 +269,26 @@ class KuleregnRoom:
         self.recent_shots: List[Dict[str, Any]] = []
 
         # Add Host Player
-        self._add_host(host_name, host_color, host_avatar)
+        self._add_host(host_name, host_color, host_avatar, host_tank)
 
     def bump(self) -> None:
         self.version += 1
         self.last_activity = time.time()
 
-    def _add_host(self, name: str, color: str, avatar: str = "") -> None:
+    def _add_host(self, name: str, color: str, avatar: str = "", tank: str = "medium") -> None:
         chosen_color = color
         if not chosen_color or any(p.get("color") == chosen_color for p in self.players.values()):
             chosen_color = self._get_next_available_color()
+
+        chosen_tank = tank if tank in TANK_SPECS else "medium"
+        t_spec = TANK_SPECS.get(chosen_tank, TANK_SPECS["medium"])
 
         self.players[self.host_id] = {
             "id": self.host_id,
             "name": name.strip() or "Sjåfør 1",
             "color": chosen_color,
             "avatar": avatar,
+            "tank": chosen_tank,
             "isHost": True,
             "isReady": False,
             "isBot": False,
@@ -228,12 +296,16 @@ class KuleregnRoom:
             "x": 400.0,
             "y": 400.0,
             "angle": 0.0,
+            "hullAngle": 0.0,
+            "trackFrame": 0,
             "vx": 0.0,
             "vy": 0.0,
             "speed": 0.0,
-            "health": 100,
-            "shield": 25,
-            "weapon": "assault",
+            "maxHealth": t_spec["maxHealth"],
+            "maxShield": t_spec["maxShield"],
+            "health": t_spec["maxHealth"],
+            "shield": t_spec["maxShield"],
+            "weapon": "cannon",
             "kills": 0,
             "deaths": 0,
             "score": 0,
@@ -251,7 +323,7 @@ class KuleregnRoom:
                 return item["color"]
         return f"#{random.randint(0x222222, 0xEEEEEE):06x}"
 
-    def add_player(self, name: str, color: str, avatar: str = "") -> Optional[Dict[str, Any]]:
+    def add_player(self, name: str, color: str, avatar: str = "", tank: str = "medium") -> Optional[Dict[str, Any]]:
         with self.lock:
             if len([p for p in self.players.values() if not p.get("left") and not p.get("isBot")]) >= 16:
                 return None
@@ -261,12 +333,16 @@ class KuleregnRoom:
             if not chosen_color or any(p.get("color") == chosen_color for p in self.players.values()):
                 chosen_color = self._get_next_available_color()
 
+            chosen_tank = tank if tank in TANK_SPECS else "medium"
+            t_spec = TANK_SPECS.get(chosen_tank, TANK_SPECS["medium"])
+
             slot = len(self.players)
             player_dict = {
                 "id": pid,
                 "name": name.strip() or f"Spiller {slot + 1}",
                 "color": chosen_color,
                 "avatar": avatar,
+                "tank": chosen_tank,
                 "isHost": False,
                 "isReady": False,
                 "isBot": False,
@@ -274,12 +350,16 @@ class KuleregnRoom:
                 "x": 400.0 + (slot % 4) * 80.0,
                 "y": 400.0 + (slot // 4) * 80.0,
                 "angle": 0.0,
+                "hullAngle": 0.0,
+                "trackFrame": 0,
                 "vx": 0.0,
                 "vy": 0.0,
                 "speed": 0.0,
-                "health": 100,
-                "shield": 25,
-                "weapon": "assault",
+                "maxHealth": t_spec["maxHealth"],
+                "maxShield": t_spec["maxShield"],
+                "health": t_spec["maxHealth"],
+                "shield": t_spec["maxShield"],
+                "weapon": "cannon",
                 "kills": 0,
                 "deaths": 0,
                 "score": 0,
@@ -335,12 +415,17 @@ class KuleregnRoom:
                     self.race_end_time = None
                     # Reset stats for fresh match
                     for pl in self.players.values():
+                        t_spec = TANK_SPECS.get(pl.get("tank", "medium"), TANK_SPECS["medium"])
+                        pl["maxHealth"] = t_spec["maxHealth"]
+                        pl["maxShield"] = t_spec["maxShield"]
+                        pl["health"] = t_spec["maxHealth"]
+                        pl["shield"] = t_spec["maxShield"]
                         pl["kills"] = 0
                         pl["deaths"] = 0
                         pl["score"] = 0
-                        pl["health"] = 100
-                        pl["shield"] = 25
-                        pl["weapon"] = pl.get("weapon", "assault")
+                        pl["streak"] = 0
+                        pl["isDead"] = False
+                        pl["weapon"] = "cannon"
                     self.kill_feed = []
                     self.recent_events = []
                     self.recent_shots = []
@@ -357,6 +442,7 @@ class KuleregnRoom:
         avatar: Optional[str] = None,
         name: Optional[str] = None,
         weapon: Optional[str] = None,
+        tank: Optional[str] = None,
     ) -> bool:
         with self.lock:
             p = self.players.get(player_id)
@@ -387,6 +473,15 @@ class KuleregnRoom:
 
             if weapon and weapon in WEAPONS_SPEC:
                 p["weapon"] = weapon
+
+            if tank and tank in TANK_SPECS:
+                p["tank"] = tank
+                t_spec = TANK_SPECS[tank]
+                p["maxHealth"] = t_spec["maxHealth"]
+                p["maxShield"] = t_spec["maxShield"]
+                if self.status == "lobby":
+                    p["health"] = t_spec["maxHealth"]
+                    p["shield"] = t_spec["maxShield"]
 
             self.bump()
             return True
@@ -425,13 +520,18 @@ class KuleregnRoom:
             self.match_start = None
             self.race_end_time = None
             for pl in self.players.values():
+                t_spec = TANK_SPECS.get(pl.get("tank", "medium"), TANK_SPECS["medium"])
                 pl["isReady"] = True
+                pl["maxHealth"] = t_spec["maxHealth"]
+                pl["maxShield"] = t_spec["maxShield"]
+                pl["health"] = t_spec["maxHealth"]
+                pl["shield"] = t_spec["maxShield"]
                 pl["kills"] = 0
                 pl["deaths"] = 0
                 pl["score"] = 0
-                pl["health"] = 100
-                pl["shield"] = 25
-                pl["weapon"] = pl.get("weapon", "assault")
+                pl["streak"] = 0
+                pl["isDead"] = False
+                pl["weapon"] = "cannon"
             self.kill_feed = []
             self.recent_events = []
             self.recent_shots = []
@@ -449,13 +549,18 @@ class KuleregnRoom:
             self.match_start = None
             self.race_end_time = None
             for pl in self.players.values():
+                t_spec = TANK_SPECS.get(pl.get("tank", "medium"), TANK_SPECS["medium"])
                 pl["isReady"] = True
+                pl["maxHealth"] = t_spec["maxHealth"]
+                pl["maxShield"] = t_spec["maxShield"]
+                pl["health"] = t_spec["maxHealth"]
+                pl["shield"] = t_spec["maxShield"]
                 pl["kills"] = 0
                 pl["deaths"] = 0
                 pl["score"] = 0
-                pl["health"] = 100
-                pl["shield"] = 25
-                pl["weapon"] = pl.get("weapon", "assault")
+                pl["streak"] = 0
+                pl["isDead"] = False
+                pl["weapon"] = "cannon"
             self.kill_feed = []
             self.recent_events = []
             self.recent_shots = []
@@ -469,13 +574,18 @@ class KuleregnRoom:
             self.match_start = None
             self.race_end_time = None
             for pl in self.players.values():
+                t_spec = TANK_SPECS.get(pl.get("tank", "medium"), TANK_SPECS["medium"])
                 pl["isReady"] = False
+                pl["maxHealth"] = t_spec["maxHealth"]
+                pl["maxShield"] = t_spec["maxShield"]
+                pl["health"] = t_spec["maxHealth"]
+                pl["shield"] = t_spec["maxShield"]
                 pl["kills"] = 0
                 pl["deaths"] = 0
                 pl["score"] = 0
-                pl["health"] = 100
-                pl["shield"] = 25
-                pl["weapon"] = pl.get("weapon", "assault")
+                pl["streak"] = 0
+                pl["isDead"] = False
+                pl["weapon"] = "cannon"
             self.kill_feed = []
             self.recent_events = []
             self.recent_shots = []
@@ -577,9 +687,104 @@ class KuleregnRoom:
             now = time.time()
             p["lastSeen"] = now
 
-            for key in ("x", "y", "angle", "hullAngle", "trackFrame", "vx", "vy", "speed", "weapon", "avatar", "color"):
+            for key in ("x", "y", "angle", "hullAngle", "trackFrame", "vx", "vy", "speed", "weapon", "avatar", "color", "tank"):
                 if key in telemetry and telemetry[key] is not None:
                     p[key] = telemetry[key]
+                    if key == "tank" and telemetry["tank"] in TANK_SPECS:
+                        t_spec = TANK_SPECS[telemetry["tank"]]
+                        p["maxHealth"] = t_spec["maxHealth"]
+                        p["maxShield"] = t_spec["maxShield"]
+                        if self.status == "lobby":
+                            p["health"] = t_spec["maxHealth"]
+                            p["shield"] = t_spec["maxShield"]
+
+            # Ingest combat events first (damage, hits, kills, pickups, respawns)
+            effective_events = events if events is not None else telemetry.get("events", [])
+            for ev in (effective_events or []):
+                ev_type = ev.get("type")
+                if ev_type in ("hit", "damage"):
+                    target_id = ev.get("targetId") or ev.get("victimId")
+                    attacker_id = ev.get("attackerId") or ev.get("killerId") or player_id
+                    if attacker_id in ("env", "Omgivelse", "", None) and player_id in self.players:
+                        attacker_id = player_id
+                    damage = int(ev.get("damage", 50))
+                    weapon_id = ev.get("weapon", "cannon")
+                    target = self.players.get(target_id)
+                    if target:
+                        target["lastAttackerId"] = attacker_id
+                        target["lastAttackerWeapon"] = weapon_id
+                        if not target.get("isDead", False):
+                            target_max_hp = target.get("maxHealth", 100)
+                            target["health"] = max(0, target.get("health", target_max_hp) - damage)
+                            target["shield"] = 0
+                            self.recent_events.append({
+                                "type": "damage",
+                                "targetId": target_id,
+                                "attackerId": attacker_id,
+                                "damage": damage,
+                                "weapon": weapon_id,
+                                "remainingHealth": target["health"],
+                                "remainingShield": 0,
+                                "time": now,
+                            })
+
+                            if target["health"] <= 0:
+                                target["health"] = 0
+                                target["isDead"] = True
+                                target["respawnTime"] = now + 2.5
+                                client_kill_id = ev.get("clientKillId")
+                                self.register_kill(attacker_id, target_id, weapon_id, event_id=client_kill_id)
+
+                elif ev_type == "kill":
+                    target_id = ev.get("victimId") or ev.get("targetId")
+                    attacker_id = ev.get("attackerId") or ev.get("killerId") or player_id
+                    if attacker_id in ("env", "Omgivelse", "", None) and player_id in self.players:
+                        attacker_id = player_id
+                    weapon_id = ev.get("weapon", "cannon")
+                    target = self.players.get(target_id)
+                    if target:
+                        target["lastAttackerId"] = attacker_id
+                        target["lastAttackerWeapon"] = weapon_id
+                        target["health"] = 0
+                        target["isDead"] = True
+                        target["respawnTime"] = now + 2.5
+                        client_kill_id = ev.get("clientKillId")
+                        self.register_kill(attacker_id, target_id, weapon_id, event_id=client_kill_id)
+
+                elif ev_type == "pickup":
+                    pass # Pickups disabled
+
+                elif ev_type == "respawn":
+                    t_spec = TANK_SPECS.get(p.get("tank", "medium"), TANK_SPECS["medium"])
+                    p["isDead"] = False
+                    p["health"] = t_spec["maxHealth"]
+                    p["shield"] = 0
+                    p["respawnTime"] = 0
+                    p["invulnerableUntil"] = now + 0.5
+
+            # Direct telemetry sync of health, shield, and isDead (fallback if events missed)
+            if telemetry.get("isDead") or (telemetry.get("health") is not None and int(telemetry.get("health", 100)) <= 0):
+                if not p.get("isDead"):
+                    p["isDead"] = True
+                    p["health"] = 0
+                    p["shield"] = 0
+                    if not p.get("respawnTime"):
+                        p["respawnTime"] = now + 2.5
+                    last_attacker = p.get("lastAttackerId") or player_id
+                    weapon = p.get("lastAttackerWeapon", "cannon")
+                    self.register_kill(last_attacker, player_id, weapon)
+            elif not p.get("isDead"):
+                if "health" in telemetry and telemetry["health"] is not None:
+                    p["health"] = max(0, min(p.get("maxHealth", 100), int(telemetry["health"])))
+                    if p["health"] <= 0:
+                        p["isDead"] = True
+                        p["shield"] = 0
+                        if not p.get("respawnTime"):
+                            p["respawnTime"] = now + 2.5
+                        last_attacker = p.get("lastAttackerId") or player_id
+                        weapon = p.get("lastAttackerWeapon", "cannon")
+                        self.register_kill(last_attacker, player_id, weapon)
+                p["shield"] = 0
 
             # Ingest shots fired by this player
             if shots:
@@ -597,79 +802,13 @@ class KuleregnRoom:
                 if len(self.recent_shots) > 50:
                     self.recent_shots = self.recent_shots[-50:]
 
-            # Ingest combat events (damage, hits, kills, pickups, respawns)
-            effective_events = events if events is not None else telemetry.get("events", [])
-            for ev in (effective_events or []):
-                ev_type = ev.get("type")
-                if ev_type in ("hit", "damage"):
-                    target_id = ev.get("targetId") or ev.get("victimId")
-                    attacker_id = ev.get("attackerId") or ev.get("killerId") or player_id
-                    if attacker_id in ("env", "Omgivelse", "", None) and player_id in self.players:
-                        attacker_id = player_id
-                    damage = int(ev.get("damage", 50))
-                    weapon_id = ev.get("weapon", "cannon")
-                    target = self.players.get(target_id)
-                    if target and not target.get("isDead", False):
-                        shield = target.get("shield", 0)
-                        if shield > 0:
-                            if shield >= damage:
-                                target["shield"] = shield - damage
-                                remaining = 0
-                            else:
-                                remaining = damage - shield
-                                target["shield"] = 0
-                        else:
-                            remaining = damage
-
-                        target["health"] = max(0, target.get("health", 100) - remaining)
-                        self.recent_events.append({
-                            "type": "damage",
-                            "targetId": target_id,
-                            "attackerId": attacker_id,
-                            "damage": damage,
-                            "weapon": weapon_id,
-                            "remainingHealth": target["health"],
-                            "remainingShield": target["shield"],
-                            "time": now,
-                        })
-
-                        if target["health"] <= 0:
-                            target["health"] = 0
-                            target["isDead"] = True
-                            target["respawnTime"] = now + 2.5
-                            client_kill_id = ev.get("clientKillId")
-                            self.register_kill(attacker_id, target_id, weapon_id, event_id=client_kill_id)
-
-                elif ev_type == "kill":
-                    target_id = ev.get("victimId")
-                    attacker_id = ev.get("attackerId") or ev.get("killerId") or player_id
-                    if attacker_id in ("env", "Omgivelse", "", None) and player_id in self.players:
-                        attacker_id = player_id
-                    weapon_id = ev.get("weapon", "cannon")
-                    target = self.players.get(target_id)
-                    if target and not target.get("isDead", False):
-                        target["health"] = 0
-                        target["isDead"] = True
-                        target["respawnTime"] = now + 2.5
-                        client_kill_id = ev.get("clientKillId")
-                        self.register_kill(attacker_id, target_id, weapon_id, event_id=client_kill_id)
-
-                elif ev_type == "pickup":
-                    pass # Pickups disabled
-
-                elif ev_type == "respawn":
-                    p["isDead"] = False
-                    p["health"] = 100
-                    p["shield"] = 25
-                    p["respawnTime"] = 0
-                    p["invulnerableUntil"] = now + 0.5
-
             # Process respawns for dead players
             for pl in self.players.values():
                 if pl.get("isDead") and pl.get("respawnTime") and now >= pl["respawnTime"]:
+                    t_spec = TANK_SPECS.get(pl.get("tank", "medium"), TANK_SPECS["medium"])
                     pl["isDead"] = False
-                    pl["health"] = 100
-                    pl["shield"] = 25
+                    pl["health"] = t_spec["maxHealth"]
+                    pl["shield"] = 0
                     pl["respawnTime"] = 0
                     pl["invulnerableUntil"] = now + 0.5
 
@@ -700,6 +839,7 @@ class KuleregnRoom:
                     "name": p["name"],
                     "color": p["color"],
                     "avatar": p.get("avatar", ""),
+                    "tank": p.get("tank", "medium"),
                     "isHost": p.get("isHost", False),
                     "isReady": p.get("isReady", False),
                     "isBot": p.get("isBot", False),
@@ -707,11 +847,15 @@ class KuleregnRoom:
                     "x": round(p.get("x", 0.0), 1),
                     "y": round(p.get("y", 0.0), 1),
                     "angle": round(p.get("angle", 0.0), 3),
+                    "hullAngle": round(p.get("hullAngle", p.get("angle", 0.0)), 3),
+                    "trackFrame": int(p.get("trackFrame", 0)),
                     "vx": round(p.get("vx", 0.0), 1),
                     "vy": round(p.get("vy", 0.0), 1),
                     "speed": round(p.get("speed", 0.0), 1),
+                    "maxHealth": p.get("maxHealth", 100),
+                    "maxShield": 0,
                     "health": p.get("health", 100),
-                    "shield": p.get("shield", 0),
+                    "shield": 0,
                     "weapon": p.get("weapon", "cannon"),
                     "kills": p.get("kills", 0),
                     "deaths": p.get("deaths", 0),
@@ -738,6 +882,7 @@ class KuleregnRoom:
                 "botCount": self.bot_count,
                 "version": self.version,
                 "players": player_list,
+                "tanks": list(TANK_SPECS.values()),
                 "killFeed": self.kill_feed[-8:],
                 "recentEvents": self.recent_events[-16:],
                 "recentShots": [s for s in self.recent_shots if now - s.get("time", 0) < 2.0],
@@ -796,10 +941,11 @@ class KuleregnAPI:
                                 bot_count=2,
                                 mode="ffa",
                                 host_avatar=host_avatar,
+                                host_tank="medium",
                             )
                             room.host_id = p_room.host_id
-                            room.status = "countdown"
-                            room.countdown_start = time.time()
+                            room.status = "lobby"
+                            room.countdown_start = None
                             room.players = {}
 
                             # Add all party players
@@ -808,20 +954,26 @@ class KuleregnAPI:
                                 if not pdata.get("is_spectator") and not pdata.get("left"):
                                     p_av = pdata.get("avatar", "")
                                     p_col = pdata.get("color") or extract_color_from_avatar(p_av) or PLAYER_PALETTE[slot % len(PLAYER_PALETTE)]["color"]
+                                    t_spec = TANK_SPECS["medium"]
                                     room.players[pid] = {
                                         "id": pid,
                                         "name": pdata.get("name", f"Spiller {slot + 1}"),
                                         "color": p_col,
                                         "avatar": p_av,
+                                        "tank": "medium",
                                         "isHost": (pid == p_room.host_id),
-                                        "isReady": True,
+                                        "isReady": False,
                                         "isBot": False,
                                         "slot": slot,
                                         "x": 400.0 + (slot % 4) * 80.0,
                                         "y": 400.0 + (slot // 4) * 80.0,
                                         "angle": 0.0,
                                         "vx": 0.0, "vy": 0.0, "speed": 0.0,
-                                        "health": 100, "shield": 25, "weapon": "assault",
+                                        "maxHealth": t_spec["maxHealth"],
+                                        "maxShield": t_spec["maxShield"],
+                                        "health": t_spec["maxHealth"],
+                                        "shield": t_spec["maxShield"],
+                                        "weapon": "cannon",
                                         "kills": 0, "deaths": 0, "score": 0, "streak": 0, "highestStreak": 0,
                                         "lastSeen": time.time(),
                                     }
@@ -853,6 +1005,7 @@ class KuleregnAPI:
             host_name = str(body.get("hostName", "Spiller 1")).strip()[:18] or "Spiller 1"
             host_color = str(body.get("color", "")).strip()
             host_avatar = str(body.get("avatar", "")).strip()
+            host_tank = str(body.get("tank", "medium")).strip()
             map_id = str(body.get("mapId", "rust")).strip()
             score_limit = int(body.get("scoreLimit", 15))
             time_limit = int(body.get("timeLimit", 300))
@@ -870,6 +1023,7 @@ class KuleregnAPI:
                 bot_count=bot_count,
                 mode=mode,
                 host_avatar=host_avatar,
+                host_tank=host_tank,
             )
 
             with _rooms_lock:
@@ -882,6 +1036,7 @@ class KuleregnAPI:
                 "hostToken": room.host_token,
                 "slot": 0,
                 "color": room.players[room.host_id]["color"],
+                "tank": room.players[room.host_id]["tank"],
                 "mapId": room.map_id,
                 "scoreLimit": room.score_limit,
                 "timeLimit": room.time_limit,
@@ -895,13 +1050,14 @@ class KuleregnAPI:
             player_name = str(body.get("playerName", "Spiller")).strip()[:18] or "Spiller"
             color = str(body.get("color", "")).strip()
             avatar = str(body.get("avatar", "")).strip()
+            tank = str(body.get("tank", "medium")).strip()
 
             with _rooms_lock:
                 room = _rooms.get(code)
             if not room:
                 return 404, {"error": "Fant ikke rommet. Sjekk koden og prøv igjen."}
 
-            player = room.add_player(player_name, color, avatar)
+            player = room.add_player(player_name, color, avatar, tank=tank)
             if not player:
                 return 400, {"error": "Rommet er fullt (maks 16 spillere)."}
 
@@ -911,6 +1067,7 @@ class KuleregnAPI:
                 "playerId": player["id"],
                 "slot": player["slot"],
                 "color": player["color"],
+                "tank": player["tank"],
                 "mapId": room.map_id,
                 "scoreLimit": room.score_limit,
                 "timeLimit": room.time_limit,
@@ -932,20 +1089,21 @@ class KuleregnAPI:
             ok = room.set_ready(player_id, ready)
             return 200, {"ok": ok}
 
-        # 4. Customize Profile (Color, Avatar, Name)
-        if path in ("/api/kuleregn/color", "/api/kuleregn/customize", "/api/kuleregn/avatar"):
+        # 4. Customize Profile (Color, Avatar, Name, Tank)
+        if path in ("/api/kuleregn/color", "/api/kuleregn/customize", "/api/kuleregn/avatar", "/api/kuleregn/tank"):
             code = str(body.get("roomCode", "")).strip().upper()
             player_id = str(body.get("playerId", "")).strip()
             color = str(body.get("color", "")).strip() or None
             avatar = str(body.get("avatar", "")).strip() or None
             name = str(body.get("name", "")).strip() or None
+            tank = str(body.get("tank", "")).strip() or None
 
             with _rooms_lock:
                 room = _rooms.get(code)
             if not room:
                 return 404, {"error": "Fant ikke rommet."}
 
-            ok = room.update_profile(player_id, color=color, avatar=avatar, name=name)
+            ok = room.update_profile(player_id, color=color, avatar=avatar, name=name, tank=tank)
             return 200, {"ok": ok}
 
         # 5. Update Settings (Host only)
