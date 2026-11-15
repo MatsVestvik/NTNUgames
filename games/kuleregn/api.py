@@ -289,6 +289,7 @@ class KuleregnRoom:
             "color": chosen_color,
             "avatar": avatar,
             "tank": chosen_tank,
+            "team": "red",
             "isHost": True,
             "isReady": False,
             "isBot": False,
@@ -337,12 +338,17 @@ class KuleregnRoom:
             t_spec = TANK_SPECS.get(chosen_tank, TANK_SPECS["medium"])
 
             slot = len(self.players)
+            red_c = sum(1 for p in self.players.values() if p.get("team") == "red")
+            blue_c = sum(1 for p in self.players.values() if p.get("team") == "blue")
+            chosen_team = "blue" if blue_c < red_c else "red"
+
             player_dict = {
                 "id": pid,
                 "name": name.strip() or f"Spiller {slot + 1}",
                 "color": chosen_color,
                 "avatar": avatar,
                 "tank": chosen_tank,
+                "team": chosen_team,
                 "isHost": False,
                 "isReady": False,
                 "isBot": False,
@@ -443,11 +449,15 @@ class KuleregnRoom:
         name: Optional[str] = None,
         weapon: Optional[str] = None,
         tank: Optional[str] = None,
+        team: Optional[str] = None,
     ) -> bool:
         with self.lock:
             p = self.players.get(player_id)
             if not p:
                 return False
+
+            if team and team.lower() in ("red", "blue"):
+                p["team"] = team.lower()
 
             if color:
                 clean_hex = color.strip().lower()
@@ -496,6 +506,8 @@ class KuleregnRoom:
 
             if "mapId" in settings and settings["mapId"] in MAP_CONFIGS:
                 self.map_id = settings["mapId"]
+            if "mode" in settings and settings["mode"] in ("ffa", "tdm"):
+                self.mode = settings["mode"]
             if "scoreLimit" in settings:
                 self.score_limit = max(5, min(50, int(settings["scoreLimit"])))
             if "timeLimit" in settings:
@@ -604,7 +616,12 @@ class KuleregnRoom:
 
         elif self.status == "playing":
             # Check victory condition (score limit reached or time ran out)
-            max_kills = max((p.get("kills", 0) for p in self.players.values() if not p.get("left")), default=0)
+            if self.mode == "tdm":
+                red_kills = sum(p.get("kills", 0) for p in self.players.values() if p.get("team") == "red" and not p.get("left"))
+                blue_kills = sum(p.get("kills", 0) for p in self.players.values() if p.get("team") == "blue" and not p.get("left"))
+                max_kills = max(red_kills, blue_kills)
+            else:
+                max_kills = max((p.get("kills", 0) for p in self.players.values() if not p.get("left")), default=0)
             time_expired = (self.match_start is not None) and (now - self.match_start >= self.time_limit)
 
             is_match_over = (max_kills >= self.score_limit) or time_expired
@@ -623,13 +640,18 @@ class KuleregnRoom:
             if not victim:
                 return
 
+            killer = self.players.get(killer_id)
+            # Friendly fire prevention in team mode
+            if self.mode == "tdm" and killer and victim:
+                if killer.get("team") and killer.get("team") == victim.get("team"):
+                    return
+
             now = time.time()
             # Prevent double kill registration on the same victim within 1.5 seconds
             if now - victim.get("lastKilledAt", 0.0) < 1.5:
                 return
             victim["lastKilledAt"] = now
 
-            killer = self.players.get(killer_id)
             victim["deaths"] = victim.get("deaths", 0) + 1
             victim["streak"] = 0
 
@@ -834,10 +856,15 @@ class KuleregnRoom:
             player_list = []
             for p in self.players.values():
                 is_me = (for_player_id and p["id"] == for_player_id)
+                p_team = p.get("team", "red")
+                if self.mode == "tdm":
+                    effective_color = "#f43f5e" if p_team == "red" else "#38bdf8"
+                else:
+                    effective_color = p.get("color", "#ffd166")
                 player_list.append({
                     "id": p["id"],
                     "name": p["name"],
-                    "color": p["color"],
+                    "color": effective_color,
                     "avatar": p.get("avatar", ""),
                     "tank": p.get("tank", "medium"),
                     "isHost": p.get("isHost", False),
@@ -857,6 +884,7 @@ class KuleregnRoom:
                     "health": p.get("health", 100),
                     "shield": 0,
                     "weapon": p.get("weapon", "cannon"),
+                    "team": p.get("team", "red"),
                     "kills": p.get("kills", 0),
                     "deaths": p.get("deaths", 0),
                     "score": p.get("score", 0),
@@ -869,6 +897,9 @@ class KuleregnRoom:
             # Sort players by kills (score) descending
             player_list.sort(key=lambda item: (-item["kills"], item["deaths"], -item["score"]))
 
+            red_kills = sum(p.get("kills", 0) for p in self.players.values() if p.get("team") == "red" and not p.get("left"))
+            blue_kills = sum(p.get("kills", 0) for p in self.players.values() if p.get("team") == "blue" and not p.get("left"))
+
             return {
                 "ok": True,
                 "roomCode": self.code,
@@ -880,6 +911,7 @@ class KuleregnRoom:
                 "timeRemaining": round(time_remaining, 1),
                 "countdownRemaining": round(countdown_rem, 1),
                 "botCount": self.bot_count,
+                "teamScores": {"red": red_kills, "blue": blue_kills},
                 "version": self.version,
                 "players": player_list,
                 "tanks": list(TANK_SPECS.values()),
@@ -1089,28 +1121,31 @@ class KuleregnAPI:
             ok = room.set_ready(player_id, ready)
             return 200, {"ok": ok}
 
-        # 4. Customize Profile (Color, Avatar, Name, Tank)
-        if path in ("/api/kuleregn/color", "/api/kuleregn/customize", "/api/kuleregn/avatar", "/api/kuleregn/tank"):
+        # 4. Customize Profile (Color, Avatar, Name, Tank, Team)
+        if path in ("/api/kuleregn/color", "/api/kuleregn/customize", "/api/kuleregn/avatar", "/api/kuleregn/tank", "/api/kuleregn/team"):
             code = str(body.get("roomCode", "")).strip().upper()
             player_id = str(body.get("playerId", "")).strip()
             color = str(body.get("color", "")).strip() or None
             avatar = str(body.get("avatar", "")).strip() or None
             name = str(body.get("name", "")).strip() or None
             tank = str(body.get("tank", "")).strip() or None
+            team = str(body.get("team", "")).strip().lower() or None
 
             with _rooms_lock:
                 room = _rooms.get(code)
             if not room:
                 return 404, {"error": "Fant ikke rommet."}
 
-            ok = room.update_profile(player_id, color=color, avatar=avatar, name=name, tank=tank)
+            ok = room.update_profile(player_id, color=color, avatar=avatar, name=name, tank=tank, team=team)
             return 200, {"ok": ok}
 
         # 5. Update Settings (Host only)
         if path == "/api/kuleregn/settings":
             code = str(body.get("roomCode", "")).strip().upper()
             player_id = str(body.get("playerId", "")).strip()
-            settings = body.get("settings", {})
+            settings = body.get("settings")
+            if not isinstance(settings, dict):
+                settings = body
 
             with _rooms_lock:
                 room = _rooms.get(code)

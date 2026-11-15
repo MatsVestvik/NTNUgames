@@ -660,7 +660,8 @@
 
   const state = {
     view: "lobby", // "lobby" | "game"
-    mode: "ffa",   // "ffa"
+    mode: "ffa",   // "ffa" | "tdm"
+    playerTeam: "red", // "red" | "blue"
     roomCode: null,
     playerId: null,
     isHost: false,
@@ -732,14 +733,13 @@
     // Camera (Zoomed 3x in for closer tank combat)
     camera: { x: 400, y: 400, zoom: 3.0, shake: 0 },
 
-    // Input States (WASD Tank Steering/Throttle, Left/Right Arrows Turret, Space/Click Shoot)
+    // Input States (WASD Tank Steering/Throttle, Left/Right/Up Arrows Turret, Space/Click Shoot)
     keys: {
       w: false, a: false, s: false, d: false,
-      arrowLeft: false, arrowRight: false,
+      arrowLeft: false, arrowRight: false, arrowUp: false,
       shoot: false
     },
-    lastTurnAngle: 0,
-    mouse: { down: false, screenX: 0, screenY: 0, hasMoved: false },
+    mouse: { down: false, screenX: 0, screenY: 0 },
 
     // Networking
     syncTimerId: null,
@@ -805,6 +805,18 @@
     ttFillDamage: document.getElementById("ttFillDamage"),
     ttStatRate: document.getElementById("ttStatRate"),
     ttFillRate: document.getElementById("ttFillRate"),
+    // Waiting Room Config Bar & Teams
+    wrConfigBar: document.getElementById("wrConfigBar"),
+    btnModeFFA: document.getElementById("btnModeFFA"),
+    btnModeTDM: document.getElementById("btnModeTDM"),
+    wrSelectMap: document.getElementById("wrSelectMap"),
+    wrRosterTitle: document.getElementById("wrRosterTitle"),
+    waitingTeamSplit: document.getElementById("waitingTeamSplit"),
+    gridTeamRed: document.getElementById("gridTeamRed"),
+    gridTeamBlue: document.getElementById("gridTeamBlue"),
+    countTeamRed: document.getElementById("countTeamRed"),
+    countTeamBlue: document.getElementById("countTeamBlue"),
+    btnSwapTeam: document.getElementById("btnSwapTeam"),
     waitingPlayerCount: document.getElementById("waitingPlayerCount"),
     waitingPlayersGrid: document.getElementById("waitingPlayersGrid"),
     btnToggleReady: document.getElementById("btnToggleReady"),
@@ -1145,7 +1157,10 @@
   function renderTurntablePreview() {
     if (!el.canvasVehicleTurntable) return;
     const chosen = state.selectedTank || "medium";
-    renderTankPreview(el.canvasVehicleTurntable, chosen, state.playerColor, state.turntableAngle);
+    const previewColor = state.mode === "tdm"
+      ? (state.playerTeam === "blue" ? "#38bdf8" : "#f43f5e")
+      : (state.playerColor || "#ffd166");
+    renderTankPreview(el.canvasVehicleTurntable, chosen, previewColor, state.turntableAngle);
   }
 
   function cycleTank(delta) {
@@ -1285,6 +1300,170 @@
     }
   }
 
+  function createPlayerRosterCard(p, isMe) {
+    const isReady = Boolean(p.isReady);
+    const tankKey = p.tank || "medium";
+    const team = p.team || (p.color === "#38bdf8" ? "blue" : "red");
+    // In TDM mode, ALL players are strictly the color of their team
+    const pColor = state.mode === "tdm" ? (team === "blue" ? "#38bdf8" : "#f43f5e") : (p.color || "#ffd166");
+    const pName = p.name || "Soldat";
+
+    const card = document.createElement("div");
+    card.dataset.playerId = p.id;
+    card.title = `${pName}${isMe ? " (Deg)" : ""}`;
+    const teamClass = state.mode === "tdm" ? (team === "blue" ? "is-team-blue" : "is-team-red") : "";
+    card.className = `waiting-player-card ${isReady ? "is-ready" : "is-not-ready"} ${teamClass}`;
+
+    const avCanvas = getAvatarCanvas(p.avatar, 36);
+
+    card.innerHTML = `
+      <div class="wpc-player-duo">
+        <canvas class="wpc-vehicle-canvas" width="148" height="118" data-tank="${escapeHtml(tankKey)}" data-color="${escapeHtml(pColor)}"></canvas>
+        <canvas class="wpc-avatar-canvas" width="36" height="36" title="${escapeHtml(pName)}"></canvas>
+      </div>
+    `;
+
+    const cvs = card.querySelector(".wpc-avatar-canvas");
+    if (cvs) {
+      if (window.CharacterCreator && typeof CharacterCreator.compositeCharacterSync === "function") {
+        try {
+          CharacterCreator.compositeCharacterSync(cvs, p.avatar || state.playerAvatar || "");
+        } catch (e) {
+          const cvsCtx = cvs.getContext("2d");
+          if (avCanvas) cvsCtx.drawImage(avCanvas, 0, 0, 36, 36);
+        }
+      } else if (avCanvas) {
+        const cvsCtx = cvs.getContext("2d");
+        cvsCtx.imageSmoothingEnabled = false;
+        cvsCtx.drawImage(avCanvas, 0, 0, 36, 36);
+      }
+    }
+
+    const vehCvs = card.querySelector(".wpc-vehicle-canvas");
+    if (vehCvs) {
+      renderTankPreview(vehCvs, tankKey, pColor);
+    }
+
+    return card;
+  }
+
+  function updateModeAndTeamUI() {
+    const isTDM = state.mode === "tdm";
+    if (el.btnModeFFA) el.btnModeFFA.classList.toggle("active", !isTDM);
+    if (el.btnModeTDM) el.btnModeTDM.classList.toggle("active", isTDM);
+
+    if (el.btnSwapTeam) {
+      el.btnSwapTeam.title = state.playerTeam === "blue" ? "Bytt til Rødt lag" : "Bytt til Blått lag";
+    }
+
+    if (el.wrSelectMap && el.wrSelectMap.value !== state.mapId) {
+      el.wrSelectMap.value = state.mapId;
+    }
+
+    // Host controls permission
+    const canConfigure = state.isSolo || state.isHost;
+    if (el.btnModeFFA) el.btnModeFFA.disabled = !canConfigure;
+    if (el.btnModeTDM) el.btnModeTDM.disabled = !canConfigure;
+    if (el.wrSelectMap) el.wrSelectMap.disabled = !canConfigure;
+  }
+
+  async function swapTeam() {
+    const nextTeam = state.playerTeam === "blue" ? "red" : "blue";
+    await setPlayerTeam(nextTeam);
+    playTone(360, 0.08, "triangle", 0.3);
+  }
+
+  async function setWaitingMode(mode) {
+    if (state.mode === mode) return;
+    state.mode = mode;
+    if (state.mode === "tdm") {
+      state.player.team = state.playerTeam || "red";
+      state.player.color = state.player.team === "blue" ? "#38bdf8" : "#f43f5e";
+    } else {
+      state.player.team = null;
+      state.player.color = state.playerColor || "#ffd166";
+    }
+    updateModeAndTeamUI();
+    renderTurntablePreview();
+
+    if (state.isSolo) {
+      renderSoloWaitingRoom();
+      return;
+    }
+
+    if (!state.roomCode || !state.playerId) return;
+    try {
+      await fetch("/api/kuleregn/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roomCode: state.roomCode,
+          playerId: state.playerId,
+          mode: state.mode,
+        }),
+      });
+      pollLobbyState();
+    } catch (e) {
+      console.warn("setWaitingMode err:", e);
+    }
+  }
+
+  async function setPlayerTeam(team) {
+    state.playerTeam = team;
+    state.player.team = team;
+    if (state.mode === "tdm") {
+      state.player.color = team === "blue" ? "#38bdf8" : "#f43f5e";
+    }
+    updateModeAndTeamUI();
+    renderTurntablePreview();
+
+    if (state.isSolo) {
+      renderSoloWaitingRoom();
+      return;
+    }
+
+    if (!state.roomCode || !state.playerId) return;
+    try {
+      await fetch("/api/kuleregn/team", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roomCode: state.roomCode,
+          playerId: state.playerId,
+          team: team,
+        }),
+      });
+      pollLobbyState();
+    } catch (e) {
+      console.warn("setPlayerTeam err:", e);
+    }
+  }
+
+  async function setWaitingMap(mapId) {
+    state.mapId = mapId;
+    state.currentMap = getMapById(mapId);
+
+    if (state.isSolo) {
+      return;
+    }
+
+    if (!state.roomCode || !state.playerId) return;
+    try {
+      await fetch("/api/kuleregn/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roomCode: state.roomCode,
+          playerId: state.playerId,
+          mapId: mapId,
+        }),
+      });
+      pollLobbyState();
+    } catch (e) {
+      console.warn("setWaitingMap err:", e);
+    }
+  }
+
   function renderWaitingRoomState(data) {
     if (el.btnLeaveWaitingRoom) {
       el.btnLeaveWaitingRoom.textContent = "◀ FORLAT ROM";
@@ -1298,6 +1477,13 @@
       el.displayWaitingTarget.textContent = `${data.scoreLimit || state.scoreLimit} drap`;
     }
 
+    // Sync mode and map
+    if (data.mode) state.mode = data.mode;
+    if (data.mapId) {
+      state.mapId = data.mapId;
+      state.currentMap = getMapById(data.mapId);
+    }
+
     const players = data.players || [];
     const active = players.filter(p => !p.left);
     if (el.waitingPlayerCount) {
@@ -1308,6 +1494,10 @@
     if (me) {
       state.isHost = Boolean(me.isHost);
       state.isMyReady = Boolean(me.isReady);
+      if (me.team) {
+        state.playerTeam = me.team;
+        state.player.team = me.team;
+      }
       if (me.tank && me.tank !== state.selectedTank) {
         state.selectedTank = me.tank;
         syncTankCardsUI();
@@ -1318,6 +1508,8 @@
         renderAllTankPreviews();
       }
     }
+
+    updateModeAndTeamUI();
 
     // Ready toggle button UI
     if (el.btnToggleReady) {
@@ -1351,55 +1543,40 @@
     // Hero Selected Vehicle Preview
     updateHeroWaitingPreview();
 
-    // Player Cards Grid
-    if (el.waitingPlayersGrid) {
-      el.waitingPlayersGrid.innerHTML = "";
-      players.forEach(p => {
-        if (p.left) return;
+    // Roster rendering: FFA vs TDM
+    if (state.mode === "tdm") {
+      if (el.waitingPlayersGrid) el.waitingPlayersGrid.classList.add("hidden");
+      if (el.waitingTeamSplit) el.waitingTeamSplit.classList.remove("hidden");
+
+      if (el.gridTeamRed) el.gridTeamRed.innerHTML = "";
+      if (el.gridTeamBlue) el.gridTeamBlue.innerHTML = "";
+
+      const redPlayers = active.filter(p => p.team === "red" || (!p.team && active.indexOf(p) % 2 === 0));
+      const bluePlayers = active.filter(p => p.team === "blue" || (!p.team && active.indexOf(p) % 2 === 1));
+
+      if (el.countTeamRed) el.countTeamRed.textContent = `(${redPlayers.length})`;
+      if (el.countTeamBlue) el.countTeamBlue.textContent = `(${bluePlayers.length})`;
+
+      redPlayers.forEach(p => {
         const isMe = Boolean(p.id === state.playerId || p.isMe);
-        const isReady = Boolean(p.isReady);
-        const tankKey = p.tank || "medium";
-        const tConf = TANK_CONFIGS[tankKey] || TANK_CONFIGS.medium;
-
-        const card = document.createElement("div");
-        card.dataset.playerId = p.id;
-        card.title = `${p.name}${isMe ? " (Deg)" : ""}`;
-        // Red background if not ready, Green if ready
-        card.className = `waiting-player-card ${isReady ? "is-ready" : "is-not-ready"}`;
-
-        const avCanvas = getAvatarCanvas(p.avatar, 36);
-
-        // Large tank sprite with small player character head in the corner
-        card.innerHTML = `
-          <div class="wpc-player-duo">
-            <canvas class="wpc-vehicle-canvas" width="148" height="118" data-tank="${escapeHtml(tankKey)}" data-color="${escapeHtml(p.color || "#ffd166")}"></canvas>
-            <canvas class="wpc-avatar-canvas" width="36" height="36" title="${escapeHtml(p.name)}"></canvas>
-          </div>
-        `;
-
-        const cvs = card.querySelector(".wpc-avatar-canvas");
-        if (cvs) {
-          if (window.CharacterCreator && typeof CharacterCreator.compositeCharacterSync === "function") {
-            try {
-              CharacterCreator.compositeCharacterSync(cvs, p.avatar || state.playerAvatar || "");
-            } catch (e) {
-              const cvsCtx = cvs.getContext("2d");
-              if (avCanvas) cvsCtx.drawImage(avCanvas, 0, 0, 36, 36);
-            }
-          } else if (avCanvas) {
-            const cvsCtx = cvs.getContext("2d");
-            cvsCtx.imageSmoothingEnabled = false;
-            cvsCtx.drawImage(avCanvas, 0, 0, 36, 36);
-          }
-        }
-
-        const vehCvs = card.querySelector(".wpc-vehicle-canvas");
-        if (vehCvs) {
-          renderTankPreview(vehCvs, tankKey, p.color || "#ffd166");
-        }
-
-        el.waitingPlayersGrid.appendChild(card);
+        el.gridTeamRed.appendChild(createPlayerRosterCard(p, isMe));
       });
+
+      bluePlayers.forEach(p => {
+        const isMe = Boolean(p.id === state.playerId || p.isMe);
+        el.gridTeamBlue.appendChild(createPlayerRosterCard(p, isMe));
+      });
+    } else {
+      // FFA mode
+      if (el.waitingTeamSplit) el.waitingTeamSplit.classList.add("hidden");
+      if (el.waitingPlayersGrid) {
+        el.waitingPlayersGrid.classList.remove("hidden");
+        el.waitingPlayersGrid.innerHTML = "";
+        active.forEach(p => {
+          const isMe = Boolean(p.id === state.playerId || p.isMe);
+          el.waitingPlayersGrid.appendChild(createPlayerRosterCard(p, isMe));
+        });
+      }
     }
   }
 
@@ -1407,10 +1584,10 @@
     state.isSolo = true;
     state.roomCode = null;
     state.playerId = "solo_player";
-    const selectedMapId = el.selectSoloMap ? el.selectSoloMap.value : "rust";
+    const selectedMapId = el.wrSelectMap ? el.wrSelectMap.value : (state.mapId || "rust");
     state.mapId = selectedMapId;
     state.currentMap = getMapById(selectedMapId);
-    state.scoreLimit = 999;
+    state.scoreLimit = state.mode === "tdm" ? 15 : 10;
     state.timeLimit = 3600;
     state.timeRemaining = 3600;
     state.roomStatus = "lobby";
@@ -1429,56 +1606,98 @@
       el.btnToggleReady.classList.add("is-not-ready");
       const btrLabel = el.btnToggleReady.querySelector(".btr-label");
       if (btrLabel) {
-        btrLabel.textContent = "START SKYTEBANE";
+        btrLabel.textContent = "START KAMP";
       }
     }
 
-    if (el.waitingPlayerCount) {
-      el.waitingPlayerCount.textContent = "1/1";
-    }
+    updateModeAndTeamUI();
 
-    if (el.waitingPlayersGrid) {
-      el.waitingPlayersGrid.innerHTML = "";
-      const tankKey = state.selectedTank || "medium";
-      const pColor = state.playerColor || "#ffd166";
-      const pAvatar = state.playerAvatar || "char:h1:c_ffd166:r1:e1:m1";
+    const isTDM = state.mode === "tdm";
+    const myTeam = state.playerTeam || "red";
+    const oppTeam = myTeam === "red" ? "blue" : "red";
 
-      const card = document.createElement("div");
-      card.dataset.playerId = "solo_player";
-      card.title = `${state.playerName || "Soldat"} (Deg)`;
-      card.className = "waiting-player-card is-ready";
+    const meCard = {
+      id: "solo_player",
+      name: state.playerName || "Soldat",
+      tank: state.selectedTank || "medium",
+      color: isTDM ? (myTeam === "red" ? "#f43f5e" : "#38bdf8") : (state.playerColor || "#ffd166"),
+      avatar: state.playerAvatar || "char:h1:c_ffd166:r1:e1:m1",
+      team: myTeam,
+      isReady: true,
+    };
 
-      const avCanvas = getAvatarCanvas(pAvatar, 36);
+    if (isTDM) {
+      if (el.waitingPlayersGrid) el.waitingPlayersGrid.classList.add("hidden");
+      if (el.waitingTeamSplit) el.waitingTeamSplit.classList.remove("hidden");
 
-      card.innerHTML = `
-        <div class="wpc-player-duo">
-          <canvas class="wpc-vehicle-canvas" width="148" height="118" data-tank="${escapeHtml(tankKey)}" data-color="${escapeHtml(pColor)}"></canvas>
-          <canvas class="wpc-avatar-canvas" width="36" height="36" title="${escapeHtml(state.playerName || "Soldat")}"></canvas>
-        </div>
-      `;
+      if (el.gridTeamRed) el.gridTeamRed.innerHTML = "";
+      if (el.gridTeamBlue) el.gridTeamBlue.innerHTML = "";
 
-      const cvs = card.querySelector(".wpc-avatar-canvas");
-      if (cvs) {
-        if (window.CharacterCreator && typeof CharacterCreator.compositeCharacterSync === "function") {
-          try {
-            CharacterCreator.compositeCharacterSync(cvs, pAvatar);
-          } catch (e) {
-            const cvsCtx = cvs.getContext("2d");
-            if (avCanvas) cvsCtx.drawImage(avCanvas, 0, 0, 36, 36);
-          }
-        } else if (avCanvas) {
-          const cvsCtx = cvs.getContext("2d");
-          cvsCtx.imageSmoothingEnabled = false;
-          cvsCtx.drawImage(avCanvas, 0, 0, 36, 36);
-        }
+      const allyCard = {
+        id: "solo_ally",
+        name: "Alliert-Alfa",
+        tank: "medium",
+        color: myTeam === "red" ? "#f43f5e" : "#38bdf8",
+        avatar: "char:h2:c_38bdf8:r2:e2:m2",
+        team: myTeam,
+        isReady: true,
+      };
+
+      const enemy1 = {
+        id: "solo_enemy1",
+        name: "Fiende-Alfa",
+        tank: "heavy",
+        color: oppTeam === "red" ? "#f43f5e" : "#38bdf8",
+        avatar: "char:h1:c_f43f5e:r1:e1:m1",
+        team: oppTeam,
+        isReady: true,
+      };
+
+      const enemy2 = {
+        id: "solo_enemy2",
+        name: "Fiende-Bravo",
+        tank: "light",
+        color: oppTeam === "red" ? "#f43f5e" : "#38bdf8",
+        avatar: "char:h3:c_a855f7:r3:e3:m3",
+        team: oppTeam,
+        isReady: true,
+      };
+
+      if (myTeam === "red") {
+        el.gridTeamRed.appendChild(createPlayerRosterCard(meCard, true));
+        el.gridTeamRed.appendChild(createPlayerRosterCard(allyCard, false));
+        el.gridTeamBlue.appendChild(createPlayerRosterCard(enemy1, false));
+        el.gridTeamBlue.appendChild(createPlayerRosterCard(enemy2, false));
+      } else {
+        el.gridTeamBlue.appendChild(createPlayerRosterCard(meCard, true));
+        el.gridTeamBlue.appendChild(createPlayerRosterCard(allyCard, false));
+        el.gridTeamRed.appendChild(createPlayerRosterCard(enemy1, false));
+        el.gridTeamRed.appendChild(createPlayerRosterCard(enemy2, false));
       }
 
-      const vehCvs = card.querySelector(".wpc-vehicle-canvas");
-      if (vehCvs) {
-        renderTankPreview(vehCvs, tankKey, pColor);
-      }
+      if (el.countTeamRed) el.countTeamRed.textContent = "(2)";
+      if (el.countTeamBlue) el.countTeamBlue.textContent = "(2)";
+      if (el.waitingPlayerCount) el.waitingPlayerCount.textContent = "4/16";
+    } else {
+      // FFA Solo
+      if (el.waitingTeamSplit) el.waitingTeamSplit.classList.add("hidden");
+      if (el.waitingPlayersGrid) {
+        el.waitingPlayersGrid.classList.remove("hidden");
+        el.waitingPlayersGrid.innerHTML = "";
+        el.waitingPlayersGrid.appendChild(createPlayerRosterCard(meCard, true));
 
-      el.waitingPlayersGrid.appendChild(card);
+        const botTargets = [
+          { id: "solo_b1", name: "Panser-Alfa", tank: "heavy", color: "#f43f5e", avatar: "char:h1:c_f43f5e:r1:e1:m1", isReady: true },
+          { id: "solo_b2", name: "Panser-Bravo", tank: "light", color: "#38bdf8", avatar: "char:h2:c_38bdf8:r2:e2:m2", isReady: true },
+          { id: "solo_b3", name: "Panser-Charlie", tank: "medium", color: "#a855f7", avatar: "char:h3:c_a855f7:r3:e3:m3", isReady: true },
+          { id: "solo_b4", name: "Panser-Delta", tank: "heavy", color: "#10b981", avatar: "char:h4:c_10b981:r1:e2:m1", isReady: true },
+        ];
+
+        botTargets.forEach(b => {
+          el.waitingPlayersGrid.appendChild(createPlayerRosterCard(b, false));
+        });
+      }
+      if (el.waitingPlayerCount) el.waitingPlayerCount.textContent = "5/16";
     }
 
     updateHeroWaitingPreview();
@@ -1567,9 +1786,18 @@
     if (combatant === state.player) {
       combatant.id = state.playerId || combatant.id || "player_local";
       combatant.name = state.playerName || combatant.name || "Soldat";
-      combatant.color = state.playerColor || combatant.color || "#ffd166";
+      if (state.mode === "tdm") {
+        combatant.team = state.playerTeam || combatant.team || "red";
+        combatant.color = combatant.team === "blue" ? "#38bdf8" : "#f43f5e";
+      } else {
+        combatant.color = state.playerColor || combatant.color || "#ffd166";
+      }
       combatant.avatar = state.playerAvatar || combatant.avatar || "";
       updateVitalsHUD();
+    }
+
+    if (map) {
+      applyCombatantMovement(combatant, map, 0);
     }
   }
 
@@ -1583,36 +1811,138 @@
   }
 
   // =========================================================================
-  // PHYSICS & COLLISION
+  // PHYSICS & COLLISION RESOLUTION (Robust Continuous MTV & Anti-Clipping)
   // =========================================================================
+
+  function resolveCircleRectCollision(cx, cy, r, rect) {
+    const minX = rect.x;
+    const maxX = rect.x + rect.w;
+    const minY = rect.y;
+    const maxY = rect.y + rect.h;
+
+    // Check if circle center is strictly inside or on the boundary of the rectangle
+    if (cx >= minX && cx <= maxX && cy >= minY && cy <= maxY) {
+      const distLeft = cx - minX;
+      const distRight = maxX - cx;
+      const distTop = cy - minY;
+      const distBottom = maxY - cy;
+      const minDist = Math.min(distLeft, distRight, distTop, distBottom);
+
+      if (minDist === distLeft) {
+        return { nx: -1, ny: 0, overlap: distLeft + r };
+      } else if (minDist === distRight) {
+        return { nx: 1, ny: 0, overlap: distRight + r };
+      } else if (minDist === distTop) {
+        return { nx: 0, ny: -1, overlap: distTop + r };
+      } else {
+        return { nx: 0, ny: 1, overlap: distBottom + r };
+      }
+    }
+
+    // Closest point on the rectangle boundary to the circle center
+    const closestX = Math.max(minX, Math.min(cx, maxX));
+    const closestY = Math.max(minY, Math.min(cy, maxY));
+
+    const dx = cx - closestX;
+    const dy = cy - closestY;
+    const distSq = dx * dx + dy * dy;
+
+    if (distSq < r * r) {
+      const dist = Math.sqrt(distSq);
+      if (dist > 0.0001) {
+        return {
+          nx: dx / dist,
+          ny: dy / dist,
+          overlap: r - dist,
+        };
+      } else {
+        return { nx: 1, ny: 0, overlap: r };
+      }
+    }
+
+    return null;
+  }
 
   function applyCombatantMovement(entity, map, dt) {
     const tConf = TANK_CONFIGS[entity.tank || (entity === state.player ? state.selectedTank : "medium")] || TANK_CONFIGS.medium;
-    const r = tConf.radius || 20; // Combatant collision radius per tank type
+    const r = tConf.radius || 22; // Combatant collision radius per tank type
 
-    // Move X
-    entity.x += entity.vx * dt;
-    for (const obs of map.obstacles) {
-      if (circleCollidesRect(entity.x, entity.y, r, obs)) {
-        if (entity.vx > 0) entity.x = obs.x - r;
-        else if (entity.vx < 0) entity.x = obs.x + obs.w + r;
-        entity.vx = 0;
-      }
+    // Apply frame velocity displacement
+    if (dt > 0) {
+      entity.x += entity.vx * dt;
+      entity.y += entity.vy * dt;
     }
 
-    // Move Y
-    entity.y += entity.vy * dt;
-    for (const obs of map.obstacles) {
-      if (circleCollidesRect(entity.x, entity.y, r, obs)) {
-        if (entity.vy > 0) entity.y = obs.y - r;
-        else if (entity.vy < 0) entity.y = obs.y + obs.h + r;
-        entity.vy = 0;
-      }
-    }
+    if (!map) return;
 
-    // Keep firmly inside map bounds
-    entity.x = Math.max(r + 40, Math.min(map.width - r - 40, entity.x));
-    entity.y = Math.max(r + 40, Math.min(map.height - r - 40, entity.y));
+    // Outer arena boundaries (accounting for 40px outer perimeter wall + radius)
+    const minX = 40 + r;
+    const maxX = (map.width || 2200) - 40 - r;
+    const minY = 40 + r;
+    const maxY = (map.height || 2200) - 40 - r;
+
+    // Multi-pass relaxation loop (3 iterations cleanly resolves complex corners and pinch points)
+    if (map.obstacles && map.obstacles.length > 0) {
+      for (let iter = 0; iter < 3; iter++) {
+        let anyResolved = false;
+
+        for (let i = 0; i < map.obstacles.length; i++) {
+          const obs = map.obstacles[i];
+
+          // Fast AABB bounding box pre-rejection
+          if (
+            entity.x + r <= obs.x ||
+            entity.x - r >= obs.x + obs.w ||
+            entity.y + r <= obs.y ||
+            entity.y - r >= obs.y + obs.h
+          ) {
+            continue;
+          }
+
+          const col = resolveCircleRectCollision(entity.x, entity.y, r, obs);
+          if (col) {
+            anyResolved = true;
+            // Push circle out along minimum penetration normal
+            entity.x += col.nx * col.overlap;
+            entity.y += col.ny * col.overlap;
+
+            // Nullify velocity component directed into the obstacle surface (smooth sliding!)
+            const dot = entity.vx * col.nx + entity.vy * col.ny;
+            if (dot < 0) {
+              entity.vx -= dot * col.nx;
+              entity.vy -= dot * col.ny;
+            }
+          }
+        }
+
+        // Clamp inside outer map perimeter
+        if (entity.x < minX) {
+          entity.x = minX;
+          if (entity.vx < 0) entity.vx = 0;
+          anyResolved = true;
+        } else if (entity.x > maxX) {
+          entity.x = maxX;
+          if (entity.vx > 0) entity.vx = 0;
+          anyResolved = true;
+        }
+
+        if (entity.y < minY) {
+          entity.y = minY;
+          if (entity.vy < 0) entity.vy = 0;
+          anyResolved = true;
+        } else if (entity.y > maxY) {
+          entity.y = maxY;
+          if (entity.vy > 0) entity.vy = 0;
+          anyResolved = true;
+        }
+
+        if (!anyResolved) break;
+      }
+    } else {
+      // Direct boundary clamp if no obstacles
+      entity.x = Math.max(minX, Math.min(maxX, entity.x));
+      entity.y = Math.max(minY, Math.min(maxY, entity.y));
+    }
   }
 
   function circleCollidesRect(cx, cy, cr, rect) {
@@ -1673,6 +2003,15 @@
     let actualKiller = killer;
     if (!actualKiller && victim !== state.player) {
       actualKiller = state.player;
+    }
+
+    // Friendly fire disabled in TDM mode
+    if (state.mode === "tdm" && actualKiller && victim) {
+      const killerTeam = actualKiller.team || (actualKiller === state.player ? (state.player.team || state.playerTeam) : null);
+      const victimTeam = victim.team || (victim === state.player ? (state.player.team || state.playerTeam) : null);
+      if (killerTeam && victimTeam && killerTeam === victimTeam) {
+        return; // Teammates cannot harm each other
+      }
     }
 
     // Apply damage directly to health (no shield)
@@ -1854,11 +2193,69 @@
     if (state.roomStatus !== "playing") return;
 
     const allCombatants = [state.player, ...Object.values(state.opponents)];
+
+    if (state.mode === "tdm") {
+      const redKills = allCombatants.filter(c => (c.team || (c === state.player ? (state.player.team || state.playerTeam) : null)) === "red").reduce((acc, c) => acc + (c.kills || 0), 0);
+      const blueKills = allCombatants.filter(c => (c.team || (c === state.player ? (state.player.team || state.playerTeam) : null)) === "blue").reduce((acc, c) => acc + (c.kills || 0), 0);
+
+      if (redKills >= state.scoreLimit || blueKills >= state.scoreLimit) {
+        const winningTeam = redKills >= state.scoreLimit ? "red" : "blue";
+        endMatchTeam(winningTeam, redKills, blueKills);
+      }
+      return;
+    }
+
     const topCombatant = allCombatants.slice().sort((a, b) => (b.kills || 0) - (a.kills || 0))[0];
 
     if (topCombatant && topCombatant.kills >= state.scoreLimit) {
       endMatch(topCombatant);
     }
+  }
+
+  function endMatchTeam(winningTeam, redKills, blueKills) {
+    state.roomStatus = "finished";
+    playTone(523, 0.25, "triangle", 0.4);
+    setTimeout(() => playTone(659, 0.35, "triangle", 0.45), 250);
+    setTimeout(() => playTone(784, 0.5, "triangle", 0.5), 500);
+
+    showTeamVictoryPodium(winningTeam, redKills, blueKills);
+  }
+
+  function showTeamVictoryPodium(winningTeam, redKills, blueKills) {
+    if (!el.modalPodium) return;
+
+    const myTeam = state.player.team || state.playerTeam || "red";
+    const iWon = winningTeam === myTeam;
+    const teamName = winningTeam === "red" ? "LAG RØD" : "LAG BLÅ";
+
+    if (el.podiumTitle) {
+      el.podiumTitle.textContent = iWon ? "DITT LAG VANT!" : `${teamName} VANT!`;
+    }
+    if (el.podiumDesc) {
+      el.podiumDesc.textContent = `Sluttstilling: Rød ${redKills} - ${blueKills} Blå (Mål: ${state.scoreLimit} drap).`;
+    }
+
+    if (el.podiumStandings) {
+      el.podiumStandings.innerHTML = "";
+      const all = [state.player, ...Object.values(state.opponents)];
+      all.sort((a, b) => (b.kills || 0) - (a.kills || 0) || (a.deaths || 0) - (b.deaths || 0));
+
+      all.forEach((c, idx) => {
+        const row = document.createElement("div");
+        row.className = "podium-row" + (c === state.player ? " is-me" : "");
+        const cTeam = c.team || (c === state.player ? (state.player.team || state.playerTeam) : "red");
+        const teamTag = cTeam === "blue" ? '<span style="color:#38bdf8">[BLÅ]</span> ' : '<span style="color:#f43f5e">[RØD]</span> ';
+        row.innerHTML = `
+          <div class="pr-pos">${idx + 1}.</div>
+          <div class="pr-color" style="background:${cTeam === 'blue' ? '#38bdf8' : '#f43f5e'}"></div>
+          <div class="pr-name">${teamTag}${escapeHtml(c.name)} ${c === state.player ? ' (Deg)' : ''}</div>
+          <div class="pr-stats"><strong>${c.kills || 0}</strong> drap • ${c.deaths || 0} dødsfall</div>
+        `;
+        el.podiumStandings.appendChild(row);
+      });
+    }
+
+    el.modalPodium.classList.remove("hidden");
   }
 
   function endMatch(winner) {
@@ -1958,28 +2355,11 @@
   }
 
   // =========================================================================
-  // INPUT HANDLING (WASD / ARROWS + SPACE / MOUSE AIMING & SHOOTING)
+  // INPUT HANDLING (WASD DRIVING + ARROWS TURRET + SPACE / CLICK SHOOTING)
   // =========================================================================
 
   function initInputHandlers() {
     const canvas = el.combatCanvas;
-
-    function updateMousePos(e) {
-      if (!canvas) return;
-      const rect = canvas.getBoundingClientRect();
-      const clientX = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : null);
-      const clientY = e.clientY !== undefined ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : null);
-      if (clientX == null || clientY == null) return;
-
-      const scaleX = canvas.width / (rect.width || 1);
-      const scaleY = canvas.height / (rect.height || 1);
-      state.mouse.screenX = (clientX - rect.left) * scaleX;
-      state.mouse.screenY = (clientY - rect.top) * scaleY;
-      state.mouse.hasMoved = true;
-    }
-
-    window.addEventListener("mousemove", updateMousePos);
-    window.addEventListener("touchmove", updateMousePos, { passive: true });
 
     window.addEventListener("keydown", (e) => {
       if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
@@ -1998,7 +2378,6 @@
           cycleTank(-1);
         } else {
           state.keys.arrowLeft = true;
-          state.mouse.hasMoved = false;
         }
       }
       if (e.key === "ArrowRight") {
@@ -2007,10 +2386,13 @@
           cycleTank(1);
         } else {
           state.keys.arrowRight = true;
-          state.mouse.hasMoved = false;
         }
       }
-      if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        state.keys.arrowUp = true;
+      }
+      if (e.key === "ArrowDown") {
         e.preventDefault();
       }
 
@@ -2038,10 +2420,11 @@
       if (k === "s") state.keys.s = false;
       if (k === "d") state.keys.d = false;
 
-      // Left and Right Arrow Keys to pan the view
+      // Arrow Keys for Turret Aiming
       if (e.key === "ArrowLeft") state.keys.arrowLeft = false;
       if (e.key === "ArrowRight") state.keys.arrowRight = false;
-      if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault();
+      if (e.key === "ArrowUp") state.keys.arrowUp = false;
+      if (e.key === "ArrowDown") state.keys.arrowDown = false;
 
       // Space to Shoot
       if (k === " " || e.key === " " || k === "enter") state.keys.shoot = false;
@@ -2053,7 +2436,6 @@
 
     window.addEventListener("mousedown", (e) => {
       if (state.view !== "game") return;
-      updateMousePos(e);
       if (e.button === 0) {
         state.mouse.down = true;
         if (state.roomStatus === "playing") {
@@ -2070,13 +2452,12 @@
 
     window.addEventListener("blur", () => {
       state.mouse.down = false;
-      state.keys = { w: false, a: false, s: false, d: false, shoot: false };
+      state.keys = { w: false, a: false, s: false, d: false, arrowLeft: false, arrowRight: false, arrowUp: false, shoot: false };
     });
 
     // Touch Support: Tap canvas to shoot
     if (canvas) {
-      canvas.addEventListener("touchstart", (e) => {
-        updateMousePos(e);
+      canvas.addEventListener("touchstart", () => {
         state.mouse.down = true;
         if (state.roomStatus === "playing") {
           firePlayerWeapon();
@@ -2171,7 +2552,12 @@
     const myId = state.playerId || p.id || "player_local";
     p.id = myId;
     p.name = state.playerName || p.name || "Soldat";
-    p.color = state.playerColor || p.color || "#ffd166";
+    if (state.mode === "tdm") {
+      p.team = state.playerTeam || p.team || "red";
+      p.color = p.team === "blue" ? "#38bdf8" : "#f43f5e";
+    } else {
+      p.color = state.playerColor || p.color || "#ffd166";
+    }
 
     const barrelDist = 28.5;
     const barrelX = p.x + Math.cos(p.angle) * barrelDist;
@@ -2192,7 +2578,7 @@
       damage: w.damage,
       life: (w.bulletRange || 1300) / w.bulletSpeed,
       maxLife: (w.bulletRange || 1300) / w.bulletSpeed,
-      color: w.color || p.color,
+      color: state.mode === "tdm" ? p.color : (w.color || p.color),
       isRocket: false,
     });
 
@@ -2403,9 +2789,15 @@
     // Classic Tracked Tank Physics (Light, Medium, Heavy)
     const hullTurnSpeed = tConf.hullTurnSpeed;
     if (steerDir !== 0) {
-      p.hullAngle = (p.hullAngle || 0) + steerDir * hullTurnSpeed * dt;
+      const dAngle = steerDir * hullTurnSpeed * dt;
+      p.hullAngle = (p.hullAngle || 0) + dAngle;
       while (p.hullAngle > Math.PI) p.hullAngle -= Math.PI * 2;
       while (p.hullAngle < -Math.PI) p.hullAngle += Math.PI * 2;
+
+      // Turret turns along with the vehicle hull when steering
+      p.angle = (p.angle !== undefined ? p.angle : p.hullAngle) + dAngle;
+      while (p.angle > Math.PI) p.angle -= Math.PI * 2;
+      while (p.angle < -Math.PI) p.angle += Math.PI * 2;
     }
 
     let forwardThrottle = 0;
@@ -2421,35 +2813,25 @@
     // Apply movement & obstacle collisions
     applyCombatantMovement(p, map, dt);
 
-    // 2. Turret Aiming with Arrow Keys or Mouse Cursor
-    // HEAVY TANK has slow turret traversal (0.65 rad/s) for authentic ponderous dreadnought aiming!
+    // 2. Turret Aiming with Arrow Keys (Pure Keyboard Aiming - No Mouse Aiming)
     const turretTurnSpeed = tConf.turretTurnSpeed;
     if (state.keys.arrowLeft || state.keys.arrowRight) {
       const panDir = (state.keys.arrowRight ? 1 : 0) - (state.keys.arrowLeft ? 1 : 0);
-      p.angle += panDir * turretTurnSpeed * dt;
+      p.angle = (p.angle !== undefined ? p.angle : p.hullAngle) + panDir * turretTurnSpeed * dt;
       while (p.angle > Math.PI) p.angle -= Math.PI * 2;
       while (p.angle < -Math.PI) p.angle += Math.PI * 2;
-      state.lastTurnAngle = p.angle;
-    } else if (state.mouse.hasMoved && el.combatCanvas) {
-      // Smooth turret traversal towards mouse cursor (respects turretTurnSpeed!)
-      const cw = el.combatCanvas.width;
-      const ch = el.combatCanvas.height;
-      const pScreenX = cw / 2 + (p.x - state.camera.x) * state.camera.zoom;
-      const pScreenY = ch / 2 + (p.y - state.camera.y) * state.camera.zoom;
-      const targetAngle = Math.atan2(state.mouse.screenY - pScreenY, state.mouse.screenX - pScreenX);
-      let diff = targetAngle - p.angle;
+    } else if (state.keys.arrowUp) {
+      // Re-align turret with the tank hull direction
+      let diff = p.hullAngle - (p.angle !== undefined ? p.angle : p.hullAngle);
       while (diff < -Math.PI) diff += Math.PI * 2;
       while (diff > Math.PI) diff -= Math.PI * 2;
-      const maxTurn = turretTurnSpeed * dt;
-      if (Math.abs(diff) <= maxTurn) {
-        p.angle = targetAngle;
+      const snapSpeed = turretTurnSpeed * 3 * dt;
+      if (Math.abs(diff) <= snapSpeed) {
+        p.angle = p.hullAngle;
       } else {
-        p.angle += Math.sign(diff) * maxTurn;
+        p.angle += Math.sign(diff) * snapSpeed;
       }
-      state.lastTurnAngle = p.angle;
-    } else if (state.lastTurnAngle !== undefined) {
-      p.angle = state.lastTurnAngle;
-    } else {
+    } else if (p.angle === undefined) {
       p.angle = p.hullAngle;
     }
 
@@ -2521,14 +2903,25 @@
       // 3. Collision with Combatants
       let hitCombatant = false;
       const myId = state.playerId || state.player.id || "player_local";
+      const killer = getCombatantById(b.ownerId);
+      const killerTeam = killer ? (killer.team || (killer === state.player ? (state.player.team || state.playerTeam) : null)) : null;
+
       for (const c of allCombatants) {
         const cId = c.id || (c === state.player ? myId : null);
         if (cId === b.ownerId || c.isDead) continue;
+
+        // Friendly bullets pass through teammates in TDM
+        if (state.mode === "tdm") {
+          const cTeam = c.team || (c === state.player ? (state.player.team || state.playerTeam) : null);
+          if (killerTeam && cTeam && killerTeam === cTeam) {
+            continue;
+          }
+        }
+
         const tConf = TANK_CONFIGS[c.tank || (c === state.player ? state.selectedTank : "medium")] || TANK_CONFIGS.medium;
         const hitRadius = tConf.radius || 22;
         if (Math.hypot(c.x - b.x, c.y - b.y) <= hitRadius) {
           hitCombatant = true;
-          const killer = getCombatantById(b.ownerId);
 
           if (b.isRocket) {
             addRocketBlast(b.x, b.y);
@@ -2548,8 +2941,15 @@
 
   function damageRadius(cx, cy, radius, maxDamage, attackerId, weaponId, allCombatants) {
     const attacker = getCombatantById(attackerId);
+    const attackerTeam = attacker ? (attacker.team || (attacker === state.player ? (state.player.team || state.playerTeam) : null)) : null;
     for (const c of allCombatants) {
       if (c.isDead) continue;
+      if (state.mode === "tdm") {
+        const cTeam = c.team || (c === state.player ? (state.player.team || state.playerTeam) : null);
+        if (attackerTeam && cTeam && attackerTeam === cTeam) {
+          continue;
+        }
+      }
       const dist = Math.hypot(c.x - cx, c.y - cy);
       if (dist <= radius) {
         const falloff = 1 - (dist / radius);
@@ -3112,7 +3512,11 @@
 
       ctx.beginPath();
       ctx.arc(ox, oy, 3.5, 0, Math.PI * 2);
-      ctx.fillStyle = opp.color || "#f43f5e";
+      if (state.mode === "tdm") {
+        ctx.fillStyle = opp.team === "blue" ? "#38bdf8" : "#f43f5e";
+      } else {
+        ctx.fillStyle = opp.color || "#f43f5e";
+      }
       ctx.fill();
       ctx.strokeStyle = "#ffffff";
       ctx.lineWidth = 0.8;
@@ -3137,7 +3541,11 @@
       // Tank dot
       ctx.beginPath();
       ctx.arc(px, py, 4.5, 0, Math.PI * 2);
-      ctx.fillStyle = p.color || "#22c55e";
+      if (state.mode === "tdm") {
+        ctx.fillStyle = (p.team || state.playerTeam) === "blue" ? "#38bdf8" : "#f43f5e";
+      } else {
+        ctx.fillStyle = p.color || "#22c55e";
+      }
       ctx.fill();
       ctx.strokeStyle = "#ffffff";
       ctx.lineWidth = 1.2;
@@ -3154,7 +3562,10 @@
     const tankSize = 64; // Native 64x64 drawing size (no scaling)
     const hullAngle = c.hullAngle !== undefined ? c.hullAngle : (c.angle !== undefined ? c.angle : -Math.PI / 2);
     const turretAngle = c.angle !== undefined ? c.angle : hullAngle;
-    const tankColor = c.color || "#ffd166";
+    const entityTeam = c.team || (isMe ? (state.player.team || state.playerTeam) : "red");
+    const tankColor = state.mode === "tdm"
+      ? (entityTeam === "blue" ? "#38bdf8" : "#f43f5e")
+      : (c.color || "#ffd166");
 
     // 1. Soft Drop Shadow under tank chassis (oriented with hullAngle)
     ctx.save();
@@ -3239,11 +3650,22 @@
     // Name Tag
     ctx.font = "bold 12px sans-serif";
     ctx.textAlign = "center";
-    ctx.fillStyle = isMe ? "#fde047" : "#ffffff";
-    ctx.shadowColor = "rgba(0,0,0,0.85)";
-    ctx.shadowBlur = 4;
-    ctx.fillText(c.name, 0, -4);
-    ctx.shadowBlur = 0;
+    if (state.mode === "tdm") {
+      const cTeam = c.team || (isMe ? (state.player.team || state.playerTeam) : "red");
+      const isBlue = cTeam === "blue";
+      ctx.fillStyle = isBlue ? "#38bdf8" : "#f43f5e";
+      const tag = isBlue ? "[BLÅ] " : "[RØD] ";
+      ctx.shadowColor = "rgba(0,0,0,0.85)";
+      ctx.shadowBlur = 4;
+      ctx.fillText(tag + c.name + (isMe ? " (Deg)" : ""), 0, -4);
+      ctx.shadowBlur = 0;
+    } else {
+      ctx.fillStyle = isMe ? "#fde047" : "#ffffff";
+      ctx.shadowColor = "rgba(0,0,0,0.85)";
+      ctx.shadowBlur = 4;
+      ctx.fillText(c.name, 0, -4);
+      ctx.shadowBlur = 0;
+    }
 
     // Mini Health Bar over tank
     const barW = 42;
@@ -3272,12 +3694,23 @@
     if (el.vitalHealthFill) el.vitalHealthFill.style.width = `${hpPct}%`;
     if (el.vitalHealthNum) el.vitalHealthNum.textContent = String(Math.max(0, p.health));
 
-    // Update Rank in Lobby/Match
+    // Update Rank / Score in Lobby/Match
     const all = [state.player, ...Object.values(state.opponents)];
-    all.sort((a, b) => (b.kills || 0) - (a.kills || 0));
-    const myRank = all.findIndex(c => c === state.player) + 1;
-    if (el.hudPosNum) el.hudPosNum.textContent = `${myRank}.`;
-    if (el.hudKillsText) el.hudKillsText.textContent = `${p.kills}/${state.scoreLimit} drap`;
+    if (state.mode === "tdm") {
+      const redKills = all.filter(c => (c.team || (c === state.player ? (state.player.team || state.playerTeam) : null)) === "red").reduce((acc, c) => acc + (c.kills || 0), 0);
+      const blueKills = all.filter(c => (c.team || (c === state.player ? (state.player.team || state.playerTeam) : null)) === "blue").reduce((acc, c) => acc + (c.kills || 0), 0);
+      const myTeam = p.team || state.playerTeam || "red";
+      const leading = myTeam === "red" ? (redKills >= blueKills) : (blueKills >= redKills);
+      if (el.hudPosNum) el.hudPosNum.textContent = leading ? "1." : "2.";
+      if (el.hudKillsText) el.hudKillsText.textContent = `🔴 ${redKills} • 🔵 ${blueKills}`;
+      if (el.headTargetScore) el.headTargetScore.textContent = `MÅL: ${state.scoreLimit} DRAP`;
+    } else {
+      all.sort((a, b) => (b.kills || 0) - (a.kills || 0));
+      const myRank = all.findIndex(c => c === state.player) + 1;
+      if (el.hudPosNum) el.hudPosNum.textContent = `${myRank}.`;
+      if (el.hudKillsText) el.hudKillsText.textContent = `${p.kills}/${state.scoreLimit} drap`;
+      if (el.headTargetScore) el.headTargetScore.textContent = `MÅL: ${state.scoreLimit} DRAP`;
+    }
   }
 
   function updateWeaponHUD() {
@@ -3395,6 +3828,8 @@
   function handleServerStateUpdate(data) {
     const prevStatus = state.roomStatus;
     state.roomStatus = data.status;
+    if (data.mode) state.mode = data.mode;
+    if (data.teamScores) state.teamScores = data.teamScores;
 
     if (data.status === "lobby") {
       stopRoomSync();
@@ -3418,8 +3853,14 @@
       }
     } else if (data.status === "finished") {
       stopRoomSync();
-      const winner = (data.players || [])[0];
-      showVictoryPodium(winner);
+      if (data.mode === "tdm" || state.mode === "tdm") {
+        const teamScores = data.teamScores || { red: 0, blue: 0 };
+        const winTeam = (teamScores.red || 0) >= (teamScores.blue || 0) ? "red" : "blue";
+        showTeamVictoryPodium(winTeam, teamScores.red || 0, teamScores.blue || 0);
+      } else {
+        const winner = (data.players || [])[0];
+        showVictoryPodium(winner);
+      }
     }
 
     // Ingest local player stats from server
@@ -3461,6 +3902,7 @@
           state.opponents[p.id] = {
             id: p.id,
             name: p.name,
+            team: p.team || "red",
             color: p.color,
             avatar: p.avatar || "",
             tank: p.tank || "medium",
@@ -3488,6 +3930,7 @@
           };
         } else {
           const opp = state.opponents[p.id];
+          if (p.team) opp.team = p.team;
           if (p.avatar && p.avatar !== opp.avatar) opp.avatar = p.avatar;
           if (p.tank && p.tank !== opp.tank) opp.tank = p.tank;
           opp.color = p.color || opp.color;
@@ -3554,7 +3997,9 @@
           }
           const opp = state.opponents[s.playerId];
           const oppName = opp ? opp.name : "Motstander";
-          const oppColor = opp ? opp.color : "#ef4444";
+          const oppColor = state.mode === "tdm"
+            ? (opp && opp.team === "blue" ? "#38bdf8" : "#f43f5e")
+            : (opp ? opp.color : "#ef4444");
           const w = WEAPONS[s.weapon] || WEAPONS.cannon || WEAPONS.medium || TANK_CONFIGS.medium.weapon;
           const bSpeed = w.bulletSpeed || 1100;
           const bLife = w.bulletLife || ((w.bulletRange || 1300) / bSpeed);
@@ -3576,7 +4021,7 @@
               damage: bDmg,
               life: bLife,
               maxLife: bLife,
-              color: w.color || oppColor,
+              color: state.mode === "tdm" ? oppColor : (w.color || oppColor),
               isRocket: s.weapon === "rocket",
             });
           }
@@ -3643,27 +4088,26 @@
   function spawnSoloDummies(map) {
     state.opponents = {};
     const center = { x: map.width / 2, y: map.height / 2 };
-    const dummyConfigs = map.id === "rust" ? [
-      { id: "dummy_1", name: "Panser-Alfa", color: "#f43f5e", avatar: "char:h1:c_f43f5e:r1:e1:m1", offset: { x: -620, y: -40 }, weapon: "shotgun", hullAngle: 0.5 },
-      { id: "dummy_2", name: "Panser-Bravo", color: "#38bdf8", avatar: "char:h2:c_38bdf8:r2:e2:m2", offset: { x: 540, y: -100 }, weapon: "sniper", hullAngle: 2.2 },
-      { id: "dummy_3", name: "Panser-Charlie", color: "#a855f7", avatar: "char:h3:c_a855f7:r3:e3:m3", offset: { x: 0, y: -590 }, weapon: "assault", hullAngle: -1.2 },
-      { id: "dummy_4", name: "Panser-Delta", color: "#10b981", avatar: "char:h4:c_10b981:r1:e2:m1", offset: { x: -260, y: 320 }, weapon: "rocket", hullAngle: -2.8 },
-    ] : [
-      { id: "dummy_1", name: "Panser-Alfa", color: "#f43f5e", avatar: "char:h1:c_f43f5e:r1:e1:m1", offset: { x: -140, y: -100 }, weapon: "shotgun", hullAngle: 0.8 },
-      { id: "dummy_2", name: "Panser-Bravo", color: "#38bdf8", avatar: "char:h2:c_38bdf8:r2:e2:m2", offset: { x: 140, y: -100 }, weapon: "sniper", hullAngle: -1.8 },
-      { id: "dummy_3", name: "Panser-Charlie", color: "#a855f7", avatar: "char:h3:c_a855f7:r3:e3:m3", offset: { x: 0, y: 140 }, weapon: "assault", hullAngle: 2.5 },
-    ];
 
-    dummyConfigs.forEach(d => {
-      state.opponents[d.id] = {
-        id: d.id,
-        name: d.name,
-        color: d.color,
-        avatar: d.avatar,
-        x: center.x + d.offset.x,
-        y: center.y + d.offset.y,
-        angle: d.hullAngle || 0,
-        hullAngle: d.hullAngle || 0,
+    if (state.mode === "tdm") {
+      const myTeam = state.playerTeam || "red";
+      const oppTeam = myTeam === "red" ? "blue" : "red";
+      state.player.team = myTeam;
+      state.player.color = myTeam === "red" ? "#f43f5e" : "#38bdf8";
+
+      // 1 ally on my team
+      const allyColor = myTeam === "red" ? "#f43f5e" : "#38bdf8";
+      state.opponents["solo_ally"] = {
+        id: "solo_ally",
+        name: "Alliert-Alfa",
+        team: myTeam,
+        color: allyColor,
+        avatar: "char:h2:c_38bdf8:r2:e2:m2",
+        tank: "medium",
+        x: center.x + (myTeam === "red" ? -180 : 180),
+        y: center.y - 120,
+        angle: 0,
+        hullAngle: 0,
         trackFrame: 0,
         trackDistance: 0,
         recoilOffset: 0,
@@ -3674,7 +4118,7 @@
         shield: 0,
         maxHealth: 100,
         maxShield: 0,
-        weapon: d.weapon || "assault",
+        weapon: "cannon_medium",
         kills: 0,
         deaths: 0,
         score: 0,
@@ -3684,17 +4128,101 @@
         respawnTimer: 0,
         invulnerableUntil: 0,
       };
-    });
+
+      // 2 enemies on opposite team
+      const enemyColor = oppTeam === "red" ? "#f43f5e" : "#38bdf8";
+      const enemies = [
+        { id: "solo_enemy1", name: "Fiende-Alfa", offset: { x: (oppTeam === "red" ? -420 : 420), y: -60 }, tank: "heavy", weapon: "cannon_heavy" },
+        { id: "solo_enemy2", name: "Fiende-Bravo", offset: { x: (oppTeam === "red" ? -350 : 350), y: 220 }, tank: "light", weapon: "cannon_light" },
+      ];
+
+      enemies.forEach(e => {
+        state.opponents[e.id] = {
+          id: e.id,
+          name: e.name,
+          team: oppTeam,
+          color: enemyColor,
+          avatar: "char:h1:c_f43f5e:r1:e1:m1",
+          tank: e.tank,
+          x: center.x + e.offset.x,
+          y: center.y + e.offset.y,
+          angle: oppTeam === "red" ? 0 : Math.PI,
+          hullAngle: oppTeam === "red" ? 0 : Math.PI,
+          trackFrame: 0,
+          trackDistance: 0,
+          recoilOffset: 0,
+          vx: 0,
+          vy: 0,
+          speed: 0,
+          health: 100,
+          shield: 0,
+          maxHealth: 100,
+          maxShield: 0,
+          weapon: e.weapon,
+          kills: 0,
+          deaths: 0,
+          score: 0,
+          streak: 0,
+          highestStreak: 0,
+          isDead: false,
+          respawnTimer: 0,
+          invulnerableUntil: 0,
+        };
+      });
+    } else {
+      // FFA mode: 4 target tanks
+      state.player.team = null;
+      const dummyConfigs = [
+        { id: "dummy_1", name: "Panser-Alfa", color: "#f43f5e", avatar: "char:h1:c_f43f5e:r1:e1:m1", offset: { x: -500, y: -60 }, tank: "heavy", weapon: "cannon_heavy", hullAngle: 0.5 },
+        { id: "dummy_2", name: "Panser-Bravo", color: "#38bdf8", avatar: "char:h2:c_38bdf8:r2:e2:m2", offset: { x: 480, y: -100 }, tank: "light", weapon: "cannon_light", hullAngle: 2.2 },
+        { id: "dummy_3", name: "Panser-Charlie", color: "#a855f7", avatar: "char:h3:c_a855f7:r3:e3:m3", offset: { x: 0, y: -450 }, tank: "medium", weapon: "cannon_medium", hullAngle: -1.2 },
+        { id: "dummy_4", name: "Panser-Delta", color: "#10b981", avatar: "char:h4:c_10b981:r1:e2:m1", offset: { x: -220, y: 320 }, tank: "heavy", weapon: "cannon_heavy", hullAngle: -2.8 },
+      ];
+
+      dummyConfigs.forEach(d => {
+        state.opponents[d.id] = {
+          id: d.id,
+          name: d.name,
+          team: null,
+          color: d.color,
+          avatar: d.avatar,
+          tank: d.tank || "medium",
+          x: center.x + d.offset.x,
+          y: center.y + d.offset.y,
+          angle: d.hullAngle || 0,
+          hullAngle: d.hullAngle || 0,
+          trackFrame: 0,
+          trackDistance: 0,
+          recoilOffset: 0,
+          vx: 0,
+          vy: 0,
+          speed: 0,
+          health: 100,
+          shield: 0,
+          maxHealth: 100,
+          maxShield: 0,
+          weapon: d.weapon || "cannon_medium",
+          kills: 0,
+          deaths: 0,
+          score: 0,
+          streak: 0,
+          highestStreak: 0,
+          isDead: false,
+          respawnTimer: 0,
+          invulnerableUntil: 0,
+        };
+      });
+    }
   }
 
   function launchSoloPractice() {
     state.isSolo = true;
     state.roomCode = null;
     state.playerId = "solo_player";
-    const selectedMapId = el.selectSoloMap ? el.selectSoloMap.value : "rust";
+    const selectedMapId = el.wrSelectMap ? el.wrSelectMap.value : (state.mapId || "rust");
     state.mapId = selectedMapId;
     state.currentMap = getMapById(selectedMapId);
-    state.scoreLimit = 999;
+    state.scoreLimit = state.mode === "tdm" ? 15 : 10;
     state.timeLimit = 3600;
     state.timeRemaining = 3600;
     state.roomStatus = "playing";
@@ -3702,7 +4230,10 @@
     const tConf = TANK_CONFIGS[state.selectedTank] || TANK_CONFIGS.medium;
     state.player.id = "solo_player";
     state.player.name = state.playerName || "Soldat";
-    state.player.color = state.playerColor || "#ffd166";
+    state.player.team = state.mode === "tdm" ? (state.playerTeam || "red") : null;
+    state.player.color = state.mode === "tdm"
+      ? (state.player.team === "blue" ? "#38bdf8" : "#f43f5e")
+      : (state.playerColor || "#ffd166");
     state.player.avatar = state.playerAvatar || "char:h1:c_ffd166:r1:e1:m1";
     state.player.tank = state.selectedTank;
     state.player.maxHealth = tConf.maxHealth;
@@ -3743,6 +4274,7 @@
   function launchOnlineMatch(data) {
     state.isSolo = false;
     state.roomStatus = data.status || "playing";
+    state.mode = data.mode || state.mode || "ffa";
     state.mapId = data.mapId || state.mapId || "rust";
     state.currentMap = getMapById(state.mapId);
     state.scoreLimit = data.scoreLimit || state.scoreLimit;
@@ -3751,8 +4283,11 @@
 
     state.player.id = state.playerId;
     state.player.name = state.playerName || "Soldat";
-    state.player.color = state.playerColor || "#ffd166";
     state.player.avatar = state.playerAvatar || "";
+    state.player.team = state.mode === "tdm" ? (data.playerTeam || state.playerTeam || "red") : null;
+    state.player.color = state.mode === "tdm"
+      ? (state.player.team === "blue" ? "#38bdf8" : "#f43f5e")
+      : (state.playerColor || "#ffd166");
     spawnPlayer(state.player, state.currentMap);
 
     state.opponents = {};
@@ -4018,6 +4553,24 @@
         const tankType = btn.dataset.tank;
         if (tankType) selectTank(tankType);
       });
+    });
+
+    // Waiting Room: Game Mode Selector (FFA vs TDM)
+    el.btnModeFFA?.addEventListener("click", () => {
+      setWaitingMode("ffa");
+    });
+    el.btnModeTDM?.addEventListener("click", () => {
+      setWaitingMode("tdm");
+    });
+
+    // Waiting Room: Swap Team Button
+    el.btnSwapTeam?.addEventListener("click", () => {
+      swapTeam();
+    });
+
+    // Waiting Room: Map Selector
+    el.wrSelectMap?.addEventListener("change", (e) => {
+      setWaitingMap(e.target.value);
     });
 
     // Waiting Room: Toggle Ready
