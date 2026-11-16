@@ -419,26 +419,6 @@ body {
   margin-right: 0.45rem;
 }
 
-.pl-banner-icon-img {
-  width: 58px;
-  height: 58px;
-  object-fit: contain;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
-  flex-shrink: 0;
-  border-radius: 12px;
-  background: rgba(0, 0, 0, 0.28);
-  border: 1.5px solid rgba(251, 133, 0, 0.4);
-  padding: 2px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s ease;
-}
-
-.pl-banner-icon-img:hover {
-  transform: scale(1.08) rotate(-4deg);
-  border-color: #fb8500;
-}
-
 /* Disabled Card State */
 .game-card.disabled-card {
   opacity: 0.58;
@@ -625,107 +605,19 @@ body {
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45), 0 0 28px rgba(6, 214, 160, 0.25);
 }
 
-/* Party Lobby Hub Banner */
-.party-lobby-hub-banner {
-  background: linear-gradient(135deg, rgba(251, 133, 0, 0.14), rgba(131, 56, 236, 0.16));
-  border: 2px solid var(--accent-orange);
-  border-radius: 16px;
-  padding: 1.5rem 1.75rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1.5rem;
-  margin-bottom: 1rem;
-  box-shadow: 0 8px 24px rgba(251, 133, 0, 0.18);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  position: relative;
-  overflow: hidden;
-  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.party-lobby-hub-banner:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 32px rgba(251, 133, 0, 0.25);
-  border-color: #ff9e2c;
-}
-
-.party-lobby-hub-banner .pl-banner-left,
-.party-lobby-hub-banner .pl-banner-btn {
-  position: relative;
-  z-index: 2;
-}
-
-.party-lobby-hub-banner .card-bg-icon {
-  right: 180px;
-  bottom: -30px;
-  pointer-events: auto;
-  cursor: pointer;
-}
-
-@media (max-width: 768px) {
-  .party-lobby-hub-banner {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .party-lobby-hub-banner .card-bg-icon {
-    right: -10px;
-    bottom: -20px;
-  }
-}
-
-.pl-banner-left {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-}
-
-.pl-banner-emoji {
-  font-size: 2.75rem;
-  flex-shrink: 0;
-}
-
-.pl-banner-tag {
-  font-size: 0.75rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--accent-orange);
-  display: block;
-  margin-bottom: 0.2rem;
-}
-
-.pl-banner-title {
-  font-size: 1.35rem;
-  font-weight: 900;
-  color: var(--text);
-  margin-bottom: 0.25rem;
-}
-
-.pl-banner-desc {
-  font-size: 0.92rem;
-  color: var(--text-muted);
-  line-height: 1.45;
-}
-
-.pl-banner-btn {
-  background: linear-gradient(135deg, #fb8500, #ff5400);
-  color: #fff;
+.hub-tab-party-btn {
+  background: rgba(251, 133, 0, 0.15) !important;
+  border-color: rgba(251, 133, 0, 0.45) !important;
+  color: #fb8500 !important;
   text-decoration: none;
-  font-weight: 800;
-  font-size: 0.95rem;
-  padding: 0.85rem 1.4rem;
-  border-radius: 10px;
-  white-space: nowrap;
-  box-shadow: 0 4px 14px rgba(251, 133, 0, 0.35);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-  flex-shrink: 0;
+  font-weight: 800 !important;
 }
 
-.pl-banner-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(251, 133, 0, 0.45);
+.hub-tab-party-btn:hover {
+  background: rgba(251, 133, 0, 0.28) !important;
+  border-color: #fb8500 !important;
+  box-shadow: 0 0 16px rgba(251, 133, 0, 0.35) !important;
+  transform: translateY(-2px) !important;
 }
 
 .card-top {
@@ -788,14 +680,12 @@ body {
   transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.game-card:hover .card-bg-icon,
-.party-lobby-hub-banner:hover .card-bg-icon {
+.game-card:hover .card-bg-icon {
   opacity: 0.42;
   transform: scale(1.08) translate(-6px, -6px);
 }
 
-.game-card:hover .card-bg-icon img,
-.party-lobby-hub-banner:hover .card-bg-icon img {
+.game-card:hover .card-bg-icon img {
   transform: rotate(-2deg) scale(1.05);
   filter: drop-shadow(0 16px 36px rgba(0, 0, 0, 0.8));
 }

@@ -916,10 +916,10 @@
       if (el.modalPodium) el.modalPodium.classList.add("hidden");
       if (el.startWeaponOverlay) el.startWeaponOverlay.classList.add("hidden");
       if (el.btnHeaderBack) {
-        el.btnHeaderBack.href = state.roomCode ? `/party/?room=${encodeURIComponent(state.roomCode)}` : "/";
+        el.btnHeaderBack.href = state.roomCode ? `/party/?room=${encodeURIComponent(state.roomCode)}` : "/party/";
       }
       if (el.backBtnText) {
-        el.backBtnText.textContent = state.roomCode ? "Forlat rommet" : "Hub";
+        el.backBtnText.textContent = state.roomCode ? "Forlat rommet" : "Lounge";
       }
       stopSimulation();
       stopRoomSync();
@@ -929,10 +929,10 @@
       if (el.headGameStatus) el.headGameStatus.classList.add("hidden");
       if (el.modalPodium) el.modalPodium.classList.add("hidden");
       if (el.btnHeaderBack) {
-        el.btnHeaderBack.href = state.roomCode ? `/party/?room=${encodeURIComponent(state.roomCode)}` : "/";
+        el.btnHeaderBack.href = state.roomCode ? `/party/?room=${encodeURIComponent(state.roomCode)}` : "/party/";
       }
       if (el.backBtnText) {
-        el.backBtnText.textContent = state.isSolo ? "Hub" : "Forlat rommet";
+        el.backBtnText.textContent = state.isSolo ? "Lounge" : "Forlat rommet";
       }
       stopSimulation();
       stopRoomSync();

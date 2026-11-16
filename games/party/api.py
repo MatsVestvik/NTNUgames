@@ -165,6 +165,13 @@ PARTY_REGISTRY: Dict[str, Dict[str, Any]] = {
         "max_players": 16,
         "is_internal": False,
     },
+    "verdenskart": {
+        "name": "Verdenskart",
+        "url_path": "/verdenskart/",
+        "min_players": 1,
+        "max_players": 16,
+        "is_internal": False,
+    },
 }
 
 
@@ -228,6 +235,20 @@ def cleanup_external_game_session(code: str, game_id: Optional[str], player_id: 
                             k_room.bump()
         except Exception as err:
             print("Cleanup kuleregn error:", err)
+
+    elif game_id == "verdenskart":
+        try:
+            from games.verdenskart.api import _rooms as vk_rooms, _rooms_lock as vk_lock
+            with vk_lock:
+                vk_room = vk_rooms.get(code)
+                if vk_room:
+                    if player_id and player_id in vk_room.players:
+                        vk_room.remove_player(player_id)
+                    else:
+                        vk_room.status = "finished"
+                        vk_room.version += 1
+        except Exception as err:
+            print("Cleanup verdenskart error:", err)
 
     elif game_id == "wavelength":
         try:
@@ -406,6 +427,20 @@ class PartyRoom:
                                 self.bump()
                 except Exception as k_err:
                     print("Error checking kuleregn room state in party:", k_err)
+            elif self.current_game == "verdenskart":
+                effective_game_state = dict(self.game_state)
+                try:
+                    from games.verdenskart.api import _rooms as vk_rooms, _rooms_lock as vk_lock
+                    with vk_lock:
+                        vk_room = vk_rooms.get(self.code)
+                    if vk_room:
+                        effective_game_state["status"] = vk_room.status
+                        if vk_room.status == "finished":
+                            self.current_game = None
+                            self.game_state = {}
+                            self.bump()
+                except Exception as v_err:
+                    print("Error checking verdenskart room state in party:", v_err)
             else:
                 effective_game_state = self.game_state
 
@@ -2229,6 +2264,17 @@ class PartyAPI:
                         "icon": "/assets/icons/kuleregn.png",
                         "route": "/kuleregn/",
                     },
+                    {
+                        "id": "verdenskart",
+                        "title": "Verdenskart",
+                        "subtitle": "Fyll ut verdenskartet (1–16 spillere)",
+                        "desc": "Tast inn landene i verden mens kartet fylles ut i sanntid! Spill alle mot alle, i samarbeid eller som lagkamp.",
+                        "status": "ready",
+                        "badge": "Klar til å spilles",
+                        "players": "1–16 spillere",
+                        "icon": "/assets/icons/verdenskart.png",
+                        "route": "/verdenskart/",
+                    },
                 ]
             }
 
@@ -2844,6 +2890,77 @@ class PartyAPI:
                             kr_rooms[code] = k_room
                     except Exception as err:
                         print("Error creating kuleregn party room bridge:", err)
+                    room.bump()
+                elif game_id == "verdenskart":
+                    room.current_game = "verdenskart"
+                    room.game_state = {"settings": settings, "status": "active"}
+                    try:
+                        from games.verdenskart.api import _rooms as vk_rooms, _rooms_lock as vk_lock, VerdenskartRoom, PLAYER_PALETTE
+                        with vk_lock:
+                            host_player = room.players.get(room.host_id, {})
+                            mode = str(settings.get("mode", "ffa"))
+                            time_limit = int(settings.get("timeLimit", 0))
+                            region = str(settings.get("region", "all"))
+                            host_color = host_player.get("color") or extract_color_from_avatar(host_player.get("avatar", "")) or PLAYER_PALETTE[0]["color"]
+
+                            vk_room = VerdenskartRoom(
+                                code=code,
+                                host_name=host_player.get("name", "Vert"),
+                                host_color=host_color,
+                                host_avatar=host_player.get("avatar", ""),
+                                mode=mode,
+                                time_limit=time_limit,
+                                region=region,
+                            )
+                            vk_room.host_id = room.host_id
+                            vk_room.players = {}
+
+                            # Host
+                            vk_room.players[room.host_id] = {
+                                "id": room.host_id,
+                                "name": host_player.get("name", "Vert"),
+                                "color": host_color,
+                                "avatar": host_player.get("avatar", ""),
+                                "score": 0,
+                                "team": "red",
+                                "is_ready": True,
+                                "is_host": True,
+                                "joined_at": time.time(),
+                            }
+
+                            slot = 1
+                            used_colors = {host_color.lower()}
+                            for pid, pdata in room.players.items():
+                                if pid != room.host_id and len(vk_room.players) < 16:
+                                    raw_color = pdata.get("color")
+                                    p_color = raw_color if (raw_color and raw_color.lower() not in used_colors) else None
+                                    if not p_color:
+                                        for pal in PLAYER_PALETTE:
+                                            if pal["color"].lower() not in used_colors:
+                                                p_color = pal["color"]
+                                                break
+                                    if not p_color:
+                                        p_color = PLAYER_PALETTE[slot % len(PLAYER_PALETTE)]["color"]
+                                    used_colors.add(p_color.lower())
+
+                                    team = "red" if slot % 2 == 0 else "blue"
+                                    vk_room.players[pid] = {
+                                        "id": pid,
+                                        "name": pdata.get("name", f"Spiller {slot + 1}"),
+                                        "color": p_color,
+                                        "avatar": pdata.get("avatar", ""),
+                                        "score": 0,
+                                        "team": team,
+                                        "is_ready": True,
+                                        "is_host": False,
+                                        "joined_at": time.time(),
+                                    }
+                                    slot += 1
+
+                            vk_room.start_game(mode=mode, time_limit=time_limit, region=region)
+                            vk_rooms[code] = vk_room
+                    except Exception as err:
+                        print("Error creating verdenskart party room bridge:", err)
                     room.bump()
                 elif game_id is None:
                     # Return to lobby

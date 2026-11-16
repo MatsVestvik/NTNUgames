@@ -23,6 +23,7 @@ from games.korridorer import KorridorerAPI
 from games.wavelength import WavelengthAPI
 from games.turbosladd import TurbosladdAPI
 from games.kuleregn import KuleregnAPI
+from games.verdenskart import VerdenskartAPI
 
 PORT = int(os.environ.get("PORT", "3000"))
 HOST = os.environ.get("HOST", "0.0.0.0")
@@ -32,6 +33,7 @@ HUB_DIR = os.path.join(BASE_DIR, "hub")
 GAMES_DIR = os.path.join(BASE_DIR, "games")
 
 DISABLED_GAMES = {"imposter", "fargekoden", "wavelength"}
+PARTY_GAMES = {"ordbombe", "tegn_og_gjett", "sjakk", "korridorer", "turbosladd", "kuleregn", "verdenskart"}
 
 mimetypes.add_type("font/ttf", ".ttf")
 mimetypes.add_type("image/svg+xml", ".svg")
@@ -148,8 +150,14 @@ class GameGatewayHandler(BaseHTTPRequestHandler):
                 if res:
                     return self._send_json(res[1], status=res[0])
 
-            # 11. Static files
-            self.serve_static(path, head_only=head_only)
+            # 11. Check Verdenskart API
+            if path.startswith("/api/verdenskart/"):
+                res = VerdenskartAPI.handle_get(path, query)
+                if res:
+                    return self._send_json(res[1], status=res[0])
+
+            # 12. Static files
+            self.serve_static(path, head_only=head_only, query=query)
 
         except Exception as exc:
             traceback.print_exc()
@@ -235,13 +243,24 @@ class GameGatewayHandler(BaseHTTPRequestHandler):
                 if res:
                     return self._send_json(res[1], status=res[0])
 
+            # 11. Check Verdenskart API
+            if path.startswith("/api/verdenskart/"):
+                res = VerdenskartAPI.handle_post(path, body)
+                if res:
+                    return self._send_json(res[1], status=res[0])
+
             self._send_json({"error": "Endepunkt finnes ikke."}, status=404)
 
         except Exception as exc:
             traceback.print_exc()
             self._send_json({"error": str(exc)}, status=500)
 
-    def serve_static(self, req_path: str, head_only: bool = False) -> None:
+    def serve_static(
+        self,
+        req_path: str,
+        head_only: bool = False,
+        query: Optional[Dict[str, List[str]]] = None,
+    ) -> None:
         safe_rel = os.path.normpath(req_path.lstrip("/"))
         if safe_rel.startswith(".."):
             self._send_json({"error": "Forbidden"}, status=403)
@@ -282,10 +301,23 @@ class GameGatewayHandler(BaseHTTPRequestHandler):
                 or safe_rel.startswith(game_slug + "\\")
             )
 
+            is_party_game = (game in PARTY_GAMES or game_slug in PARTY_GAMES)
+            has_room = bool(
+                query and (query.get("room") or query.get("code") or query.get("roomCode"))
+            )
+
             if matches_route:
+                # Party games must be accessed with a room from the party lounge
+                if is_party_game and not has_room:
+                    self.send_response(302)
+                    self.send_header("Location", f"/party/?game={game_slug}")
+                    self.end_headers()
+                    return
+
                 if not req_path.endswith("/"):
                     self.send_response(301)
-                    self.send_header("Location", f"/{game_slug}/")
+                    qs = f"?{self.path.split('?', 1)[1]}" if "?" in self.path else ""
+                    self.send_header("Location", f"/{game_slug}/{qs}")
                     self.end_headers()
                     return
                 full_path = os.path.join(GAMES_DIR, game, "index.html")
@@ -294,6 +326,14 @@ class GameGatewayHandler(BaseHTTPRequestHandler):
             if starts_route:
                 prefix_len = len(game if safe_rel.startswith(game) else game_slug) + 1
                 sub_rel = safe_rel[prefix_len:]
+
+                # Direct request to index.html for a party game without room
+                if is_party_game and sub_rel in ("", "index.html") and not has_room:
+                    self.send_response(302)
+                    self.send_header("Location", f"/party/?game={game_slug}")
+                    self.end_headers()
+                    return
+
                 target = os.path.join(GAMES_DIR, game, sub_rel)
                 if os.path.isdir(target):
                     target = os.path.join(target, "index.html")
@@ -416,6 +456,7 @@ def main() -> None:
     print(f"   • Korridorer:   http://{HOST}:{PORT}/korridorer/ (2-4 spillere)")
     print(f"   • Turbosladd:   http://{HOST}:{PORT}/turbosladd/ (1-16 spillere)")
     print(f"   • Kuleregn:     http://{HOST}:{PORT}/kuleregn/ (1-16 spillere)")
+    print(f"   • Verdenskart:  http://{HOST}:{PORT}/verdenskart/ (1-16 spillere)")
     print(f"   • NTNU guesser: http://{HOST}:{PORT}/geoguesser/ (under utvikling)\n")
 
     try:

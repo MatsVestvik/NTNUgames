@@ -108,6 +108,9 @@
     selectMapKuleregn: document.getElementById("selectMapKuleregn"),
     selectScoreLimitKuleregn: document.getElementById("selectScoreLimitKuleregn"),
     selectBotsKuleregn: document.getElementById("selectBotsKuleregn"),
+    selectModeVerdenskart: document.getElementById("selectModeVerdenskart"),
+    selectTimeLimitVerdenskart: document.getElementById("selectTimeLimitVerdenskart"),
+    selectRegionVerdenskart: document.getElementById("selectRegionVerdenskart"),
     btnLeaveRoom: document.getElementById("btnLeaveRoom"),
     btnToggleReady: document.getElementById("btnToggleReady"),
     connStatusText: document.getElementById("connStatusText"),
@@ -342,6 +345,7 @@
           tegn_og_gjett: "gameCardTegnOgGjett",
           sjakk: "gameCardSjakk",
           korridorer: "gameCardKorridorer",
+          verdenskart: "gameCardVerdenskart",
         };
         const cardId = gameCardMap[preferredGame];
         const cardEl = cardId ? document.getElementById(cardId) : null;
@@ -880,6 +884,15 @@
         mapId: el.selectMapKuleregn?.value || "rust",
         scoreLimit: parseInt(el.selectScoreLimitKuleregn?.value || "15", 10) || 15,
         mode: "ffa",
+      }),
+    },
+    {
+      cardId: "gameCardVerdenskart",
+      id: "verdenskart",
+      settings: () => ({
+        mode: el.selectModeVerdenskart?.value || "ffa",
+        timeLimit: 0,
+        region: el.selectRegionVerdenskart?.value || "all",
       }),
     },
   ];

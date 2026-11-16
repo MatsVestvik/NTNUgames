@@ -320,19 +320,48 @@
       });
     }
 
-    const codeInput = container.querySelector ? container.querySelector(`#${codeInputId}`) : document.getElementById(codeInputId);
-    if (codeInput && !codeInput.dataset.boundSync) {
-      codeInput.dataset.boundSync = "true";
-      codeInput.addEventListener("input", () => {
-        codeInput.value = codeInput.value.toUpperCase().replace(/\s+/g, "");
+    if (hostInput && !hostInput.dataset.boundEnter) {
+      hostInput.dataset.boundEnter = "true";
+      hostInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          const btn = container.querySelector ? container.querySelector(`#${createBtnId}`) : document.getElementById(createBtnId);
+          if (btn) btn.click();
+        }
       });
-      codeInput.addEventListener("keydown", (e) => {
+    }
+
+    if (joinInput && !joinInput.dataset.boundEnter) {
+      joinInput.dataset.boundEnter = "true";
+      joinInput.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
           e.preventDefault();
           const btn = container.querySelector ? container.querySelector(`#${joinBtnId}`) : document.getElementById(joinBtnId);
           if (btn) btn.click();
         }
       });
+    }
+
+    const codeInput = container.querySelector ? container.querySelector(`#${codeInputId}`) : document.getElementById(codeInputId);
+    if (codeInput) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlCode = (urlParams.get("code") || urlParams.get("room") || "").trim().toUpperCase();
+      if (urlCode && !codeInput.value) {
+        codeInput.value = urlCode;
+      }
+      if (!codeInput.dataset.boundSync) {
+        codeInput.dataset.boundSync = "true";
+        codeInput.addEventListener("input", () => {
+          codeInput.value = codeInput.value.toUpperCase().replace(/\s+/g, "");
+        });
+        codeInput.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            const btn = container.querySelector ? container.querySelector(`#${joinBtnId}`) : document.getElementById(joinBtnId);
+            if (btn) btn.click();
+          }
+        });
+      }
     }
 
     const createBtn = container.querySelector ? container.querySelector(`#${createBtnId}`) : document.getElementById(createBtnId);

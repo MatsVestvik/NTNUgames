@@ -1754,13 +1754,13 @@
   }
 
   async function returnToLounge() {
-    // 1. Local mode: go back to main NTNU Games hub
+    // 1. Local mode: go back to Party Lounge
     if (state.mode === "local") {
       stopTimer();
       if (el.modalGameOver && el.modalGameOver.open) {
         el.modalGameOver.close();
       }
-      window.location.href = "/";
+      window.location.href = "/party/";
       return;
     }
 

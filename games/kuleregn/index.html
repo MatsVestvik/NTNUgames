@@ -32,8 +32,8 @@
     <!-- Top Sticky Header -->
     <header class="app-header">
       <div class="header-left">
-        <a href="/" class="btn-back" id="btnHeaderBack" title="Tilbake">
-          <span class="back-arrow" aria-hidden="true">←</span> <span id="backBtnText">Hub</span>
+        <a href="/party/" class="btn-back" id="btnHeaderBack" title="Tilbake til Party Lounge">
+          <span class="back-arrow" aria-hidden="true">←</span> <span id="backBtnText">Lounge</span>
         </a>
         <div class="header-branding">
           <img src="assets/icon.png?v=4.0" class="header-game-icon" alt="Kuleregn Tanks" aria-hidden="true" style="image-rendering: pixelated; object-fit: contain;" />
@@ -177,20 +177,8 @@
       <!-- ================================================================= -->
       <section class="view-panel hidden" id="viewWaitingRoom">
         <div class="lobby-card wr-card">
-          <!-- Top Config Bar: Gamemode on Left, Map Selector on Right -->
+          <!-- Top Config Bar: Map Selector -->
           <div class="wr-config-bar" id="wrConfigBar">
-            <div class="wr-config-group">
-              <span class="wr-config-title">MODUS:</span>
-              <div class="wr-mode-pills" id="wrModePills">
-                <button type="button" class="wr-pill-btn is-active" id="btnModeFFA" data-mode="ffa" title="Alle mot alle (Free For All)">
-                  ⚔ FFA
-                </button>
-                <button type="button" class="wr-pill-btn" id="btnModeTDM" data-mode="tdm" title="Lagkamp (Rød mot Blå)">
-                  🛡 LAG
-                </button>
-              </div>
-            </div>
-
             <div class="wr-config-group">
               <span class="wr-config-title">BANE:</span>
               <select class="wr-pixel-select" id="wrSelectMap" aria-label="Velg arena">

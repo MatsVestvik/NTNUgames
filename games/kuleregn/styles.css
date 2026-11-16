@@ -1690,7 +1690,7 @@ body.kuleregn-page {
 .wr-config-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   flex-wrap: wrap;
   gap: 0.65rem;
   padding: 0.45rem 0.75rem;

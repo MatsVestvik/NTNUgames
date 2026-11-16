@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="no" data-theme="dark">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Verdenskart – Fyll ut verdenskartet | NTNU Games</title>
+  <meta name="description" content="Fyll ut verdenskartet mens du taster landene! Spill alene eller sammen med 1–16 venner i sanntid." />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <link rel="icon" type="image/png" href="assets/icon.png" />
+  <link rel="apple-touch-icon" href="assets/icon.png" />
+  <link rel="stylesheet" href="/hub.css?v=2.2" />
+  <link rel="stylesheet" href="/parallax-bg.css?v=2.2" />
+  <link rel="stylesheet" href="/character/character-creator.css" />
+  <link rel="stylesheet" href="styles.css?v=1.0" />
+</head>
+
+<body class="vk-body">
+  <!-- Parallax Backdrop -->
+  <div class="dynamic-parallax-bg" id="dynamicParallaxBg" aria-hidden="true">
+    <div class="parallax-layer layer-1-sky" id="plSky" data-depth="0.04"></div>
+    <div class="parallax-layer layer-2-fjord" id="plFjord" data-depth="0.10"></div>
+    <div class="parallax-layer layer-3-campus" id="plCampus" data-depth="0.22"></div>
+    <div class="parallax-layer layer-4-lawn" id="plLawn" data-depth="0.50"></div>
+    <div class="parallax-vignette-overlay"></div>
+  </div>
+
+  <div class="vk-shell">
+    <!-- Top Sticky Header -->
+    <header class="vk-header">
+      <div class="vk-header-left">
+        <a href="/party/" class="btn-back" id="btnHeaderBack" title="Tilbake til Party Lounge">
+          <span class="back-arrow" aria-hidden="true">←</span> <span id="backBtnText">Lounge</span>
+        </a>
+        <div class="vk-brand">
+          <img src="assets/icon.png" alt="Verdenskart" class="vk-brand-icon" />
+          <div class="vk-brand-titles">
+            <h1 class="vk-title">VERDENSKART</h1>
+            <span class="vk-subtitle" id="labelGameMode">Fyll ut verdenskartet</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Room & Progress Header Stats -->
+      <div class="vk-header-center">
+        <div class="vk-stat-chip" id="chipProgress">
+          <span class="chip-icon">🌍</span>
+          <span class="chip-val" id="textProgress">0 / 197</span>
+          <span class="chip-sub" id="textPercent">(0.0%)</span>
+        </div>
+        <div class="vk-progress-track">
+          <div class="vk-progress-fill" id="progressFillBar" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <div class="vk-header-right">
+        <button type="button" class="vk-icon-btn vk-btn-giveup" id="btnGiveUp" title="Avslutt runden og vis fasit">
+          🏳️ <span class="btn-txt-desktop">Gi opp</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- VIEW 1: LOBBY / VENTELISTE (HVIS IKKE STARTET) -->
+    <div class="vk-view vk-view-lobby hidden" id="viewLobby">
+      <div class="vk-lobby-card">
+        <div class="vk-lobby-header">
+          <span class="vk-lobby-badge">Partyspill • 1–16 spillere</span>
+          <h2 class="vk-lobby-title">Romkode: <span class="vk-code-highlight" id="lobbyRoomCode">KART</span></h2>
+          <p class="vk-lobby-desc">Bli med på egen mobil med koden over. Alle taster samtidig i sanntid!</p>
+        </div>
+
+        <!-- Host Settings Panel -->
+        <div class="vk-lobby-settings" id="lobbySettingsPanel">
+          <div class="setting-group">
+            <label for="selectRegion">Område:</label>
+            <select id="selectRegion" class="vk-select">
+              <option value="all" selected>🌍 Hele verden (197 land)</option>
+              <option value="Europa">🇪🇺 Europa (51 land)</option>
+              <option value="Asia">🌏 Asia (43 land)</option>
+              <option value="Afrika">🌍 Afrika (54 land)</option>
+              <option value="Amerika">🌎 Amerika (35 land)</option>
+              <option value="Oseania">🏝️ Oseania (14 land)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Connected Players Grid -->
+        <div class="vk-lobby-players">
+          <h3 class="vk-players-heading">Tilkoblede spillere (<span id="lobbyPlayerCount">1</span>/16)</h3>
+          <div class="vk-players-grid" id="lobbyPlayersGrid">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Lobby Action Buttons -->
+        <div class="vk-lobby-actions">
+          <button type="button" class="vk-btn-primary" id="btnStartGame">Start spillet nå! 🚀</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 2: ACTIVE GAME PLAYING -->
+    <main class="vk-view vk-view-game" id="viewGame">
+      <!-- Floating Hero Input Bar -->
+      <section class="vk-input-floating-bar" id="inputFloatingBar">
+        <div class="vk-input-wrapper">
+          <input type="text" id="inputCountry" class="vk-country-input"
+            placeholder="Tast inn et land..."
+            autofocus autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" />
+          <button type="button" class="vk-input-clear-btn hidden" id="btnClearInput" aria-label="Tøm felt">✕</button>
+        </div>
+
+        <!-- Quick Flash Banner on Guess -->
+        <div class="vk-guess-flash hidden" id="guessFlashBadge">
+          <span class="gf-flag" id="gfFlag">🇳🇴</span>
+          <span class="gf-name" id="gfName">Norge</span>
+          <span class="gf-bonus" id="gfBonus">+1</span>
+        </div>
+      </section>
+
+      <!-- Main Stage: Map Canvas Container + Side Panel -->
+      <div class="vk-stage-layout">
+        <!-- Map Viewport -->
+        <div class="vk-map-viewport" id="mapViewport">
+          <!-- The SVG Container -->
+          <div class="vk-svg-canvas" id="svgCanvas">
+            <!-- world_map.svg will be injected here -->
+            <div class="vk-map-loading" id="mapLoadingState">
+              <div class="vk-spinner"></div>
+              <span>Laster verdenskartet…</span>
+            </div>
+          </div>
+
+          <!-- Hover Tooltip -->
+          <div class="vk-map-tooltip hidden" id="mapTooltip">
+            <span class="tt-flag" id="ttFlag">🌍</span>
+            <div class="tt-text">
+              <strong class="tt-title" id="ttTitle">Land</strong>
+              <span class="tt-sub" id="ttSub">Hovedstad: -</span>
+              <span class="tt-claim" id="ttClaim">Funnet av: -</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sidebar / Drawer: Scoreboard, Feed & Stats -->
+        <aside class="vk-sidebar" id="vkSidebar">
+          <!-- Leaderboard Panel -->
+          <div class="vk-side-section vk-leaderboard-section">
+            <div class="side-sec-header">
+              <h3 class="side-sec-title">🏆 Ledertavle</h3>
+              <span class="side-sec-badge" id="sidePlayerCountBadge">1 spiller</span>
+            </div>
+            <div class="vk-leaderboard-list" id="leaderboardList">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Live Activity Stream -->
+          <div class="vk-side-section vk-feed-section">
+            <div class="side-sec-header">
+              <h3 class="side-sec-title">⚡ Siste funn</h3>
+              <span class="side-sec-sub">Live logg</span>
+            </div>
+            <div class="vk-feed-stream" id="feedStream">
+              <!-- Ticker items dynamically prepended -->
+            </div>
+          </div>
+
+          <!-- Continent Progress Breakdown -->
+          <div class="vk-side-section vk-breakdown-section">
+            <div class="side-sec-header">
+              <h3 class="side-sec-title">📊 Verdensdeler</h3>
+            </div>
+            <div class="vk-continent-breakdown" id="continentBreakdown">
+              <!-- Continent bars dynamically rendered -->
+            </div>
+          </div>
+        </aside>
+      </div>
+    </main>
+
+    <!-- MODAL: COUNTRY LIST & FASIT -->
+    <dialog class="vk-modal" id="modalCountryList">
+      <div class="vk-modal-shell">
+        <div class="vk-modal-header">
+          <h2 class="vk-modal-title">📋 Alle land i verden (<span id="modalListTotal">197</span>)</h2>
+          <button type="button" class="vk-modal-close" id="btnCloseCountryList">✕</button>
+        </div>
+        <div class="vk-modal-filters">
+          <input type="text" id="modalSearchFilter" class="vk-modal-search" placeholder="Søk i listen..." />
+          <div class="vk-modal-filter-pills">
+            <button type="button" class="vk-filter-btn active" data-filter="all">Alle (<span id="cntAll">197</span>)</button>
+            <button type="button" class="vk-filter-btn" data-filter="found">Funnet (<span id="cntFound">0</span>)</button>
+            <button type="button" class="vk-filter-btn" data-filter="missing">Mangler (<span id="cntMissing">197</span>)</button>
+          </div>
+        </div>
+        <div class="vk-modal-body">
+          <div class="vk-country-grid" id="modalCountryGrid">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- MODAL: GAME OVER / VICTORY PODIUM -->
+    <dialog class="vk-modal" id="modalVictory">
+      <div class="vk-modal-shell victory-shell">
+        <div class="vk-victory-banner">
+          <div class="victory-trophy">🏆</div>
+          <h2 class="victory-title" id="victoryHeading">Runden er over!</h2>
+          <p class="victory-subtitle" id="victorySubtitle">Dere fant 142 av 197 land!</p>
+        </div>
+
+        <div class="victory-stats-row">
+          <div class="v-stat-card">
+            <span class="v-stat-num" id="vStatFound">0</span>
+            <span class="v-stat-lbl">Land funnet</span>
+          </div>
+          <div class="v-stat-card">
+            <span class="v-stat-num" id="vStatPercent">0%</span>
+            <span class="v-stat-lbl">Fullført</span>
+          </div>
+          <div class="v-stat-card">
+            <span class="v-stat-num" id="vStatTime">00:00</span>
+            <span class="v-stat-lbl">Tid brukt</span>
+          </div>
+        </div>
+
+        <!-- Podium rankings -->
+        <div class="victory-podium" id="victoryPodiumList">
+          <!-- Rendered dynamically -->
+        </div>
+
+        <div class="victory-actions">
+          <button type="button" class="vk-btn-secondary" id="btnVictoryViewFasit">Se fasit (hva manglet?)</button>
+          <button type="button" class="vk-btn-primary" id="btnVictoryPlayAgain">Spill igjen 🔄</button>
+          <a href="/party/" class="vk-btn-outline">Tilbake til Party Lounge</a>
+        </div>
+      </div>
+    </dialog>
+  </div>
+
+  <script src="/character/character-creator.js?v=2.2"></script>
+  <script src="app.js?v=1.0"></script>
+  <script src="/parallax-bg.js?v=2.2"></script>
+</body>
+
+</html>
+
