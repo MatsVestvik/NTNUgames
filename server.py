@@ -5,13 +5,15 @@ Mounts the main hub and modular games from the `games/` directory.
 Zero external dependencies, designed for Raspberry Pi & lightweight hosting.
 """
 
+from __future__ import annotations
+
 import json
 import mimetypes
 import os
 import traceback
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from games.kattfisking import KattfiskingAPI
 from games.mer_eller_mindre import MerEllerMindreAPI
