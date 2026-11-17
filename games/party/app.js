@@ -55,6 +55,11 @@
     hasRenderedLobby: false,
     lastPlayersKey: null,
     lastRoomData: null,
+    pendingAvatar: null,
+    pendingDataUrl: null,
+    pendingCfg: null,
+    avatarDebounceTimer: null,
+    lastAvatarChangeTime: 0,
   };
 
   // Elements
@@ -113,12 +118,12 @@
     selectRegionVerdenskart: document.getElementById("selectRegionVerdenskart"),
     btnLeaveRoom: document.getElementById("btnLeaveRoom"),
     btnToggleReady: document.getElementById("btnToggleReady"),
+    btnConfirmAvatar: document.getElementById("btnConfirmAvatar"),
     connStatusText: document.getElementById("connStatusText"),
   };
 
   let lobbyWidget = null;
   let isSyncingAvatar = false;
-  let pendingAvatarSync = null;
 
   function showToast(msg) {
     let toast = document.getElementById("partyToast");
@@ -379,42 +384,52 @@
     }
   }
 
-  function initLobbyCustomizer() {
-    const lobbyContainer = document.getElementById("skribblCustomizerLobby");
-    if (!window.CharacterCreator || !lobbyContainer) return;
-    if (lobbyWidget) return;
+  function setConfirmButtonState(status, message = "") {
+    const btn = el.btnConfirmAvatar;
+    if (!btn) return;
+    const label = btn.querySelector(".confirm-label");
+    const icon = btn.querySelector(".confirm-icon");
 
-    lobbyWidget = window.CharacterCreator.renderSkribblWidget(lobbyContainer, {
-      initialConfig: state.avatar,
-      showRandomize: false,
-      autoSave: true,
-      onChange: (encoded, dataUrl, cfg) => {
-        state.avatar = encoded;
-        state.lastAvatarChangeTime = Date.now();
-        saveSession();
-        if (state.lastRoomData && Array.isArray(state.lastRoomData.players)) {
-          const me = state.lastRoomData.players.find((p) => p.id === state.playerId);
-          if (me) {
-            me.avatar = encoded;
-            if (cfg && cfg.headColor) me.color = cfg.headColor.toLowerCase();
-          }
+    btn.classList.remove("has-unsaved-changes", "is-saving", "is-saved", "is-error");
+
+    if (status === "unsaved") {
+      btn.classList.add("has-unsaved-changes");
+      if (icon) icon.textContent = "✓";
+      if (label) label.textContent = "Bekreft figur";
+      btn.title = "Klikk for å bekrefte og lagre figuren din";
+    } else if (status === "saving") {
+      btn.classList.add("is-saving");
+      if (icon) icon.textContent = "⏳";
+      if (label) label.textContent = "Lagrer…";
+      btn.title = "Lagrer figuren din…";
+    } else if (status === "saved") {
+      btn.classList.add("is-saved");
+      if (icon) icon.textContent = "✓";
+      if (label) label.textContent = "Figur lagret!";
+      btn.title = "Figuren din er oppdatert og lagret";
+      setTimeout(() => {
+        if (!state.pendingAvatar && label && btn.classList.contains("is-saved")) {
+          label.textContent = "Figur lagret";
         }
-        updateMyPlayerAvatarInGrid(encoded, dataUrl);
-        scheduleAvatarSync(encoded);
-      },
-    });
+      }, 2500);
+    } else if (status === "error") {
+      btn.classList.add("is-error");
+      if (icon) icon.textContent = "✕";
+      if (label) label.textContent = message || "Prøv igjen";
+      btn.title = message || "Kunne ikke lagre endringene";
+    }
   }
 
-  function scheduleAvatarSync(avatar) {
-    pendingAvatarSync = avatar;
-    if (isSyncingAvatar) return;
-    doAvatarSync();
-  }
+  async function confirmAvatarChanges() {
+    const avToSend = state.pendingAvatar || state.avatar;
+    if (!avToSend || !state.roomCode || !state.playerId || isSyncingAvatar) return;
 
-  async function doAvatarSync() {
-    if (!pendingAvatarSync || !state.roomCode || !state.playerId) return;
-    const avToSend = pendingAvatarSync;
-    pendingAvatarSync = null;
+    if (state.avatarDebounceTimer) {
+      clearTimeout(state.avatarDebounceTimer);
+      state.avatarDebounceTimer = null;
+    }
+
+    setConfirmButtonState("saving");
     isSyncingAvatar = true;
 
     try {
@@ -433,11 +448,12 @@
         if (data.error) {
           showToast(data.error);
         }
-        // If update failed on server, revert local avatar to server state
+        setConfirmButtonState("error", data.error);
         if (state.lastRoomData && Array.isArray(state.lastRoomData.players)) {
           const me = state.lastRoomData.players.find((p) => p.id === state.playerId);
           if (me && me.avatar && me.avatar !== state.avatar) {
             state.avatar = me.avatar;
+            state.pendingAvatar = null;
             saveSession();
             if (lobbyWidget && typeof lobbyWidget.setConfig === "function") {
               lobbyWidget.setConfig(me.avatar, true);
@@ -447,30 +463,97 @@
           }
         }
       } else {
-        if (data.avatar) {
-          state.avatar = data.avatar;
-          saveSession();
-          if (state.lastRoomData && Array.isArray(state.lastRoomData.players)) {
-            const me = state.lastRoomData.players.find((p) => p.id === state.playerId);
-            if (me) {
-              me.avatar = data.avatar;
-              if (data.color) me.color = data.color;
-            }
+        const finalAv = data.avatar || avToSend;
+        state.avatar = finalAv;
+        state.pendingAvatar = null;
+        state.pendingDataUrl = null;
+        state.lastAvatarChangeTime = Date.now();
+        saveSession();
+
+        try {
+          localStorage.setItem("party_avatar", finalAv);
+          localStorage.setItem("party_character", finalAv);
+          if (state.pendingCfg && window.CharacterCreator && typeof window.CharacterCreator.saveCharacter === "function") {
+            window.CharacterCreator.saveCharacter(state.pendingCfg, state.pendingDataUrl, lobbyWidget ? lobbyWidget.widgetId : "lobbyWidget");
           }
-          state.lastPlayersKey = null;
-          if (state.lastRoomData) {
-            updateLobbyUI(state.lastRoomData);
+        } catch (_) {}
+
+        if (state.lastRoomData && Array.isArray(state.lastRoomData.players)) {
+          const me = state.lastRoomData.players.find((p) => p.id === state.playerId);
+          if (me) {
+            me.avatar = finalAv;
+            if (data.color) me.color = data.color;
           }
         }
+
+        state.lastPlayersKey = null;
+        if (state.lastRoomData) {
+          updateLobbyUI(state.lastRoomData);
+        }
+
+        setConfirmButtonState("saved");
+        showToast("Figur bekreftet!");
       }
     } catch (err) {
       console.warn("Avatar sync error:", err);
+      setConfirmButtonState("error", "Nettverksfeil");
     } finally {
       isSyncingAvatar = false;
-      if (pendingAvatarSync) {
-        doAvatarSync();
+      if (state.pendingAvatar && state.pendingAvatar !== state.avatar) {
+        confirmAvatarChanges();
       }
     }
+  }
+
+  function initLobbyCustomizer() {
+    const lobbyContainer = document.getElementById("skribblCustomizerLobby");
+    if (!window.CharacterCreator || !lobbyContainer) return;
+    if (lobbyWidget) return;
+
+    if (el.btnConfirmAvatar && !el.btnConfirmAvatar.__bound) {
+      el.btnConfirmAvatar.__bound = true;
+      el.btnConfirmAvatar.addEventListener("click", () => {
+        if (state.avatarDebounceTimer) {
+          clearTimeout(state.avatarDebounceTimer);
+          state.avatarDebounceTimer = null;
+        }
+        confirmAvatarChanges();
+      });
+    }
+
+    let hasInitialized = false;
+    lobbyWidget = window.CharacterCreator.renderSkribblWidget(lobbyContainer, {
+      initialConfig: state.avatar,
+      showRandomize: false,
+      autoSave: true,
+      onChange: (encoded, dataUrl, cfg) => {
+        if (!hasInitialized) {
+          hasInitialized = true;
+          if (encoded && !state.avatar) {
+            state.avatar = encoded;
+            saveSession();
+          }
+          setConfirmButtonState("saved");
+          return;
+        }
+
+        state.pendingAvatar = encoded;
+        state.pendingDataUrl = dataUrl;
+        state.pendingCfg = cfg;
+        state.lastAvatarChangeTime = Date.now();
+
+        updateMyPlayerAvatarInGrid(encoded, dataUrl);
+        setConfirmButtonState("unsaved");
+
+        if (state.avatarDebounceTimer) {
+          clearTimeout(state.avatarDebounceTimer);
+        }
+        state.avatarDebounceTimer = setTimeout(() => {
+          state.avatarDebounceTimer = null;
+          confirmAvatarChanges();
+        }, 1500);
+      },
+    });
   }
 
   // Polling loop to sync room state in real-time
@@ -585,13 +668,14 @@
     }
 
     // If server resolved/updated our avatar upon room entry
-    const isLocalAvatarPending = isSyncingAvatar || Boolean(pendingAvatarSync) || (Date.now() - (state.lastAvatarChangeTime || 0) < 2500);
+    const isLocalAvatarPending = isSyncingAvatar || Boolean(state.pendingAvatar) || (Date.now() - (state.lastAvatarChangeTime || 0) < 2500);
     if (!isLocalAvatarPending && me && me.avatar && me.avatar !== state.avatar) {
       state.avatar = me.avatar;
       saveSession();
       if (lobbyWidget && typeof lobbyWidget.setConfig === "function") {
         lobbyWidget.setConfig(me.avatar, true);
       }
+      setConfirmButtonState("saved");
     }
 
     // If host status changed, update before rendering tiles so kick buttons match
@@ -747,6 +831,9 @@
 
   async function toggleReady(desiredReady) {
     if (!state.roomCode || !state.playerId) return;
+    if (state.pendingAvatar) {
+      await confirmAvatarChanges();
+    }
     try {
       const resp = await fetch("/api/party/toggle-ready", {
         method: "POST",
@@ -818,6 +905,9 @@
 
   async function launchPartyGame(cardElement, gameId, getSettings) {
     if (!state.isHost || !state.roomCode || isLaunchingGame) return;
+    if (state.pendingAvatar) {
+      await confirmAvatarChanges();
+    }
     isLaunchingGame = true;
 
     const badge = cardElement ? cardElement.querySelector(".lg-card-badge") : null;
