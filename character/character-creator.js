@@ -544,7 +544,11 @@
 
   function getSavedCharacter() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("korridorer_character") || localStorage.getItem("party_character");
+      const raw =
+        localStorage.getItem(STORAGE_KEY) ||
+        localStorage.getItem("party_avatar") ||
+        localStorage.getItem("party_character") ||
+        localStorage.getItem("korridorer_character");
       if (raw) return parseConfig(raw);
     } catch (e) {}
     return { ...DEFAULT_CONFIG };
@@ -623,6 +627,14 @@
             <span class="skribbl-dice-text">Tilfeldig figur</span>
           </button>
           ` : ""}
+
+          <!-- Confirm / Save Button directly under avatar stage -->
+          ${options.showConfirmButton !== false ? `
+          <button type="button" class="skribbl-confirm-btn is-saved" title="Figur er lagret" aria-label="Bekreft og lagre figur">
+            <span class="skribbl-confirm-icon">✓</span>
+            <span class="skribbl-confirm-text">Figur lagret</span>
+          </button>
+          ` : ""}
         </div>
 
         <!-- Color Palette Tray -->
@@ -635,6 +647,83 @@
     const canvas = container.querySelector(".skribbl-canvas");
     const colorsGrid = container.querySelector(".skribbl-colors-grid");
     const diceBtn = container.querySelector(".skribbl-randomize-btn");
+    const confirmBtn = container.querySelector(".skribbl-confirm-btn");
+    const confirmText = confirmBtn ? confirmBtn.querySelector(".skribbl-confirm-text") : null;
+    const confirmIcon = confirmBtn ? confirmBtn.querySelector(".skribbl-confirm-icon") : null;
+    let hasUnsavedChanges = false;
+    let resetSavedTextTimeout = null;
+
+    function setConfirmButtonState(status, message = "") {
+      if (!confirmBtn) return;
+      if (resetSavedTextTimeout) {
+        clearTimeout(resetSavedTextTimeout);
+        resetSavedTextTimeout = null;
+      }
+      confirmBtn.classList.remove("has-unsaved", "is-saving", "is-saved", "is-error");
+
+      if (status === "unsaved") {
+        hasUnsavedChanges = true;
+        confirmBtn.classList.add("has-unsaved");
+        if (confirmIcon) confirmIcon.textContent = "✓";
+        if (confirmText) confirmText.textContent = message || "Bekreft figur";
+        confirmBtn.title = "Klikk for å bekrefte og lagre figuren din";
+      } else if (status === "saving") {
+        confirmBtn.classList.add("is-saving");
+        if (confirmIcon) confirmIcon.textContent = "⏳";
+        if (confirmText) confirmText.textContent = message || "Lagrer…";
+        confirmBtn.title = "Lagrer figuren din…";
+      } else if (status === "saved") {
+        hasUnsavedChanges = false;
+        confirmBtn.classList.add("is-saved");
+        if (confirmIcon) confirmIcon.textContent = "✓";
+        if (confirmText) confirmText.textContent = message || "Figur lagret!";
+        confirmBtn.title = "Figuren din er oppdatert og lagret";
+        resetSavedTextTimeout = setTimeout(() => {
+          if (!hasUnsavedChanges && confirmText && confirmBtn.classList.contains("is-saved")) {
+            confirmText.textContent = "Figur lagret";
+          }
+        }, 2500);
+      } else if (status === "error") {
+        confirmBtn.classList.add("is-error");
+        if (confirmIcon) confirmIcon.textContent = "✕";
+        if (confirmText) confirmText.textContent = message || "Feil ved lagring";
+        confirmBtn.title = message || "Kunne ikke lagre endringene";
+      }
+    }
+
+    async function handleConfirm() {
+      if (!confirmBtn && typeof options.onConfirm !== "function") return encodeConfig(currentConfig);
+      setConfirmButtonState("saving");
+      try {
+        const encoded = encodeConfig(currentConfig);
+        const dataUrl = canvas.toDataURL("image/png");
+        dataUrlCache.set(encoded, dataUrl);
+
+        // Always persist to localStorage
+        saveCharacter(currentConfig, dataUrl, widgetId);
+
+        if (typeof options.onConfirm === "function") {
+          await options.onConfirm(encoded, dataUrl, currentConfig);
+        }
+
+        hasUnsavedChanges = false;
+        setConfirmButtonState("saved", "✓ Figur lagret!");
+        return encoded;
+      } catch (err) {
+        console.error("Feil ved bekreftelse av figur:", err);
+        setConfirmButtonState("error", err && err.message ? err.message : "Prøv igjen");
+        throw err;
+      }
+    }
+
+    if (confirmBtn) {
+      confirmBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        handleConfirm();
+      });
+    }
+
     let disabledColorsMap = {};
 
     function normalizeDisabledMap(input) {
@@ -786,8 +875,11 @@
         const dataUrl = canvas.toDataURL("image/png");
         dataUrlCache.set(encoded, dataUrl);
 
-        if (!skipSave && shouldAutoSave) {
-          saveCharacter(currentConfig, dataUrl, widgetId);
+        if (!skipSave) {
+          setConfirmButtonState("unsaved", "Bekreft figur");
+          if (shouldAutoSave) {
+            saveCharacter(currentConfig, dataUrl, widgetId);
+          }
         }
 
         if (options.onChange) {
@@ -848,7 +940,11 @@
         currentConfig = getRandomConfig({ excludeColors: Object.keys(disabledColorsMap) });
         applyUpdate(false);
       },
+      confirm: () => handleConfirm(),
+      hasUnsavedChanges: () => hasUnsavedChanges,
+      setConfirmState: (status, msg) => setConfirmButtonState(status, msg),
       destroy: () => {
+        if (resetSavedTextTimeout) clearTimeout(resetSavedTextTimeout);
         window.removeEventListener("spillhjornet:characterUpdated", handleGlobalUpdate);
         window.removeEventListener("character-creator-ready", handleAssetsReady);
       }
@@ -898,6 +994,7 @@
     const widget = renderSkribblWidget(widgetContainer, {
       initialConfig: activeConfig,
       autoSave: false, // Never auto-save while browsing inside modal dialog
+      showConfirmButton: false,
       persist: persist,
       onChange: (encoded, dataUrl, cfg) => {
         activeConfig = cfg;
