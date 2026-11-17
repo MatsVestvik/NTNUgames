@@ -2407,12 +2407,30 @@ class PartyAPI:
                 if not player:
                     return 404, {"ok": False, "error": "Spiller ikke funnet i rommet."}
 
+                cur_color = (player.get("color") or "").lower()
                 new_color = extract_color_from_avatar(avatar).lower()
 
                 # Check color conflict: only one person can have each color
+                conflict_player = None
                 for other_id, other_p in room.players.items():
                     if other_id != player_id and other_p.get("color", "").lower() == new_color:
-                        other_name = other_p.get("name") or "en annen spiller"
+                        conflict_player = other_p
+                        break
+
+                if conflict_player:
+                    # If incoming color conflicts (e.g. default color in avatar string), but player
+                    # already has a valid non-conflicting assigned color in this room,
+                    # retain player's assigned color and patch the avatar string so feature updates succeed!
+                    cur_conflicts = any(
+                        other_p.get("color", "").lower() == cur_color
+                        for oid, other_p in room.players.items()
+                        if oid != player_id
+                    )
+                    if cur_color and not cur_conflicts:
+                        new_color = cur_color
+                        avatar = replace_color_in_avatar(avatar, cur_color)
+                    else:
+                        other_name = conflict_player.get("name") or "en annen spiller"
                         return 409, {
                             "ok": False,
                             "error": f"Fargen er allerede tatt av {other_name}!"

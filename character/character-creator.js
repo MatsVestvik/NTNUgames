@@ -164,11 +164,6 @@
         dataUrlCache.clear();
         if (typeof window !== "undefined") {
           window.dispatchEvent(new CustomEvent("character-creator-ready"));
-          window.dispatchEvent(
-            new CustomEvent("spillhjornet:characterUpdated", {
-              detail: { config: getSavedCharacter(), encoded: getSavedConfigString() }
-            })
-          );
         }
       })
       .catch(() => {});
@@ -564,6 +559,7 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
       localStorage.setItem("korridorer_character", encoded);
       localStorage.setItem("party_character", encoded);
+      localStorage.setItem("party_avatar", encoded);
       if (dataUrl) {
         localStorage.setItem(STORAGE_DATAURL_KEY, dataUrl);
       }
@@ -787,12 +783,15 @@
         refreshColorDots();
 
         const encoded = encodeConfig(currentConfig);
+        const dataUrl = canvas.toDataURL("image/png");
+        dataUrlCache.set(encoded, dataUrl);
+
         if (!skipSave && shouldAutoSave) {
-          saveCharacter(currentConfig, null, widgetId);
+          saveCharacter(currentConfig, dataUrl, widgetId);
         }
 
         if (options.onChange) {
-          options.onChange(encoded, canvas.toDataURL("image/png"), currentConfig);
+          options.onChange(encoded, dataUrl, currentConfig);
         }
       } finally {
         isUpdating = false;
@@ -821,7 +820,7 @@
     // Listen to external updates from other widgets
     const handleGlobalUpdate = (e) => {
       if (options.persist === false || options.autoSave === false) return;
-      if (e.detail && e.detail.config && e.detail.sourceId !== widgetId) {
+      if (e.detail && e.detail.config && e.detail.sourceId && e.detail.sourceId !== widgetId) {
         const nextCfg = parseConfig(e.detail.config);
         if (encodeConfig(nextCfg) !== encodeConfig(currentConfig)) {
           currentConfig = nextCfg;

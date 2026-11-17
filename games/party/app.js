@@ -275,6 +275,13 @@
     sessionStorage.setItem("party_player_id", state.playerId || "");
     sessionStorage.setItem("party_player_name", state.playerName || "");
     sessionStorage.setItem("party_avatar", state.avatar || "");
+    try {
+      localStorage.setItem("party_room_code", state.roomCode || "");
+      localStorage.setItem("party_player_id", state.playerId || "");
+      localStorage.setItem("party_player_name", state.playerName || "");
+      localStorage.setItem("party_avatar", state.avatar || "");
+      localStorage.setItem("party_character", state.avatar || "");
+    } catch (_) {}
     if (state.hostToken) {
       sessionStorage.setItem("party_host_token", state.hostToken);
     } else {
@@ -383,10 +390,14 @@
       autoSave: true,
       onChange: (encoded, dataUrl, cfg) => {
         state.avatar = encoded;
+        state.lastAvatarChangeTime = Date.now();
         saveSession();
         if (state.lastRoomData && Array.isArray(state.lastRoomData.players)) {
           const me = state.lastRoomData.players.find((p) => p.id === state.playerId);
-          if (me) me.avatar = encoded;
+          if (me) {
+            me.avatar = encoded;
+            if (cfg && cfg.headColor) me.color = cfg.headColor.toLowerCase();
+          }
         }
         updateMyPlayerAvatarInGrid(encoded, dataUrl);
         scheduleAvatarSync(encoded);
@@ -422,10 +433,34 @@
         if (data.error) {
           showToast(data.error);
         }
+        // If update failed on server, revert local avatar to server state
+        if (state.lastRoomData && Array.isArray(state.lastRoomData.players)) {
+          const me = state.lastRoomData.players.find((p) => p.id === state.playerId);
+          if (me && me.avatar && me.avatar !== state.avatar) {
+            state.avatar = me.avatar;
+            saveSession();
+            if (lobbyWidget && typeof lobbyWidget.setConfig === "function") {
+              lobbyWidget.setConfig(me.avatar, true);
+            }
+            state.lastPlayersKey = null;
+            updateLobbyUI(state.lastRoomData);
+          }
+        }
       } else {
         if (data.avatar) {
           state.avatar = data.avatar;
           saveSession();
+          if (state.lastRoomData && Array.isArray(state.lastRoomData.players)) {
+            const me = state.lastRoomData.players.find((p) => p.id === state.playerId);
+            if (me) {
+              me.avatar = data.avatar;
+              if (data.color) me.color = data.color;
+            }
+          }
+          state.lastPlayersKey = null;
+          if (state.lastRoomData) {
+            updateLobbyUI(state.lastRoomData);
+          }
         }
       }
     } catch (err) {
@@ -550,7 +585,8 @@
     }
 
     // If server resolved/updated our avatar upon room entry
-    if (me && me.avatar && me.avatar !== state.avatar) {
+    const isLocalAvatarPending = isSyncingAvatar || Boolean(pendingAvatarSync) || (Date.now() - (state.lastAvatarChangeTime || 0) < 2500);
+    if (!isLocalAvatarPending && me && me.avatar && me.avatar !== state.avatar) {
       state.avatar = me.avatar;
       saveSession();
       if (lobbyWidget && typeof lobbyWidget.setConfig === "function") {
@@ -1056,7 +1092,10 @@
     }
   });
 
-  window.addEventListener("spillhjornet:characterUpdated", () => {
+  window.addEventListener("spillhjornet:characterUpdated", (e) => {
+    if (e && e.detail && lobbyWidget && e.detail.sourceId === lobbyWidget.widgetId) {
+      return;
+    }
     state.lastPlayersKey = null;
     if (state.lastRoomData) {
       updateLobbyUI(state.lastRoomData);
