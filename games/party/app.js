@@ -181,11 +181,17 @@
   }
 
   function loadSession() {
-    const code = sessionStorage.getItem("party_room_code");
-    const pId = sessionStorage.getItem("party_player_id");
-    const pName = sessionStorage.getItem("party_player_name");
-    const av = sessionStorage.getItem("party_avatar");
-    const hToken = sessionStorage.getItem("party_host_token");
+    const urlCode = (codeParam && codeParam.length === 4) ? codeParam : "";
+    const storedCode = sessionStorage.getItem("party_room_code") || localStorage.getItem("party_room_code");
+    const code = urlCode || storedCode;
+
+    // Check if stored credentials belong to the same room
+    const isSameRoom = !urlCode || !storedCode || (urlCode === storedCode);
+
+    const pId = playerParam || (isSameRoom ? (sessionStorage.getItem("party_player_id") || localStorage.getItem("party_player_id")) : "");
+    const hToken = hostTokenParam || (isSameRoom ? (sessionStorage.getItem("party_host_token") || localStorage.getItem("party_host_token")) : "");
+    const pName = sessionStorage.getItem("party_player_name") || localStorage.getItem("party_player_name") || localStorage.getItem("spillhjornet_player_name");
+    const av = sessionStorage.getItem("party_avatar") || localStorage.getItem("party_avatar");
 
     if (code && pId) {
       state.roomCode = code;
@@ -193,7 +199,8 @@
       state.playerName = pName || "Spiller";
       state.avatar = av || getInitialAvatar();
       state.hostToken = hToken || null;
-      state.isHost = !!hToken;
+      state.isHost = Boolean(hToken);
+      saveSession();
       return true;
     }
     return false;
@@ -457,7 +464,7 @@
 
         const data = await resp.json();
         if (data.ok) {
-          if (data.kicked || !data.me) {
+          if (data.kicked) {
             stopPolling();
             if (lobbyWidget) {
               lobbyWidget.destroy();
@@ -480,6 +487,27 @@
               window.location.replace("/");
             }, 800);
             return;
+          }
+
+          if (!data.me && state.roomCode) {
+            // Attempt to re-register player in the room instead of immediately kicking them
+            try {
+              const reJoinResp = await fetch("/api/party/join", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  roomCode: state.roomCode,
+                  playerName: state.playerName,
+                  avatar: state.avatar,
+                  playerId: state.playerId,
+                }),
+              });
+              const reJoinData = await reJoinResp.json();
+              if (reJoinData && reJoinData.ok) {
+                state.playerId = reJoinData.playerId;
+                saveSession();
+              }
+            } catch (_) {}
           }
 
           const hasVersionChanged = (data.version !== state.version);
@@ -1047,14 +1075,21 @@
     })[m]);
   }
 
-  // Initialization: check query params (?code=ABCD or ?room=ABCD)
+  // Initialization: check query params (?code=ABCD or ?room=ABCD, player, hostToken)
   const urlParams = new URLSearchParams(window.location.search);
   const codeParam = (urlParams.get("code") || urlParams.get("room") || "").trim().toUpperCase().replace(/[^A-Z]/g, "").slice(0, 4);
   const playerParam = (urlParams.get("player") || urlParams.get("playerId") || "").trim();
+  const hostTokenParam = (urlParams.get("token") || urlParams.get("hostToken") || "").trim();
 
   if (codeParam && codeParam.length === 4 && playerParam) {
     sessionStorage.setItem("party_room_code", codeParam);
     sessionStorage.setItem("party_player_id", playerParam);
+    localStorage.setItem("party_room_code", codeParam);
+    localStorage.setItem("party_player_id", playerParam);
+    if (hostTokenParam) {
+      sessionStorage.setItem("party_host_token", hostTokenParam);
+      localStorage.setItem("party_host_token", hostTokenParam);
+    }
   }
 
   // Set random character creator figure for Party Lounge header

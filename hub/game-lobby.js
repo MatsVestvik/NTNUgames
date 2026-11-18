@@ -188,7 +188,7 @@
         sessionStorage.setItem("party_preferred_game", game);
       }
 
-      const dest = `/party/?room=${encodeURIComponent(data.roomCode)}${game ? `&game=${encodeURIComponent(game)}` : ""}`;
+      const dest = `/party/?room=${encodeURIComponent(data.roomCode)}&player=${encodeURIComponent(data.playerId)}&token=${encodeURIComponent(data.hostToken)}${game ? `&game=${encodeURIComponent(game)}` : ""}`;
       window.location.href = dest;
     } catch (err) {
       console.error("Party create error:", err);

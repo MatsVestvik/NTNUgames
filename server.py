@@ -304,8 +304,9 @@ class GameGatewayHandler(BaseHTTPRequestHandler):
             )
 
             is_party_game = (game in PARTY_GAMES or game_slug in PARTY_GAMES)
+            query_lower = {k.lower(): v for k, v in query.items()} if query else {}
             has_room = bool(
-                query and (query.get("room") or query.get("code") or query.get("roomCode"))
+                query_lower.get("room") or query_lower.get("code") or query_lower.get("roomcode")
             )
 
             if matches_route:
