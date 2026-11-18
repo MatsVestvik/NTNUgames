@@ -208,6 +208,83 @@
   box-sizing: border-box;
 }
 
+/* Compact Party Deck */
+.party-deck-compact {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.party-split-compact {
+  gap: 1.15rem;
+}
+
+.action-box.action-box-compact {
+  padding: 1.15rem 1.35rem 1.2rem;
+  gap: 0.9rem;
+  border-radius: 14px;
+}
+
+.action-box.action-box-compact .box-badge-row {
+  margin-bottom: 0.35rem;
+}
+
+.action-box.action-box-compact .box-title {
+  font-size: 1.12rem;
+  margin: 0 0 0.2rem 0;
+}
+
+.action-box.action-box-compact .box-desc {
+  font-size: 0.84rem;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.4;
+}
+
+.action-box.action-box-compact .action-box-content {
+  gap: 0.75rem;
+}
+
+.action-box.action-box-compact .form-group {
+  margin-bottom: 0;
+  gap: 0.35rem;
+}
+
+.action-box.action-box-compact .form-group label {
+  font-size: 0.76rem;
+  letter-spacing: 0.04em;
+}
+
+.action-box.action-box-compact .text-input {
+  padding: 0.58rem 0.85rem;
+  font-size: 0.92rem;
+  border-radius: 8px;
+}
+
+.action-box.action-box-compact .code-input {
+  font-size: 1.05rem;
+  letter-spacing: 0.18em;
+  padding: 0.58rem 0.5rem;
+}
+
+.action-box.action-box-compact .primary-btn,
+.action-box.action-box-compact .btn-cyan-accent {
+  padding: 0.65rem 1.1rem;
+  font-size: 0.95rem;
+  border-radius: 9px;
+}
+
+.form-row-2col {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 0.65rem;
+}
+
+@media (max-width: 480px) {
+  .form-row-2col {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+}
+
 .action-box.single-box {
   max-width: 600px;
   margin: 0 auto;

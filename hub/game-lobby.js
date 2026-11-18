@@ -73,14 +73,14 @@
     const saved = escapeHtml(options.savedName || getSavedName() || "Vert");
     const gameDesc =
       options.gameDesc ||
-      "Start et felles party-rom for alle venner på mobil eller PC. I rommet kan du velge og bytte mellom alle spill fritt!";
+      "Start et felles rom for vennegjengen på mobil eller PC.";
 
     return `
-<div class="online-lobby-deck">
+<div class="online-lobby-deck party-deck-compact">
   <!-- Action Cards: Create vs Join Standardized Party Room -->
-  <div class="online-split">
+  <div class="online-split party-split-compact">
     <!-- Create Party Card -->
-    <div class="action-box card-theme-orange">
+    <div class="action-box card-theme-orange action-box-compact">
       <div class="action-box-header">
         <div class="box-badge-row">
           <span class="action-card-badge badge-orange">Romvert</span>
@@ -103,26 +103,28 @@
     </div>
 
     <!-- Join Party Card -->
-    <div class="action-box card-theme-purple">
+    <div class="action-box card-theme-purple action-box-compact">
       <div class="action-box-header">
         <div class="box-badge-row">
           <span class="action-card-badge badge-purple">Bli med</span>
         </div>
         <h3 class="box-title">Bli med i party</h3>
-        <p class="box-desc">Tast inn 4-bokstavskoden fra storskjermen eller vennen din.</p>
+        <p class="box-desc">Tast inn 4-bokstaverskoden fra storskjermen.</p>
       </div>
 
       <div class="action-box-content">
-        <div class="form-group">
-          <label for="inputPartyRoomCode">Romkode (4 bokstaver)</label>
-          <input type="text" id="inputPartyRoomCode" class="text-input code-input" maxlength="4"
-            placeholder="FEST" autocomplete="off" autocorrect="off" autocapitalize="characters" required />
-        </div>
+        <div class="form-row-2col">
+          <div class="form-group">
+            <label for="inputPartyRoomCode">Romkode</label>
+            <input type="text" id="inputPartyRoomCode" class="text-input code-input" maxlength="4"
+              placeholder="FEST" autocomplete="off" autocorrect="off" autocapitalize="characters" required />
+          </div>
 
-        <div class="form-group">
-          <label for="inputPartyJoinName">Ditt kallenavn</label>
-          <input type="text" id="inputPartyJoinName" class="text-input" maxlength="18"
-            placeholder="F.eks. Spiller" value="${saved === "Vert" ? "Spiller" : saved}" required />
+          <div class="form-group">
+            <label for="inputPartyJoinName">Ditt kallenavn</label>
+            <input type="text" id="inputPartyJoinName" class="text-input" maxlength="18"
+              placeholder="F.eks. Spiller" value="${saved === "Vert" ? "Spiller" : saved}" required />
+          </div>
         </div>
       </div>
 
