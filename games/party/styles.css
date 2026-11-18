@@ -1019,12 +1019,6 @@ body {
 /* COMPRESSED 2-COLUMN PARTY LOUNGE                           */
 /* ========================================================== */
 
-#viewAuth {
-  max-width: 580px;
-  margin: 0 auto 2rem;
-  width: 100%;
-}
-
 @media (min-width: 900px) {
   body.party-in-lobby {
     height: 100vh;

@@ -17,9 +17,9 @@ _rooms: Dict[str, "KuleregnRoom"] = {}
 _rooms_lock = threading.RLock()
 
 CLEAN_ROOM_CODES = [
-    "KULE", "SKUDD", "ARENA", "PANG", "RIFLE", "HAGLE",
-    "BLAST", "TRIGGER", "SNIPER", "REKKE", "KAMPEN", "DRONEN",
-    "LASER", "REVOLV", "SEIER", "POKAL"
+    "KULE", "PANG", "TANK", "BOOM", "SKUD", "KAMP", "BOMB", "MINE",
+    "SLAM", "TEAM", "ZONE", "FIRE", "SHOT", "WARS", "BLST", "BLTZ",
+    "RUSH", "DUEL", "BOSS", "APEX", "HUNT", "PLAY", "GANG", "ROCK"
 ]
 
 PLAYER_PALETTE = [

@@ -16,9 +16,9 @@ _rooms: Dict[str, "KorridorerRoom"] = {}
 _rooms_lock = threading.Lock()
 
 CLEAN_ROOM_CODES = [
-    "VEGG", "GANG", "LABY", "SPUR", "BLOKK", "STIEN",
-    "RUTE", "TARN", "SKAN", "PORTER", "HURT", "TRIPP",
-    "KROSS", "FELLE", "SMAL", "PORT", "HEKK", "BOM"
+    "VEGG", "GANG", "LABY", "SPUR", "RUTE", "TARN", "SKAN", "HURT",
+    "SMAL", "PORT", "HEKK", "BOMM", "MAZE", "TRAP", "STEP", "MOVE",
+    "BLOK", "STIS", "TRIP", "KROS", "FELT", "PASS", "LOCK", "PATH"
 ]
 
 

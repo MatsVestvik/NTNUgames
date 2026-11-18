@@ -115,7 +115,7 @@
       <div class="action-box-content">
         <div class="form-group">
           <label for="inputPartyRoomCode">Romkode (4 bokstaver)</label>
-          <input type="text" id="inputPartyRoomCode" class="text-input code-input" maxlength="6"
+          <input type="text" id="inputPartyRoomCode" class="text-input code-input" maxlength="4"
             placeholder="FEST" autocomplete="off" autocorrect="off" autocapitalize="characters" required />
         </div>
 
@@ -203,9 +203,9 @@
     if (isJoining) return;
     isJoining = true;
 
-    const code = (roomCode || "").trim().toUpperCase();
-    if (!code) {
-      alert("Vennligst skriv inn en 4-bokstavs romkode.");
+    const code = (roomCode || "").trim().toUpperCase().replace(/[^A-Z]/g, "").slice(0, 4);
+    if (!code || code.length !== 4) {
+      alert("Vennligst skriv inn en gyldig romkode på 4 bokstaver (f.eks. FEST).");
       isJoining = false;
       return;
     }
@@ -352,7 +352,7 @@
       if (!codeInput.dataset.boundSync) {
         codeInput.dataset.boundSync = "true";
         codeInput.addEventListener("input", () => {
-          codeInput.value = codeInput.value.toUpperCase().replace(/\s+/g, "");
+          codeInput.value = codeInput.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 4);
         });
         codeInput.addEventListener("keydown", (e) => {
           if (e.key === "Enter") {

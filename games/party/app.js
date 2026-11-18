@@ -84,19 +84,7 @@
   // Elements
   const el = {
     headerBackLink: document.getElementById("headerBackLink"),
-    viewAuth: document.getElementById("viewAuth"),
     viewLobby: document.getElementById("viewLobby"),
-    tabJoin: document.getElementById("tabJoin"),
-    tabCreate: document.getElementById("tabCreate"),
-    contentJoin: document.getElementById("contentJoin"),
-    contentCreate: document.getElementById("contentCreate"),
-    formJoin: document.getElementById("formJoin"),
-    formCreate: document.getElementById("formCreate"),
-    inputJoinCode: document.getElementById("inputJoinCode"),
-    inputJoinName: document.getElementById("inputJoinName"),
-    inputCreateName: document.getElementById("inputCreateName"),
-    btnSubmitJoin: document.getElementById("btnSubmitJoin"),
-    btnSubmitCreate: document.getElementById("btnSubmitCreate"),
 
     roomCodeDisplay: document.getElementById("roomCodeDisplay"),
     domainHostDisplay: document.getElementById("domainHostDisplay"),
@@ -162,137 +150,16 @@
 
   function updateHeaderBackButton() {
     if (!el.headerBackLink) return;
-    if (state.roomCode) {
-      el.headerBackLink.textContent = "‹ Forlat rommet";
-      el.headerBackLink.href = "#";
-      el.headerBackLink.title = "Forlat rommet";
-      el.headerBackLink.classList.add("is-leave-btn");
-    } else {
-      el.headerBackLink.textContent = "‹ Hub";
-      el.headerBackLink.href = "/";
-      el.headerBackLink.title = "Tilbake til Hub";
-      el.headerBackLink.classList.remove("is-leave-btn");
-    }
+    el.headerBackLink.textContent = "‹ Forlat rommet";
+    el.headerBackLink.href = "/";
+    el.headerBackLink.title = "Forlat party-rommet og gå til Hub";
+    el.headerBackLink.classList.add("is-leave-btn");
   }
-
-  // Tabs switching (Join / Create)
-  el.tabJoin.addEventListener("click", () => {
-    el.tabJoin.classList.add("active");
-    el.tabCreate.classList.remove("active");
-    el.contentJoin.classList.remove("hidden");
-    el.contentCreate.classList.add("hidden");
-  });
-
-  el.tabCreate.addEventListener("click", () => {
-    el.tabCreate.classList.add("active");
-    el.tabJoin.classList.remove("active");
-    el.contentCreate.classList.remove("hidden");
-    el.contentJoin.classList.add("hidden");
-  });
 
   // Display domain host in instructions
   if (el.domainHostDisplay) {
     el.domainHostDisplay.textContent = `${window.location.host}/party/`;
   }
-
-  // Create Room Handler
-  el.formCreate.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const hostName = el.inputCreateName.value.trim() || "Vert";
-    el.btnSubmitCreate.disabled = true;
-    el.btnSubmitCreate.textContent = "Oppretter rom…";
-
-    try {
-      const resp = await fetch("/api/party/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          hostName: hostName,
-          avatar: state.avatar || getInitialAvatar(),
-        }),
-      });
-
-      const data = await resp.json();
-      if (!data.ok) {
-        alert(data.error || "Kunne ikke opprette rom.");
-        el.btnSubmitCreate.disabled = false;
-        el.btnSubmitCreate.textContent = "Opprett rom";
-        return;
-      }
-
-      state.roomCode = data.roomCode;
-      state.hostToken = data.hostToken;
-      state.playerId = data.playerId;
-      state.playerName = hostName;
-      if (data.avatar) state.avatar = data.avatar;
-      state.isHost = true;
-
-      saveSession();
-      enterLobbyView();
-    } catch (err) {
-      console.error(err);
-      alert("Nettverksfeil ved oppretting av rom.");
-    } finally {
-      el.btnSubmitCreate.disabled = false;
-      el.btnSubmitCreate.textContent = "Opprett rom";
-    }
-  });
-
-  // Join Room Handler
-  el.formJoin.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const code = el.inputJoinCode.value.trim().toUpperCase();
-    const playerName = el.inputJoinName.value.trim() || "Spiller";
-
-    if (!code) {
-      alert("Vennligst skriv inn en romkode.");
-      return;
-    }
-
-    el.btnSubmitJoin.disabled = true;
-    el.btnSubmitJoin.textContent = "Kobler til…";
-
-    const prevCode = sessionStorage.getItem("party_room_code");
-    const prevPid = sessionStorage.getItem("party_player_id");
-    const existingPid = (prevCode && prevCode.toUpperCase() === code && prevPid) ? prevPid : undefined;
-
-    try {
-      const resp = await fetch("/api/party/join", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          roomCode: code,
-          playerName: playerName,
-          avatar: state.avatar || getInitialAvatar(),
-          playerId: existingPid,
-        }),
-      });
-
-      const data = await resp.json();
-      if (!data.ok) {
-        alert(data.error || "Fant ikke rommet.");
-        el.btnSubmitJoin.disabled = false;
-        el.btnSubmitJoin.textContent = "Bli med i festen";
-        return;
-      }
-
-      state.roomCode = data.roomCode;
-      state.hostToken = null;
-      state.playerId = data.playerId;
-      state.playerName = data.playerName;
-      state.avatar = data.avatar || state.avatar;
-      state.isHost = false;
-
-      saveSession();
-      enterLobbyView();
-    } catch (err) {
-      console.error(err);
-      alert("Nettverksfeil ved tilkobling til rom.");
-    } finally {
-      el.btnSubmitJoin.disabled = false;
-      el.btnSubmitJoin.textContent = "Bli med i festen";
-    }
-  });
 
   function saveSession() {
     sessionStorage.setItem("party_room_code", state.roomCode || "");
@@ -337,8 +204,7 @@
     state.lastPlayersKey = null;
     state.version = -1;
     document.body.classList.add("party-in-lobby");
-    el.viewAuth.classList.add("hidden");
-    el.viewLobby.classList.remove("hidden");
+    if (el.viewLobby) el.viewLobby.classList.remove("hidden");
     updateHeaderBackButton();
 
     el.roomCodeDisplay.textContent = state.roomCode;
@@ -602,11 +468,10 @@
             state.hostToken = null;
             state.playerId = null;
             state.isHost = false;
-            el.viewLobby.classList.add("hidden");
-            el.viewAuth.classList.remove("hidden");
-            history.replaceState(null, "", window.location.pathname);
-            updateHeaderBackButton();
             showToast("Du ble fjernet fra party-rommet av verten.");
+            setTimeout(() => {
+              window.location.replace("/#partySection");
+            }, 800);
             return;
           }
 
@@ -1122,18 +987,17 @@
     state.lastPlayersKey = null;
     state.version = -1;
 
-    el.viewLobby.classList.add("hidden");
-    el.viewAuth.classList.remove("hidden");
-    history.replaceState(null, "", window.location.pathname);
-    updateHeaderBackButton();
+    window.location.replace("/#partySection");
   }
 
   el.headerBackLink?.addEventListener("click", (e) => {
+    e.preventDefault();
     if (state.roomCode) {
-      e.preventDefault();
       if (confirm("Er du sikker på at du vil forlate party-rommet?")) {
         leaveRoom();
       }
+    } else {
+      window.location.replace("/");
     }
   });
 
@@ -1169,21 +1033,14 @@
     })[m]);
   }
 
-  // Initialization: check query params (?code=ABCD or ?room=ABCD or ?tab=create)
+  // Initialization: check query params (?code=ABCD or ?room=ABCD)
   const urlParams = new URLSearchParams(window.location.search);
-  const codeParam = (urlParams.get("code") || urlParams.get("room") || "").trim().toUpperCase();
+  const codeParam = (urlParams.get("code") || urlParams.get("room") || "").trim().toUpperCase().replace(/[^A-Z]/g, "").slice(0, 4);
   const playerParam = (urlParams.get("player") || urlParams.get("playerId") || "").trim();
-  const tabParam = (urlParams.get("tab") || urlParams.get("action") || "").trim().toLowerCase();
 
-  if (codeParam && playerParam) {
+  if (codeParam && codeParam.length === 4 && playerParam) {
     sessionStorage.setItem("party_room_code", codeParam);
     sessionStorage.setItem("party_player_id", playerParam);
-  }
-
-  const savedName = localStorage.getItem("spillhjornet_player_name") || sessionStorage.getItem("party_player_name") || "";
-  if (savedName) {
-    if (!el.inputJoinName.value) el.inputJoinName.value = savedName;
-    if (!el.inputCreateName.value) el.inputCreateName.value = savedName;
   }
 
   // Set random character creator figure for Party Lounge header
@@ -1217,13 +1074,36 @@
 
   if (loadSession()) {
     enterLobbyView();
-  } else if (codeParam) {
-    el.inputJoinCode.value = codeParam;
-    el.tabJoin.click();
-    el.inputJoinName.focus();
-  } else if (tabParam === "create" || tabParam === "opprett") {
-    el.tabCreate.click();
-    el.inputCreateName.focus();
+  } else if (codeParam && codeParam.length === 4) {
+    // Shared link /party/?code=ABCD: auto-join using saved or default profile
+    const name = localStorage.getItem("spillhjornet_player_name") || "Spiller";
+    const av = localStorage.getItem("party_avatar") || getInitialAvatar();
+    fetch("/api/party/join", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ roomCode: codeParam, playerName: name, avatar: av }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.ok) {
+          state.roomCode = data.roomCode;
+          state.playerId = data.playerId;
+          state.playerName = data.playerName;
+          state.avatar = data.avatar || av;
+          state.isHost = false;
+          saveSession();
+          enterLobbyView();
+        } else {
+          alert(data.error || "Fant ikke party-rommet.");
+          window.location.replace("/#partySection");
+        }
+      })
+      .catch(() => {
+        window.location.replace("/#partySection");
+      });
+  } else {
+    // No active room: redirect directly to home screen where party cards are!
+    window.location.replace("/#partySection");
   }
 
   updateHeaderBackButton();

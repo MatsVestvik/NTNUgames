@@ -14,8 +14,8 @@ _rooms: Dict[str, "SjakkRoom"] = {}
 _rooms_lock = threading.RLock()
 
 CLEAN_ROOM_CODES = [
-    "SJAKK", "TARN", "BONDE", "HEST", "DRONN", "KONGE",
-    "MATT", "REMIS", "ROKADE", "TREKK", "GAMBIT", "LOPER"
+    "TARN", "HEST", "MATT", "ROOK", "PAWN", "KING", "CHSS", "MOVE",
+    "STEP", "GAME", "PLAY", "FORK", "PINS", "TIME", "TEAM", "TACT", "BEST"
 ]
 
 

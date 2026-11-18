@@ -20,11 +20,17 @@ from games.imposter.words import get_random_imposter_pair, is_matching_word
 _rooms: Dict[str, "PartyRoom"] = {}
 _rooms_lock = threading.RLock()
 
-# Clean room code words for easy typing on phones
+# Clean room code words for easy typing on phones (strictly 4 uppercase ascii letters)
 CLEAN_WORDS = [
     "FEST", "BOMB", "VORS", "KATT", "QUIZ", "SMIL", "GLOS", "NTNU",
-    "GULL", "HELG", "LYS", "SOL", "BUSS", "CAMP", "SPILL", "KAFFE",
-    "TAKK", "HYTTE", "VIND", "FJORD", "NORD", "BROR", "VENN", "TEAM"
+    "GULL", "HELG", "BUSS", "CAMP", "TAKK", "VIND", "NORD", "BROR",
+    "VENN", "TEAM", "SPIK", "KODE", "HIPP", "HOPP", "DANS", "ROCK",
+    "CHIP", "PILL", "TAXI", "KLUB", "DISC", "COOL", "PLAY", "GAME",
+    "ROSA", "GANG", "SALT", "GIRA", "LURT", "LYST", "HEST", "FISK",
+    "TALL", "KORT", "LAPP", "POPP", "NERD", "SHOW", "BEAT", "STAR",
+    "MOON", "FIRE", "SNOW", "RAIN", "TIME", "HERO", "KING", "WAVE",
+    "FLOW", "EPIC", "GLOW", "ZOOM", "FAST", "WILD", "FREE", "SAFE",
+    "JUMP", "KICK", "LUCK", "BEST"
 ]
 
 # Curated party colors (matching CharacterCreator palette, 16 distinct colors)
@@ -2293,19 +2299,19 @@ class PartyAPI:
             host_avatar = str(body.get("avatar") or "charbear").strip()[:200000] or "charbear"
 
             with _rooms_lock:
-                # Pick unique memorable 4-letter word or random letters
+                # Pick unique memorable 4-letter word or 4 random letters
                 code = None
-                available_words = [w for w in CLEAN_WORDS if w not in _rooms]
+                available_words = [w for w in CLEAN_WORDS if len(w) == 4 and w not in _rooms]
                 if available_words:
                     code = random.choice(available_words)
                 else:
-                    for _ in range(50):
+                    for _ in range(500):
                         cand = "".join(random.choices(string.ascii_uppercase, k=4))
                         if cand not in _rooms:
                             code = cand
                             break
                     if not code:
-                        code = f"P{random.randint(100, 999)}"
+                        code = "".join(random.choices(string.ascii_uppercase, k=4))
 
                 host_token = uuid.uuid4().hex
                 room = PartyRoom(code, host_token, host_name, host_avatar)
@@ -2324,6 +2330,8 @@ class PartyAPI:
 
         if rel_path == "/api/join":
             code = str(body.get("roomCode") or "").strip().upper()
+            if len(code) != 4 or not code.isalpha():
+                return 400, {"ok": False, "error": "Romkoden må bestå av nøyaktig 4 bokstaver."}
             player_name = str(body.get("playerName") or "Spiller").strip()[:18] or "Spiller"
             avatar = str(body.get("avatar") or "charbear").strip()[:200000] or "charbear"
             client_player_id = str(body.get("playerId") or "").strip()
