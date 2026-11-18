@@ -802,7 +802,7 @@
       if (!data.ok) return;
 
       if (data.kicked) {
-        window.location.href = "/party/";
+        window.location.href = "/";
         return;
       }
 
@@ -818,7 +818,7 @@
 
   function startLoops() {
     if (!state.roomCode || !state.playerId) {
-      window.location.href = "/party/";
+      window.location.href = "/";
       return;
     }
     pollRoomState();

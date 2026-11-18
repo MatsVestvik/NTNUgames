@@ -732,7 +732,7 @@
       if (!data.ok) return;
 
       if (data.kicked) {
-        window.location.href = "/party/";
+        window.location.href = "/";
         return;
       }
       if (!data.currentGame) {

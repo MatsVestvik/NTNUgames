@@ -1396,7 +1396,7 @@
       const resp = await fetch(url);
 
       if (resp.status === 404) {
-        window.location.replace("/party/");
+        window.location.replace("/");
         return;
       }
 

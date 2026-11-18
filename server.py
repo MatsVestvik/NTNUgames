@@ -309,10 +309,17 @@ class GameGatewayHandler(BaseHTTPRequestHandler):
             )
 
             if matches_route:
+                # Direct visit to party lounge without a room redirects to hub
+                if game == "party" and not has_room:
+                    self.send_response(302)
+                    self.send_header("Location", "/")
+                    self.end_headers()
+                    return
+
                 # Party games must be accessed with a room from the party lounge
                 if is_party_game and not has_room:
                     self.send_response(302)
-                    self.send_header("Location", f"/party/?game={game_slug}")
+                    self.send_header("Location", f"/?game={game_slug}")
                     self.end_headers()
                     return
 
@@ -329,10 +336,17 @@ class GameGatewayHandler(BaseHTTPRequestHandler):
                 prefix_len = len(game if safe_rel.startswith(game) else game_slug) + 1
                 sub_rel = safe_rel[prefix_len:]
 
+                # Direct request to index.html for party lounge without room
+                if game == "party" and sub_rel in ("", "index.html") and not has_room:
+                    self.send_response(302)
+                    self.send_header("Location", "/")
+                    self.end_headers()
+                    return
+
                 # Direct request to index.html for a party game without room
                 if is_party_game and sub_rel in ("", "index.html") and not has_room:
                     self.send_response(302)
-                    self.send_header("Location", f"/party/?game={game_slug}")
+                    self.send_header("Location", f"/?game={game_slug}")
                     self.end_headers()
                     return
 

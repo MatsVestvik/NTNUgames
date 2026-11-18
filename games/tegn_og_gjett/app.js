@@ -841,7 +841,7 @@
 
         if (resp.status === 404) {
           alert("Party-rommet er ikke lenger tilgjengelig.");
-          window.location.href = "/party/";
+          window.location.href = "/";
           return;
         }
 

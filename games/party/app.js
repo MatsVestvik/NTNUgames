@@ -464,13 +464,20 @@
               lobbyWidget = null;
             }
             sessionStorage.clear();
+            try {
+              localStorage.removeItem("party_room_code");
+              localStorage.removeItem("party_player_id");
+              localStorage.removeItem("party_host_token");
+              localStorage.removeItem("party_preferred_game");
+              localStorage.removeItem("party_just_left");
+            } catch (_) {}
             state.roomCode = null;
             state.hostToken = null;
             state.playerId = null;
             state.isHost = false;
             showToast("Du ble fjernet fra party-rommet av verten.");
             setTimeout(() => {
-              window.location.replace("/#partySection");
+              window.location.replace("/");
             }, 800);
             return;
           }
@@ -979,6 +986,13 @@
 
     document.body.classList.remove("party-in-lobby");
     sessionStorage.clear();
+    try {
+      localStorage.removeItem("party_room_code");
+      localStorage.removeItem("party_player_id");
+      localStorage.removeItem("party_host_token");
+      localStorage.removeItem("party_preferred_game");
+      localStorage.removeItem("party_just_left");
+    } catch (_) {}
     state.roomCode = null;
     state.hostToken = null;
     state.playerId = null;
@@ -987,7 +1001,7 @@
     state.lastPlayersKey = null;
     state.version = -1;
 
-    window.location.replace("/#partySection");
+    window.location.replace("/");
   }
 
   el.headerBackLink?.addEventListener("click", (e) => {
@@ -1095,15 +1109,15 @@
           enterLobbyView();
         } else {
           alert(data.error || "Fant ikke party-rommet.");
-          window.location.replace("/#partySection");
+          window.location.replace("/");
         }
       })
       .catch(() => {
-        window.location.replace("/#partySection");
+        window.location.replace("/");
       });
   } else {
-    // No active room: redirect directly to home screen where party cards are!
-    window.location.replace("/#partySection");
+    // No active room: redirect directly to Hub home screen
+    window.location.replace("/");
   }
 
   updateHeaderBackButton();

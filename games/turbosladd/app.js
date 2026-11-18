@@ -885,9 +885,9 @@
       if (el.viewRoom) el.viewRoom.classList.remove("hidden");
       if (el.btnHeaderBack) {
         el.btnHeaderBack.classList.remove("hidden");
-        el.btnHeaderBack.href = state.roomCode ? `/party/?room=${encodeURIComponent(state.roomCode)}` : "/party/";
+        el.btnHeaderBack.href = state.roomCode ? `/party/?room=${encodeURIComponent(state.roomCode)}` : "/";
       }
-      if (el.backBtnText) el.backBtnText.textContent = "Lounge";
+      if (el.backBtnText) el.backBtnText.textContent = state.roomCode ? "Lounge" : "Hub";
       if (el.btnHeaderLeave) el.btnHeaderLeave.classList.add("hidden");
       stopEngineSound();
       stopSimulation();
@@ -897,9 +897,9 @@
       if (el.viewLobby) el.viewLobby.classList.remove("hidden");
       if (el.btnHeaderBack) {
         el.btnHeaderBack.classList.remove("hidden");
-        el.btnHeaderBack.href = "/party/";
+        el.btnHeaderBack.href = "/";
       }
-      if (el.backBtnText) el.backBtnText.textContent = "Lounge";
+      if (el.backBtnText) el.backBtnText.textContent = "Hub";
       if (el.btnHeaderLeave) el.btnHeaderLeave.classList.add("hidden");
       stopEngineSound();
       stopSimulation();

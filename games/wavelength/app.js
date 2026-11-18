@@ -1370,8 +1370,6 @@
   el.btnBack.addEventListener("click", () => {
     if (state.mode === "room" && state.roomCode) {
       returnToLounge();
-    } else if (document.referrer && document.referrer.includes("/party/")) {
-      window.location.href = "/party/";
     } else {
       window.location.href = "/";
     }

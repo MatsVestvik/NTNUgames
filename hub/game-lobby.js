@@ -536,7 +536,46 @@
         return;
       }
 
-      window.location.replace("/party/");
+      window.location.replace("/");
+    },
+
+    leaveParty(options = {}) {
+      const sess = this.getSession();
+      const code = options.roomCode || sess.roomCode;
+      const pid = options.playerId || sess.playerId;
+
+      if (options.beforeLeave && typeof options.beforeLeave === "function") {
+        try {
+          options.beforeLeave();
+        } catch (_) {}
+      }
+
+      if (code && pid) {
+        try {
+          fetch("/api/party/leave", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            keepalive: true,
+            body: JSON.stringify({ roomCode: code, playerId: pid }),
+          });
+        } catch (_) {}
+      }
+
+      try {
+        sessionStorage.removeItem("party_room_code");
+        sessionStorage.removeItem("party_player_id");
+        sessionStorage.removeItem("party_host_token");
+        sessionStorage.removeItem("party_player_name");
+        sessionStorage.removeItem("party_preferred_game");
+        sessionStorage.removeItem("party_just_left");
+        localStorage.removeItem("party_room_code");
+        localStorage.removeItem("party_player_id");
+        localStorage.removeItem("party_host_token");
+        localStorage.removeItem("party_preferred_game");
+        localStorage.removeItem("party_just_left");
+      } catch (_) {}
+
+      window.location.replace("/");
     },
 
     bindLeaveButton(elem, options = {}) {

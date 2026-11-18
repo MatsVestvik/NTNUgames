@@ -865,6 +865,11 @@
       if (el.backBtnText) {
         el.backBtnText.textContent = "Lounge";
       }
+      const victoryLoungeBtn = document.getElementById("btnVictoryBackLounge");
+      if (victoryLoungeBtn) {
+        victoryLoungeBtn.href = `/party/?room=${encodeURIComponent(roomParam)}`;
+        victoryLoungeBtn.textContent = "Tilbake til Party Lounge";
+      }
 
       // Initial state fetch
       await pollRoomState();

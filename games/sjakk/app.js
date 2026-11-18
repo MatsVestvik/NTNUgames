@@ -1754,13 +1754,13 @@
   }
 
   async function returnToLounge() {
-    // 1. Local mode: go back to Party Lounge
+    // 1. Local mode: go back to Hub
     if (state.mode === "local") {
       stopTimer();
       if (el.modalGameOver && el.modalGameOver.open) {
         el.modalGameOver.close();
       }
-      window.location.href = "/party/";
+      window.location.href = "/";
       return;
     }
 

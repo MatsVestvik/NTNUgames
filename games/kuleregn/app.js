@@ -916,10 +916,10 @@
       if (el.modalPodium) el.modalPodium.classList.add("hidden");
       if (el.startWeaponOverlay) el.startWeaponOverlay.classList.add("hidden");
       if (el.btnHeaderBack) {
-        el.btnHeaderBack.href = state.roomCode ? `/party/?room=${encodeURIComponent(state.roomCode)}` : "/party/";
+        el.btnHeaderBack.href = state.roomCode ? `/party/?room=${encodeURIComponent(state.roomCode)}` : "/";
       }
       if (el.backBtnText) {
-        el.backBtnText.textContent = state.roomCode ? "Forlat rommet" : "Lounge";
+        el.backBtnText.textContent = state.roomCode ? "Forlat rommet" : "Hub";
       }
       stopSimulation();
       stopRoomSync();
@@ -929,10 +929,10 @@
       if (el.headGameStatus) el.headGameStatus.classList.add("hidden");
       if (el.modalPodium) el.modalPodium.classList.add("hidden");
       if (el.btnHeaderBack) {
-        el.btnHeaderBack.href = state.roomCode ? `/party/?room=${encodeURIComponent(state.roomCode)}` : "/party/";
+        el.btnHeaderBack.href = state.roomCode ? `/party/?room=${encodeURIComponent(state.roomCode)}` : "/";
       }
       if (el.backBtnText) {
-        el.backBtnText.textContent = state.isSolo ? "Lounge" : "Forlat rommet";
+        el.backBtnText.textContent = state.isSolo ? "Hub" : "Forlat rommet";
       }
       stopSimulation();
       stopRoomSync();
@@ -4634,7 +4634,7 @@
 
     // Party Lobby Hub Button
     el.btnPartyHub?.addEventListener("click", () => {
-      window.location.href = "/party/";
+      window.location.href = "/";
     });
 
     // Podium Return Buttons
