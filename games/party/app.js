@@ -459,7 +459,8 @@
           updateLobbyUI(state.lastRoomData);
         }
 
-        showToast("Figur bekreftet og lagret!");
+        updateMyPlayerAvatarInGrid(finalAv, savedDataUrl);
+        showToast("Figur lagret!");
         return finalAv;
       }
     } catch (err) {
@@ -480,23 +481,18 @@
       initialConfig: state.avatar,
       showRandomize: false,
       showConfirmButton: true,
-      autoSave: false, // Save on confirm
+      autoSave: false, // Only update when user explicitly clicks "Lagre figur"
       onChange: (encoded, dataUrl, cfg) => {
         if (!hasInitialized) {
           hasInitialized = true;
-          if (encoded && !state.avatar) {
-            state.avatar = encoded;
-            saveSession();
-          }
           return;
         }
 
+        // Keep in memory for customizer preview, but DO NOT update lobby grid or server until user clicks Save!
         state.pendingAvatar = encoded;
         state.pendingDataUrl = dataUrl;
         state.pendingCfg = cfg;
         state.lastAvatarChangeTime = Date.now();
-
-        updateMyPlayerAvatarInGrid(encoded, dataUrl);
       },
       onConfirm: async (encoded, dataUrl, cfg) => {
         return await confirmAvatarChanges(encoded, dataUrl, cfg);
@@ -779,15 +775,6 @@
 
   async function toggleReady(desiredReady) {
     if (!state.roomCode || !state.playerId) return;
-    if (lobbyWidget && typeof lobbyWidget.hasUnsavedChanges === "function" && lobbyWidget.hasUnsavedChanges()) {
-      try {
-        await lobbyWidget.confirm();
-      } catch (e) {
-        console.warn("Could not confirm avatar before ready:", e);
-      }
-    } else if (state.pendingAvatar) {
-      await confirmAvatarChanges();
-    }
     try {
       const resp = await fetch("/api/party/toggle-ready", {
         method: "POST",
@@ -859,15 +846,6 @@
 
   async function launchPartyGame(cardElement, gameId, getSettings) {
     if (!state.isHost || !state.roomCode || isLaunchingGame) return;
-    if (lobbyWidget && typeof lobbyWidget.hasUnsavedChanges === "function" && lobbyWidget.hasUnsavedChanges()) {
-      try {
-        await lobbyWidget.confirm();
-      } catch (e) {
-        console.warn("Could not confirm avatar before launch:", e);
-      }
-    } else if (state.pendingAvatar) {
-      await confirmAvatarChanges();
-    }
     isLaunchingGame = true;
 
     const badge = cardElement ? cardElement.querySelector(".lg-card-badge") : null;

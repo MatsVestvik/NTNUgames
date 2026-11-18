@@ -630,9 +630,9 @@
 
           <!-- Confirm / Save Button directly under avatar stage -->
           ${options.showConfirmButton !== false ? `
-          <button type="button" class="skribbl-confirm-btn is-saved" title="Figur er lagret" aria-label="Bekreft og lagre figur">
+          <button type="button" class="skribbl-confirm-btn is-saved" title="Figur er lagret" aria-label="Lagre figur">
             <span class="skribbl-confirm-icon">✓</span>
-            <span class="skribbl-confirm-text">Figur lagret</span>
+            <span class="skribbl-confirm-text">Lagret</span>
           </button>
           ` : ""}
         </div>
@@ -664,9 +664,9 @@
       if (status === "unsaved") {
         hasUnsavedChanges = true;
         confirmBtn.classList.add("has-unsaved");
-        if (confirmIcon) confirmIcon.textContent = "✓";
-        if (confirmText) confirmText.textContent = message || "Bekreft figur";
-        confirmBtn.title = "Klikk for å bekrefte og lagre figuren din";
+        if (confirmIcon) confirmIcon.textContent = "💾";
+        if (confirmText) confirmText.textContent = message || "Lagre figur";
+        confirmBtn.title = "Klikk for å lagre figuren din";
       } else if (status === "saving") {
         confirmBtn.classList.add("is-saving");
         if (confirmIcon) confirmIcon.textContent = "⏳";
@@ -677,10 +677,10 @@
         confirmBtn.classList.add("is-saved");
         if (confirmIcon) confirmIcon.textContent = "✓";
         if (confirmText) confirmText.textContent = message || "Figur lagret!";
-        confirmBtn.title = "Figuren din er oppdatert og lagret";
+        confirmBtn.title = "Figuren din er lagret";
         resetSavedTextTimeout = setTimeout(() => {
           if (!hasUnsavedChanges && confirmText && confirmBtn.classList.contains("is-saved")) {
-            confirmText.textContent = "Figur lagret";
+            confirmText.textContent = "Lagret";
           }
         }, 2500);
       } else if (status === "error") {
@@ -876,7 +876,7 @@
         dataUrlCache.set(encoded, dataUrl);
 
         if (!skipSave) {
-          setConfirmButtonState("unsaved", "Bekreft figur");
+          setConfirmButtonState("unsaved", "Lagre figur");
           if (shouldAutoSave) {
             saveCharacter(currentConfig, dataUrl, widgetId);
           }

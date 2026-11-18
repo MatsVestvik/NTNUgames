@@ -647,8 +647,8 @@ class KuleregnRoom:
                     return
 
             now = time.time()
-            # Prevent double kill registration on the same victim within 1.5 seconds
-            if now - victim.get("lastKilledAt", 0.0) < 1.5:
+            # Prevent double kill registration on the same victim within 3.5 seconds
+            if now - victim.get("lastKilledAt", 0.0) < 3.5:
                 return
             victim["lastKilledAt"] = now
 
@@ -767,11 +767,12 @@ class KuleregnRoom:
                     if target:
                         target["lastAttackerId"] = attacker_id
                         target["lastAttackerWeapon"] = weapon_id
-                        target["health"] = 0
-                        target["isDead"] = True
-                        target["respawnTime"] = now + 2.5
-                        client_kill_id = ev.get("clientKillId")
-                        self.register_kill(attacker_id, target_id, weapon_id, event_id=client_kill_id)
+                        if not target.get("isDead", False) and (now - target.get("lastKilledAt", 0.0) >= 3.5):
+                            target["health"] = 0
+                            target["isDead"] = True
+                            target["respawnTime"] = now + 2.5
+                            client_kill_id = ev.get("clientKillId")
+                            self.register_kill(attacker_id, target_id, weapon_id, event_id=client_kill_id)
 
                 elif ev_type == "pickup":
                     pass # Pickups disabled
@@ -782,11 +783,12 @@ class KuleregnRoom:
                     p["health"] = t_spec["maxHealth"]
                     p["shield"] = 0
                     p["respawnTime"] = 0
-                    p["invulnerableUntil"] = now + 0.5
+                    p["invulnerableUntil"] = now + 1.0
 
             # Direct telemetry sync of health, shield, and isDead (fallback if events missed)
+            # Only register kill from telemetry if the player was NOT already killed recently
             if telemetry.get("isDead") or (telemetry.get("health") is not None and int(telemetry.get("health", 100)) <= 0):
-                if not p.get("isDead"):
+                if not p.get("isDead") and (now - p.get("lastKilledAt", 0.0) >= 3.5):
                     p["isDead"] = True
                     p["health"] = 0
                     p["shield"] = 0
@@ -798,7 +800,7 @@ class KuleregnRoom:
             elif not p.get("isDead"):
                 if "health" in telemetry and telemetry["health"] is not None:
                     p["health"] = max(0, min(p.get("maxHealth", 100), int(telemetry["health"])))
-                    if p["health"] <= 0:
+                    if p["health"] <= 0 and (now - p.get("lastKilledAt", 0.0) >= 3.5):
                         p["isDead"] = True
                         p["shield"] = 0
                         if not p.get("respawnTime"):

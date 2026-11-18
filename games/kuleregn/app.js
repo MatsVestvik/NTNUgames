@@ -1997,7 +1997,7 @@
   // =========================================================================
 
   function damageCombatant(victim, damage, killer, weaponId) {
-    if (victim.isDead) return;
+    if (victim.isDead || (victim.lastKilledAt && Date.now() - victim.lastKilledAt < 3000)) return;
 
     // Resolve killer if missing
     let actualKiller = killer;
@@ -2029,6 +2029,7 @@
     // Check Death
     if (victim.health <= 0) {
       victim.isDead = true;
+      victim.lastKilledAt = Date.now();
       victim.deaths = (victim.deaths || 0) + 1;
       victim.streak = 0;
       victim.respawnTimer = 2.5;
@@ -3872,8 +3873,9 @@
 
       const serverDead = Boolean(me.isDead || (typeof me.health === "number" && me.health <= 0));
 
-      if (serverDead && !state.player.isDead) {
+      if (serverDead && !state.player.isDead && (!state.player.lastKilledAt || Date.now() - state.player.lastKilledAt > 3000)) {
         state.player.isDead = true;
+        state.player.lastKilledAt = Date.now();
         state.player.health = 0;
         state.player.respawnTimer = 2.5;
         addDeathExplosion(state.player.x, state.player.y, state.player.color);
@@ -3963,8 +3965,9 @@
 
           const serverDead = Boolean(p.isDead || (typeof p.health === "number" && p.health <= 0));
 
-          if ((serverDead || opp.health <= 0) && !opp.isDead) {
+          if ((serverDead || opp.health <= 0) && !opp.isDead && (!opp.lastKilledAt || Date.now() - opp.lastKilledAt > 3000)) {
             opp.isDead = true;
+            opp.lastKilledAt = Date.now();
             opp.health = 0;
             opp.respawnTimer = 2.5;
             addDeathExplosion(opp.x, opp.y, opp.color);
