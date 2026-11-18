@@ -36,10 +36,11 @@ HEAD_COLORS = [
 ]
 
 
-def extract_color_from_avatar(avatar: str) -> str:
+def extract_color_from_avatar(avatar: str, default: Optional[str] = None) -> str:
     """Extract head color hex string from avatar string or config."""
+    fallback = (default or "#ffd166").lower()
     if not avatar:
-        return "#ffd166"
+        return fallback
     av_str = str(avatar).strip()
     if av_str.startswith("char:"):
         for part in av_str[5:].split(":"):
@@ -61,7 +62,7 @@ def extract_color_from_avatar(avatar: str) -> str:
             pass
     elif av_str.startswith("#") and len(av_str) in (4, 7):
         return av_str.lower()
-    return "#ffd166"
+    return fallback
 
 
 def replace_color_in_avatar(avatar: str, new_hex: str) -> str:
@@ -2338,7 +2339,16 @@ class PartyAPI:
                 if client_player_id and client_player_id in room.players:
                     p = room.players[client_player_id]
                     p["name"] = player_name
-                    p["avatar"] = replace_color_in_avatar(avatar, p.get("color") or "#ffd166")
+                    taken_by_others = {
+                        other.get("color", "").lower()
+                        for oid, other in room.players.items()
+                        if oid != client_player_id and other.get("color")
+                    }
+                    p_col = (p.get("color") or "").lower()
+                    if not p_col or p_col in taken_by_others:
+                        p_col = get_available_party_color(taken_by_others, extract_color_from_avatar(avatar))
+                        p["color"] = p_col
+                    p["avatar"] = replace_color_in_avatar(avatar, p_col)
                     p["last_seen"] = time.time()
                     p["is_ready"] = True
                     room.bump()
@@ -2446,6 +2456,57 @@ class PartyAPI:
                 "avatar": avatar,
                 "color": new_color
             }
+
+        if rel_path in ("/api/claim-color", "/api/party/claim-color", "/api/update-color", "/api/party/update-color"):
+            code = str(body.get("roomCode") or body.get("code") or "").strip().upper()
+            player_id = str(body.get("playerId") or "").strip()
+            color = str(body.get("color") or "").strip().lower()
+
+            with _rooms_lock:
+                room = _rooms.get(code)
+
+            if not room:
+                return 404, {"ok": False, "error": "Party-rommet finnes ikke."}
+
+            with room.lock:
+                player = room.players.get(player_id)
+                if not player:
+                    return 404, {"ok": False, "error": "Spiller ikke funnet i rommet."}
+
+                if not color.startswith("#"):
+                    color = "#" + color
+
+                if len(color) != 7:
+                    return 400, {"ok": False, "error": "Ugyldig fargekode."}
+
+                # Check if color is already taken by any OTHER player
+                conflict_player = None
+                for other_id, other_p in room.players.items():
+                    if other_id != player_id and (other_p.get("color") or "").lower() == color:
+                        conflict_player = other_p
+                        break
+
+                if conflict_player:
+                    other_name = conflict_player.get("name") or "en annen spiller"
+                    return 409, {
+                        "ok": False,
+                        "error": f"Fargen er allerede tatt av {other_name}!",
+                        "takenBy": other_name,
+                        "currentColor": player.get("color"),
+                    }
+
+                # Claim color immediately
+                player["color"] = color
+                if player.get("avatar"):
+                    player["avatar"] = replace_color_in_avatar(player["avatar"], color)
+                player["last_seen"] = time.time()
+                room.bump()
+
+                return 200, {
+                    "ok": True,
+                    "color": color,
+                    "avatar": player["avatar"],
+                }
 
         if rel_path in ("/api/toggle-ready", "/api/party/toggle-ready"):
             code = str(body.get("roomCode") or body.get("code") or "").strip().upper()

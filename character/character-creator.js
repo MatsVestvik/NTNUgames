@@ -770,14 +770,34 @@
       if (col.hex.toLowerCase() === currentConfig.headColor.toLowerCase()) {
         chip.classList.add("active");
       }
-      chip.addEventListener("click", (e) => {
+      chip.addEventListener("click", async (e) => {
         e.preventDefault();
         e.stopPropagation();
-        if (disabledColorsMap[col.hex.toLowerCase()]) {
+        const hex = col.hex.toLowerCase();
+        if (disabledColorsMap[hex]) {
           return;
         }
+        if (currentConfig.headColor.toLowerCase() === hex) {
+          return;
+        }
+
+        const prevColor = currentConfig.headColor;
         currentConfig.headColor = col.hex;
         applyUpdate(false);
+
+        if (typeof options.onColorSelect === "function") {
+          try {
+            const allowed = await options.onColorSelect(col.hex, currentConfig);
+            if (allowed === false) {
+              currentConfig.headColor = prevColor;
+              applyUpdate(false);
+            }
+          } catch (err) {
+            console.error("onColorSelect error:", err);
+            currentConfig.headColor = prevColor;
+            applyUpdate(false);
+          }
+        }
       });
       colorsGrid.appendChild(chip);
     });
@@ -877,7 +897,7 @@
         }
 
         if (options.onChange) {
-          options.onChange(encoded, dataUrl, currentConfig);
+          options.onChange(encoded, dataUrl, currentConfig, !skipSave);
         }
       } finally {
         isUpdating = false;

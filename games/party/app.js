@@ -34,6 +34,25 @@
     return `<img src="${src}" alt="Partyfigur" class="player-mon-img ${extraClass}" />`;
   }
 
+  function replaceColorInAvatar(avatar, newHex) {
+    if (!newHex) return avatar;
+    const cleanHex = newHex.replace("#", "").toLowerCase();
+    if (!avatar || !avatar.startsWith("char:")) {
+      return `char:h1:c_${cleanHex}:r1:e1:m1`;
+    }
+    const parts = avatar.slice(5).split(":");
+    let hasColor = false;
+    const newParts = parts.map((p) => {
+      if (p.startsWith("c_") || (p.startsWith("c") && !p.startsWith("char"))) {
+        hasColor = true;
+        return `c_${cleanHex}`;
+      }
+      return p;
+    });
+    if (!hasColor) newParts.splice(1, 0, `c_${cleanHex}`);
+    return "char:" + newParts.join(":");
+  }
+
   const getInitialAvatar = () => {
     if (window.CharacterCreator && typeof window.CharacterCreator.getSavedConfigString === "function") {
       return window.CharacterCreator.getSavedConfigString();
@@ -481,10 +500,62 @@
       initialConfig: state.avatar,
       showRandomize: false,
       showConfirmButton: true,
-      autoSave: false, // Only update when user explicitly clicks "Lagre figur"
-      onChange: (encoded, dataUrl, cfg) => {
+      autoSave: false, // Only update full avatar when user explicitly clicks "Lagre figur"
+      onColorSelect: async (colorHex) => {
+        if (!state.roomCode || !state.playerId) return true;
+        try {
+          const resp = await fetch("/api/party/claim-color", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              roomCode: state.roomCode,
+              playerId: state.playerId,
+              color: colorHex,
+            }),
+          });
+          const data = await resp.json();
+          if (!resp.ok || !data.ok) {
+            showToast(data.error || "Fargen er allerede tatt av en annen spiller!");
+            if (lobbyWidget && typeof lobbyWidget.setDisabledColors === "function") {
+              const cur = lobbyWidget.getDisabledColors ? lobbyWidget.getDisabledColors() : {};
+              cur[colorHex.toLowerCase()] = data.takenBy || "en annen spiller";
+              lobbyWidget.setDisabledColors(cur);
+            }
+            return false;
+          }
+
+          // Successfully claimed color on server!
+          const claimedHex = (data.color || colorHex).toLowerCase();
+          state.avatar = replaceColorInAvatar(state.avatar, claimedHex);
+          if (state.pendingAvatar) {
+            state.pendingAvatar = replaceColorInAvatar(state.pendingAvatar, claimedHex);
+          }
+          saveSession();
+          try {
+            localStorage.setItem("party_avatar", state.avatar);
+            localStorage.setItem("party_character", state.avatar);
+          } catch (_) {}
+
+          if (state.lastRoomData && Array.isArray(state.lastRoomData.players)) {
+            const me = state.lastRoomData.players.find((p) => p.id === state.playerId);
+            if (me) {
+              me.color = claimedHex;
+              me.avatar = state.avatar;
+            }
+          }
+          updateMyPlayerAvatarInGrid(state.avatar);
+          return true;
+        } catch (err) {
+          console.warn("Feil ved reservasjon av farge:", err);
+          return false;
+        }
+      },
+      onChange: (encoded, dataUrl, cfg, isUserAction) => {
         if (!hasInitialized) {
           hasInitialized = true;
+          return;
+        }
+        if (isUserAction === false) {
           return;
         }
 
@@ -609,6 +680,20 @@
 
     if (lobbyWidget && typeof lobbyWidget.setDisabledColors === "function") {
       lobbyWidget.setDisabledColors(takenColors);
+    }
+
+    // Safety: If the color currently shown in our widget is taken by someone else in the room, switch to our assigned color
+    if (me && me.color && lobbyWidget && typeof lobbyWidget.getConfig === "function") {
+      const curWidgetCfg = lobbyWidget.getConfig();
+      if (curWidgetCfg && curWidgetCfg.headColor && takenColors[curWidgetCfg.headColor.toLowerCase()]) {
+        state.avatar = me.avatar || replaceColorInAvatar(state.avatar, me.color);
+        if (state.pendingAvatar) {
+          state.pendingAvatar = replaceColorInAvatar(state.pendingAvatar, me.color);
+        }
+        if (typeof lobbyWidget.setConfig === "function") {
+          lobbyWidget.setConfig(state.avatar, true);
+        }
+      }
     }
 
     // If server resolved/updated our avatar upon room entry
