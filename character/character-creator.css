@@ -339,13 +339,12 @@
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: #ffffff;
   border-color: #34d399;
-  box-shadow: 0 4px 18px rgba(16, 185, 129, 0.55);
-  animation: ccPulseConfirm 1.6s infinite ease-in-out;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.45);
 }
 
 .skribbl-confirm-btn.has-unsaved:hover {
-  filter: brightness(1.12);
-  box-shadow: 0 6px 24px rgba(16, 185, 129, 0.75);
+  filter: brightness(1.1);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6);
 }
 
 .skribbl-confirm-btn.is-saving {
@@ -371,27 +370,9 @@
   box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
 }
 
-.skribbl-confirm-icon {
-  font-size: 1.05rem;
-  font-weight: 900;
-  display: inline-block;
-  line-height: 1;
-}
-
 .skribbl-confirm-text {
   font-size: 0.92rem;
   letter-spacing: 0.01em;
-}
-
-@keyframes ccPulseConfirm {
-  0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 12px rgba(16, 185, 129, 0.45);
-  }
-  50% {
-    transform: scale(1.04);
-    box-shadow: 0 0 24px rgba(16, 185, 129, 0.85);
-  }
 }
 
 /* ========================================================== */

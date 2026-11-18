@@ -631,7 +631,6 @@
           <!-- Confirm / Save Button directly under avatar stage -->
           ${options.showConfirmButton !== false ? `
           <button type="button" class="skribbl-confirm-btn is-saved" title="Figur er lagret" aria-label="Lagre figur">
-            <span class="skribbl-confirm-icon">✓</span>
             <span class="skribbl-confirm-text">Lagret</span>
           </button>
           ` : ""}
@@ -649,7 +648,6 @@
     const diceBtn = container.querySelector(".skribbl-randomize-btn");
     const confirmBtn = container.querySelector(".skribbl-confirm-btn");
     const confirmText = confirmBtn ? confirmBtn.querySelector(".skribbl-confirm-text") : null;
-    const confirmIcon = confirmBtn ? confirmBtn.querySelector(".skribbl-confirm-icon") : null;
     let hasUnsavedChanges = false;
     let resetSavedTextTimeout = null;
 
@@ -664,28 +662,24 @@
       if (status === "unsaved") {
         hasUnsavedChanges = true;
         confirmBtn.classList.add("has-unsaved");
-        if (confirmIcon) confirmIcon.textContent = "💾";
         if (confirmText) confirmText.textContent = message || "Lagre figur";
         confirmBtn.title = "Klikk for å lagre figuren din";
       } else if (status === "saving") {
         confirmBtn.classList.add("is-saving");
-        if (confirmIcon) confirmIcon.textContent = "⏳";
         if (confirmText) confirmText.textContent = message || "Lagrer…";
         confirmBtn.title = "Lagrer figuren din…";
       } else if (status === "saved") {
         hasUnsavedChanges = false;
         confirmBtn.classList.add("is-saved");
-        if (confirmIcon) confirmIcon.textContent = "✓";
-        if (confirmText) confirmText.textContent = message || "Figur lagret!";
+        if (confirmText) confirmText.textContent = message || "Figur lagret";
         confirmBtn.title = "Figuren din er lagret";
         resetSavedTextTimeout = setTimeout(() => {
           if (!hasUnsavedChanges && confirmText && confirmBtn.classList.contains("is-saved")) {
             confirmText.textContent = "Lagret";
           }
-        }, 2500);
+        }, 2000);
       } else if (status === "error") {
         confirmBtn.classList.add("is-error");
-        if (confirmIcon) confirmIcon.textContent = "✕";
         if (confirmText) confirmText.textContent = message || "Feil ved lagring";
         confirmBtn.title = message || "Kunne ikke lagre endringene";
       }
@@ -707,7 +701,7 @@
         }
 
         hasUnsavedChanges = false;
-        setConfirmButtonState("saved", "✓ Figur lagret!");
+        setConfirmButtonState("saved", "Figur lagret");
         return encoded;
       } catch (err) {
         console.error("Feil ved bekreftelse av figur:", err);

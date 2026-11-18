@@ -1597,7 +1597,6 @@ body.party-in-lobby #skribblCustomizerLobby .skribbl-color-dot {
   color: #ffffff;
   border-color: #34d399;
   box-shadow: 0 4px 18px rgba(16, 185, 129, 0.55);
-  animation: pulse-confirm 1.6s infinite ease-in-out;
 }
 
 .party-btn-confirm-avatar.has-unsaved-changes:hover {
@@ -1626,17 +1625,6 @@ body.party-in-lobby #skribblCustomizerLobby .skribbl-color-dot {
   color: #f87171;
   border-color: #ef4444;
   box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
-}
-
-@keyframes pulse-confirm {
-  0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 12px rgba(16, 185, 129, 0.45);
-  }
-  50% {
-    transform: scale(1.03);
-    box-shadow: 0 0 24px rgba(16, 185, 129, 0.85);
-  }
 }
 
 @media (max-width: 600px) {
